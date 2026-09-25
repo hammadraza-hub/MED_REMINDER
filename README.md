@@ -1,17 +1,29 @@
-# med_remind_app
+💊 MedRemind — Medication Reminder App
+Never miss a dose again — smart reminders for you and your family.
 
-A new Flutter project.
+Flutter app with complete UI: onboarding, authentication, health profile setup, and a live home dashboard with dose tracking.
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+✨ Features
+🔐 Complete auth flow (Signup, Login, Password Reset)
+🩺 Health profile setup (conditions + allergies)
+🔔 Notification permission flow
+👨‍👩‍👧 Family member management
+🏠 Live home dashboard (progress ring, stats, filters)
+💊 Dose tracking (Taken / Skip / Snooze)
+⚠️ Refill warnings
+🔥 Daily streak tracking
+🏗️ Architecture
+Component library: CustomButton, CustomTextField, SocialButton, AppAvatar, OnboardingHeader
+Centralized theming: AppColors (zero hardcoded colors)
+Data layer separation: UI ready for backend integration (Firebase planned)
+Responsive: phones + tablets (480px content columns)
+🛠️ Tech Stack
+Framework	Flutter (Dart)
+State	StatefulWidget
+SVG	flutter_svg (Apple/Google logos)
+Backend	Planned: Firebase
+🚀 Run Locally
+flutter pub getflutter run
+📱 Screens
+Splash → Onboarding → Auth → Setup → Home Dashboard
+Work in progress — backend integration coming next!
