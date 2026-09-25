@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../widgets/app_avatar.dart';
+import 'dose_action_sheet.dart';
 import 'home_data.dart';
 
 /// ============================================================
@@ -56,19 +57,49 @@ class _HomeScreenState extends State<HomeScreen> {
     ).showSnackBar(SnackBar(content: Text('${dose.name} marked as taken ✓')));
   }
 
-  void _skipDose(Dose dose) {
-    setState(() => dose.status = DoseStatus.skipped);
-    // TODO Backend: update DB
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('${dose.name} skipped')));
+  // ===== UNDO — galti se Taken? Wapas Pending! =====
+  void _markUntaken(Dose dose) {
+    setState(() => dose.status = DoseStatus.pending);
+    // TODO Backend: status revert + history se hatao
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${dose.name} marked as untaken 🔄')),
+    );
   }
 
-  void _snoozeDose(Dose dose) {
-    // TODO Backend: notification reschedule
+  void _skipDose(Dose dose, {String? reason}) {
+    setState(() => dose.status = DoseStatus.skipped);
+    // TODO Backend: status + reason DB mein save
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${dose.name} snoozed — 10 min mein phir reminder!'),
+        content: Text(
+          reason == null
+              ? '${dose.name} skipped'
+              : '${dose.name} skipped — $reason',
+        ),
       ),
+    );
+  }
+
+  void _snoozeDose(Dose dose, int minutes) {
+    // TODO Backend: notification reschedule +minutes
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${dose.name} snoozed — $minutes min mein phir reminder!',
+        ),
+      ),
+    );
+  }
+
+  // ===== DOSE ACTION SHEET — dose card tap par =====
+  void _openDoseSheet(Dose dose) {
+    showDoseActionSheet(
+      context,
+      dose: dose,
+      onTaken: () => _markTaken(dose),
+      onUntaken: () => _markUntaken(dose),
+      onSkip: (reason) => _skipDose(dose, reason: reason),
+      onSnooze: (minutes) => _snoozeDose(dose, minutes),
     );
   }
 
@@ -193,8 +224,9 @@ class _HomeScreenState extends State<HomeScreen> {
               child: _DoseCard(
                 dose: dose,
                 onTaken: () => _markTaken(dose),
-                onSkip: () => _skipDose(dose),
-                onSnooze: () => _snoozeDose(dose),
+                onSkip: (reason) => _skipDose(dose, reason: reason),
+                onSnooze: (minutes) => _snoozeDose(dose, minutes),
+                onCardTap: () => _openDoseSheet(dose),
               ),
             ),
         ],
@@ -697,12 +729,14 @@ class _DoseCard extends StatelessWidget {
     required this.onTaken,
     required this.onSkip,
     required this.onSnooze,
+    required this.onCardTap,
   });
 
   final Dose dose;
   final VoidCallback onTaken;
-  final VoidCallback onSkip;
-  final VoidCallback onSnooze;
+  final void Function(String? reason) onSkip; // reason ke sath!
+  final void Function(int minutes) onSnooze; // minutes ke sath!
+  final VoidCallback onCardTap;
 
   @override
   Widget build(BuildContext context) {
@@ -710,188 +744,211 @@ class _DoseCard extends StatelessWidget {
     final isSkipped = dose.status == DoseStatus.skipped;
     final isPending = dose.status == DoseStatus.pending;
 
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(15),
-        // Pending card = green highlight border + shadow (design!)
-        border: isPending
-            ? Border.all(color: AppColors.formAccent, width: 1.2)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: isPending
-                ? AppColors.formAccent.withValues(alpha: 0.30)
-                : Colors.black.withValues(alpha: 0.035),
-            offset: const Offset(0, 4),
-            blurRadius: isPending ? 0 : 6,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // ================= ROW 1: Info =================
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon circle
-              Container(
-                width: 43,
-                height: 43,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.cardFill,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 4,
-                    ),
-                  ],
+    // POORA CARD tap → sheet khulti hai!
+    return GestureDetector(
+      onTap: (isPending || isTaken) ? onCardTap : null,
+      child: Container(
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(15),
+          border: isPending
+              ? Border.all(color: AppColors.formAccent, width: 1.2)
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: isPending
+                  ? AppColors.formAccent.withValues(alpha: 0.30)
+                  : Colors.black.withValues(alpha: 0.035),
+              offset: const Offset(0, 4),
+              blurRadius: isPending ? 0 : 6,
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // ================= ROW 1: Info =================
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon circle
+                Container(
+                  width: 43,
+                  height: 43,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.cardFill,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    isTaken ? Icons.check_rounded : Icons.medication_outlined,
+                    size: 22,
+                    color: isTaken
+                        ? AppColors.success
+                        : (isPending
+                              ? AppColors.formAccent
+                              : AppColors.fieldHint),
+                  ),
                 ),
-                child: Icon(
-                  isTaken ? Icons.check_rounded : Icons.medication_outlined,
-                  size: 22,
-                  color: isTaken
-                      ? AppColors.success
-                      : (isPending
-                            ? AppColors.formAccent
-                            : AppColors.fieldHint),
-                ),
-              ),
-              const SizedBox(width: 11),
+                const SizedBox(width: 11),
 
-              // Text info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${dose.name} ${dose.doseAmount}',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        decoration: isTaken ? TextDecoration.lineThrough : null,
-                        decorationColor: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      dose.details,
-                      style: const TextStyle(
-                        color: AppColors.formSubtitle,
-                        fontSize: 10,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          isTaken ? Icons.check_circle : Icons.access_time,
-                          size: 11,
-                          color: isTaken
-                              ? AppColors.success
-                              : AppColors.formSubtitle,
+                // Text info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${dose.name} ${dose.doseAmount}',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          decoration: isTaken
+                              ? TextDecoration.lineThrough
+                              : null,
+                          decorationColor: AppColors.textPrimary,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          dose.time,
-                          style: TextStyle(
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        dose.details,
+                        style: const TextStyle(
+                          color: AppColors.formSubtitle,
+                          fontSize: 10,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            isTaken ? Icons.check_circle : Icons.access_time,
+                            size: 11,
                             color: isTaken
                                 ? AppColors.success
                                 : AppColors.formSubtitle,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 4),
+                          Text(
+                            dose.time,
+                            style: TextStyle(
+                              color: isTaken
+                                  ? AppColors.success
+                                  : AppColors.formSubtitle,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              // Status badge
-              _StatusBadge(status: dose.status),
-            ],
-          ),
-
-          // ================= ROW 2: Buttons (sirf pending) =================
-          if (isPending) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _actionButton('✓ Taken', filled: true, onTap: onTaken),
-                ),
-                const SizedBox(width: 7),
-                Expanded(child: _actionButton('Skip', onTap: onSkip)),
-                const SizedBox(width: 7),
-                Expanded(child: _actionButton('Snooze', onTap: onSnooze)),
+                // Status badge
+                _StatusBadge(status: dose.status),
               ],
             ),
-          ],
 
-          // ================= ROW 3: Refill (pending + low) =================
-          if (isPending && dose.isRunningLow) ...[
-            const SizedBox(height: 10),
-            Container(
-              height: 31,
-              padding: const EdgeInsets.symmetric(horizontal: 9),
-              decoration: BoxDecoration(
-                color: AppColors.hintBackground,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
+            // ================= ROW 2: Buttons (sirf pending) =================
+            if (isPending) ...[
+              const SizedBox(height: 14),
+              Row(
                 children: [
-                  const Icon(
-                    Icons.warning_amber_rounded,
-                    color: AppColors.hintAccent,
-                    size: 13,
-                  ),
-                  const SizedBox(width: 5),
                   Expanded(
-                    child: Text(
-                      '${dose.name} running low · ${dose.daysLeft} days left',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.hintAccent,
-                        fontSize: 9,
-                      ),
+                    child: _actionButton(
+                      '✓ Taken',
+                      filled: true,
+                      onTap: onTaken,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      // TODO: Refill flow — baad mein
-                    },
-                    child: const Text(
-                      'Refill →',
-                      style: TextStyle(
-                        color: AppColors.hintAccent,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  const SizedBox(width: 7),
+
+                  // Skip → sheet SE reason ke sath — quick skip = no reason
+                  Expanded(
+                    child: _actionButton(
+                      'Skip',
+                      onTap: () => onSkip(null), // quick skip (no reason)
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+
+                  // Snooze → sheet SE minutes ke sath — quick = default 10
+                  Expanded(
+                    child: _actionButton(
+                      'Snooze',
+                      onTap: () => onSnooze(10), // quick snooze (10 min)
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
 
-          // Skipped message
-          if (isSkipped) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Skipped — kal se phir reminder aayega',
-              style: TextStyle(
-                color: AppColors.error,
-                fontSize: 9,
-                fontStyle: FontStyle.italic,
+            // ================= ROW 3: Refill (pending + low) =================
+            if (isPending && dose.isRunningLow) ...[
+              const SizedBox(height: 10),
+              Container(
+                height: 31,
+                padding: const EdgeInsets.symmetric(horizontal: 9),
+                decoration: BoxDecoration(
+                  color: AppColors.hintBackground,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppColors.hintAccent,
+                      size: 13,
+                    ),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        '${dose.name} running low · ${dose.daysLeft} days left',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.hintAccent,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        // TODO: Refill flow — baad mein
+                      },
+                      child: const Text(
+                        'Refill →',
+                        style: TextStyle(
+                          color: AppColors.hintAccent,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
+
+            // Skipped message
+            if (isSkipped) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Skipped — kal se phir reminder aayega',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontSize: 9,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -902,7 +959,7 @@ class _DoseCard extends StatelessWidget {
     bool filled = false,
   }) {
     return GestureDetector(
-      onTap: onTap, // LIVE — parent se callback!
+      onTap: onTap,
       child: Container(
         height: 34,
         alignment: Alignment.center,
