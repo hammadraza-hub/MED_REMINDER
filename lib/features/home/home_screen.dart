@@ -5,12 +5,13 @@ import '../../core/constants/app_colors.dart';
 import '../../widgets/app_avatar.dart';
 import 'dose_action_sheet.dart';
 import 'home_data.dart';
+import '../meds/meds_screen.dart';
 
 /// ============================================================
 /// HOME — app ka dil!
 ///
 /// UI Layer: SIRF dikhata hai — saara data HomeData se aata hai.
-/// Bottom navigation MainShell ka kaam hai — ye screen bar NAHI rakhti!
+/// Bottom navigation MedRemindShell ka kaam hai — ye screen bar NAHI rakhti!
 /// Backend aane par: HomeData ke methods Firebase se data denge,
 /// ye screen ka EK LINE change nahi hoga! 🎯
 /// ============================================================
@@ -154,12 +155,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: FloatingActionButton(
           onPressed: () {
-            // TODO: Add Medicine screen — agla step
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Add medicine — screen agle step mein!'),
-              ),
-            );
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const MedsScreen()));
           },
           backgroundColor: AppColors.formAccent,
           foregroundColor: Colors.white,

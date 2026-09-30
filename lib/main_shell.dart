@@ -2,26 +2,28 @@ import 'package:flutter/material.dart';
 
 import 'core/constants/app_colors.dart';
 import 'features/home/home_screen.dart';
+import 'features/meds/meds_screen.dart';
+import 'features/calendar/calendar_screen.dart';
 
 /// App ka navigation SHELL — bottom bar + tabs yahan.
 /// Har tab apni screen; screens apni bottom nav NAHI rakhtin!
 ///
 /// IndexedStack ka faida: tab switch par state save rehta hai —
 /// Home ka scroll, filters — sab yaad rehta hai! 🎯
-class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+class MedRemindShell extends StatefulWidget {
+  const MedRemindShell({super.key});
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  State<MedRemindShell> createState() => _MedRemindShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MedRemindShellState extends State<MedRemindShell> {
   int _currentIndex = 0;
 
   static const List<Widget> _tabs = [
     HomeScreen(),
-    _PlaceholderTab(title: 'Meds', icon: Icons.medication_rounded),
-    _PlaceholderTab(title: 'Calendar', icon: Icons.calendar_month_rounded),
+    MedsScreen(),
+    CalendarScreen(),
     _PlaceholderTab(title: 'Reports', icon: Icons.bar_chart_rounded),
     _PlaceholderTab(title: 'Settings', icon: Icons.settings_rounded),
   ];

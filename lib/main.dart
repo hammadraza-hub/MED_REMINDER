@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       title: 'MedRemind',
       theme: ThemeData(useMaterial3: true),
       // home: const HomeScreen(),
-      home: const MainShell(),
+      home: const MedRemindShell(),
     );
   }
 }

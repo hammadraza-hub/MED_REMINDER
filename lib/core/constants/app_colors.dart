@@ -108,6 +108,51 @@ class AppColors {
 
   /// Notification red dot
   static const Color notificationDot = Color(0xFFFF4D4D);
+  // ================= MEDS (quick tools + progress) =================
+  /// MANAGE tile icon box background
+  static const Color manageIconFill = Color(0xFFE3F1EF);
+
+  /// Low-stock badge background (halki red)
+  static const Color lowBadgeBackground = Color(0xFFFFDFDF);
+
+  /// Low-stock badge text/icon red
+  static const Color lowBadgeText = Color(0xFFFF4C4C);
+
+  /// Count badge ki light red border
+  static const Color lowBadgeBorder = Color(0xFFFF7B7B);
+
+  /// Progress bar ka empty track
+  static const Color progressTrackLight = Color(0xFFE5E5E5);
+
+  /// Search hint text
+  static const Color searchHint = Color(0xFFA4BAC3);
+
+  /// Step indicator — active circle green
+  static const Color stepActive = Color(0xFF008467);
+
+  /// Step indicator — inactive circle background
+  static const Color stepInactiveBg = Color(0xFFF0F7F5);
+
+  /// Step indicator — inactive text
+  static const Color stepInactiveText = Color(0xFF76AFA6);
+
+  /// Step indicator — track line
+  static const Color stepTrack = Color(0xFFDCE7E7);
+
+  /// Editable field ka green border (OCR data feel)
+  static const Color fieldEditBorder = Color(0xFF008467);
+
+  /// Editable field ka halka fill
+  static const Color fieldEditFill = Color(0xFFF8FCFB);
+
+  /// Field hint text (light)
+  static const Color fieldHintLight = Color(0xFF9BAEB4);
+
+  /// Scanner frame ka bright green (CustomPainter mein use)
+  static const Color scannerFrame = Color(0xFF00D69A);
+
+  /// READY badge ka green
+  static const Color scannerGreen = Color(0xFF00A478);
 
   // ================= FORM (Signup design ke exact colors) =================
   /// Signup design ka action green — buttons, links, strength bars
