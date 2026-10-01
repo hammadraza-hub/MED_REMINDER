@@ -13,15 +13,18 @@ import 'schedule_screen.dart';
 /// 2. Add Medication → "Can't find? Add Manually" link
 /// 3. Scan → "Or enter manually" (fallback)
 ///
-/// Features: naam + strength + unit (dropdown+chips)
-/// + form cards (images/icons) + color selector + instructions
+/// Features:
+/// naam + strength + unit
+/// + form cards
+/// + custom "Other" medication form
+/// + color selector
+/// + instructions
 ///
 /// System: AppColors + suite bar — Home/Meds jaisi!
 /// ============================================================
 class AddManualScreen extends StatefulWidget {
   const AddManualScreen({
     super.key,
-    // Scan fallback → pre-fill (optional!)
     this.prefillName,
     this.prefillStrength,
     this.prefillInstructions,
@@ -37,23 +40,37 @@ class AddManualScreen extends StatefulWidget {
 
 class _AddManualScreenState extends State<AddManualScreen> {
   // ================= CONTROLLERS =================
+
   final _nameController = TextEditingController();
   final _strengthController = TextEditingController();
   final _instructionsController = TextEditingController();
 
+  // Other medication form — Cream, Patch, Spray, etc.
+  final _customFormController = TextEditingController();
+
   // ================= STATE =================
+
   String _selectedUnit = 'mg';
   String _selectedForm = 'Tablet';
-  int _selectedColor = 6; // green default (design!)
+
+  int _selectedColor = 6;
 
   bool _nameError = false;
   bool _strengthError = false;
+  bool _customFormError = false;
 
-  // ================= UNITS (5 — design!) =================
+  // ================= UNITS =================
+
   static const List<String> _units = ['mg', 'mcg', 'ml', 'IU', '%'];
 
-  // ================= FORM OPTIONS (images + fallback icons!) =================
-  // Images assets mein hain? → dikheingi | Nahi? → icon fallback
+  // ================= FORM OPTIONS =================
+  //
+  // Fixed forms — existing design.
+  //
+  // "Other" separate card hai because user usmein
+  // custom medication form enter karega.
+  // =================================================
+
   static const List<({String title, String asset, IconData fallbackIcon})>
   _formOptions = [
     (
@@ -78,48 +95,102 @@ class _AddManualScreenState extends State<AddManualScreen> {
     ),
   ];
 
-  // ================= COLORS (7 — design!) =================
+  // ================= COLORS =================
+  //
+  // Existing screen colors preserved.
+  // Future refactor:
+  // in colors ko bhi AppColors mein move kiya ja sakta hai.
+  // =================================================
+
   static const List<(Color, String)> _colorOptions = [
-    (Colors.white, 'White'),
-    (Color(0xFFFFE878), 'Yellow'),
-    (Color(0xFFFFB7D2), 'Pink'),
-    (Color(0xFFBEE7FA), 'Blue'),
-    (Color(0xFFFFD3A7), 'Orange'),
-    (Color(0xFFFFC0BD), 'Peach'),
-    (Color(0xFF00745C), 'Green'), // ← default!
+    (AppColors.medicineWhite, 'White'),
+    (AppColors.medicineYellow, 'Yellow'),
+    (AppColors.medicinePink, 'Pink'),
+    (AppColors.medicineBlue, 'Blue'),
+    (AppColors.medicineOrange, 'Orange'),
+    (AppColors.medicinePeach, 'Peach'),
+    (AppColors.medicineGreen, 'Green'),
   ];
+
+  // ================= INIT =================
 
   @override
   void initState() {
     super.initState();
 
-    // Scan fallback → pre-fill!
+    // Scan fallback → pre-fill
     _nameController.text = widget.prefillName ?? '';
     _strengthController.text = widget.prefillStrength ?? '';
     _instructionsController.text = widget.prefillInstructions ?? '';
   }
+
+  // ================= DISPOSE =================
 
   @override
   void dispose() {
     _nameController.dispose();
     _strengthController.dispose();
     _instructionsController.dispose();
+    _customFormController.dispose();
+
     super.dispose();
   }
 
+  // ================= COMPUTED =================
+
+  bool get _isOtherForm => _selectedForm == 'Other';
+
+  /// Final medication form jo actual medicine ke sath save hogi.
+  ///
+  /// Fixed:
+  /// Tablet / Capsule / Liquid / Injection
+  ///
+  /// Other:
+  /// Cream / Patch / Spray / Inhaler / etc.
+  String get _finalMedicationForm {
+    if (_isOtherForm) {
+      return _customFormController.text.trim();
+    }
+
+    return _selectedForm;
+  }
+
   // ================= ACTIONS =================
+
   void _continueToSchedule() {
     final name = _nameController.text.trim();
     final strength = _strengthController.text.trim();
+    final customForm = _customFormController.text.trim();
 
     setState(() {
       _nameError = name.isEmpty;
       _strengthError = strength.isEmpty;
+
+      // Other selected hai to custom form required hai.
+      _customFormError = _isOtherForm && customForm.isEmpty;
     });
 
-    if (_nameError || _strengthError) return;
+    if (_nameError || _strengthError || _customFormError) {
+      return;
+    }
 
-    // Schedule screen — Step 2!
+    // TODO Backend:
+    // Medicine save karte waqt ye details persist hongi:
+    //
+    // medicationName      = name
+    // strength            = strength
+    // strengthUnit        = _selectedUnit
+    // medicationForm      = _finalMedicationForm
+    // selectedColor       = _selectedColorName
+    // instructions        = _instructionsController.text.trim()
+    //
+    // Agar form "Other" hai to custom form bhi Firestore
+    // medicine document mein preserve hoga.
+
+    // TODO:
+    // ScheduleScreen mein medication form parameter add hone
+    // ke baad _finalMedicationForm bhi pass karna hai.
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ScheduleScreen(
@@ -131,24 +202,33 @@ class _AddManualScreenState extends State<AddManualScreen> {
   }
 
   void _saveDraft() {
-    // TODO Backend: draft save (local storage — Phase 1.5)
+    // TODO Backend:
+    // Draft local storage / Firestore mein save hoga.
+    //
+    // Custom form ke case mein:
+    // medicationForm = _finalMedicationForm
+
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         const SnackBar(content: Text('Draft saved — baad mein complete!')),
       );
+
     Navigator.of(context).pop();
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-      );
+  void _selectForm(String form) {
+    setState(() {
+      _selectedForm = form;
+
+      if (form != 'Other') {
+        _customFormError = false;
+      }
+    });
   }
 
   // ================= BUILD =================
+
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
@@ -161,9 +241,11 @@ class _AddManualScreenState extends State<AddManualScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+
       body: Column(
         children: [
           _buildHeader(),
+
           Expanded(
             child: SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -185,6 +267,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   }
 
   // ================= HEADER =================
+
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -209,7 +292,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(width: 7),
+
                 const Expanded(
                   child: Text(
                     'Add Medication',
@@ -221,7 +306,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
                   ),
                 ),
 
-                // RX VERIFIED badge (design!)
+                // RX VERIFIED badge
                 Container(
                   height: 23,
                   padding: const EdgeInsets.symmetric(horizontal: 9),
@@ -245,6 +330,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
                     ],
                   ),
                 ),
+
                 const SizedBox(width: 9),
 
                 // Profile avatar
@@ -271,6 +357,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   }
 
   // ================= FORM =================
+
   Widget _buildForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,17 +371,23 @@ class _AddManualScreenState extends State<AddManualScreen> {
             letterSpacing: 0.8,
           ),
         ),
+
         const SizedBox(height: 12),
 
-        // ---- Naam ----
+        // ================= NAME =================
         _buildLabel('Medication Name', required: true),
+
         const SizedBox(height: 5),
+
         _nameField(),
+
         const SizedBox(height: 14),
 
-        // ---- Strength + unit ----
+        // ================= STRENGTH =================
         _buildLabel('Strength', required: true),
+
         const SizedBox(height: 5),
+
         Row(
           children: [
             Expanded(child: _strengthField()),
@@ -302,9 +395,10 @@ class _AddManualScreenState extends State<AddManualScreen> {
             _buildUnitDropdown(),
           ],
         ),
+
         const SizedBox(height: 8),
 
-        // ---- Unit chips (quick select!) ----
+        // ================= UNIT CHIPS =================
         Row(
           children: List.generate(_units.length, (index) {
             return Expanded(
@@ -317,12 +411,13 @@ class _AddManualScreenState extends State<AddManualScreen> {
             );
           }),
         ),
+
         const SizedBox(height: 15),
 
-        // ---- Form selector ----
-        Row(
+        // ================= FORM SELECTOR =================
+        const Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
                 'Medication Form',
                 style: TextStyle(
@@ -332,33 +427,50 @@ class _AddManualScreenState extends State<AddManualScreen> {
                 ),
               ),
             ),
-            const Text(
-              '4 Formats',
-              style: TextStyle(
-                color: AppColors.formAccent,
-                fontSize: 8.5,
-                decoration: TextDecoration.underline,
-              ),
+            Text(
+              'Select form',
+              style: TextStyle(color: AppColors.formAccent, fontSize: 8.5),
             ),
           ],
         ),
+
         const SizedBox(height: 7),
 
-        // Form cards — 2x2 grid (images ya icons!)
+        // ================= FIXED 2x2 GRID =================
         for (var row = 0; row < 2; row++) ...[
           Row(
             children: [
               for (var col = 0; col < 2; col++) ...[
                 if (col != 0) const SizedBox(width: 8),
+
                 Expanded(child: _buildFormCard(_formOptions[row * 2 + col])),
               ],
             ],
           ),
+
           if (row != 1) const SizedBox(height: 8),
         ],
+
+        const SizedBox(height: 8),
+
+        // ================= OTHER CARD =================
+        _buildOtherFormCard(),
+
+        // ================= CUSTOM FORM INPUT =================
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: _isOtherForm
+              ? Padding(
+                  key: const ValueKey('custom-form-field'),
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _buildCustomFormField(),
+                )
+              : const SizedBox.shrink(key: ValueKey('custom-form-hidden')),
+        ),
+
         const SizedBox(height: 15),
 
-        // ---- Color selector ----
+        // ================= COLOR =================
         Row(
           children: [
             const Expanded(
@@ -371,6 +483,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
                 ),
               ),
             ),
+
             Text(
               _selectedColorName,
               style: const TextStyle(
@@ -381,7 +494,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
             ),
           ],
         ),
+
         const SizedBox(height: 7),
+
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -390,9 +505,10 @@ class _AddManualScreenState extends State<AddManualScreen> {
             (index) => _buildColorButton(index),
           ),
         ),
+
         const SizedBox(height: 16),
 
-        // ---- Instructions ----
+        // ================= INSTRUCTIONS =================
         const Row(
           children: [
             Expanded(
@@ -411,7 +527,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
             ),
           ],
         ),
+
         const SizedBox(height: 5),
+
         TextField(
           controller: _instructionsController,
           minLines: 2,
@@ -422,13 +540,15 @@ class _AddManualScreenState extends State<AddManualScreen> {
                 'e.g. Take with food after breakfast, avoid grapefruit...',
           ).copyWith(contentPadding: const EdgeInsets.fromLTRB(11, 10, 11, 10)),
         ),
+
         const SizedBox(height: 14),
 
-        // ---- Interaction check ----
+        // ================= INTERACTION =================
         _buildInteractionCard(),
+
         const SizedBox(height: 12),
 
-        // ---- Continue ----
+        // ================= CONTINUE =================
         SizedBox(
           width: double.infinity,
           height: 48,
@@ -449,9 +569,10 @@ class _AddManualScreenState extends State<AddManualScreen> {
             ),
           ),
         ),
+
         const SizedBox(height: 8),
 
-        // ---- Draft ----
+        // ================= DRAFT =================
         Center(
           child: TextButton(
             onPressed: _saveDraft,
@@ -471,12 +592,14 @@ class _AddManualScreenState extends State<AddManualScreen> {
             ),
           ),
         ),
+
         const SizedBox(height: 8),
       ],
     );
   }
 
-  // ================= NAME FIELD (with live hint!) =================
+  // ================= NAME FIELD =================
+
   Widget _nameField() {
     final hasText = _nameController.text.trim().isNotEmpty;
 
@@ -498,7 +621,6 @@ class _AddManualScreenState extends State<AddManualScreen> {
           ),
         ),
 
-        // "Matches clinical index" — live hint (design!)
         if (hasText) ...[
           const SizedBox(height: 5),
           const Row(
@@ -522,7 +644,8 @@ class _AddManualScreenState extends State<AddManualScreen> {
     );
   }
 
-  // ================= STRENGTH FIELD =================
+  // ================= STRENGTH =================
+
   Widget _strengthField() {
     return TextField(
       controller: _strengthController,
@@ -534,6 +657,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   }
 
   // ================= LABEL =================
+
   Widget _buildLabel(String text, {bool required = false}) {
     return RichText(
       text: TextSpan(
@@ -555,6 +679,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   }
 
   // ================= INPUT DECORATION =================
+
   InputDecoration _inputDecoration({
     required String hintText,
     Widget? suffixIcon,
@@ -591,6 +716,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   }
 
   // ================= UNIT DROPDOWN =================
+
   Widget _buildUnitDropdown() {
     return Container(
       height: 43,
@@ -619,7 +745,10 @@ class _AddManualScreenState extends State<AddManualScreen> {
           }).toList(),
           onChanged: (value) {
             if (value == null) return;
-            setState(() => _selectedUnit = value);
+
+            setState(() {
+              _selectedUnit = value;
+            });
           },
         ),
       ),
@@ -627,11 +756,16 @@ class _AddManualScreenState extends State<AddManualScreen> {
   }
 
   // ================= UNIT CHIP =================
+
   Widget _buildUnitChip(String unit) {
     final selected = _selectedUnit == unit;
 
     return InkWell(
-      onTap: () => setState(() => _selectedUnit = unit),
+      onTap: () {
+        setState(() {
+          _selectedUnit = unit;
+        });
+      },
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -642,13 +776,10 @@ class _AddManualScreenState extends State<AddManualScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? AppColors.formAccent : AppColors.outline,
-            width: 1,
           ),
         ),
         child: Text(
           unit,
-          maxLines: 1,
-          textAlign: TextAlign.center,
           style: TextStyle(
             color: selected ? Colors.white : AppColors.formAccent,
             fontSize: 11.5,
@@ -659,14 +790,15 @@ class _AddManualScreenState extends State<AddManualScreen> {
     );
   }
 
-  // ================= FORM CARD (image ya icon — auto!) =================
+  // ================= FORM CARD =================
+
   Widget _buildFormCard(
     ({String title, String asset, IconData fallbackIcon}) option,
   ) {
     final selected = _selectedForm == option.title;
 
     return InkWell(
-      onTap: () => setState(() => _selectedForm = option.title),
+      onTap: () => _selectForm(option.title),
       borderRadius: BorderRadius.circular(9),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
@@ -681,7 +813,6 @@ class _AddManualScreenState extends State<AddManualScreen> {
         ),
         child: Stack(
           children: [
-            // Selected check
             if (selected)
               const Positioned(
                 top: 6,
@@ -697,7 +828,6 @@ class _AddManualScreenState extends State<AddManualScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Round image frame — image ya fallback icon
                   Container(
                     width: 46,
                     height: 46,
@@ -711,7 +841,6 @@ class _AddManualScreenState extends State<AddManualScreen> {
                         color: selected
                             ? AppColors.formAccent.withValues(alpha: 0.22)
                             : AppColors.outline,
-                        width: 1,
                       ),
                     ),
                     child: ClipOval(
@@ -721,16 +850,19 @@ class _AddManualScreenState extends State<AddManualScreen> {
                         height: 34,
                         fit: BoxFit.contain,
                         filterQuality: FilterQuality.high,
-                        // Image na mile → fallback icon (crash-proof!)
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          option.fallbackIcon,
-                          color: AppColors.formAccent,
-                          size: 27,
-                        ),
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            option.fallbackIcon,
+                            color: AppColors.formAccent,
+                            size: 27,
+                          );
+                        },
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 5),
+
                   Text(
                     option.title,
                     style: TextStyle(
@@ -750,13 +882,143 @@ class _AddManualScreenState extends State<AddManualScreen> {
     );
   }
 
+  // ================= OTHER FORM CARD =================
+
+  Widget _buildOtherFormCard() {
+    final selected = _isOtherForm;
+
+    return InkWell(
+      onTap: () => _selectForm('Other'),
+      borderRadius: BorderRadius.circular(9),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        height: 62,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.fieldEditFill : AppColors.surface,
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(
+            color: selected ? AppColors.formAccent : AppColors.outline,
+            width: selected ? 1.7 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected
+                    ? AppColors.successBackground
+                    : AppColors.fieldFill,
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: AppColors.formAccent,
+                size: 22,
+              ),
+            ),
+
+            const SizedBox(width: 11),
+
+            const Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Other',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Enter another medication form',
+                    style: TextStyle(
+                      color: AppColors.formSubtitle,
+                      fontSize: 9,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            if (selected)
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.formAccent,
+                size: 18,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ================= CUSTOM FORM FIELD =================
+
+  Widget _buildCustomFormField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel('Custom Medication Form', required: true),
+
+        const SizedBox(height: 5),
+
+        TextField(
+          controller: _customFormController,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          onChanged: (_) {
+            if (_customFormError) {
+              setState(() {
+                _customFormError = _customFormController.text.trim().isEmpty;
+              });
+            }
+          },
+          decoration: _inputDecoration(
+            hintText: 'e.g. Cream, Inhaler, Patch, Spray...',
+            error: _customFormError,
+            suffixIcon: const Icon(
+              Icons.edit_outlined,
+              color: AppColors.formAccent,
+              size: 18,
+            ),
+          ),
+        ),
+
+        if (_customFormError) ...[
+          const SizedBox(height: 5),
+          const Text(
+            'Please enter the medication form',
+            style: TextStyle(
+              color: AppColors.error,
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   // ================= COLOR BUTTON =================
+
   Widget _buildColorButton(int index) {
     final selected = _selectedColor == index;
+
     final color = _colorOptions[index].$1;
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedColor = index),
+      onTap: () {
+        setState(() {
+          _selectedColor = index;
+        });
+      },
       child: Container(
         width: 27,
         height: 27,
@@ -769,18 +1031,12 @@ class _AddManualScreenState extends State<AddManualScreen> {
           ),
         ),
         child: selected
-            ? Icon(
-                Icons.check_rounded,
-                size: 15,
-                // SMART — light color par dark check!
-                color: _contrastColor(color),
-              )
+            ? Icon(Icons.check_rounded, size: 15, color: _contrastColor(color))
             : null,
       ),
     );
   }
 
-  /// Luminance ke hisaab se check ka rang — accessibility!
   Color _contrastColor(Color color) {
     return color.computeLuminance() > 0.65
         ? AppColors.formAccent
@@ -790,6 +1046,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   String get _selectedColorName => _colorOptions[_selectedColor].$2;
 
   // ================= INTERACTION CARD =================
+
   Widget _buildInteractionCard() {
     return Container(
       width: double.infinity,
@@ -809,7 +1066,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
             color: AppColors.formAccent,
             size: 17,
           ),
+
           SizedBox(width: 9),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -822,7 +1081,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+
                 SizedBox(height: 3),
+
                 Text(
                   "We'll cross-reference this dosage against your "
                   'existing logged medications in the next step.',
@@ -842,8 +1103,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
 }
 
 // ============================================================
-// SUITE BOTTOM BAR — Home/Meds/Scan/Review jaisi!
+// SUITE BOTTOM BAR
 // ============================================================
+
 class _SuiteBottomBar extends StatelessWidget {
   const _SuiteBottomBar({required this.currentIndex});
 

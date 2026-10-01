@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../widgets/app_avatar.dart';
 import 'dose_action_sheet.dart';
 import 'home_data.dart';
+import 'streaks_stats_screen.dart';
 import '../meds/meds_screen.dart';
 
 /// ============================================================
@@ -42,8 +43,10 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (_selectedFilter) {
       case 'Pending':
         return _doses.where((d) => d.status == DoseStatus.pending).toList();
+
       case 'Taken':
         return _doses.where((d) => d.status == DoseStatus.taken).toList();
+
       default:
         return _doses;
     }
@@ -52,7 +55,11 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============ DOSE ACTIONS — backend: yahan DB update hoga ============
   void _markTaken(Dose dose) {
     setState(() => dose.status = DoseStatus.taken);
-    // TODO Backend: FirebaseFirestore.updateDose(dose.id, taken)
+
+    // TODO Backend:
+    // Current user/member ki dose document ko taken mark karna hai.
+    // Fields: status=taken, completedAt=serverTimestamp.
+
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('${dose.name} marked as taken ✓')));
@@ -61,7 +68,11 @@ class _HomeScreenState extends State<HomeScreen> {
   // ===== UNDO — galti se Taken? Wapas Pending! =====
   void _markUntaken(Dose dose) {
     setState(() => dose.status = DoseStatus.pending);
-    // TODO Backend: status revert + history se hatao
+
+    // TODO Backend:
+    // Dose status ko pending revert karna hai aur completedAt clear
+    // karna hai taa-ke adherence/streak history bhi recalculate ho.
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${dose.name} marked as untaken 🔄')),
     );
@@ -69,7 +80,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _skipDose(Dose dose, {String? reason}) {
     setState(() => dose.status = DoseStatus.skipped);
-    // TODO Backend: status + reason DB mein save
+
+    // TODO Backend:
+    // Dose document mein status=skipped, optional skipReason
+    // aur action timestamp save karna hai.
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -82,7 +97,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _snoozeDose(Dose dose, int minutes) {
-    // TODO Backend: notification reschedule +minutes
+    // TODO Backend / Notifications:
+    // Dose ka nextReminderAt persist karke local/push notification
+    // ko selected minutes ke liye reschedule karna hai.
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -104,11 +122,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ============ STREAKS & STATS ============
+
+  void _openStreaksStats() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StreaksStatsScreen(userName: _selectedMember),
+      ),
+    );
+  }
+
   void _switchMember(FamilyMember member) {
-    if (member.name == _selectedMember) return; // pehle se selected
+    if (member.name == _selectedMember) {
+      return;
+    }
 
     setState(() => _selectedMember = member.name);
-    // TODO Backend: is member ke doses reload karo
+
+    // TODO Backend:
+    // Selected family member id ke against today's doses,
+    // adherence history aur streak stats reload karne hain.
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Switched to ${member.name}'s medicines")),
@@ -124,16 +157,17 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // ============ DARK HEADER ============
           _HomeHeader(
-            greeting: HomeData.greeting(), // TIME-based!
+            greeting: HomeData.greeting(),
             dateLabel: HomeData.dateLabel(),
             streakDays: HomeData.streakDays(),
-            userImagePath: HomeData.userProfileImage(), // null → icon
+            userImagePath: HomeData.userProfileImage(),
             selectedMemberName: _selectedMember,
             members: _members,
             onMemberTap: _switchMember,
+            onStreakTap: _openStreaksStats,
           ),
 
-          // ============ SCROLLABLE CONTENT (tablet: 480px column) ============
+          // ============ SCROLLABLE CONTENT ============
           Expanded(
             child: Center(
               child: ConstrainedBox(
@@ -145,10 +179,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      // ============ FLOATING ADD BUTTON (tablet-aware) ============
+      // ============ FLOATING ADD BUTTON ============
       floatingActionButton: Padding(
         padding: EdgeInsets.only(
-          // Tablet par content column ke hisab se align
           right: MediaQuery.sizeOf(context).width > 480
               ? (MediaQuery.sizeOf(context).width - 480) / 2 + 16
               : 0,
@@ -159,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 .push(MaterialPageRoute(builder: (_) => const MedsScreen()));
           },
           backgroundColor: AppColors.formAccent,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.surface,
           elevation: 5,
           shape: const CircleBorder(),
           child: const Icon(Icons.add, size: 27),
@@ -169,6 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================= HOME CONTENT =================
+
   Widget _buildHomeContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 90),
@@ -182,10 +216,12 @@ class _HomeScreenState extends State<HomeScreen> {
             pending: _pendingCount,
             missed: _missedCount,
           ),
+
           const SizedBox(height: 16),
 
           // ---- Quick Access ----
           const _QuickAccessSection(),
+
           const SizedBox(height: 16),
 
           // ---- Schedule + Filters ----
@@ -207,14 +243,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: _FilterChip(
                     label: filter,
                     isSelected: filter == _selectedFilter,
-                    onTap: () => setState(() => _selectedFilter = filter),
+                    onTap: () {
+                      setState(() {
+                        _selectedFilter = filter;
+                      });
+                    },
                   ),
                 ),
             ],
           ),
+
           const SizedBox(height: 12),
 
-          // ---- Dose Cards (EK renderer — sab medicines!) ----
+          // ---- Dose Cards ----
           for (final dose in _filteredDoses)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -235,6 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
 // ============================================================
 // DARK HEADER — greeting + family + streak
 // ============================================================
+
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.greeting,
@@ -244,6 +286,7 @@ class _HomeHeader extends StatelessWidget {
     required this.selectedMemberName,
     required this.members,
     required this.onMemberTap,
+    required this.onStreakTap,
   });
 
   final String greeting;
@@ -251,15 +294,19 @@ class _HomeHeader extends StatelessWidget {
   final int streakDays;
   final String? userImagePath;
   final String selectedMemberName;
+
   final List<FamilyMember> members;
+
   final ValueChanged<FamilyMember> onMemberTap;
+
+  final VoidCallback onStreakTap;
 
   @override
   Widget build(BuildContext context) {
     // Dark header → white status bar icons
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
+        statusBarColor: AppColors.transparent,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
@@ -275,35 +322,35 @@ class _HomeHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ============ ROW 1: Avatar + Greeting + Bell ============
+              // ============ ROW 1 ============
               Row(
                 children: [
-                  // Image ho to image, warna icon — khud decide!
                   AppAvatar(
                     size: 30,
                     imagePath: userImagePath,
                     ringColor: AppColors.surface,
                     ringWidth: 2,
                   ),
+
                   const SizedBox(width: 8),
+
                   Expanded(
                     child: Text(
                       '$greeting, Sarah 👋',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
 
-                  // Notification bell + red dot
                   Stack(
                     clipBehavior: Clip.none,
                     children: [
                       const Icon(
                         Icons.notifications_none_rounded,
-                        color: Colors.white,
+                        color: AppColors.surface,
                         size: 22,
                       ),
                       Positioned(
@@ -322,9 +369,10 @@ class _HomeHeader extends StatelessWidget {
                   ),
                 ],
               ),
+
               const SizedBox(height: 11),
 
-              // ============ ROW 2: Family Members ============
+              // ============ ROW 2 ============
               Row(
                 children: [
                   for (var i = 0; i < members.length; i++) ...[
@@ -335,12 +383,13 @@ class _HomeHeader extends StatelessWidget {
                       onTap: () => onMemberTap(members[i]),
                     ),
                   ],
+
                   const SizedBox(width: 17),
 
-                  // Add member
                   const _AddMemberButton(),
                 ],
               ),
+
               const SizedBox(height: 10),
 
               // ============ ROW 3: Date + Streak ============
@@ -355,31 +404,50 @@ class _HomeHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Container(
-                    height: 26,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.formAccent,
+
+                  // Tap → Streaks & Stats
+                  Material(
+                    color: AppColors.transparent,
+                    child: InkWell(
+                      onTap: onStreakTap,
                       borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.local_fire_department_rounded,
-                          color: AppColors.streakFlame,
-                          size: 13,
+                      child: Container(
+                        height: 26,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.formAccent,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$streakDays Day Streak',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.local_fire_department_rounded,
+                              color: AppColors.homeStreakPill,
+                              size: 16,
+                            ),
+
+                            const SizedBox(width: 4),
+
+                            Text(
+                              '$streakDays Day Streak',
+                              style: const TextStyle(
+                                color: AppColors.surface,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+
+                            const SizedBox(width: 3),
+
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: AppColors.surface,
+                              size: 13,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -395,6 +463,7 @@ class _HomeHeader extends StatelessWidget {
 // ============================================================
 // FAMILY MEMBER AVATAR — tap → switch
 // ============================================================
+
 class _FamilyMemberAvatar extends StatelessWidget {
   const _FamilyMemberAvatar({
     required this.member,
@@ -412,18 +481,23 @@ class _FamilyMemberAvatar extends StatelessWidget {
       onTap: onTap,
       child: Column(
         children: [
-          // Smart avatar — member ki image ya icon, khud decide!
           AppAvatar(
             size: 38,
             imagePath: member.imagePath,
-            ringColor: isSelected ? AppColors.avatarSelected : Colors.white54,
+            ringColor: isSelected
+                ? AppColors.avatarSelected
+                : AppColors.surface.withValues(alpha: 0.54),
             ringWidth: isSelected ? 2 : 1,
           ),
+
           const SizedBox(height: 3),
+
           Text(
             member.name,
             style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white70,
+              color: isSelected
+                  ? AppColors.surface
+                  : AppColors.surface.withValues(alpha: 0.70),
               fontSize: 10,
             ),
           ),
@@ -440,17 +514,27 @@ class _AddMemberButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // TODO: Add member flow — Family screen reuse ho sakti hai!
+        // TODO Navigation/Backend:
+        // Family member add flow open karke new member profile
+        // Firebase mein current account ke under save karna hai.
       },
-      child: const Column(
+      child: Column(
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 19,
-            backgroundColor: Colors.transparent,
-            child: Icon(Icons.add, color: Colors.white, size: 20),
+            backgroundColor: AppColors.transparent,
+            child: Icon(Icons.add, color: AppColors.surface, size: 20),
           ),
-          SizedBox(height: 3),
-          Text('Add', style: TextStyle(color: Colors.white70, fontSize: 10)),
+
+          const SizedBox(height: 3),
+
+          Text(
+            'Add',
+            style: TextStyle(
+              color: AppColors.surface.withValues(alpha: 0.70),
+              fontSize: 10,
+            ),
+          ),
         ],
       ),
     );
@@ -458,8 +542,9 @@ class _AddMemberButton extends StatelessWidget {
 }
 
 // ============================================================
-// PROGRESS CARD — ring + dots (LIVE!)
+// PROGRESS CARD — ring + dots
 // ============================================================
+
 class _ProgressCard extends StatelessWidget {
   const _ProgressCard({
     required this.progress,
@@ -483,7 +568,7 @@ class _ProgressCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: AppColors.textPrimary.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -491,7 +576,6 @@ class _ProgressCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // ---- Ring ----
           SizedBox(
             width: 58,
             height: 58,
@@ -502,7 +586,7 @@ class _ProgressCard extends StatelessWidget {
                   width: 56,
                   height: 56,
                   child: CircularProgressIndicator(
-                    value: progress, // LIVE — backend: doses se compute
+                    value: progress,
                     strokeWidth: 7,
                     strokeCap: StrokeCap.round,
                     backgroundColor: AppColors.progressTrack,
@@ -536,10 +620,10 @@ class _ProgressCard extends StatelessWidget {
               ],
             ),
           ),
+
           const Spacer(),
           const SizedBox(width: 8),
 
-          // ---- Dot Stats (LIVE values!) ----
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -583,6 +667,7 @@ class _ProgressCard extends StatelessWidget {
 // ============================================================
 // QUICK ACCESS — 4 tiles
 // ============================================================
+
 class _QuickAccessSection extends StatelessWidget {
   const _QuickAccessSection();
 
@@ -615,15 +700,20 @@ class _QuickAccessSection extends StatelessWidget {
             ),
           ],
         ),
+
         const SizedBox(height: 7),
+
         Row(
           children: [
             for (var i = 0; i < _items.length; i++) ...[
               if (i != 0) const SizedBox(width: 7),
+
               Expanded(
                 child: GestureDetector(
                   onTap: () {
-                    // TODO: Feature screens — baad mein
+                    // TODO Navigation:
+                    // Vitals / Doctors / AI Assist /
+                    // Family screens ready hone par open karni hain.
                   },
                   child: Container(
                     height: 62,
@@ -632,7 +722,7 @@ class _QuickAccessSection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(9),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.035),
+                          color: AppColors.textPrimary.withValues(alpha: 0.035),
                           blurRadius: 5,
                           offset: const Offset(0, 2),
                         ),
@@ -679,6 +769,7 @@ class _QuickAccessSection extends StatelessWidget {
 // ============================================================
 // FILTER CHIP
 // ============================================================
+
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.label,
@@ -699,14 +790,14 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 11),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.formAccent : Colors.transparent,
+          color: isSelected ? AppColors.formAccent : AppColors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.formAccent),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.formAccent,
+            color: isSelected ? AppColors.surface : AppColors.formAccent,
             fontSize: 10,
             fontWeight: FontWeight.w500,
           ),
@@ -718,8 +809,8 @@ class _FilterChip extends StatelessWidget {
 
 // ============================================================
 // DOSE CARD — EK renderer, SAB medicines!
-// (Aur yahi asli OOP hai — 5 medicines, 1 widget!) 💪
 // ============================================================
+
 class _DoseCard extends StatelessWidget {
   const _DoseCard({
     required this.dose,
@@ -731,17 +822,18 @@ class _DoseCard extends StatelessWidget {
 
   final Dose dose;
   final VoidCallback onTaken;
-  final void Function(String? reason) onSkip; // reason ke sath!
-  final void Function(int minutes) onSnooze; // minutes ke sath!
+  final void Function(String? reason) onSkip;
+  final void Function(int minutes) onSnooze;
   final VoidCallback onCardTap;
 
   @override
   Widget build(BuildContext context) {
     final isTaken = dose.status == DoseStatus.taken;
+
     final isSkipped = dose.status == DoseStatus.skipped;
+
     final isPending = dose.status == DoseStatus.pending;
 
-    // POORA CARD tap → sheet khulti hai!
     return GestureDetector(
       onTap: (isPending || isTaken) ? onCardTap : null,
       child: Container(
@@ -756,7 +848,7 @@ class _DoseCard extends StatelessWidget {
             BoxShadow(
               color: isPending
                   ? AppColors.formAccent.withValues(alpha: 0.30)
-                  : Colors.black.withValues(alpha: 0.035),
+                  : AppColors.textPrimary.withValues(alpha: 0.035),
               offset: const Offset(0, 4),
               blurRadius: isPending ? 0 : 6,
             ),
@@ -764,11 +856,10 @@ class _DoseCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // ================= ROW 1: Info =================
+            // ================= ROW 1 =================
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Icon circle
                 Container(
                   width: 43,
                   height: 43,
@@ -777,7 +868,7 @@ class _DoseCard extends StatelessWidget {
                     color: AppColors.cardFill,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
+                        color: AppColors.textPrimary.withValues(alpha: 0.08),
                         blurRadius: 4,
                       ),
                     ],
@@ -792,9 +883,9 @@ class _DoseCard extends StatelessWidget {
                               : AppColors.fieldHint),
                   ),
                 ),
+
                 const SizedBox(width: 11),
 
-                // Text info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -811,7 +902,9 @@ class _DoseCard extends StatelessWidget {
                           decorationColor: AppColors.textPrimary,
                         ),
                       ),
+
                       const SizedBox(height: 4),
+
                       Text(
                         dose.details,
                         style: const TextStyle(
@@ -819,7 +912,9 @@ class _DoseCard extends StatelessWidget {
                           fontSize: 10,
                         ),
                       ),
+
                       const SizedBox(height: 4),
+
                       Row(
                         children: [
                           Icon(
@@ -829,7 +924,9 @@ class _DoseCard extends StatelessWidget {
                                 ? AppColors.success
                                 : AppColors.formSubtitle,
                           ),
+
                           const SizedBox(width: 4),
+
                           Text(
                             dose.time,
                             style: TextStyle(
@@ -846,14 +943,14 @@ class _DoseCard extends StatelessWidget {
                   ),
                 ),
 
-                // Status badge
                 _StatusBadge(status: dose.status),
               ],
             ),
 
-            // ================= ROW 2: Buttons (sirf pending) =================
+            // ================= ROW 2 =================
             if (isPending) ...[
               const SizedBox(height: 14),
+
               Row(
                 children: [
                   Expanded(
@@ -863,31 +960,26 @@ class _DoseCard extends StatelessWidget {
                       onTap: onTaken,
                     ),
                   ),
+
                   const SizedBox(width: 7),
 
-                  // Skip → sheet SE reason ke sath — quick skip = no reason
                   Expanded(
-                    child: _actionButton(
-                      'Skip',
-                      onTap: () => onSkip(null), // quick skip (no reason)
-                    ),
+                    child: _actionButton('Skip', onTap: () => onSkip(null)),
                   ),
+
                   const SizedBox(width: 7),
 
-                  // Snooze → sheet SE minutes ke sath — quick = default 10
                   Expanded(
-                    child: _actionButton(
-                      'Snooze',
-                      onTap: () => onSnooze(10), // quick snooze (10 min)
-                    ),
+                    child: _actionButton('Snooze', onTap: () => onSnooze(10)),
                   ),
                 ],
               ),
             ],
 
-            // ================= ROW 3: Refill (pending + low) =================
+            // ================= ROW 3 =================
             if (isPending && dose.isRunningLow) ...[
               const SizedBox(height: 10),
+
               Container(
                 height: 31,
                 padding: const EdgeInsets.symmetric(horizontal: 9),
@@ -902,7 +994,9 @@ class _DoseCard extends StatelessWidget {
                       color: AppColors.hintAccent,
                       size: 13,
                     ),
+
                     const SizedBox(width: 5),
+
                     Expanded(
                       child: Text(
                         '${dose.name} running low · ${dose.daysLeft} days left',
@@ -914,9 +1008,12 @@ class _DoseCard extends StatelessWidget {
                         ),
                       ),
                     ),
+
                     GestureDetector(
                       onTap: () {
-                        // TODO: Refill flow — baad mein
+                        // TODO Backend/Navigation:
+                        // Medication refill flow open karke
+                        // refill event/history save karni hai.
                       },
                       child: const Text(
                         'Refill →',
@@ -932,10 +1029,10 @@ class _DoseCard extends StatelessWidget {
               ),
             ],
 
-            // Skipped message
             if (isSkipped) ...[
               const SizedBox(height: 8),
-              Text(
+
+              const Text(
                 'Skipped — kal se phir reminder aayega',
                 style: TextStyle(
                   color: AppColors.error,
@@ -968,7 +1065,7 @@ class _DoseCard extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: filled ? Colors.white : AppColors.formAccent,
+            color: filled ? AppColors.surface : AppColors.formAccent,
             fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
@@ -981,6 +1078,7 @@ class _DoseCard extends StatelessWidget {
 // ============================================================
 // STATUS BADGE
 // ============================================================
+
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
 
@@ -995,18 +1093,21 @@ class _StatusBadge extends StatelessWidget {
           foreground: AppColors.statusPendingText,
           text: 'PENDING',
         );
+
       case DoseStatus.taken:
         return _badge(
           background: AppColors.successBackground,
           foreground: AppColors.success,
           text: '✓ TAKEN',
         );
+
       case DoseStatus.upcoming:
         return _badge(
           background: AppColors.successBackground,
           foreground: AppColors.formAccent,
           text: 'UPCOMING',
         );
+
       case DoseStatus.skipped:
         return _badge(
           background: AppColors.hintBackground,

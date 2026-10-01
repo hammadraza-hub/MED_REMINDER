@@ -187,4 +187,160 @@ class AppColors {
 
   /// Pills fallback background
   static const Color pillPlaceholder = Color(0xFFF1F7F7);
+
+  // ================= MEDICATION COLOR SELECTOR =================
+  /// Add Manual screen — medicine physical color options.
+  /// Screen mein direct hex use nahi hoga.
+
+  /// White medicine
+  static const Color medicineWhite = Colors.white;
+
+  /// Yellow medicine
+  static const Color medicineYellow = Color(0xFFFFE878);
+
+  /// Pink medicine
+  static const Color medicinePink = Color(0xFFFFB7D2);
+
+  /// Blue medicine
+  static const Color medicineBlue = Color(0xFFBEE7FA);
+
+  /// Orange medicine
+  static const Color medicineOrange = Color(0xFFFFD3A7);
+
+  /// Peach medicine
+  static const Color medicinePeach = Color(0xFFFFC0BD);
+
+  /// Green medicine
+  static const Color medicineGreen = Color(0xFF00745C);
+  // ================= UTILITY =================
+  /// Fully transparent — dialogs / overlays ke liye
+  static const Color transparent = Colors.transparent;
+  // ================= CALENDAR / ADHERENCE =================
+  /// Calendar header toggle background
+  static const Color calendarToggleBackground = Color(0xFF326B82);
+
+  /// Calendar header secondary button
+  static const Color calendarHeaderButton = Color(0xFF1E607B);
+
+  /// Calendar circular previous/next buttons
+  static const Color calendarCircleButton = Color(0xFF28677F);
+
+  /// Calendar weekday labels
+  static const Color calendarWeekdayText = Color(0xFF39768A);
+
+  /// Day with all doses taken
+  static const Color calendarTaken = Color(0xFF008768);
+
+  /// Taken day light background
+  static const Color calendarTakenBackground = Color(0xFFE7F5EF);
+
+  /// Partial adherence
+  static const Color calendarPartial = Color(0xFFFFAD17);
+
+  /// Partial day light background
+  static const Color calendarPartialBackground = Color(0xFFFFF1CF);
+
+  /// Missed adherence
+  static const Color calendarMissed = Color(0xFFE94F5D);
+
+  /// Missed day light background
+  static const Color calendarMissedBackground = Color(0xFFFFE6E8);
+
+  /// Today indicator
+  static const Color calendarToday = Color(0xFF08728D);
+
+  /// Calendar muted / no-data day
+  static const Color calendarNoDataBackground = Color(0xFFF3F7F9);
+
+  /// Calendar muted day text
+  static const Color calendarNoDataText = Color(0xFFB8C9D1);
+
+  /// Calendar dose card background
+  static const Color calendarDoseBackground = Color(0xFFF5F8FA);
+
+  /// Calendar legend secondary text
+  static const Color calendarLegendText = Color(0xFF416979);
+  // ================= ADHERENCE DETAIL =================
+
+  /// Taken summary card
+  static const Color adherenceTakenBackground = Color(0xFFE8F6F1);
+
+  /// Missed summary card
+  static const Color adherenceMissedBackground = Color(0xFFFFE8E8);
+
+  /// Skipped summary card
+  static const Color adherenceSkippedBackground = Color(0xFFFFF5DE);
+
+  /// Skipped status
+  static const Color adherenceSkipped = Color(0xFFF2A000);
+
+  /// Adherence secondary card background
+  static const Color adherenceCardBackground = Color(0xFFF7FAFB);
+
+  static const Color adherenceExportGreen = Color(0xFF36B37E);
+  static const Color adherenceExportRed = Color(0xFFE85D68);
+  static const Color adherenceExportBlue = Color(0xFF2F80ED);
+  // ============================================================
+  // STREAKS & STATS
+  // ============================================================
+
+  static const Color streakHeader = Color(0xFF075A78);
+  static const Color streakHeaderCard = Color(0xFF176B85);
+
+  static const Color streakFire = Color(0xFFFF6B1A);
+  static const Color streakFireBackground = Color(0xFFFFEFE5);
+
+  static const Color streakGold = Color(0xFFF5A300);
+  static const Color streakGoldBackground = Color(0xFFFFF4D8);
+
+  static const Color streakMint = Color(0xFF00896D);
+  static const Color streakMintBackground = Color(0xFFE9F6F1);
+
+  static const Color streakTrend = Color(0xFF087B70);
+  static const Color streakTrendTarget = Color(0xFFF2A000);
+  static const Color streakTrendGrid = Color(0xFFDDE9ED);
+
+  static const Color streakAchievementBackground = Color(0xFFF8FAFB);
+  static const Color streakCardShadow = Color(0x140A4054);
+
+  // Home streak pill
+  static const Color homeStreakPill = Color(0xFFFF7A1A);
+  static const Color homeStreakPillText = Color(0xFFFFFFFF);
+  static const Color homeStreakFlame = Color(0xFFFFD54F);
+  // ============================================================
+  // MISSED DOSE REASON MODAL
+  // ============================================================
+
+  static const Color missedReasonDanger = Color(0xFFE84F5F);
+  static const Color missedReasonDangerBackground = Color(0xFFFFECEE);
+
+  static const Color missedReasonSelected = Color(0xFF00866A);
+  static const Color missedReasonSelectedBackground = Color(0xFFE8F5F1);
+
+  static const Color missedReasonWarning = Color(0xFFF2A000);
+  static const Color missedReasonWarningBackground = Color(0xFFFFF5DF);
+
+  static const Color missedReasonFieldBackground = Color(0xFFF3F7F8);
+  static const Color missedReasonBorder = Color(0xFFD6E5E7);
+  static const Color missedReasonCloseBackground = Color(0xFFF0F6F5);
+  // ============================================================
+  // INVENTORY
+  // ============================================================
+  // ================= INVENTORY =================
+
+  static const Color inventoryLow = Color(0xFFCF1B1F);
+  static const Color inventoryLowBackground = Color(0xFFFFE9E9);
+
+  static const Color inventoryOk = Color(0xFF00866A);
+  static const Color inventoryOkBackground = Color(0xFFE8F5F1);
+
+  static const Color inventoryWarning = Color(0xFFCF1B1F);
+  static const Color inventoryProgressTrack = Color(0xFFE5EDEF);
+
+  static const Color inventorySyncBackground = Color(0xFFDCEFED);
+  static const Color inventoryAdjustBackground = Color(0xFFE6F2F0);
+  static const Color inventoryFilterBackground = Color(0xFFF4F8F8);
+
+  static const Color inventoryCardShadow = Color(0x120A4054);
+  static const Color inventoryBorder = Color(0xFFD6E5E7);
 }

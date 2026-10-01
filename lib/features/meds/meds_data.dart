@@ -86,6 +86,29 @@ class Medicine {
     }
   }
 
+  // ================= IMAGE ASSET =================
+
+  /// Medicine form ki image.
+  /// Image available na ho to UI typeIcon fallback use karegi.
+  String? get typeImageAsset {
+    switch (type) {
+      case MedicineType.tablet:
+        return 'assets/images/tablet.jpg';
+
+      case MedicineType.capsule:
+        return 'assets/images/capsule.jpg';
+
+      case MedicineType.liquid:
+        return 'assets/images/liquid.jpg';
+
+      case MedicineType.injection:
+        return 'assets/images/injection.jpg';
+
+      case MedicineType.drops:
+        return null;
+    }
+  }
+
   IconData get typeIcon {
     switch (type) {
       case MedicineType.tablet:

@@ -1,5 +1,27 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/app_colors.dart';
+import '../meds/meds_data.dart';
+import 'adherence_detail_screen.dart';
+import 'calendar_data.dart';
+import 'missed_dose_reason_modal.dart';
+
+/// ============================================================
+/// CALENDAR — DOSE HISTORY
+///
+/// Features:
+/// • Month / Week view
+/// • Previous / Next period
+/// • Today shortcut
+/// • Taken / Partial / Missed color-coded days
+/// • Selected-day dose preview
+/// • Missed-dose reason modal
+/// • Adherence Detail navigation
+///
+/// Backend:
+/// Data CalendarData se aata hai.
+/// Future mein CalendarData Firebase repository se replace hoga.
+/// ============================================================
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
@@ -53,29 +75,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     'Dec',
   ];
 
-  final List<_DoseItem> _doses = const [
-    _DoseItem(
-      name: 'Metformin 500mg',
-      subtitle: 'Tablet · Oral',
-      time: '8:30 AM',
-      status: 'PENDING',
-      color: Color(0xFFFFB020),
-    ),
-    _DoseItem(
-      name: 'Amlodipine 5mg',
-      subtitle: 'Tablet · Blood Pressure',
-      time: '7:00 AM',
-      status: 'TAKEN',
-      color: Color(0xFF199D76),
-    ),
-    _DoseItem(
-      name: 'Vitamin D3 Drops',
-      subtitle: 'Liquid · Dietary Supplement',
-      time: '8:00 PM',
-      status: 'UPCOMING',
-      color: Color(0xFF159D89),
-    ),
-  ];
+  // ================= INIT =================
 
   @override
   void initState() {
@@ -83,203 +83,388 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     final now = DateTime.now();
 
-    _visibleMonth = DateTime(now.year, now.month);
-
     _selectedDate = DateTime(now.year, now.month, now.day);
+
+    _visibleMonth = DateTime(now.year, now.month);
+  }
+
+  // ================= DATA =================
+
+  List<DoseHistoryItem> get _selectedDateDoses {
+    // TODO Backend:
+    // Firebase phase mein visible/required date range ki dose history
+    // ek range query mein load karni hai.
+    //
+    // Har calendar cell/day ke liye separate Firestore query
+    // nahi chalani.
+    return CalendarData.dosesForDate(_selectedDate);
   }
 
   int get _daysInVisibleMonth {
     return DateTime(_visibleMonth.year, _visibleMonth.month + 1, 0).day;
   }
 
+  // ================= DATE HELPERS =================
+
+  bool _isSameDate(DateTime first, DateTime second) {
+    return CalendarData.isSameDate(first, second);
+  }
+
+  DateTime _clampedDateForMonth(int year, int month, int preferredDay) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+
+    final day = preferredDay > lastDay ? lastDay : preferredDay;
+
+    return DateTime(year, month, day);
+  }
+
+  // ================= NAVIGATION =================
+
   void _previousPeriod() {
     if (_monthView) {
-      setState(() {
-        _visibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month - 1);
-      });
-    } else {
-      setState(() {
-        _selectedDate = _selectedDate.subtract(const Duration(days: 7));
+      final previousMonth = DateTime(
+        _visibleMonth.year,
+        _visibleMonth.month - 1,
+      );
 
-        _visibleMonth = DateTime(_selectedDate.year, _selectedDate.month);
+      final selected = _clampedDateForMonth(
+        previousMonth.year,
+        previousMonth.month,
+        _selectedDate.day,
+      );
+
+      setState(() {
+        _visibleMonth = previousMonth;
+        _selectedDate = selected;
       });
+
+      return;
     }
+
+    final selected = _selectedDate.subtract(const Duration(days: 7));
+
+    setState(() {
+      _selectedDate = selected;
+
+      _visibleMonth = DateTime(selected.year, selected.month);
+    });
   }
 
   void _nextPeriod() {
     if (_monthView) {
-      setState(() {
-        _visibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month + 1);
-      });
-    } else {
-      setState(() {
-        _selectedDate = _selectedDate.add(const Duration(days: 7));
+      final nextMonth = DateTime(_visibleMonth.year, _visibleMonth.month + 1);
 
-        _visibleMonth = DateTime(_selectedDate.year, _selectedDate.month);
+      final selected = _clampedDateForMonth(
+        nextMonth.year,
+        nextMonth.month,
+        _selectedDate.day,
+      );
+
+      setState(() {
+        _visibleMonth = nextMonth;
+        _selectedDate = selected;
       });
+
+      return;
     }
+
+    final selected = _selectedDate.add(const Duration(days: 7));
+
+    setState(() {
+      _selectedDate = selected;
+
+      _visibleMonth = DateTime(selected.year, selected.month);
+    });
   }
 
   void _goToToday() {
     final now = DateTime.now();
 
-    setState(() {
-      _visibleMonth = DateTime(now.year, now.month);
+    final today = DateTime(now.year, now.month, now.day);
 
-      _selectedDate = DateTime(now.year, now.month, now.day);
+    setState(() {
+      _selectedDate = today;
+
+      _visibleMonth = DateTime(today.year, today.month);
     });
   }
 
-  bool _isSameDate(DateTime first, DateTime second) {
-    return first.year == second.year &&
-        first.month == second.month &&
-        first.day == second.day;
+  void _selectDate(DateTime date) {
+    setState(() {
+      _selectedDate = date;
+
+      _visibleMonth = DateTime(date.year, date.month);
+    });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                child: Column(
-                  children: [
-                    _buildCalendarCard(),
-                    const SizedBox(height: 12),
-                    _buildSelectedDateCard(),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+  // ================= VIEW SWITCH =================
+
+  void _showMonthView() {
+    setState(() {
+      _monthView = true;
+
+      _visibleMonth = DateTime(_selectedDate.year, _selectedDate.month);
+    });
+  }
+
+  void _showWeekView() {
+    setState(() {
+      _monthView = false;
+    });
+  }
+
+  // ================= USER ACTIONS =================
+
+  void _openAdherenceDetail() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AdherenceDetailScreen(initialEndDate: _selectedDate),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      color: const Color(0xFF074D6A),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-      child: Column(
+  // ============================================================
+  // MISSED DOSE REASON
+  // ============================================================
+
+  Future<void> _openMissedDoseReason(DoseHistoryItem dose) async {
+    // Only missed doses should enter this flow.
+    if (dose.status != DoseHistoryStatus.missed) {
+      return;
+    }
+
+    final result = await showMissedDoseReasonModal(
+      context,
+      dose: dose,
+      doseDate: _selectedDate,
+    );
+
+    if (!mounted || result == null) {
+      // User ne:
+      // • X press kiya
+      // • outside tap kiya
+      // • Skip for Now kiya
+      //
+      // Koi reason save nahi hoga.
+      return;
+    }
+
+    // TODO Backend:
+    // Current signed-in user/member ke EXISTING dose-history
+    // document ko dose.id se update karna hai.
+    //
+    // Suggested fields:
+    // missedReasonType: result.type.name
+    // missedReasonText: result.reasonText
+    // missedReasonNote: result.note
+    // reasonRecordedAt: serverTimestamp
+    // recordedByUserId: currentUser.uid
+    //
+    // Duplicate dose-history record create NAHI karna.
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('Reason saved: ${result.reasonText}')),
+      );
+  }
+
+  // ================= BUILD =================
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Column(
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Calendar',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
+          _buildHeader(),
+
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 95),
+                  child: Column(
+                    children: [
+                      _buildCalendarCard(),
+
+                      const SizedBox(height: 12),
+
+                      _buildSelectedDateCard(),
+                    ],
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: Colors.white,
-                ),
-              ),
-              const CircleAvatar(
-                radius: 17,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Color(0xFF074D6A)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Month / Week
-          Container(
-            height: 38,
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: const Color(0xFF326B82),
-              borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _viewButton(
-                    title: 'Month',
-                    selected: _monthView,
-                    onTap: () {
-                      setState(() {
-                        _monthView = true;
-                        _visibleMonth = DateTime(
-                          _selectedDate.year,
-                          _selectedDate.month,
-                        );
-                      });
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: _viewButton(
-                    title: 'Week',
-                    selected: !_monthView,
-                    onTap: () {
-                      setState(() {
-                        _monthView = false;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
-              _circleButton(Icons.chevron_left_rounded, onTap: _previousPeriod),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _monthView
-                      ? '${_monthNames[_visibleMonth.month - 1]} ${_visibleMonth.year}'
-                      : _weekHeaderText(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              _circleButton(Icons.chevron_right_rounded, onTap: _nextPeriod),
-              const SizedBox(width: 14),
-              InkWell(
-                onTap: _goToToday,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E607B),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Today',
-                    style: TextStyle(color: Colors.white, fontSize: 11),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
+
+  // ============================================================
+  // HEADER
+  // ============================================================
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      color: AppColors.headerDark,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+          child: Column(
+            children: [
+              // ================= TOP ROW =================
+
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Calendar',
+                      style: TextStyle(
+                        color: AppColors.surface,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          // TODO Backend:
+                          // Current user/member ka notification
+                          // center / unread alerts load karne hain.
+                        },
+                        icon: const Icon(
+                          Icons.notifications_none_rounded,
+                          color: AppColors.surface,
+                        ),
+                      ),
+
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppColors.notificationDot,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const CircleAvatar(
+                    radius: 17,
+                    backgroundColor: AppColors.surface,
+                    child: Icon(Icons.person, color: AppColors.headerDark),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+
+              // ================= MONTH / WEEK =================
+              Container(
+                height: 38,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: AppColors.calendarToggleBackground,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _viewButton(
+                        title: 'Month',
+                        selected: _monthView,
+                        onTap: _showMonthView,
+                      ),
+                    ),
+
+                    Expanded(
+                      child: _viewButton(
+                        title: 'Week',
+                        selected: !_monthView,
+                        onTap: _showWeekView,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // ================= PERIOD NAV =================
+              Row(
+                children: [
+                  _circleButton(
+                    Icons.chevron_left_rounded,
+                    onTap: _previousPeriod,
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: Text(
+                      _monthView
+                          ? '${_monthNames[_visibleMonth.month - 1]} '
+                                '${_visibleMonth.year}'
+                          : _weekHeaderText(),
+                      style: const TextStyle(
+                        color: AppColors.surface,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+
+                  _circleButton(
+                    Icons.chevron_right_rounded,
+                    onTap: _nextPeriod,
+                  ),
+
+                  const SizedBox(width: 14),
+
+                  InkWell(
+                    onTap: _goToToday,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.calendarHeaderButton,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Today',
+                        style: TextStyle(
+                          color: AppColors.surface,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ================= WEEK HEADER TEXT =================
 
   String _weekHeaderText() {
     final start = _selectedDate.subtract(
@@ -290,18 +475,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     if (start.month == end.month && start.year == end.year) {
       return '${_shortMonthNames[start.month - 1]} '
-          '${start.day} - ${end.day}, ${start.year}';
-    }
-
-    if (start.year == end.year) {
-      return '${_shortMonthNames[start.month - 1]} ${start.day} - '
-          '${_shortMonthNames[end.month - 1]} ${end.day}, '
+          '${start.day} - ${end.day}, '
           '${start.year}';
     }
 
-    return '${_shortMonthNames[start.month - 1]} ${start.day}, ${start.year} - '
-        '${_shortMonthNames[end.month - 1]} ${end.day}, ${end.year}';
+    if (start.year == end.year) {
+      return '${_shortMonthNames[start.month - 1]} '
+          '${start.day} - '
+          '${_shortMonthNames[end.month - 1]} '
+          '${end.day}, ${start.year}';
+    }
+
+    return '${_shortMonthNames[start.month - 1]} '
+        '${start.day}, ${start.year} - '
+        '${_shortMonthNames[end.month - 1]} '
+        '${end.day}, ${end.year}';
   }
+
+  // ================= VIEW BUTTON =================
 
   Widget _viewButton({
     required String title,
@@ -314,13 +505,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
         duration: const Duration(milliseconds: 180),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.transparent,
+          color: selected ? AppColors.surface : AppColors.transparent,
           borderRadius: BorderRadius.circular(18),
         ),
         child: Text(
           title,
           style: TextStyle(
-            color: selected ? const Color(0xFF08705E) : Colors.white70,
+            color: selected ? AppColors.formAccent : AppColors.headerSubtext,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -329,9 +520,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  // ================= PERIOD BUTTON =================
+
   Widget _circleButton(IconData icon, {required VoidCallback onTap}) {
     return Material(
-      color: const Color(0xFF28677F),
+      color: AppColors.calendarCircleButton,
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
@@ -339,21 +532,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
         child: SizedBox(
           width: 30,
           height: 30,
-          child: Icon(icon, size: 18, color: Colors.white),
+          child: Icon(icon, size: 18, color: AppColors.surface),
         ),
       ),
     );
   }
 
+  // ============================================================
+  // CALENDAR CARD
+  // ============================================================
+
   Widget _buildCalendarCard() {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: AppColors.textPrimary.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),
@@ -361,6 +558,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       child: Column(
         children: [
+          // ================= WEEKDAY LABELS =================
+
           Row(
             children: _weekDays.map((day) {
               return Expanded(
@@ -369,28 +568,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     day,
                     style: const TextStyle(
                       fontSize: 9,
-                      color: Color(0xFF39768A),
+                      color: AppColors.calendarWeekdayText,
                     ),
                   ),
                 ),
               );
             }).toList(),
           ),
+
           const SizedBox(height: 8),
 
           if (_monthView) _buildMonthGrid() else _buildWeekGrid(),
 
           const SizedBox(height: 14),
 
+          // ================= LEGEND =================
           const Wrap(
             spacing: 12,
             runSpacing: 5,
             alignment: WrapAlignment.center,
             children: [
-              _Legend(color: Color(0xFF008768), text: 'Taken'),
-              _Legend(color: Color(0xFFFFAD17), text: 'Partial'),
-              _Legend(color: Color(0xFFE94F5D), text: 'Missed'),
-              _Legend(color: Color(0xFF08728D), text: 'Today'),
+              _Legend(color: AppColors.calendarTaken, text: 'Taken'),
+              _Legend(color: AppColors.calendarPartial, text: 'Partial'),
+              _Legend(color: AppColors.calendarMissed, text: 'Missed'),
+              _Legend(color: AppColors.calendarToday, text: 'Today'),
             ],
           ),
         ],
@@ -398,15 +599,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  // ============================================================
+  // MONTH GRID
+  // ============================================================
+
   Widget _buildMonthGrid() {
     final firstDay = DateTime(_visibleMonth.year, _visibleMonth.month, 1);
 
     final leadingEmptyCells = firstDay.weekday - 1;
+
     final daysInMonth = _daysInVisibleMonth;
 
     final requiredCells = leadingEmptyCells + daysInMonth;
 
     final rows = (requiredCells / 7).ceil();
+
     final totalCells = rows * 7;
 
     return GridView.builder(
@@ -432,6 +639,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  // ============================================================
+  // WEEK GRID
+  // ============================================================
+
   Widget _buildWeekGrid() {
     final startOfWeek = _selectedDate.subtract(
       Duration(days: _selectedDate.weekday - 1),
@@ -454,63 +665,66 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  // ============================================================
+  // DATE CELL
+  // ============================================================
+
   Widget _dateCell(DateTime date) {
     final selected = _isSameDate(date, _selectedDate);
 
     final today = _isSameDate(date, DateTime.now());
 
-    final belongsToVisibleMonth =
-        date.year == _visibleMonth.year && date.month == _visibleMonth.month;
+    final adherence = CalendarData.adherenceForDate(date);
 
-    Color background = const Color(0xFFE7F5EF);
+    Color background;
+    Color foreground;
 
-    Color foreground = const Color(0xFF08775C);
+    switch (adherence) {
+      case DayAdherenceStatus.taken:
+        background = AppColors.calendarTakenBackground;
+        foreground = AppColors.calendarTaken;
+        break;
 
-    // Demo adherence colors.
-    // Later these can be connected to real medication data.
-    if ([3, 11].contains(date.day)) {
-      background = const Color(0xFFFFF1CF);
-      foreground = const Color(0xFFF39A00);
+      case DayAdherenceStatus.partial:
+        background = AppColors.calendarPartialBackground;
+        foreground = AppColors.calendarPartial;
+        break;
+
+      case DayAdherenceStatus.missed:
+        background = AppColors.calendarMissedBackground;
+        foreground = AppColors.calendarMissed;
+        break;
+
+      case DayAdherenceStatus.none:
+        background = AppColors.calendarNoDataBackground;
+        foreground = AppColors.calendarNoDataText;
+        break;
     }
 
-    if (date.day == 7) {
-      background = const Color(0xFFFFE6E8);
-      foreground = const Color(0xFFEB4252);
-    }
-
-    if (_monthView && !belongsToVisibleMonth) {
-      background = const Color(0xFFF3F7F9);
-      foreground = const Color(0xFFB8C9D1);
-    }
-
+    // Today has its own visual state.
     if (today) {
-      background = const Color(0xFF08728D);
-      foreground = Colors.white;
+      background = AppColors.calendarToday;
+      foreground = AppColors.surface;
     }
 
+    // Selected state has highest priority.
     if (selected) {
-      background = const Color(0xFF08775C);
-      foreground = Colors.white;
+      background = AppColors.formAccent;
+      foreground = AppColors.surface;
     }
 
     return InkWell(
       borderRadius: BorderRadius.circular(10),
-      onTap: () {
-        setState(() {
-          _selectedDate = date;
-
-          _visibleMonth = DateTime(date.year, date.month);
-        });
-      },
+      onTap: () => _selectDate(date),
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(10),
           border: selected
-              ? Border.all(color: const Color(0xFF075A78), width: 2)
+              ? Border.all(color: AppColors.headerDark, width: 2)
               : today
-              ? Border.all(color: const Color(0xFF08728D))
+              ? Border.all(color: AppColors.calendarToday)
               : null,
         ),
         child: Text(
@@ -525,6 +739,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  // ============================================================
+  // SELECTED DATE CARD
+  // ============================================================
+
   Widget _buildSelectedDateCard() {
     final today = _isSameDate(_selectedDate, DateTime.now());
 
@@ -532,14 +750,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
         '${_shortMonthNames[_selectedDate.month - 1]} '
         '${_selectedDate.day}';
 
+    final doses = _selectedDateDoses;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: AppColors.textPrimary.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -547,43 +767,64 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       child: Column(
         children: [
+          // ================= DATE HEADER =================
+
           Row(
             children: [
-              const Icon(Icons.circle, color: Color(0xFF008768), size: 8),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.calendarTaken,
+                  shape: BoxShape.circle,
+                ),
+              ),
+
               const SizedBox(width: 7),
+
               Expanded(
                 child: Text(
                   today
                       ? 'Today · $dateText'
                       : '$dateText · ${_selectedDate.year}',
                   style: const TextStyle(
-                    color: Color(0xFF174B60),
+                    color: AppColors.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
+
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F6F1),
+                  color: AppColors.successBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${_doses.length} doses',
-                  style: const TextStyle(color: Color(0xFF08775C), fontSize: 9),
+                  '${doses.length} doses',
+                  style: const TextStyle(
+                    color: AppColors.formAccent,
+                    fontSize: 9,
+                  ),
                 ),
               ),
             ],
           ),
+
           const SizedBox(height: 10),
-          ..._doses.map(_doseTile),
-          const SizedBox(height: 8),
+
+          // ================= DOSES =================
+          if (doses.isEmpty) _buildNoDoses() else ...doses.map(_doseTile),
+
+          const SizedBox(height: 4),
+
+          // ================= ADHERENCE DETAIL =================
           TextButton(
-            onPressed: () {},
+            onPressed: _openAdherenceDetail,
             child: const Text(
               'View Full Adherence Report  →',
-              style: TextStyle(color: Color(0xFF08775C), fontSize: 11),
+              style: TextStyle(color: AppColors.formAccent, fontSize: 11),
             ),
           ),
         ],
@@ -591,87 +832,204 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _doseTile(_DoseItem dose) {
+  // ================= NO DOSES =================
+
+  Widget _buildNoDoses() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(9),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F8FA),
-        borderRadius: BorderRadius.circular(11),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 22),
+      alignment: Alignment.center,
+      child: const Text(
+        'No doses scheduled for this day',
+        style: TextStyle(color: AppColors.fieldHint, fontSize: 10),
       ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 17,
-            backgroundColor: Colors.white,
-            child: Icon(Icons.medication_rounded, color: dose.color, size: 19),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  dose.name,
-                  style: const TextStyle(
-                    color: Color(0xFF164A61),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+    );
+  }
+
+  // ============================================================
+  // DOSE TILE
+  //
+  // Missed dose tap → Missed Dose Reason modal.
+  // Taken/Pending/Upcoming dose → no reason modal.
+  // ============================================================
+
+  Widget _doseTile(DoseHistoryItem dose) {
+    final statusColor = _statusColor(dose.status);
+
+    final missed = dose.status == DoseHistoryStatus.missed;
+
+    return InkWell(
+      onTap: missed ? () => _openMissedDoseReason(dose) : null,
+      borderRadius: BorderRadius.circular(11),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(9),
+        decoration: BoxDecoration(
+          color: AppColors.calendarDoseBackground,
+          borderRadius: BorderRadius.circular(11),
+          border: missed
+              ? Border.all(
+                  color: AppColors.calendarMissed.withValues(alpha: 0.25),
+                )
+              : null,
+        ),
+        child: Row(
+          children: [
+            // ================= MEDICINE IMAGE =================
+
+            Container(
+              width: 34,
+              height: 34,
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                shape: BoxShape.circle,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: dose.medicineImageAsset != null
+                  ? Image.asset(
+                      dose.medicineImageAsset!,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          _medicineTypeIcon(dose.medicineType),
+                          color: statusColor,
+                          size: 19,
+                        );
+                      },
+                    )
+                  : Icon(
+                      _medicineTypeIcon(dose.medicineType),
+                      color: statusColor,
+                      size: 19,
+                    ),
+            ),
+
+            const SizedBox(width: 9),
+
+            // ================= MEDICINE INFO =================
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dose.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  dose.subtitle,
-                  style: const TextStyle(color: Color(0xFF6D99A8), fontSize: 8),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            dose.time,
-            style: const TextStyle(
-              color: Color(0xFF176A86),
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 7),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            decoration: BoxDecoration(
-              color: dose.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              dose.status,
-              style: TextStyle(
-                color: dose.color,
-                fontSize: 7,
-                fontWeight: FontWeight.w700,
+
+                  const SizedBox(height: 2),
+
+                  Text(
+                    dose.subtitle,
+                    style: const TextStyle(
+                      color: AppColors.formSubtitle,
+                      fontSize: 8,
+                    ),
+                  ),
+
+                  if (missed) ...[
+                    const SizedBox(height: 3),
+
+                    Text(
+                      dose.missedReason != null
+                          ? 'Tap to update missed-dose reason'
+                          : 'Tap to add missed-dose reason',
+                      style: const TextStyle(
+                        color: AppColors.calendarMissed,
+                        fontSize: 7.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-          ),
-        ],
+
+            const SizedBox(width: 7),
+
+            // ================= TIME =================
+            Text(
+              dose.time,
+              style: const TextStyle(
+                color: AppColors.formSubtitle,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            const SizedBox(width: 7),
+
+            // ================= STATUS =================
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                dose.statusLabel,
+                style: TextStyle(
+                  color: statusColor,
+                  fontSize: 7,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  // ================= STATUS COLOR =================
+
+  Color _statusColor(DoseHistoryStatus status) {
+    switch (status) {
+      case DoseHistoryStatus.taken:
+        return AppColors.calendarTaken;
+
+      case DoseHistoryStatus.missed:
+        return AppColors.calendarMissed;
+
+      case DoseHistoryStatus.pending:
+        return AppColors.statusPendingText;
+
+      case DoseHistoryStatus.upcoming:
+        return AppColors.statusUpcoming;
+    }
+  }
+
+  // ================= MEDICINE FALLBACK ICON =================
+
+  IconData _medicineTypeIcon(MedicineType type) {
+    switch (type) {
+      case MedicineType.tablet:
+        return Icons.medication_outlined;
+
+      case MedicineType.capsule:
+        return Icons.medication_outlined;
+
+      case MedicineType.liquid:
+        return Icons.medication_liquid_outlined;
+
+      case MedicineType.drops:
+        return Icons.opacity_outlined;
+
+      case MedicineType.injection:
+        return Icons.vaccines_outlined;
+    }
+  }
 }
 
-class _DoseItem {
-  const _DoseItem({
-    required this.name,
-    required this.subtitle,
-    required this.time,
-    required this.status,
-    required this.color,
-  });
-
-  final String name;
-  final String subtitle;
-  final String time;
-  final String status;
-  final Color color;
-}
+// ============================================================
+// LEGEND
+// ============================================================
 
 class _Legend extends StatelessWidget {
   const _Legend({required this.color, required this.text});
@@ -689,10 +1047,15 @@ class _Legend extends StatelessWidget {
           height: 6,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
+
         const SizedBox(width: 4),
+
         Text(
           text,
-          style: const TextStyle(fontSize: 8, color: Color(0xFF416979)),
+          style: const TextStyle(
+            fontSize: 8,
+            color: AppColors.calendarLegendText,
+          ),
         ),
       ],
     );
