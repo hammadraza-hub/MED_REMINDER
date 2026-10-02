@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/app_bottom_navigation.dart';
 import 'inventory_data.dart';
 import 'meds_data.dart';
 import 'refill_alert_detail_screen.dart';
@@ -20,7 +21,7 @@ import 'adjust_inventory_count_sheet.dart';
 /// • LOW / OK calculated status
 /// • All / Low Stock / OK filters
 /// • Manual count adjustment
-/// • Refill Detail navigation hook
+/// • Refill Detail navigation
 ///
 /// Backend:
 /// InventoryData abhi dummy provider hai.
@@ -41,7 +42,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   late final List<InventoryItem> _items = InventoryData.inventory();
 
-  // ================= COMPUTED DATA =================
+  // ============================================================
+  // COMPUTED DATA
+  // ============================================================
 
   int get _lowStockCount => InventoryData.lowStockCount(_items);
 
@@ -134,6 +137,19 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   // ============================================================
+  // BOTTOM NAVIGATION
+  // ============================================================
+
+  void _onBottomNavigationTap(int index) {
+    // Inventory Meds feature ka child screen hai.
+    // Shared bottom bar se clicked main tab directly open hoga.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
+      (route) => false,
+    );
+  }
+
+  // ============================================================
   // BUILD
   // ============================================================
 
@@ -141,24 +157,32 @@ class _InventoryScreenState extends State<InventoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+
       body: Column(
         children: [
           _buildHeader(),
+
           Expanded(
             child: Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
                   child: Column(
                     children: [
                       _buildSummary(),
-                      const SizedBox(height: 12),
+
+                      const SizedBox(height: 14),
+
                       _buildFilters(),
-                      const SizedBox(height: 10),
+
+                      const SizedBox(height: 12),
+
                       _buildInventoryList(),
-                      const SizedBox(height: 2),
+
+                      const SizedBox(height: 4),
+
                       _buildAutoSyncCard(),
                     ],
                   ),
@@ -168,7 +192,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const _InventoryBottomBar(),
+
+      // Shared app-wide bottom navigation.
+      // Inventory Meds flow ka part hai.
+      bottomNavigationBar: AppBottomNavigation(
+        currentIndex: 1,
+        onTap: _onBottomNavigationTap,
+      ),
     );
   }
 
@@ -183,39 +213,42 @@ class _InventoryScreenState extends State<InventoryScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 7, 20, 10),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 13),
           child: Row(
             children: [
               InkWell(
                 onTap: () {
                   Navigator.of(context).pop();
                 },
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(22),
                 child: const Padding(
-                  padding: EdgeInsets.all(3),
+                  padding: EdgeInsets.all(4),
                   child: Icon(
                     Icons.arrow_back_rounded,
                     color: AppColors.surface,
-                    size: 21,
+                    size: 24,
                   ),
                 ),
               ),
+
               const SizedBox(width: 11),
+
               const Expanded(
                 child: Text(
                   'Inventory',
                   style: TextStyle(
                     color: AppColors.surface,
-                    fontSize: 15,
+                    fontSize: 19,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
 
               // TODO Backend/Auth:
-              // Current signed-in user's profile image yahan provide karni hai.
+              // Current signed-in user's profile image yahan
+              // same shared auth/profile source se provide karni hai.
               const AppAvatar(
-                size: 28,
+                size: 32,
                 ringColor: AppColors.surface,
                 ringWidth: 1,
               ),
@@ -233,10 +266,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
   Widget _buildSummary() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(
             color: AppColors.inventoryCardShadow,
@@ -255,48 +288,53 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   '${_items.length} Medications',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 14,
-                    height: 1.1,
+                    fontSize: 16,
+                    height: 1.2,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 3),
+
+                const SizedBox(height: 5),
+
                 const Text(
                   'Tracked supply',
                   style: TextStyle(
                     color: AppColors.formAccent,
-                    fontSize: 8,
-                    height: 1,
+                    fontSize: 12,
+                    height: 1.2,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
+
           if (_lowStockCount > 0)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.inventoryLowBackground,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 5,
-                    height: 5,
+                    width: 7,
+                    height: 7,
                     decoration: const BoxDecoration(
                       color: AppColors.inventoryLow,
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 4),
+
+                  const SizedBox(width: 5),
+
                   Text(
                     '$_lowStockCount LOW STOCK',
                     style: const TextStyle(
                       color: AppColors.inventoryLow,
-                      fontSize: 7,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -316,9 +354,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return Row(
       children: [
         _filterButton(title: 'All', filter: _InventoryFilter.all),
-        const SizedBox(width: 7),
+
+        const SizedBox(width: 8),
+
         _filterButton(title: 'Low Stock', filter: _InventoryFilter.lowStock),
-        const SizedBox(width: 7),
+
+        const SizedBox(width: 8),
+
         _filterButton(title: 'OK', filter: _InventoryFilter.ok),
       ],
     );
@@ -336,17 +378,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
           _selectedFilter = filter;
         });
       },
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 17),
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected
               ? AppColors.formAccent
               : AppColors.inventoryFilterBackground,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Text(
           title,
@@ -356,7 +398,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 : filter == _InventoryFilter.lowStock
                 ? AppColors.inventoryLow
                 : AppColors.formAccent,
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -374,11 +416,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
     if (items.isEmpty) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 28),
+        padding: const EdgeInsets.symmetric(vertical: 30),
         alignment: Alignment.center,
         child: const Text(
           'No medications in this filter',
-          style: TextStyle(color: AppColors.formSubtitle, fontSize: 10),
+          style: TextStyle(color: AppColors.formSubtitle, fontSize: 13),
         ),
       );
     }
@@ -386,7 +428,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     return Column(
       children: items.map((item) {
         return Padding(
-          padding: const EdgeInsets.only(bottom: 9),
+          padding: const EdgeInsets.only(bottom: 11),
           child: _inventoryCard(item),
         );
       }).toList(),
@@ -402,13 +444,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
       onTap: () {
         _adjustCount(item);
       },
-      borderRadius: BorderRadius.circular(11),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(11, 10, 11, 9),
+        padding: const EdgeInsets.fromLTRB(13, 13, 13, 12),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
               color: AppColors.inventoryCardShadow,
@@ -423,7 +465,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 _medicineImage(item, statusColor),
-                const SizedBox(width: 8),
+
+                const SizedBox(width: 10),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,41 +478,47 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize: 13,
-                          height: 1.05,
+                          fontSize: 15,
+                          height: 1.15,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 4),
+
+                      const SizedBox(height: 5),
+
                       Text(
                         item.supplyLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.formAccent,
-                          fontSize: 8.5,
-                          height: 1,
+                          fontSize: 12,
+                          height: 1.2,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 6),
+
+                const SizedBox(width: 8),
+
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 3,
+                    horizontal: 9,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
                     color: low
                         ? AppColors.inventoryLowBackground
                         : AppColors.inventoryOkBackground,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     low ? 'LOW' : 'OK',
                     style: TextStyle(
                       color: statusColor,
-                      fontSize: 7,
+                      fontSize: 11,
                       height: 1,
                       fontWeight: FontWeight.w700,
                     ),
@@ -476,17 +526,21 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+
+            const SizedBox(height: 11),
+
             ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: LinearProgressIndicator(
                 value: item.supplyProgress,
-                minHeight: 5,
+                minHeight: 6,
                 backgroundColor: AppColors.inventoryProgressTrack,
                 valueColor: AlwaysStoppedAnimation<Color>(statusColor),
               ),
             ),
-            const SizedBox(height: 7),
+
+            const SizedBox(height: 10),
+
             if (low) _lowStockActions(item) else _okStockActions(item),
           ],
         ),
@@ -506,28 +560,32 @@ class _InventoryScreenState extends State<InventoryScreen> {
             Icon(
               Icons.warning_amber_rounded,
               color: AppColors.inventoryLow,
-              size: 12,
+              size: 17,
             ),
-            SizedBox(width: 4),
+
+            SizedBox(width: 6),
+
             Expanded(
               child: Text(
                 'Running low — order refill',
                 style: TextStyle(
                   color: AppColors.inventoryLow,
-                  fontSize: 8,
-                  height: 1,
+                  fontSize: 12,
+                  height: 1.2,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+
+        const SizedBox(height: 10),
+
         Row(
           children: [
             Expanded(
               child: SizedBox(
-                height: 33,
+                height: 42,
                 child: FilledButton(
                   onPressed: () {
                     _openRefillDetail(item);
@@ -538,20 +596,22 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     foregroundColor: AppColors.surface,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(9),
                     ),
                   ),
                   child: const Text(
                     'Refill →',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 7),
+
+            const SizedBox(width: 9),
+
             Expanded(
               child: SizedBox(
-                height: 33,
+                height: 42,
                 child: FilledButton(
                   onPressed: () {
                     _adjustCount(item);
@@ -562,15 +622,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     foregroundColor: AppColors.formAccent,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(9),
                     ),
                   ),
                   child: const Text(
                     'Adjust Count',
-                    style: TextStyle(
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                   ),
                 ),
               ),
@@ -587,15 +644,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   Widget _okStockActions(InventoryItem item) {
     return SizedBox(
-      height: 24,
+      height: 32,
       child: Row(
         children: [
           const Icon(
             Icons.check_circle_outline_rounded,
             color: AppColors.inventoryOk,
-            size: 11,
+            size: 16,
           ),
-          const SizedBox(width: 4),
+
+          const SizedBox(width: 6),
+
           Expanded(
             child: Text(
               item.estimatedDaysRemaining >= 25
@@ -603,25 +662,26 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   : 'Sufficient through next refill',
               style: const TextStyle(
                 color: AppColors.inventoryOk,
-                fontSize: 8,
+                fontSize: 12,
                 fontWeight: FontWeight.w400,
               ),
             ),
           ),
+
           TextButton(
             onPressed: () {
               _adjustCount(item);
             },
             style: TextButton.styleFrom(
-              minimumSize: const Size(30, 24),
-              padding: const EdgeInsets.symmetric(horizontal: 3),
+              minimumSize: const Size(40, 30),
+              padding: const EdgeInsets.symmetric(horizontal: 5),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: const Text(
               'Edit',
               style: TextStyle(
                 color: AppColors.formAccent,
-                fontSize: 8,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -637,8 +697,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   Widget _medicineImage(InventoryItem item, Color fallbackColor) {
     return Container(
-      width: 40,
-      height: 40,
+      width: 44,
+      height: 44,
       clipBehavior: Clip.antiAlias,
       decoration: const BoxDecoration(
         color: AppColors.cardFill,
@@ -653,14 +713,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 return Icon(
                   _medicineTypeIcon(item.medicineType),
                   color: fallbackColor,
-                  size: 20,
+                  size: 22,
                 );
               },
             )
           : Icon(
               _medicineTypeIcon(item.medicineType),
               color: fallbackColor,
-              size: 20,
+              size: 22,
             ),
     );
   }
@@ -704,31 +764,33 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           );
       },
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(11),
       child: Container(
         width: double.infinity,
-        height: 54,
-        padding: const EdgeInsets.symmetric(horizontal: 11),
+        constraints: const BoxConstraints(minHeight: 66),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.inventorySyncBackground,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(11),
         ),
         child: Row(
           children: [
             Container(
-              width: 31,
-              height: 31,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: AppColors.surface.withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(7),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
                 Icons.local_pharmacy_outlined,
                 color: AppColors.formAccent,
-                size: 17,
+                size: 20,
               ),
             ),
-            const SizedBox(width: 9),
+
+            const SizedBox(width: 11),
+
             const Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -738,97 +800,37 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     'Auto-Sync Pharmacy',
                     style: TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 9,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(height: 3),
+
+                  SizedBox(height: 4),
+
                   Text(
                     'Connect your pharmacy for automatic refill updates',
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: AppColors.formSubtitle,
-                      fontSize: 7,
+                      fontSize: 11,
+                      height: 1.3,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 5),
+
+            const SizedBox(width: 7),
+
             const Icon(
               Icons.sync_rounded,
               color: AppColors.formAccent,
-              size: 16,
+              size: 20,
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-// ============================================================
-// BOTTOM BAR
-//
-// Inventory Meds flow ka part hai,
-// isliye Meds visually selected hai.
-// ============================================================
-
-class _InventoryBottomBar extends StatelessWidget {
-  const _InventoryBottomBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 1,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.formAccent,
-      unselectedItemColor: AppColors.fieldHint,
-      backgroundColor: AppColors.surface,
-      elevation: 5,
-      iconSize: 19,
-      selectedFontSize: 8,
-      unselectedFontSize: 8,
-      selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home_rounded),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.medication_outlined),
-          activeIcon: Icon(Icons.medication_rounded),
-          label: 'Meds',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          activeIcon: Icon(Icons.calendar_month_rounded),
-          label: 'Calendar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_outlined),
-          activeIcon: Icon(Icons.bar_chart_rounded),
-          label: 'Reports',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          activeIcon: Icon(Icons.settings_rounded),
-          label: 'Settings',
-        ),
-      ],
-      onTap: (index) {
-        // TODO Navigation:
-        // MedRemindShell mein initialIndex support ke baad clicked
-        // bottom-navigation index ko exact selected tab ke saath
-        // restore/open karna hai.
-
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MedRemindShell()),
-          (route) => false,
-        );
-      },
     );
   }
 }

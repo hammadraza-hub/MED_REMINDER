@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
+import '../../widgets/app_bottom_navigation.dart';
 import 'inventory_data.dart';
 import 'meds_data.dart';
 import 'refill_alert_detail_data.dart';
@@ -140,6 +141,19 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
   }
 
   // ============================================================
+  // BOTTOM NAVIGATION
+  // ============================================================
+
+  void _onBottomNavigationTap(int index) {
+    // Refill Alert Detail Meds feature ka child screen hai.
+    // Shared bottom bar se clicked main tab directly open hoga.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
+      (route) => false,
+    );
+  }
+
+  // ============================================================
   // BUILD
   // ============================================================
 
@@ -191,7 +205,12 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
         ],
       ),
 
-      bottomNavigationBar: const _RefillBottomBar(),
+      // Shared app-wide bottom navigation.
+      // Refill flow Meds feature ka part hai.
+      bottomNavigationBar: AppBottomNavigation(
+        currentIndex: 1,
+        onTap: _onBottomNavigationTap,
+      ),
     );
   }
 
@@ -206,7 +225,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 10, 18, 13),
+          padding: const EdgeInsets.fromLTRB(18, 11, 18, 14),
           child: Row(
             children: [
               InkWell(
@@ -231,7 +250,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
                   'Refill Alert Detail',
                   style: TextStyle(
                     color: AppColors.surface,
-                    fontSize: 17,
+                    fontSize: 19,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -269,11 +288,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
 
     return Container(
       width: double.infinity,
-
-      // Previous: 12,12,12,10
-      // Increased vertically for larger/readable card.
       padding: const EdgeInsets.fromLTRB(15, 17, 15, 16),
-
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(13),
@@ -303,7 +318,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -314,7 +329,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
                       _data.supplyStatusLabel,
                       style: const TextStyle(
                         color: AppColors.formAccent,
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -342,7 +357,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
             '${_data.remainingUnit} remaining',
             style: const TextStyle(
               color: AppColors.formAccent,
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -374,10 +389,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
   Widget _buildRunOutCard() {
     return Container(
       width: double.infinity,
-
-      // More vertical room.
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 18),
-
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
@@ -394,7 +406,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
           const Icon(
             Icons.calendar_month_outlined,
             color: AppColors.formAccent,
-            size: 20,
+            size: 21,
           ),
 
           const SizedBox(width: 11),
@@ -404,7 +416,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
               'Runs out on',
               style: TextStyle(
                 color: AppColors.formAccent,
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -418,7 +430,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
               textAlign: TextAlign.right,
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -459,7 +471,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
                 'YOUR PHARMACY',
                 style: TextStyle(
                   color: AppColors.formSubtitle,
-                  fontSize: 10,
+                  fontSize: 12,
                   letterSpacing: 0.8,
                   fontWeight: FontWeight.w700,
                 ),
@@ -470,8 +482,8 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
               Row(
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
                       color: AppColors.inventoryOkBackground,
                       borderRadius: BorderRadius.circular(9),
@@ -479,7 +491,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
                     child: const Icon(
                       Icons.local_pharmacy_outlined,
                       color: AppColors.inventoryOk,
-                      size: 20,
+                      size: 22,
                     ),
                   ),
 
@@ -495,7 +507,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 12,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -506,7 +518,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
                           _data.pharmacy.openStatus,
                           style: const TextStyle(
                             color: AppColors.inventoryOk,
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -516,22 +528,20 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
 
                   const SizedBox(width: 6),
 
-                  // Card navigation indicator
                   const Icon(
                     Icons.chevron_right_rounded,
                     color: AppColors.formSubtitle,
-                    size: 18,
+                    size: 20,
                   ),
 
                   const SizedBox(width: 6),
 
-                  // Phone icon sirf Call action karega.
                   InkWell(
                     onTap: _callPharmacy,
                     borderRadius: BorderRadius.circular(22),
                     child: Container(
-                      width: 38,
-                      height: 38,
+                      width: 40,
+                      height: 40,
                       decoration: const BoxDecoration(
                         color: AppColors.inventoryOkBackground,
                         shape: BoxShape.circle,
@@ -539,7 +549,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
                       child: const Icon(
                         Icons.phone_outlined,
                         color: AppColors.inventoryOk,
-                        size: 19,
+                        size: 20,
                       ),
                     ),
                   ),
@@ -559,11 +569,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
   Widget _buildMarkRefilledButton() {
     return SizedBox(
       width: double.infinity,
-
-      // Previous: 40
-      // Approx 20% taller.
       height: 48,
-
       child: FilledButton.icon(
         onPressed: _markAsRefilled,
         style: FilledButton.styleFrom(
@@ -577,7 +583,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
         icon: const Icon(Icons.check_circle_outline_rounded, size: 19),
         label: const Text(
           'Mark as Refilled',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -586,10 +592,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
   Widget _buildCallPharmacyButton() {
     return SizedBox(
       width: double.infinity,
-
-      // Previous: 40
       height: 48,
-
       child: FilledButton.icon(
         onPressed: _callPharmacy,
         style: FilledButton.styleFrom(
@@ -600,10 +603,10 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-        icon: const Icon(Icons.phone_in_talk_outlined, size: 18),
+        icon: const Icon(Icons.phone_in_talk_outlined, size: 19),
         label: const Text(
           'Call Pharmacy',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -619,7 +622,7 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
       child: const Text(
         'Snooze this alert for 3 days',
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: FontWeight.w500,
           decoration: TextDecoration.underline,
         ),
@@ -678,67 +681,5 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
       case MedicineType.injection:
         return Icons.vaccines_outlined;
     }
-  }
-}
-
-// ============================================================
-// BOTTOM NAVIGATION
-// ============================================================
-
-class _RefillBottomBar extends StatelessWidget {
-  const _RefillBottomBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 1,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.formAccent,
-      unselectedItemColor: AppColors.fieldHint,
-      backgroundColor: AppColors.surface,
-      elevation: 5,
-      iconSize: 20,
-      selectedFontSize: 9,
-      unselectedFontSize: 9,
-      selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home_rounded),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.medication_outlined),
-          activeIcon: Icon(Icons.medication_rounded),
-          label: 'Meds',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          activeIcon: Icon(Icons.calendar_month_rounded),
-          label: 'Calendar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_outlined),
-          activeIcon: Icon(Icons.bar_chart_rounded),
-          label: 'Reports',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          activeIcon: Icon(Icons.settings_rounded),
-          label: 'Settings',
-        ),
-      ],
-      onTap: (index) {
-        // TODO Navigation:
-        // MedRemindShell initialIndex support ke baad clicked
-        // tab ko directly open karna hai.
-
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MedRemindShell()),
-          (route) => false,
-        );
-      },
-    );
   }
 }

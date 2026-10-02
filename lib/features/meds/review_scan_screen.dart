@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/ocr_service.dart';
 import '../../main_shell.dart';
+import '../../widgets/app_bottom_navigation.dart';
 import 'schedule_screen.dart';
 
 /// ============================================================
@@ -14,8 +15,13 @@ import 'schedule_screen.dart';
 /// Scan → detect → YE SCREEN (review/correct) → Schedule (next)
 ///
 /// OOP: DetectedMedicine class object — Map nahi!
-/// System: AppColors + AppBottomBar (escape route!)
+/// System: AppColors + shared AppBottomNavigation
 /// UX: Dynamic warning — strength mili to GAYAB!
+///
+/// TODO Backend:
+/// - OCR result ko current user/family medication draft se associate karna
+/// - Confirmed scan data ko medication setup flow mein persist karna
+/// - Final medication + schedule Firebase mein save karna
 /// ============================================================
 class ReviewScanScreen extends StatefulWidget {
   const ReviewScanScreen({
@@ -48,9 +54,11 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
     // OCR data → PRE-FILL (user sirf correct kare!)
     _medicineController = TextEditingController(text: _buildMedicineName());
+
     _instructionsController = TextEditingController(
       text: widget.medicine.instructions ?? '',
     );
+
     _strengthController = TextEditingController(
       text: widget.medicine.strength ?? '',
     );
@@ -62,7 +70,10 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
     final name = widget.medicine.name.trim();
     final strength = widget.medicine.strength?.trim();
 
-    if (strength == null || strength.isEmpty) return name;
+    if (strength == null || strength.isEmpty) {
+      return name;
+    }
+
     return '$name $strength';
   }
 
@@ -71,9 +82,11 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
     _medicineController.dispose();
     _instructionsController.dispose();
     _strengthController.dispose();
+
     _medicineFocus.dispose();
     _instructionsFocus.dispose();
     _strengthFocus.dispose();
+
     super.dispose();
   }
 
@@ -90,6 +103,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
       _showMessage('Please enter the medication name.');
       return;
     }
+
     if (strength.isEmpty) {
       _strengthFocus.requestFocus();
       _showMessage('Please enter the medication strength.');
@@ -99,7 +113,10 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
     setState(() => _isContinuing = true);
 
     try {
-      // Schedule screen — Step 2! Data ke sath!
+      // TODO Backend:
+      // Confirmed OCR values ko medication draft/model mein store karein.
+      // Final Firestore save Schedule flow complete hone par hoga.
+
       if (!mounted) return;
 
       Navigator.of(context).push(
@@ -133,7 +150,17 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _retakePhoto() => Navigator.of(context).pop();
+  void _retakePhoto() {
+    Navigator.of(context).pop();
+  }
+
+  // ================= SHARED BOTTOM NAVIGATION =================
+  void _onBottomNavigationTap(int index) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
+      (route) => false,
+    );
+  }
 
   // ================= BUILD =================
   @override
@@ -164,8 +191,11 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
         ],
       ),
 
-      // Suite bar — jaise Home/Meds/Scan mein!
-      bottomNavigationBar: const _SuiteBottomBar(currentIndex: 1),
+      // Review Scan belongs to Meds.
+      bottomNavigationBar: AppBottomNavigation(
+        currentIndex: 1,
+        onTap: _onBottomNavigationTap,
+      ),
     );
   }
 
@@ -177,7 +207,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 47,
+          height: 58,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(
@@ -186,11 +216,11 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
                   onTap: () => Navigator.of(context).pop(),
                   behavior: HitTestBehavior.opaque,
                   child: const Padding(
-                    padding: EdgeInsets.all(3),
+                    padding: EdgeInsets.all(5),
                     child: Icon(
                       Icons.arrow_back_rounded,
-                      color: Colors.white,
-                      size: 20,
+                      color: AppColors.surface,
+                      size: 25,
                     ),
                   ),
                 ),
@@ -198,8 +228,8 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
                 const Text(
                   'Review Scan',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
+                    color: AppColors.surface,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -214,15 +244,15 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
   // ================= STEP INDICATOR (wizard!) =================
   Widget _buildStepIndicator() {
     return Container(
-      height: 44,
+      height: 56,
       color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Row(
         children: [
           // ---- Step 1: ACTIVE ----
           Container(
-            width: 18,
-            height: 18,
+            width: 25,
+            height: 25,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
               color: AppColors.stepActive,
@@ -231,42 +261,46 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
             child: const Text(
               '1',
               style: TextStyle(
-                color: Colors.white,
-                fontSize: 9,
+                color: AppColors.surface,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          const SizedBox(width: 7),
+
+          const SizedBox(width: 8),
+
           const Text(
             'Review Scan',
             style: TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(width: 10),
+
+          const SizedBox(width: 12),
 
           // ---- Progress line ----
           Expanded(
             child: Stack(
               alignment: Alignment.centerLeft,
               children: [
-                Container(height: 1.3, color: AppColors.stepTrack),
+                Container(height: 2, color: AppColors.stepTrack),
                 FractionallySizedBox(
                   widthFactor: 0.36,
-                  child: Container(height: 1.6, color: AppColors.stepActive),
+                  child: Container(height: 2, color: AppColors.stepActive),
                 ),
               ],
             ),
           ),
+
           const SizedBox(width: 14),
 
           // ---- Step 2: INACTIVE ----
           Container(
-            width: 16,
-            height: 16,
+            width: 23,
+            height: 23,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
               color: AppColors.stepInactiveBg,
@@ -276,17 +310,19 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
               '2',
               style: TextStyle(
                 color: AppColors.stepInactiveText,
-                fontSize: 8,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          const SizedBox(width: 5),
+
+          const SizedBox(width: 7),
+
           const Text(
             'Schedule',
             style: TextStyle(
               color: AppColors.stepInactiveText,
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -299,28 +335,35 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
   Widget _buildContent() {
     // DYNAMIC — strength mili to warning GAYAB!
     final strengthUnclear =
-        widget.medicine.strength == null || widget.medicine.strength!.isEmpty;
+        widget.medicine.strength == null ||
+        widget.medicine.strength!.trim().isEmpty;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(13, 10, 13, 26),
+      padding: const EdgeInsets.fromLTRB(15, 16, 15, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildImageCard(),
-          const SizedBox(height: 13),
+          const SizedBox(height: 16),
+
           _buildReadSuccess(),
-          const SizedBox(height: 13),
+          const SizedBox(height: 16),
+
           _buildMainDetailsCard(),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
           // DYNAMIC warning — sirf unclear par!
-          if (strengthUnclear) _buildWarningCard(),
+          if (strengthUnclear) ...[
+            _buildWarningCard(),
+            const SizedBox(height: 10),
+          ],
 
-          const SizedBox(height: 8),
           _buildStrengthCard(strengthUnclear),
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
+
           _buildContinueButton(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+
           _buildRetakeButton(),
         ],
       ),
@@ -333,8 +376,8 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
     return Container(
       width: double.infinity,
-      height: 101,
-      padding: const EdgeInsets.all(8),
+      height: 135,
+      padding: const EdgeInsets.all(9),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
@@ -359,22 +402,22 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
                 alignment: Alignment.center,
                 child: const Icon(
                   Icons.medication_rounded,
-                  size: 45,
+                  size: 48,
                   color: AppColors.fieldHint,
                 ),
               ),
 
             // SCANNED badge
             Positioned(
-              right: 6,
-              top: 6,
+              right: 7,
+              top: 7,
               child: Container(
-                height: 17,
-                padding: const EdgeInsets.symmetric(horizontal: 7),
+                height: 26,
+                padding: const EdgeInsets.symmetric(horizontal: 9),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: AppColors.success,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
@@ -382,14 +425,18 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
                     Text(
                       'SCANNED',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 7,
+                        color: AppColors.surface,
+                        fontSize: 11,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    SizedBox(width: 3),
-                    Icon(Icons.check_rounded, size: 8, color: Colors.white),
+                    SizedBox(width: 4),
+                    Icon(
+                      Icons.check_rounded,
+                      size: 13,
+                      color: AppColors.surface,
+                    ),
                   ],
                 ),
               ),
@@ -403,7 +450,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
   // ================= READ SUCCESS =================
   Widget _buildReadSuccess() {
     return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 7),
+      padding: EdgeInsets.symmetric(horizontal: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -412,18 +459,18 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
             child: Icon(
               Icons.auto_awesome_rounded,
               color: AppColors.formAccent,
-              size: 13,
+              size: 18,
             ),
           ),
-          SizedBox(width: 7),
+          SizedBox(width: 8),
           Expanded(
             child: Text(
               "We've read these details from your label — "
               'check and correct if needed!',
               style: TextStyle(
                 color: AppColors.formAccent,
-                fontSize: 9,
-                height: 1.3,
+                fontSize: 13,
+                height: 1.4,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -437,24 +484,28 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
   Widget _buildMainDetailsCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(11, 11, 11, 12),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 15),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _fieldLabel('Medication Name'),
-          const SizedBox(height: 4),
+          const SizedBox(height: 7),
+
           _EditableField(
             controller: _medicineController,
             focusNode: _medicineFocus,
           ),
-          const SizedBox(height: 10),
+
+          const SizedBox(height: 15),
+
           _fieldLabel('Instructions'),
-          const SizedBox(height: 4),
+          const SizedBox(height: 7),
+
           _EditableField(
             controller: _instructionsController,
             focusNode: _instructionsFocus,
@@ -472,54 +523,59 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
       text,
       style: const TextStyle(
         color: AppColors.formSubtitle,
-        fontSize: 9,
-        fontWeight: FontWeight.w500,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
 
-  // ================= DYNAMIC WARNING! =================
+  // ================= DYNAMIC WARNING =================
   Widget _buildWarningCard() {
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 41),
+      constraints: const BoxConstraints(minHeight: 54),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.hintBackground),
       ),
       child: Row(
         children: [
           Container(
-            width: 3,
-            constraints: const BoxConstraints(minHeight: 41),
+            width: 4,
+            constraints: const BoxConstraints(minHeight: 54),
             decoration: const BoxDecoration(
               color: AppColors.hintAccent,
-              borderRadius: BorderRadius.horizontal(left: Radius.circular(7)),
+              borderRadius: BorderRadius.horizontal(left: Radius.circular(8)),
             ),
           ),
-          const SizedBox(width: 8),
+
+          const SizedBox(width: 10),
+
           const Icon(
             Icons.warning_amber_rounded,
             color: AppColors.hintAccent,
-            size: 13,
+            size: 19,
           ),
-          const SizedBox(width: 7),
+
+          const SizedBox(width: 9),
+
           const Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+              padding: EdgeInsets.symmetric(vertical: 11),
               child: Text(
                 'Strength field was unclear in the photo — '
                 'please verify manually.',
                 style: TextStyle(
                   color: AppColors.formSubtitle,
-                  fontSize: 8,
-                  height: 1.3,
+                  fontSize: 12,
+                  height: 1.4,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+
+          const SizedBox(width: 10),
         ],
       ),
     );
@@ -529,10 +585,10 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
   Widget _buildStrengthCard(bool showWarning) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(11, 10, 11, 11),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.outline),
       ),
       child: Column(
@@ -541,28 +597,34 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
           Row(
             children: [
               _fieldLabel('Strength'),
-              const SizedBox(width: 2),
+
+              const SizedBox(width: 3),
+
               const Text(
                 '*',
                 style: TextStyle(
                   color: AppColors.hintAccent,
-                  fontSize: 9,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
               ),
+
               const Spacer(),
+
               const Text(
                 'REQUIRED',
                 style: TextStyle(
                   color: AppColors.hintAccent,
-                  fontSize: 6.5,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 5),
+
+          const SizedBox(height: 7),
+
           TextField(
             controller: _strengthController,
             focusNode: _strengthFocus,
@@ -570,33 +632,32 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
             onSubmitted: (_) => _confirmAndContinue(),
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 10.5,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
             decoration: InputDecoration(
               hintText: 'Enter strength e.g. 500mg',
               hintStyle: const TextStyle(
                 color: AppColors.fieldHintLight,
-                fontSize: 9,
+                fontSize: 13,
                 fontWeight: FontWeight.w400,
               ),
               filled: true,
               fillColor: AppColors.surface,
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 10,
+                horizontal: 12,
+                vertical: 14,
               ),
-              suffixIconConstraints: const BoxConstraints(minWidth: 35),
+              suffixIconConstraints: const BoxConstraints(minWidth: 42),
               suffixIcon: const Icon(
                 Icons.help_outline_rounded,
                 color: AppColors.hintAccent,
-                size: 13,
+                size: 18,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(7),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  // Warning ho = orange border | warna normal
                   color: showWarning
                       ? AppColors.hintAccent
                       : AppColors.formIcon,
@@ -604,12 +665,12 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(7),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
                   color: showWarning
                       ? AppColors.hintAccent
                       : AppColors.formIcon,
-                  width: 1.4,
+                  width: 1.5,
                 ),
               ),
             ),
@@ -623,7 +684,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
   Widget _buildContinueButton() {
     return SizedBox(
       width: double.infinity,
-      height: 47,
+      height: 54,
       child: ElevatedButton(
         onPressed: _isContinuing ? null : _confirmAndContinue,
         style: ElevatedButton.styleFrom(
@@ -631,21 +692,21 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
           shadowColor: AppColors.formAccent.withValues(alpha: 0.30),
           backgroundColor: AppColors.formAccent,
           disabledBackgroundColor: AppColors.formAccent.withValues(alpha: 0.65),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          foregroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
         ),
         child: _isContinuing
             ? const SizedBox(
-                width: 17,
-                height: 17,
+                width: 21,
+                height: 21,
                 child: CircularProgressIndicator(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   strokeWidth: 2,
                 ),
               )
             : const Text(
                 'Confirm & Continue →',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
               ),
       ),
     );
@@ -656,25 +717,29 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
     return Center(
       child: GestureDetector(
         onTap: _retakePhoto,
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.photo_camera_outlined,
-              size: 11,
-              color: AppColors.formSubtitle,
-            ),
-            SizedBox(width: 3),
-            Text(
-              'Retake Photo',
-              style: TextStyle(
+        behavior: HitTestBehavior.opaque,
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.photo_camera_outlined,
+                size: 17,
                 color: AppColors.formSubtitle,
-                fontSize: 9,
-                fontWeight: FontWeight.w500,
-                decoration: TextDecoration.underline,
               ),
-            ),
-          ],
+              SizedBox(width: 6),
+              Text(
+                'Retake Photo',
+                style: TextStyle(
+                  color: AppColors.formSubtitle,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -683,6 +748,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
 // ============================================================
 // EDITABLE FIELD — green border (OCR data feel!)
+//
 // Justified custom widget — review context ka apna look!
 // ============================================================
 class _EditableField extends StatelessWidget {
@@ -712,97 +778,50 @@ class _EditableField extends StatelessWidget {
           : TextInputAction.next,
       style: const TextStyle(
         color: AppColors.fieldEditBorder,
-        fontSize: 10.5,
+        fontSize: 14,
         fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: const TextStyle(
           color: AppColors.fieldHintLight,
-          fontSize: 9,
+          fontSize: 13,
           fontWeight: FontWeight.w400,
         ),
         filled: true,
         fillColor: AppColors.fieldEditFill,
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 10,
+          horizontal: 12,
+          vertical: 14,
         ),
         suffixIconConstraints: const BoxConstraints(
-          minWidth: 35,
-          minHeight: 30,
+          minWidth: 42,
+          minHeight: 38,
         ),
         suffixIcon: GestureDetector(
           onTap: () => focusNode.requestFocus(),
           child: const Icon(
             Icons.edit_outlined,
             color: AppColors.fieldEditBorder,
-            size: 14,
+            size: 19,
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(
             color: AppColors.fieldEditBorder,
             width: 1,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(
             color: AppColors.fieldEditBorder,
-            width: 1.4,
+            width: 1.5,
           ),
         ),
       ),
-    );
-  }
-}
-// ============================================================
-// BOTTOM BAR
-// ============================================================
-
-class _SuiteBottomBar extends StatelessWidget {
-  const _SuiteBottomBar({required this.currentIndex});
-
-  final int currentIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.formAccent,
-      unselectedItemColor: AppColors.fieldHint,
-      backgroundColor: AppColors.surface,
-      selectedFontSize: 12,
-      unselectedFontSize: 12,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.medication_rounded),
-          label: 'Meds',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_rounded),
-          label: 'Calendar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.people_rounded),
-          label: 'Family',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_rounded),
-          label: 'Settings',
-        ),
-      ],
-      onTap: (index) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MedRemindShell()),
-          (route) => false,
-        );
-      },
     );
   }
 }

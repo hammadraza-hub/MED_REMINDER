@@ -2,18 +2,27 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
+import '../../widgets/app_bottom_navigation.dart';
 
 /// ============================================================
 /// EDIT MEDICATION — existing medicine editing!
 ///
 /// Meds list → card tap → YE SCREEN
 ///
-/// Genius helpers (ye version se):
+/// Genius helpers:
 /// - _parseStrength — "500mg" → ("500", "mg") auto-split!
 /// - _normalizeForm — koi bhi text → standard form!
 /// - Smart inventory units — capsules/ml/doses!
 ///
-/// System: AppColors + suite bar + tablet cap
+/// System: AppColors + shared bottom bar + tablet cap
+///
+/// TODO Backend:
+/// - Current user/family member medication Firestore document load
+/// - Medication changes update
+/// - Inventory document update by medicationId
+/// - Schedule persistence
+/// - Medication photo upload/storage
+/// - Discontinue/archive persistence
 /// ============================================================
 class EditMedicationScreen extends StatefulWidget {
   const EditMedicationScreen({
@@ -54,28 +63,31 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
   void initState() {
     super.initState();
 
-    // "500mg" → ("500", "mg") — GENIUS split!
+    // "500mg" → ("500", "mg")
     final parsedStrength = _parseStrength(widget.medicineStrength);
 
     // Existing data → PRE-FILL
     _nameController = TextEditingController(text: widget.medicineName);
     _strengthController = TextEditingController(text: parsedStrength.$1);
     _selectedUnit = parsedStrength.$2;
+
     _instructionsController = TextEditingController(
       text: 'Take with food after breakfast, avoid grapefruit',
     );
+
     _notesController = TextEditingController();
     _selectedForm = _normalizeForm(widget.medicineForm);
     _currentCount = widget.pillsRemaining;
   }
 
   // =========================================================
-  // GENIUS HELPERS (ye version se!)
+  // HELPERS
   // =========================================================
 
   /// "500mg" / "500 mg" / "500" → ("500", "mg")
   (String, String) _parseStrength(String value) {
     final text = value.trim();
+
     final match = RegExp(
       r'^([\d.]+)\s*(mg|mcg|ml|iu|%)?$',
       caseSensitive: false,
@@ -86,13 +98,18 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
       final unit = match.group(2);
 
       if (unit != null) {
-        if (unit.toLowerCase() == 'iu') return (number, 'IU');
+        if (unit.toLowerCase() == 'iu') {
+          return (number, 'IU');
+        }
+
         return (number, unit.toLowerCase());
       }
+
       return (number, 'mg');
     }
 
     final numberOnly = text.replaceAll(RegExp(r'[^\d.]'), '');
+
     return (numberOnly.isEmpty ? text : numberOnly, 'mg');
   }
 
@@ -100,14 +117,21 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
   String _normalizeForm(String value) {
     final lower = value.toLowerCase();
 
-    if (lower.contains('capsule')) return 'Capsule';
+    if (lower.contains('capsule')) {
+      return 'Capsule';
+    }
+
     if (lower.contains('liquid') ||
         lower.contains('syrup') ||
         lower.contains('solution') ||
         lower.contains('suspension')) {
       return 'Liquid';
     }
-    if (lower.contains('inject')) return 'Injection';
+
+    if (lower.contains('inject')) {
+      return 'Injection';
+    }
+
     return 'Tablet';
   }
 
@@ -115,18 +139,25 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
   String _formAsset(String form) {
     final value = form.toLowerCase();
 
-    if (value.contains('capsule')) return 'assets/images/capsule.jpg';
+    if (value.contains('capsule')) {
+      return 'assets/images/capsule.jpg';
+    }
+
     if (value.contains('liquid') ||
         value.contains('syrup') ||
         value.contains('solution') ||
         value.contains('suspension')) {
       return 'assets/images/liquid.jpg';
     }
-    if (value.contains('inject')) return 'assets/images/injection.jpg';
+
+    if (value.contains('inject')) {
+      return 'assets/images/injection.jpg';
+    }
+
     return 'assets/images/tablet.jpg';
   }
 
-  /// Inventory unit — form ke hisaab se (smart!)
+  /// Inventory unit — form ke hisaab se
   String _inventoryUnit() {
     switch (_selectedForm) {
       case 'Capsule':
@@ -146,6 +177,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     _strengthController.dispose();
     _instructionsController.dispose();
     _notesController.dispose();
+
     super.dispose();
   }
 
@@ -158,13 +190,18 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
           content: Text('Medication name and strength are required.'),
         ),
       );
+
       return;
     }
 
     setState(() => _isSaving = true);
 
     try {
-      // TODO Backend: changes save (Phase 2)
+      // TODO Backend:
+      // Update existing medication document for current user/family member.
+      //
+      // Inventory must update the EXISTING inventory document using
+      // medicationId instead of creating a duplicate inventory document.
       await Future<void>.delayed(const Duration(milliseconds: 400));
 
       if (!mounted) return;
@@ -180,18 +217,29 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
           ),
         );
 
-      Navigator.pop(context); // wapas Meds!
+      Navigator.pop(context);
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
   void _changeSchedule() {
-    // TODO: ScheduleScreen open — reuse hoga!
+    // TODO Backend:
+    // Reuse ScheduleScreen and persist schedule against medicationId.
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Schedule editor — Schedule screen se hoga!'),
       ),
+    );
+  }
+
+  // ================= SHARED BOTTOM NAVIGATION =================
+  void _onBottomNavigationTap(int index) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
+      (route) => false,
     );
   }
 
@@ -205,7 +253,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
           _buildHeader(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 480),
@@ -217,8 +265,11 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
         ],
       ),
 
-      // Suite bar — app jaisi!
-      bottomNavigationBar: const _SuiteBottomBar(currentIndex: 1),
+      // Edit Medication belongs to Meds.
+      bottomNavigationBar: AppBottomNavigation(
+        currentIndex: 1,
+        onTap: _onBottomNavigationTap,
+      ),
     );
   }
 
@@ -229,63 +280,63 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
       children: [
         // ---- Photo ----
         _buildPhoto(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 22),
 
         // ---- Details ----
         _sectionTitle('MEDICATION DETAILS'),
-        const SizedBox(height: 14),
+        const SizedBox(height: 15),
 
         _fieldLabel('Medication Name', required: true),
-        const SizedBox(height: 6),
+        const SizedBox(height: 7),
         _buildNameField(),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
         _fieldLabel('Strength'),
-        const SizedBox(height: 6),
+        const SizedBox(height: 7),
         _buildStrengthRow(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
         _fieldLabel('Medication Form'),
-        const SizedBox(height: 8),
+        const SizedBox(height: 9),
         _buildFormGrid(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
         _fieldLabel('Special Instructions'),
-        const SizedBox(height: 6),
+        const SizedBox(height: 7),
         _buildInstructions(),
-        const SizedBox(height: 24),
+        const SizedBox(height: 26),
 
         // ---- Schedule ----
         _sectionTitle('SCHEDULE'),
-        const SizedBox(height: 10),
+        const SizedBox(height: 11),
         _buildScheduleCard(),
-        const SizedBox(height: 24),
+        const SizedBox(height: 26),
 
         // ---- Inventory ----
         _sectionTitle('INVENTORY'),
-        const SizedBox(height: 10),
+        const SizedBox(height: 11),
         _buildInventoryCard(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
         // ---- Notes ----
         _fieldLabel('Notes (optional)'),
-        const SizedBox(height: 6),
+        const SizedBox(height: 7),
         _buildNotes(),
-        const SizedBox(height: 24),
+        const SizedBox(height: 26),
 
         // ---- Save ----
         _buildSaveButton(),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
-        // ---- Discontinue (dangerous) ----
+        // ---- Discontinue ----
         TextButton(
           onPressed: _showDiscontinueDialog,
           child: const Text(
             'Discontinue this medication',
             style: TextStyle(
               color: AppColors.error,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -301,7 +352,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 9, 12, 14),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 15),
           child: Column(
             children: [
               Row(
@@ -310,22 +361,23 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                     onPressed: () => Navigator.pop(context),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
+                      minWidth: 42,
+                      minHeight: 42,
                     ),
                     icon: const Icon(
                       Icons.arrow_back_rounded,
-                      color: Colors.white,
-                      size: 23,
+                      color: AppColors.surface,
+                      size: 25,
                     ),
                   ),
-                  const SizedBox(width: 2),
+                  const SizedBox(width: 3),
+
                   const Expanded(
                     child: Text(
                       'Edit Medication',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
+                        color: AppColors.surface,
+                        fontSize: 19,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -336,19 +388,24 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
                       'Cancel',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                      style: TextStyle(
+                        color: AppColors.surface,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
+
                   const SizedBox(width: 3),
 
                   // Save (header se bhi!)
                   SizedBox(
-                    height: 38,
+                    height: 40,
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _saveMedication,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.formAccent,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.surface,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 17),
                         shape: RoundedRectangleBorder(
@@ -358,7 +415,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                       child: const Text(
                         'Save',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -369,7 +426,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
 
               // Editing info
               Padding(
-                padding: const EdgeInsets.only(left: 44, top: 2),
+                padding: const EdgeInsets.only(left: 45, top: 3),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Column(
@@ -380,15 +437,15 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                         '${widget.medicineStrength}',
                         style: const TextStyle(
                           color: AppColors.headerSubtext,
-                          fontSize: 10.5,
+                          fontSize: 12,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       const Text(
-                        'Changes saved automatically',
+                        'Changes are saved when you tap Save',
                         style: TextStyle(
                           color: AppColors.headerSubtext,
-                          fontSize: 9.5,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -407,8 +464,8 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     return Column(
       children: [
         Container(
-          width: 86,
-          height: 86,
+          width: 90,
+          height: 90,
           padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
@@ -432,21 +489,24 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
               child: Image.asset(
                 _formAsset(_selectedForm),
                 fit: BoxFit.contain,
-                width: 58,
-                height: 58,
+                width: 60,
+                height: 60,
                 errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.image_not_supported_outlined,
                   color: AppColors.formAccent,
-                  size: 32,
+                  size: 34,
                 ),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 7),
+        const SizedBox(height: 9),
+
         GestureDetector(
           onTap: () {
-            // TODO: image_picker se photo change (Phase 3 extension!)
+            // TODO Backend:
+            // Use image_picker + Firebase Storage and save image URL
+            // against this medication document.
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Photo picker coming soon.')),
             );
@@ -455,7 +515,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
             'Change Photo',
             style: TextStyle(
               color: AppColors.formAccent,
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               decoration: TextDecoration.underline,
               decorationColor: AppColors.formAccent,
@@ -469,7 +529,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
   // ================= NAME =================
   Widget _buildNameField() {
     return Container(
-      height: 50,
+      height: 52,
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border.all(color: AppColors.formIcon),
@@ -479,16 +539,16 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
         controller: _nameController,
         style: const TextStyle(
           color: AppColors.textPrimary,
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
         decoration: const InputDecoration(
           border: InputBorder.none,
-          contentPadding: EdgeInsets.fromLTRB(13, 14, 44, 13),
+          contentPadding: EdgeInsets.fromLTRB(13, 15, 44, 13),
           suffixIcon: Icon(
             Icons.search_rounded,
             color: AppColors.formAccent,
-            size: 21,
+            size: 22,
           ),
         ),
       ),
@@ -502,7 +562,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
         // Number input
         Expanded(
           child: Container(
-            height: 50,
+            height: 52,
             decoration: BoxDecoration(
               color: AppColors.surface,
               border: Border.all(color: AppColors.formIcon),
@@ -515,25 +575,26 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
               ),
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 13,
-                  vertical: 14,
+                  vertical: 15,
                 ),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 8),
 
-        // Unit dropdown (parse se auto-set!)
+        const SizedBox(width: 9),
+
+        // Unit dropdown
         Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: BoxDecoration(
             color: AppColors.formAccent,
             borderRadius: BorderRadius.circular(9),
@@ -542,10 +603,10 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
             child: DropdownButton<String>(
               value: _selectedUnit,
               dropdownColor: AppColors.formAccent,
-              iconEnabledColor: Colors.white,
+              iconEnabledColor: AppColors.surface,
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
+                color: AppColors.surface,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
               items: const [
@@ -557,7 +618,10 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
               ],
               onChanged: (value) {
                 if (value == null) return;
-                setState(() => _selectedUnit = value);
+
+                setState(() {
+                  _selectedUnit = value;
+                });
               },
             ),
           ),
@@ -573,15 +637,15 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
         Row(
           children: [
             Expanded(child: _formButton('Tablet')),
-            const SizedBox(width: 8),
+            const SizedBox(width: 9),
             Expanded(child: _formButton('Capsule')),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 9),
         Row(
           children: [
             Expanded(child: _formButton('Liquid')),
-            const SizedBox(width: 8),
+            const SizedBox(width: 9),
             Expanded(child: _formButton('Injection')),
           ],
         ),
@@ -593,11 +657,15 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     final selected = _selectedForm == form;
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedForm = form),
+      onTap: () {
+        setState(() {
+          _selectedForm = form;
+        });
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 9),
+        height: 68,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           color: selected ? AppColors.formAccent : AppColors.surface,
           borderRadius: BorderRadius.circular(9),
@@ -609,10 +677,10 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Form image (asset ya fallback!)
+            // Form image
             Container(
-              width: 44,
-              height: 44,
+              width: 46,
+              height: 46,
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 color: selected ? AppColors.surface : AppColors.primaryLight,
@@ -627,25 +695,27 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                 child: Image.asset(
                   _formAsset(form),
                   fit: BoxFit.contain,
-                  width: 34,
-                  height: 34,
+                  width: 36,
+                  height: 36,
                   errorBuilder: (context, error, stackTrace) => const Icon(
                     Icons.image_not_supported_outlined,
                     color: AppColors.formAccent,
-                    size: 22,
+                    size: 23,
                   ),
                 ),
               ),
             ),
+
             const SizedBox(width: 9),
+
             Flexible(
               child: Text(
                 form,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: selected ? Colors.white : AppColors.formAccent,
-                  fontSize: 12,
+                  color: selected ? AppColors.surface : AppColors.formAccent,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -659,7 +729,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
   // ================= INSTRUCTIONS =================
   Widget _buildInstructions() {
     return Container(
-      constraints: const BoxConstraints(minHeight: 82),
+      constraints: const BoxConstraints(minHeight: 90),
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border.all(color: AppColors.formIcon),
@@ -670,14 +740,14 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
         maxLines: 3,
         style: const TextStyle(
           color: AppColors.textPrimary,
-          fontSize: 11.5,
+          fontSize: 14,
           height: 1.45,
         ),
         decoration: const InputDecoration(
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(13),
           hintText: 'Enter special instructions...',
-          hintStyle: TextStyle(color: AppColors.fieldHintLight, fontSize: 11.5),
+          hintStyle: TextStyle(color: AppColors.fieldHintLight, fontSize: 13),
         ),
       ),
     );
@@ -690,7 +760,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
         : '${widget.dosesPerDay}x Daily';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+      padding: const EdgeInsets.fromLTRB(15, 16, 13, 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(11),
@@ -712,21 +782,19 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                   '$frequency · 8:30 AM + 8:00 PM',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 6),
                 const Text(
                   'After meals · Mon–Sun',
-                  style: TextStyle(
-                    color: AppColors.formSubtitle,
-                    fontSize: 10.5,
-                  ),
+                  style: TextStyle(color: AppColors.formSubtitle, fontSize: 13),
                 ),
               ],
             ),
           ),
+
           TextButton(
             onPressed: _changeSchedule,
             style: TextButton.styleFrom(
@@ -737,11 +805,11 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Change Schedule',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                  'Change',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                 ),
-                SizedBox(width: 3),
-                Icon(Icons.arrow_forward_ios_rounded, size: 11),
+                SizedBox(width: 4),
+                Icon(Icons.arrow_forward_ios_rounded, size: 12),
               ],
             ),
           ),
@@ -755,7 +823,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     final isLow = _currentCount <= 10;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(11),
@@ -769,10 +837,10 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
       ),
       child: Row(
         children: [
-          // Form image (selected ka!)
+          // Form image
           Container(
-            width: 52,
-            height: 52,
+            width: 54,
+            height: 54,
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
@@ -785,19 +853,20 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
               child: Image.asset(
                 _formAsset(_selectedForm),
                 fit: BoxFit.contain,
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.image_not_supported_outlined,
                   color: AppColors.formAccent,
-                  size: 24,
+                  size: 25,
                 ),
               ),
             ),
           ),
+
           const SizedBox(width: 12),
 
-          // Count info — LIVE low-stock!
+          // Count info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -806,11 +875,11 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                   'Current Count',
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 Text(
                   isLow
                       ? '$_currentCount ${_inventoryUnit()} remaining ⚠️'
@@ -819,7 +888,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                     color: isLow
                         ? AppColors.hintAccent
                         : AppColors.formSubtitle,
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: isLow ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
@@ -831,19 +900,23 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
           _counterButton(
             icon: Icons.remove,
             onTap: _currentCount > 0
-                ? () => setState(() => _currentCount--)
+                ? () {
+                    setState(() {
+                      _currentCount--;
+                    });
+                  }
                 : null,
           ),
 
           // Count
           SizedBox(
-            width: 36,
+            width: 40,
             child: Text(
               '$_currentCount',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 13,
+                fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -853,7 +926,11 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
           _counterButton(
             icon: Icons.add,
             filled: true,
-            onTap: () => setState(() => _currentCount++),
+            onTap: () {
+              setState(() {
+                _currentCount++;
+              });
+            },
           ),
         ],
       ),
@@ -870,8 +947,8 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 34,
-        height: 34,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: filled ? AppColors.formAccent : AppColors.surface,
           shape: BoxShape.circle,
@@ -885,11 +962,11 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
         ),
         child: Icon(
           icon,
-          size: 18,
+          size: 19,
           color: disabled
               ? AppColors.fieldHint
               : filled
-              ? Colors.white
+              ? AppColors.surface
               : AppColors.formAccent,
         ),
       ),
@@ -899,7 +976,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
   // ================= NOTES =================
   Widget _buildNotes() {
     return Container(
-      constraints: const BoxConstraints(minHeight: 68),
+      constraints: const BoxConstraints(minHeight: 78),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(9),
@@ -908,12 +985,16 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
       child: TextField(
         controller: _notesController,
         maxLines: 3,
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 11.5),
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 14,
+          height: 1.4,
+        ),
         decoration: const InputDecoration(
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(13),
           hintText: 'Add any personal notes about this medication...',
-          hintStyle: TextStyle(color: AppColors.fieldHintLight, fontSize: 10.5),
+          hintStyle: TextStyle(color: AppColors.fieldHintLight, fontSize: 13),
         ),
       ),
     );
@@ -922,13 +1003,13 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
   // ================= SAVE =================
   Widget _buildSaveButton() {
     return SizedBox(
-      height: 54,
+      height: 56,
       child: ElevatedButton(
         onPressed: _isSaving ? null : _saveMedication,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.formAccent,
           disabledBackgroundColor: AppColors.formAccent.withValues(alpha: 0.6),
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.surface,
           elevation: 3,
           shadowColor: AppColors.formAccent.withValues(alpha: 0.25),
           shape: RoundedRectangleBorder(
@@ -937,16 +1018,16 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
         ),
         child: _isSaving
             ? const SizedBox(
-                width: 20,
-                height: 20,
+                width: 22,
+                height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: AppColors.surface,
                 ),
               )
             : const Text(
                 'Save Changes',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
       ),
     );
@@ -958,7 +1039,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
       title,
       style: const TextStyle(
         color: AppColors.headerDark,
-        fontSize: 11,
+        fontSize: 13,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.1,
       ),
@@ -970,8 +1051,8 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
       text: TextSpan(
         style: const TextStyle(
           color: AppColors.textPrimary,
-          fontSize: 10.5,
-          fontWeight: FontWeight.w500,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
         ),
         children: [
           TextSpan(text: label),
@@ -992,27 +1073,44 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
   void _showDiscontinueDialog() {
     showDialog<void>(
       context: context,
+      barrierDismissible: true,
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppColors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text('Discontinue medication?'),
+          title: const Text(
+            'Discontinue medication?',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           content: Text(
             '${_nameController.text.trim()} will be moved '
             'out of your active medications.',
+            style: const TextStyle(
+              color: AppColors.formSubtitle,
+              fontSize: 14,
+              height: 1.45,
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Cancel', style: TextStyle(fontSize: 14)),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
 
-                // TODO Backend: discontinue/archive (Phase 2)
+                // TODO Backend:
+                // Set this medication to archived/discontinued for the
+                // current user/family member. Do not delete history.
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Medication discontinued.')),
                 );
@@ -1021,57 +1119,14 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
               },
               child: const Text(
                 'Discontinue',
-                style: TextStyle(color: AppColors.error),
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
-        );
-      },
-    );
-  }
-}
-
-// ============================================================
-// SUITE BOTTOM BAR — app jaisi!
-// ============================================================
-class _SuiteBottomBar extends StatelessWidget {
-  const _SuiteBottomBar({required this.currentIndex});
-
-  final int currentIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.formAccent,
-      unselectedItemColor: AppColors.fieldHint,
-      backgroundColor: AppColors.surface,
-      selectedFontSize: 12,
-      unselectedFontSize: 12,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.medication_rounded),
-          label: 'Meds',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_rounded),
-          label: 'Calendar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.people_rounded),
-          label: 'Family',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_rounded),
-          label: 'Settings',
-        ),
-      ],
-      onTap: (index) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MedRemindShell()),
-          (route) => false,
         );
       },
     );

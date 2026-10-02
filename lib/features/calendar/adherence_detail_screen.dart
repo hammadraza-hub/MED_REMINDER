@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
+import '../../widgets/app_bottom_navigation.dart';
 import '../meds/meds_data.dart';
 import 'adherence_data.dart';
 
@@ -42,7 +43,9 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
 
   late DateTime _endDate;
 
-  // ================= INIT =================
+  // ============================================================
+  // INIT
+  // ============================================================
 
   @override
   void initState() {
@@ -53,7 +56,9 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
     _endDate = DateTime(source.year, source.month, source.day);
   }
 
-  // ================= COMPUTED DATA =================
+  // ============================================================
+  // COMPUTED DATA
+  // ============================================================
 
   DateTime get _startDate {
     return AdherenceData.rangeStart(
@@ -103,7 +108,9 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
     return AdherenceData.medicationSummaries(_filteredRecords);
   }
 
-  // ================= RANGE =================
+  // ============================================================
+  // RANGE
+  // ============================================================
 
   Future<void> _selectRange(AdherenceRange range) async {
     if (range != AdherenceRange.custom) {
@@ -148,7 +155,9 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
     });
   }
 
-  // ================= EXPORT =================
+  // ============================================================
+  // EXPORT
+  // ============================================================
 
   void _exportToReports() {
     // TODO Backend:
@@ -168,31 +177,48 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
       );
   }
 
-  // ================= BUILD =================
+  // ============================================================
+  // BOTTOM NAVIGATION
+  // ============================================================
+
+  void _onBottomNavigationTap(int index) {
+    // Adherence Detail Calendar feature ka child screen hai.
+    // Shared bottom navigation exact selected tab open karegi.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
+      (route) => false,
+    );
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+
       body: Column(
         children: [
           _buildHeader(),
 
           Expanded(
-            child: Center(
+            child: Align(
+              alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 26),
                   child: Column(
                     children: [
                       _buildOverallCard(),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
 
                       _buildMedicationCard(),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
 
                       _buildExportButton(),
                     ],
@@ -203,7 +229,12 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const _AdherenceBottomBar(),
+
+      // Calendar is index 2.
+      bottomNavigationBar: AppBottomNavigation(
+        currentIndex: 2,
+        onTap: _onBottomNavigationTap,
+      ),
     );
   }
 
@@ -218,7 +249,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+          padding: const EdgeInsets.fromLTRB(16, 11, 16, 15),
           child: Column(
             children: [
               Row(
@@ -227,25 +258,25 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                     onTap: () {
                       Navigator.of(context).pop();
                     },
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(22),
                     child: const Padding(
                       padding: EdgeInsets.all(4),
                       child: Icon(
                         Icons.arrow_back_rounded,
                         color: AppColors.surface,
-                        size: 23,
+                        size: 24,
                       ),
                     ),
                   ),
 
-                  const SizedBox(width: 7),
+                  const SizedBox(width: 8),
 
                   const Expanded(
                     child: Text(
                       'Adherence Detail',
                       style: TextStyle(
                         color: AppColors.surface,
-                        fontSize: 17,
+                        fontSize: 19,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -258,9 +289,9 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                       foregroundColor: AppColors.surface,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: 9,
+                        vertical: 10,
                       ),
-                      minimumSize: const Size(0, 36),
+                      minimumSize: const Size(0, 40),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(9),
                       ),
@@ -268,7 +299,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                     child: const Text(
                       'Export →',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -276,9 +307,8 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                 ],
               ),
 
-              const SizedBox(height: 13),
+              const SizedBox(height: 15),
 
-              // ================= RANGE FILTER =================
               Row(
                 children: [
                   Expanded(
@@ -335,13 +365,14 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
       onTap: () => _selectRange(range),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        height: 36,
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 3),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected
               ? AppColors.surface
               : AppColors.calendarToggleBackground,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -349,7 +380,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
             if (icon != null) ...[
               Icon(
                 icon,
-                size: 12,
+                size: 15,
                 color: selected
                     ? AppColors.formAccent
                     : AppColors.headerSubtext,
@@ -366,7 +397,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                   color: selected
                       ? AppColors.formAccent
                       : AppColors.headerSubtext,
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -388,7 +419,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(17),
@@ -414,22 +445,22 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                       'Overall Adherence',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 12,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
 
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 5),
 
                     Text(
                       _rangeSubtitle,
                       style: const TextStyle(
                         color: AppColors.formSubtitle,
-                        fontSize: 8.5,
+                        fontSize: 12,
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
                     RichText(
                       text: TextSpan(
@@ -438,7 +469,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                             text: '${summary.adherencePercent}',
                             style: const TextStyle(
                               color: AppColors.formAccent,
-                              fontSize: 34,
+                              fontSize: 36,
                               height: 1,
                               fontWeight: FontWeight.w700,
                             ),
@@ -448,7 +479,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                             text: '%',
                             style: TextStyle(
                               color: AppColors.formAccent,
-                              fontSize: 20,
+                              fontSize: 22,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -456,7 +487,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 7),
 
                     Text(
                       '${difference >= 0 ? '+' : ''}'
@@ -465,7 +496,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                         color: difference >= 0
                             ? AppColors.success
                             : AppColors.error,
-                        fontSize: 8,
+                        fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -477,9 +508,8 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // ================= BREAKDOWN =================
           Row(
             children: [
               Expanded(
@@ -524,10 +554,10 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
 
   String get _rangeSubtitle {
     if (_selectedMedication != null) {
-      return '${_rangeLabel} · $_selectedMedication';
+      return '$_rangeLabel · $_selectedMedication';
     }
 
-    return '${_rangeLabel} · All Medications';
+    return '$_rangeLabel · All Medications';
   }
 
   String get _rangeLabel {
@@ -550,14 +580,14 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
     final goal = AdherenceData.adherenceGoalPercent();
 
     return SizedBox(
-      width: 76,
-      height: 76,
+      width: 82,
+      height: 82,
       child: Stack(
         alignment: Alignment.center,
         children: [
           SizedBox(
-            width: 70,
-            height: 70,
+            width: 76,
+            height: 76,
             child: CircularProgressIndicator(
               value: summary.adherenceProgress,
               strokeWidth: 7,
@@ -576,16 +606,18 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                 '${summary.adherencePercent}%',
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
               ),
+
+              const SizedBox(height: 2),
 
               Text(
                 'GOAL $goal%',
                 style: const TextStyle(
                   color: AppColors.formSubtitle,
-                  fontSize: 6,
+                  fontSize: 9,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -604,7 +636,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
     required Color background,
   }) {
     return Container(
-      height: 80,
+      height: 88,
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(12),
@@ -614,29 +646,29 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 27,
-            height: 27,
+            width: 29,
+            height: 29,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             child: Icon(icon, color: AppColors.surface, size: 18),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 7),
 
           Text(
             '$value',
             style: TextStyle(
               color: color,
-              fontSize: 16,
+              fontSize: 17,
               height: 1,
               fontWeight: FontWeight.w700,
             ),
           ),
 
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
 
           Text(
             label,
-            style: const TextStyle(color: AppColors.formSubtitle, fontSize: 8),
+            style: const TextStyle(color: AppColors.formSubtitle, fontSize: 11),
           ),
         ],
       ),
@@ -652,7 +684,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(17),
@@ -673,7 +705,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                   'Per Medication',
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 11,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -683,20 +715,20 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
             ],
           ),
 
-          const SizedBox(height: 13),
+          const SizedBox(height: 16),
 
           if (meds.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 22),
               child: Text(
                 'No adherence data',
-                style: TextStyle(color: AppColors.fieldHint, fontSize: 10),
+                style: TextStyle(color: AppColors.fieldHint, fontSize: 13),
               ),
             )
           else
             ...meds.map(
               (med) => Padding(
-                padding: const EdgeInsets.only(bottom: 13),
+                padding: const EdgeInsets.only(bottom: 16),
                 child: _medicationRow(med),
               ),
             ),
@@ -722,7 +754,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
             value: null,
             child: Text(
               'All Meds',
-              style: TextStyle(color: AppColors.textPrimary, fontSize: 11),
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
             ),
           ),
 
@@ -733,7 +765,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                 med.displayName,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 11,
+                  fontSize: 13,
                 ),
               ),
             ),
@@ -745,15 +777,19 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
         children: [
           Text(
             _selectedMedication ?? 'All Meds',
-            style: const TextStyle(color: AppColors.formSubtitle, fontSize: 9),
+            style: const TextStyle(
+              color: AppColors.formSubtitle,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
 
-          const SizedBox(width: 3),
+          const SizedBox(width: 4),
 
           const Icon(
             Icons.keyboard_arrow_down_rounded,
             color: AppColors.formSubtitle,
-            size: 14,
+            size: 17,
           ),
         ],
       ),
@@ -766,11 +802,9 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ================= IMAGE =================
-
         Container(
-          width: 40,
-          height: 40,
+          width: 44,
+          height: 44,
           decoration: const BoxDecoration(
             color: AppColors.cardFill,
             shape: BoxShape.circle,
@@ -785,14 +819,14 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                     return Icon(
                       _medicineTypeIcon(med.type),
                       color: color,
-                      size: 21,
+                      size: 22,
                     );
                   },
                 )
-              : Icon(_medicineTypeIcon(med.type), color: color, size: 21),
+              : Icon(_medicineTypeIcon(med.type), color: color, size: 22),
         ),
 
-        const SizedBox(width: 9),
+        const SizedBox(width: 11),
 
         Expanded(
           child: Column(
@@ -807,24 +841,26 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 10,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
 
+                  const SizedBox(width: 8),
+
                   Text(
                     '${med.adherencePercent}%',
                     style: TextStyle(
                       color: color,
-                      fontSize: 9,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 6),
+              const SizedBox(height: 7),
 
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
@@ -836,7 +872,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                 ),
               ),
 
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
 
               Row(
                 children: [
@@ -845,16 +881,18 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
                       med.breakdownLabel,
                       style: const TextStyle(
                         color: AppColors.formSubtitle,
-                        fontSize: 7.5,
+                        fontSize: 11,
                       ),
                     ),
                   ),
+
+                  const SizedBox(width: 6),
 
                   Text(
                     med.frequencyLabel,
                     style: const TextStyle(
                       color: AppColors.formSubtitle,
-                      fontSize: 7.5,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -949,7 +987,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
   Widget _buildExportButton() {
     return SizedBox(
       width: double.infinity,
-      height: 45,
+      height: 50,
       child: OutlinedButton(
         onPressed: _exportToReports,
         style: OutlinedButton.styleFrom(
@@ -962,78 +1000,21 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
         ),
         child: Row(
           children: [
-            // Green + Red + Blue bars
             _buildExportBarsIcon(),
 
-            const SizedBox(width: 7),
+            const SizedBox(width: 9),
 
             const Expanded(
               child: Text(
                 'Export This View to Reports',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
               ),
             ),
 
-            const Icon(Icons.arrow_forward_rounded, size: 14),
+            const Icon(Icons.arrow_forward_rounded, size: 18),
           ],
         ),
       ),
-    );
-  }
-}
-
-// ============================================================
-// BOTTOM BAR
-//
-// Adherence Detail Calendar flow ka part hai,
-// isliye Calendar selected rahega.
-// ============================================================
-
-class _AdherenceBottomBar extends StatelessWidget {
-  const _AdherenceBottomBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 2,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.formAccent,
-      unselectedItemColor: AppColors.fieldHint,
-      backgroundColor: AppColors.surface,
-      selectedFontSize: 10,
-      unselectedFontSize: 10,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.medication_rounded),
-          label: 'Meds',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_rounded),
-          label: 'Calendar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_rounded),
-          label: 'Reports',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_rounded),
-          label: 'Settings',
-        ),
-      ],
-      onTap: (index) {
-        // TODO Navigation:
-        // MedRemindShell mein initialIndex support add hone ke
-        // baad exact selected destination open karna hai.
-        //
-        // Abhi suite ke existing behavior ke mutabiq shell
-        // return hota hai.
-
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MedRemindShell()),
-          (route) => false,
-        );
-      },
     );
   }
 }

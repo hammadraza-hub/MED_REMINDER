@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
+import '../../widgets/app_bottom_navigation.dart';
 
 /// ============================================================
 /// SCHEDULE SCREEN — Step 2 of 2 (wizard FINAL!)
@@ -12,7 +13,14 @@ import '../../main_shell.dart';
 /// 5 schedule types (Tapering tak!) + dose names + meal toggle
 /// + date range + smart validations!
 ///
-/// System: AppColors + suite bar + tablet cap
+/// System: AppColors + shared AppBottomNavigation + tablet cap
+///
+/// TODO Backend:
+/// - Medication + schedule current authenticated user/family member ke
+///   Firestore documents mein save karna
+/// - Dose reminder notifications schedule/reschedule karna
+/// - Inventory document medicationId ke against initialize/update karna
+/// - Schedule edit mode mein existing schedule document update karna
 /// ============================================================
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key, this.medicineName, this.medicineStrength});
@@ -96,8 +104,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ],
       ),
 
-      // Suite bar — poori app jaisi!
-      bottomNavigationBar: const _SuiteBottomBar(currentIndex: 1),
+      // Schedule belongs to the Meds flow.
+      bottomNavigationBar: AppBottomNavigation(
+        currentIndex: 1,
+        onTap: _onBottomNavigationTap,
+      ),
+    );
+  }
+
+  // ================= SHARED BOTTOM NAVIGATION =================
+  void _onBottomNavigationTap(int index) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
+      (route) => false,
     );
   }
 
@@ -109,7 +128,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(13, 9, 13, 12),
+          padding: const EdgeInsets.fromLTRB(13, 10, 13, 14),
           child: Column(
             children: [
               // ---- Row 1: Back + Title + Cancel + Done ----
@@ -119,21 +138,23 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     onTap: () => Navigator.of(context).pop(),
                     borderRadius: BorderRadius.circular(22),
                     child: const Padding(
-                      padding: EdgeInsets.all(4),
+                      padding: EdgeInsets.all(5),
                       child: Icon(
                         Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 24,
+                        color: AppColors.surface,
+                        size: 25,
                       ),
                     ),
                   ),
+
                   const SizedBox(width: 8),
+
                   const Expanded(
                     child: Text(
                       'Schedule',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
+                        color: AppColors.surface,
+                        fontSize: 19,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -143,40 +164,41 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.surface,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 9,
-                        vertical: 6,
+                        vertical: 7,
                       ),
-                      minimumSize: const Size(0, 36),
+                      minimumSize: const Size(0, 38),
                     ),
                     child: const Text(
                       'Cancel',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
+
                   const SizedBox(width: 4),
 
                   // Done ✓ (header se bhi confirm!)
                   SizedBox(
-                    height: 36,
+                    height: 40,
                     child: FilledButton(
                       onPressed: _isConfirming ? null : _confirmSchedule,
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.formAccent,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.surface,
                         padding: const EdgeInsets.symmetric(horizontal: 15),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
                       child: const Text(
                         'Done ✓',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -184,54 +206,58 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 9),
+
+              const SizedBox(height: 11),
 
               // ---- Row 2: Medicine info + doses badge ----
               Row(
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(
                       color: AppColors.fieldFill,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.medication_rounded,
                       color: AppColors.headerDark,
-                      size: 20,
+                      size: 22,
                     ),
                   ),
-                  const SizedBox(width: 9),
+
+                  const SizedBox(width: 10),
+
                   Flexible(
                     child: Text(
                       _medicineTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.5,
+                        color: AppColors.surface,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
+
                   const SizedBox(width: 8),
 
                   // LIVE doses count badge!
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 5,
+                      horizontal: 10,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.16),
+                      color: AppColors.surface.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(13),
                     ),
                     child: Text(
                       '${_doseTimes.length} Doses Daily',
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9.5,
+                        color: AppColors.surface,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -249,24 +275,33 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final name = widget.medicineName?.trim() ?? '';
     final strength = widget.medicineStrength?.trim() ?? '';
 
-    if (name.isEmpty && strength.isEmpty) return 'Medication';
-    if (strength.isEmpty) return name;
-    if (name.isEmpty) return strength;
+    if (name.isEmpty && strength.isEmpty) {
+      return 'Medication';
+    }
+
+    if (strength.isEmpty) {
+      return name;
+    }
+
+    if (name.isEmpty) {
+      return strength;
+    }
+
     return '$name $strength';
   }
 
   // ================= STEP INDICATOR — 2/2 ACTIVE! =================
   Widget _buildStepIndicator() {
     return Container(
-      height: 44,
+      height: 56,
       color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Row(
         children: [
           // Step 1: DONE!
           Container(
-            width: 18,
-            height: 18,
+            width: 25,
+            height: 25,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
               color: AppColors.success,
@@ -274,40 +309,44 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
             child: const Icon(
               Icons.check_rounded,
-              color: Colors.white,
-              size: 12,
+              color: AppColors.surface,
+              size: 16,
             ),
           ),
-          const SizedBox(width: 7),
+
+          const SizedBox(width: 8),
+
           const Text(
             'Review',
             style: TextStyle(
               color: AppColors.formSubtitle,
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(width: 10),
+
+          const SizedBox(width: 12),
 
           // Full progress!
           Expanded(
             child: Stack(
               alignment: Alignment.centerLeft,
               children: [
-                Container(height: 1.3, color: AppColors.stepTrack),
+                Container(height: 2, color: AppColors.stepTrack),
                 FractionallySizedBox(
                   widthFactor: 1.0,
-                  child: Container(height: 1.6, color: AppColors.stepActive),
+                  child: Container(height: 2, color: AppColors.stepActive),
                 ),
               ],
             ),
           ),
+
           const SizedBox(width: 14),
 
           // Step 2: ACTIVE!
           Container(
-            width: 18,
-            height: 18,
+            width: 25,
+            height: 25,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
               color: AppColors.stepActive,
@@ -316,18 +355,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             child: const Text(
               '2',
               style: TextStyle(
-                color: Colors.white,
-                fontSize: 9,
+                color: AppColors.surface,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          const SizedBox(width: 5),
+
+          const SizedBox(width: 7),
+
           const Text(
             'Schedule',
             style: TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 9.5,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -339,30 +380,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // ================= CONTENT =================
   Widget _buildContent() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(13, 14, 13, 26),
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 28),
       child: Column(
         children: [
-          // 1. Schedule Type + Days (ek card — design!)
+          // 1. Schedule Type + Days
           _buildScheduleCard(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           // 2. Cycle (sirf Cyclical mein!)
           if (_scheduleType == 'Cyclical') ...[
             _buildCycleCard(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
           ],
 
           // 3. Dose Times
           _buildDoseTimesCard(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           // 4. Meal Timing
           _buildMealTimingCard(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           // 5. Date Range
           _buildDateRangeCard(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
 
           // Confirm!
           _buildConfirmButton(),
@@ -379,27 +420,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('SCHEDULE TYPE'),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // 5 options (Tapering tak!)
           ..._scheduleTypes.map(
             (option) => _buildScheduleOption(option.title, option.description),
           ),
-          const SizedBox(height: 8),
+
+          const SizedBox(height: 10),
           const Divider(height: 1, color: AppColors.outline),
-          const SizedBox(height: 13),
+          const SizedBox(height: 15),
 
           _sectionTitle('REPEAT ON'),
-          const SizedBox(height: 11),
-          _buildDaySelector(),
-          const SizedBox(height: 9),
+          const SizedBox(height: 13),
 
-          // Live hint — guidance!
+          _buildDaySelector(),
+
+          const SizedBox(height: 11),
+
           Text(
             _repeatHint,
             style: const TextStyle(
               color: AppColors.formSubtitle,
-              fontSize: 10.5,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -416,13 +458,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         setState(() {
           _scheduleType = title;
 
-          // Type ke hisaab se days RESET (consistency!)
+          // Type ke hisaab se days RESET
           if (title == 'Daily') {
             _selectedDays
               ..clear()
               ..addAll({1, 2, 3, 4, 5, 6, 7});
           } else if (title == 'As Needed (PRN)' || title == 'Tapering Dose') {
-            // In types mein days matter nahi — sab rakho
             _selectedDays
               ..clear()
               ..addAll({1, 2, 3, 4, 5, 6, 7});
@@ -431,8 +472,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        margin: const EdgeInsets.only(bottom: 5),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
         decoration: BoxDecoration(
           color: selected ? AppColors.successBackground : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
@@ -446,9 +487,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           children: [
             // Radio dot
             Container(
-              width: 19,
-              height: 19,
-              margin: const EdgeInsets.only(top: 2),
+              width: 21,
+              height: 21,
+              margin: const EdgeInsets.only(top: 1),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: selected ? AppColors.formAccent : AppColors.surface,
@@ -460,17 +501,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               child: selected
                   ? Center(
                       child: Container(
-                        width: 6,
-                        height: 6,
+                        width: 7,
+                        height: 7,
                         decoration: const BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface,
                           shape: BoxShape.circle,
                         ),
                       ),
                     )
                   : null,
             ),
-            const SizedBox(width: 10),
+
+            const SizedBox(width: 11),
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,27 +522,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     title,
                     style: const TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 2),
+
+                  const SizedBox(height: 3),
+
                   Text(
                     description,
                     style: const TextStyle(
                       color: AppColors.formSubtitle,
-                      fontSize: 10.5,
-                      height: 1.25,
+                      fontSize: 12,
+                      height: 1.35,
                     ),
                   ),
                 ],
               ),
             ),
+
             if (selected)
               const Icon(
                 Icons.check_rounded,
                 color: AppColors.formAccent,
-                size: 19,
+                size: 20,
               ),
           ],
         ),
@@ -526,8 +572,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: 38,
-            height: 38,
+            width: 40,
+            height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: selected ? AppColors.formAccent : AppColors.fieldFill,
@@ -539,8 +585,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             child: Text(
               day.$2,
               style: TextStyle(
-                color: selected ? Colors.white : AppColors.formSubtitle,
-                fontSize: 12,
+                color: selected ? AppColors.surface : AppColors.formSubtitle,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -551,10 +597,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   String get _repeatHint {
-    if (_selectedDays.isEmpty) return 'Select reminder days';
+    if (_selectedDays.isEmpty) {
+      return 'Select reminder days';
+    }
+
     if (_selectedDays.length == 7) {
       return 'Reminders will fire every day';
     }
+
     return 'Reminders will fire only on selected days';
   }
 
@@ -565,25 +615,36 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('CYCLE PATTERN'),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           _buildCycleRow(
             label: 'On for',
             value: _weeksOn,
-            onChanged: (v) => setState(() => _weeksOn = v),
+            onChanged: (value) {
+              setState(() {
+                _weeksOn = value;
+              });
+            },
           ),
-          const SizedBox(height: 14),
+
+          const SizedBox(height: 16),
+
           _buildCycleRow(
             label: 'Off for',
             value: _weeksOff,
-            onChanged: (v) => setState(() => _weeksOff = v),
+            onChanged: (value) {
+              setState(() {
+                _weeksOff = value;
+              });
+            },
           ),
-          const SizedBox(height: 14),
 
-          // Pattern summary — ek line mein!
+          const SizedBox(height: 16),
+
+          // Pattern summary
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
             decoration: BoxDecoration(
               color: AppColors.fieldFill,
               borderRadius: BorderRadius.circular(7),
@@ -594,7 +655,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.formAccent,
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -612,12 +673,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return Row(
       children: [
         SizedBox(
-          width: 70,
+          width: 72,
           child: Text(
             label,
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -628,19 +689,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           icon: Icons.remove_rounded,
           filled: false,
           onTap: () {
-            if (value > 1) onChanged(value - 1);
+            if (value > 1) {
+              onChanged(value - 1);
+            }
           },
         ),
 
         // Value
         SizedBox(
-          width: 38,
+          width: 42,
           child: Text(
             '$value',
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -651,16 +714,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           icon: Icons.add_rounded,
           filled: true,
           onTap: () {
-            if (value < 12) onChanged(value + 1);
+            if (value < 12) {
+              onChanged(value + 1);
+            }
           },
         ),
 
         const Spacer(),
+
         const Text(
           'weeks',
           style: TextStyle(
             color: AppColors.formAccent,
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -676,8 +742,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 34,
-        height: 34,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: filled ? AppColors.formAccent : AppColors.surface,
@@ -685,14 +751,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
         child: Icon(
           icon,
-          size: 20,
-          color: filled ? Colors.white : AppColors.formAccent,
+          size: 21,
+          color: filled ? AppColors.surface : AppColors.formAccent,
         ),
       ),
     );
   }
 
-  String _weekWord(int count) => count == 1 ? 'week' : 'weeks';
+  String _weekWord(int count) {
+    return count == 1 ? 'week' : 'weeks';
+  }
 
   // ================= DOSE TIMES =================
   Widget _buildDoseTimesCard() {
@@ -709,8 +777,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 onTap: _addDoseTime,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
+                    horizontal: 9,
+                    vertical: 7,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.fieldFill,
@@ -720,15 +788,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     children: [
                       Icon(
                         Icons.add_rounded,
-                        size: 17,
+                        size: 18,
                         color: AppColors.formAccent,
                       ),
-                      SizedBox(width: 3),
+                      SizedBox(width: 4),
                       Text(
-                        'Add Another Time',
+                        'Add Time',
                         style: TextStyle(
                           color: AppColors.formAccent,
-                          fontSize: 10.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -738,12 +806,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+
+          const SizedBox(height: 14),
 
           ...List.generate(_doseTimes.length, (index) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: index == _doseTimes.length - 1 ? 0 : 8,
+                bottom: index == _doseTimes.length - 1 ? 0 : 9,
               ),
               child: _buildDoseRow(index),
             );
@@ -755,8 +824,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   Widget _buildDoseRow(int index) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 62),
-      padding: const EdgeInsets.fromLTRB(10, 9, 8, 9),
+      constraints: const BoxConstraints(minHeight: 68),
+      padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(9),
@@ -764,12 +833,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       ),
       child: Row(
         children: [
-          // Drag indicator (reorder hint!)
           const Icon(
             Icons.drag_indicator_rounded,
             color: AppColors.fieldHint,
-            size: 20,
+            size: 21,
           ),
+
           const SizedBox(width: 8),
 
           // Dose name + meal
@@ -782,30 +851,32 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   _doseNames[index],
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 2),
+
+                const SizedBox(height: 4),
+
                 Text(
                   _mealRelativeTiming
                       ? _selectedMealTiming
                       : 'Fixed time — no meal link',
                   style: const TextStyle(
                     color: AppColors.formSubtitle,
-                    fontSize: 10,
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Time button — ASLI TIME PICKER!
+          // Time button
           GestureDetector(
             onTap: () => _pickTime(index),
             child: Container(
-              width: 108,
-              height: 38,
+              width: 112,
+              height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: AppColors.fieldFill,
@@ -819,7 +890,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     _formatTime(_doseTimes[index]),
                     style: const TextStyle(
                       color: AppColors.formAccent,
-                      fontSize: 11.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -827,15 +898,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   const Icon(
                     Icons.keyboard_arrow_down_rounded,
                     color: AppColors.formAccent,
-                    size: 17,
+                    size: 18,
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 5),
 
-          // Delete (1 se zyada ho to)
+          const SizedBox(width: 4),
+
+          // Delete
           if (_doseTimes.length > 1)
             GestureDetector(
               onTap: () => _removeDose(index),
@@ -844,7 +916,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 child: Icon(
                   Icons.close_rounded,
                   color: AppColors.error,
-                  size: 20,
+                  size: 21,
                 ),
               ),
             ),
@@ -853,7 +925,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ================= MEAL TIMING (global switch!) =================
+  // ================= MEAL TIMING =================
   Widget _buildMealTimingCard() {
     return _card(
       child: Column(
@@ -869,33 +941,35 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       'Meal-Relative Timing',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(height: 3),
+                    SizedBox(height: 4),
                     Text(
                       'Link dose timing to meals',
                       style: TextStyle(
                         color: AppColors.formSubtitle,
-                        fontSize: 10.5,
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              // Switch — deprecated params ki jagah clean!
               Switch(
                 value: _mealRelativeTiming,
-                onChanged: (v) => setState(() => _mealRelativeTiming = v),
+                onChanged: (value) {
+                  setState(() {
+                    _mealRelativeTiming = value;
+                  });
+                },
               ),
             ],
           ),
 
-          // Timing chips (sirf ON hone par!)
           if (_mealRelativeTiming) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(child: _mealTimingChip('Before meal')),
@@ -915,31 +989,41 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final selected = _selectedMealTiming == title;
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedMealTiming = title),
+      onTap: () {
+        setState(() {
+          _selectedMealTiming = title;
+        });
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        height: 36,
+        height: 40,
         alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 5),
         decoration: BoxDecoration(
           color: selected ? AppColors.formAccent : AppColors.surface,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.formAccent),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (selected) ...[
-              const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+              const Icon(
+                Icons.check_rounded,
+                size: 15,
+                color: AppColors.surface,
+              ),
               const SizedBox(width: 3),
             ],
+
             Flexible(
               child: Text(
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: selected ? Colors.white : AppColors.formAccent,
-                  fontSize: 10.5,
+                  color: selected ? AppColors.surface : AppColors.formAccent,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -957,7 +1041,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('DATE RANGE'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -970,11 +1055,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       'Start Date',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 10.5,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 6),
+
+                    const SizedBox(height: 7),
+
                     _dateField(
                       text: _formatDate(_startDate),
                       onTap: _pickStartDate,
@@ -982,9 +1069,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   ],
                 ),
               ),
+
               const SizedBox(width: 9),
 
-              // End (optional)
+              // End
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -993,11 +1081,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       'End Date (optional)',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 10.5,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 6),
+
+                    const SizedBox(height: 7),
+
                     _dateField(
                       text: _hasEndDate && _endDate != null
                           ? _formatDate(_endDate!)
@@ -1023,7 +1113,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 46,
+        height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           color: muted ? AppColors.fieldFill : AppColors.surface,
@@ -1036,10 +1126,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           children: [
             Icon(
               Icons.calendar_today_outlined,
-              size: 17,
+              size: 18,
               color: muted ? AppColors.fieldHint : AppColors.formAccent,
             ),
+
             const SizedBox(width: 7),
+
             Expanded(
               child: Text(
                 text,
@@ -1047,7 +1139,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: muted ? AppColors.fieldHint : AppColors.textPrimary,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1062,13 +1154,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildConfirmButton() {
     return SizedBox(
       width: double.infinity,
-      height: 54,
+      height: 56,
       child: FilledButton(
         onPressed: _isConfirming ? null : _confirmSchedule,
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.formAccent,
           disabledBackgroundColor: AppColors.formAccent.withValues(alpha: 0.6),
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.surface,
           elevation: 3,
           shadowColor: AppColors.formAccent.withValues(alpha: 0.22),
           shape: RoundedRectangleBorder(
@@ -1081,12 +1173,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.3,
-                  color: Colors.white,
+                  color: AppColors.surface,
                 ),
               )
             : const Text(
                 'Confirm Schedule  →',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
       ),
     );
@@ -1099,8 +1191,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       initialTime: _doseTimes[index],
     );
 
-    if (picked == null || !mounted) return;
-    setState(() => _doseTimes[index] = picked);
+    if (picked == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _doseTimes[index] = picked;
+    });
   }
 
   Future<void> _addDoseTime() async {
@@ -1109,10 +1206,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       initialTime: const TimeOfDay(hour: 14, minute: 0),
     );
 
-    if (picked == null || !mounted) return;
+    if (picked == null || !mounted) {
+      return;
+    }
 
     setState(() {
       _doseTimes = [..._doseTimes, picked];
+
       _doseNames = [..._doseNames, 'Dose ${_doseTimes.length}'];
     });
   }
@@ -1137,7 +1237,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
     );
 
-    if (picked == null || !mounted) return;
+    if (picked == null || !mounted) {
+      return;
+    }
 
     setState(() {
       _startDate = picked;
@@ -1158,7 +1260,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       lastDate: _startDate.add(const Duration(days: 365 * 5)),
     );
 
-    if (picked == null || !mounted) return;
+    if (picked == null || !mounted) {
+      return;
+    }
 
     setState(() {
       _endDate = picked;
@@ -1172,6 +1276,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       _showMessage('Please select at least one reminder day.');
       return;
     }
+
     if (_doseTimes.isEmpty) {
       _showMessage('Please add at least one dose time.');
       return;
@@ -1180,8 +1285,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     setState(() => _isConfirming = true);
 
     try {
-      // TODO Backend: medicine + schedule save (Phase 2)
-      // Data: type, days, cycle, doseTimes, mealTiming, dateRange
+      // TODO Backend:
+      // 1. Save/update medication for current user/family member.
+      // 2. Save schedule type, selected days, cycle, dose times,
+      //    meal timing and date range.
+      // 3. Create/update inventory using medicationId.
+      //    Do NOT create duplicate inventory documents.
+      // 4. Schedule local/Firebase medication notifications.
       await Future<void>.delayed(const Duration(milliseconds: 400));
 
       if (!mounted) return;
@@ -1192,20 +1302,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           SnackBar(
             duration: const Duration(seconds: 3),
             content: Text(
-              '🎉 ${_medicineTitle} scheduled!\n'
+              '🎉 $_medicineTitle scheduled!\n'
               '${_doseTimes.length} doses · '
               '${_scheduleType.toLowerCase()}',
             ),
           ),
         );
 
-      // Wizard COMPLETE — stack saaf → MedRemindShell!
+      // Wizard COMPLETE — directly Meds tab.
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MedRemindShell()),
+        MaterialPageRoute(
+          builder: (_) => const MedRemindShell(initialIndex: 1),
+        ),
         (route) => false,
       );
     } finally {
-      if (mounted) setState(() => _isConfirming = false);
+      if (mounted) {
+        setState(() => _isConfirming = false);
+      }
     }
   }
 
@@ -1219,7 +1333,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _card({required Widget child}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
@@ -1241,7 +1355,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       text,
       style: const TextStyle(
         color: AppColors.headerDark,
-        fontSize: 11,
+        fontSize: 13,
         fontWeight: FontWeight.w800,
         letterSpacing: 0.8,
       ),
@@ -1250,8 +1364,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   String _formatTime(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+
     final minute = time.minute.toString().padLeft(2, '0');
+
     final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+
     return '${hour.toString().padLeft(2, '0')} : $minute $period';
   }
 
@@ -1270,53 +1387,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       'Nov',
       'Dec',
     ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
-}
 
-// ============================================================
-// SUITE BOTTOM BAR — app jaisi!
-// ============================================================
-class _SuiteBottomBar extends StatelessWidget {
-  const _SuiteBottomBar({required this.currentIndex});
-
-  final int currentIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.formAccent,
-      unselectedItemColor: AppColors.fieldHint,
-      backgroundColor: AppColors.surface,
-      selectedFontSize: 12,
-      unselectedFontSize: 12,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.medication_rounded),
-          label: 'Meds',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_rounded),
-          label: 'Calendar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.people_rounded),
-          label: 'Family',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_rounded),
-          label: 'Settings',
-        ),
-      ],
-      onTap: (index) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MedRemindShell()),
-          (route) => false,
-        );
-      },
-    );
+    return '${months[date.month - 1]} '
+        '${date.day}, ${date.year}';
   }
 }

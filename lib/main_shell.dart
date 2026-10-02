@@ -4,21 +4,50 @@ import 'core/constants/app_colors.dart';
 import 'features/home/home_screen.dart';
 import 'features/meds/meds_screen.dart';
 import 'features/calendar/calendar_screen.dart';
+import 'widgets/app_bottom_navigation.dart';
 
-/// App ka navigation SHELL — bottom bar + tabs yahan.
-/// Har tab apni screen; screens apni bottom nav NAHI rakhtin!
+/// ============================================================
+/// MED REMIND MAIN SHELL
 ///
-/// IndexedStack ka faida: tab switch par state save rehta hai —
-/// Home ka scroll, filters — sab yaad rehta hai! 🎯
+/// PURPOSE:
+/// App ke 5 main tabs ko manage karta hai.
+///
+/// TABS:
+/// 0 → Home
+/// 1 → Meds
+/// 2 → Calendar
+/// 3 → Reports
+/// 4 → Settings
+///
+/// ARCHITECTURE:
+/// • Main tab switching yahan hoti hai.
+/// • Shared bottom bar AppBottomNavigation se aati hai.
+/// • IndexedStack tab state preserve karta hai.
+/// • Detail screens initialIndex ke through kisi specific
+///   main tab par wapas aa sakti hain.
+///
+/// IMPORTANT:
+/// Main tab screens apni duplicate bottom navigation NAHI rakhen.
+///
+/// Example:
+/// const MedRemindShell(initialIndex: 1) → Meds
+/// const MedRemindShell(initialIndex: 2) → Calendar
+///
+/// TODO Navigation:
+/// Future mein go_router / Navigator 2.0 use karne par shell
+/// navigation centralized routing ke saath integrate ki ja sakti hai.
+/// ============================================================
 class MedRemindShell extends StatefulWidget {
-  const MedRemindShell({super.key});
+  const MedRemindShell({super.key, this.initialIndex = 0});
+
+  final int initialIndex;
 
   @override
   State<MedRemindShell> createState() => _MedRemindShellState();
 }
 
 class _MedRemindShellState extends State<MedRemindShell> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   static const List<Widget> _tabs = [
     HomeScreen(),
@@ -29,49 +58,42 @@ class _MedRemindShellState extends State<MedRemindShell> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+
+    // Safety:
+    // Agar galti se invalid index pass ho jaye to app crash na kare.
+    _currentIndex = widget.initialIndex.clamp(0, _tabs.length - 1);
+  }
+
+  void _onBottomNavigationTap(int index) {
+    if (index == _currentIndex) {
+      return;
+    }
+
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _tabs),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: AppBottomNavigation(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.formAccent, // ← SYSTEM! ✅
-        unselectedItemColor: AppColors.fieldHint, // ← SYSTEM! ✅
-        backgroundColor: AppColors.surface,
-        selectedLabelStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.medication_rounded),
-            label: 'Meds',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_rounded),
-            label: 'Calendar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_rounded),
-            label: 'Reports',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_rounded),
-            label: 'Settings',
-          ),
-        ],
+        onTap: _onBottomNavigationTap,
       ),
     );
   }
 }
 
-/// Tab placeholder — asli screens baad mein banengi
+/// ============================================================
+/// PLACEHOLDER TAB
+///
+/// Reports aur Settings ki actual screens banne tak
+/// temporary placeholder.
+/// ============================================================
 class _PlaceholderTab extends StatelessWidget {
   const _PlaceholderTab({required this.title, required this.icon});
 

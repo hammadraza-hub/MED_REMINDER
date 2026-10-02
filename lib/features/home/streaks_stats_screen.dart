@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
+import '../../widgets/app_bottom_navigation.dart';
 import 'streaks_stats_data.dart';
 
 /// ============================================================
@@ -36,7 +37,9 @@ class StreaksStatsScreen extends StatefulWidget {
 class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
   StreakTrendRange _selectedTrendRange = StreakTrendRange.thirtyDays;
 
-  // ================= COMPUTED DATA =================
+  // ============================================================
+  // COMPUTED DATA
+  // ============================================================
 
   StreakStatsSummary get _summary {
     return StreaksStatsData.summary();
@@ -46,7 +49,9 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
     return StreaksStatsData.trend(range: _selectedTrendRange);
   }
 
-  // ================= SHARE =================
+  // ============================================================
+  // SHARE
+  // ============================================================
 
   void _shareStats() {
     // TODO Backend / Share:
@@ -62,29 +67,53 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
       );
   }
 
-  // ================= BUILD =================
+  // ============================================================
+  // BOTTOM NAVIGATION
+  // ============================================================
+
+  void _onBottomNavigationTap(int index) {
+    // Streaks & Stats Home feature ka child screen hai.
+    // Shared bottom navigation exact selected main tab open karegi.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
+      (route) => false,
+    );
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+
       body: Column(
         children: [
           _buildHeader(),
+
           Expanded(
-            child: Center(
+            child: Align(
+              alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
                   child: Column(
                     children: [
                       _buildCurrentStreakCard(),
-                      const SizedBox(height: 10),
+
+                      const SizedBox(height: 12),
+
                       _buildMiniStats(),
-                      const SizedBox(height: 10),
+
+                      const SizedBox(height: 12),
+
                       _buildTrendCard(),
-                      const SizedBox(height: 10),
+
+                      const SizedBox(height: 12),
+
                       _buildAchievementsCard(),
                     ],
                   ),
@@ -94,7 +123,12 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const _StreaksBottomBar(),
+
+      // Streaks & Stats Home flow ka part hai.
+      bottomNavigationBar: AppBottomNavigation(
+        currentIndex: 0,
+        onTap: _onBottomNavigationTap,
+      ),
     );
   }
 
@@ -109,7 +143,7 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 9, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
           child: Column(
             children: [
               Row(
@@ -124,45 +158,50 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
                       child: Icon(
                         Icons.arrow_back_rounded,
                         color: AppColors.surface,
-                        size: 22,
+                        size: 24,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
+
+                  const SizedBox(width: 8),
+
                   const Expanded(
                     child: Text(
                       'Streaks & Stats',
                       style: TextStyle(
                         color: AppColors.surface,
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
+
                   InkWell(
                     onTap: _shareStats,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(22),
                     child: const Padding(
-                      padding: EdgeInsets.all(6),
+                      padding: EdgeInsets.all(7),
                       child: Icon(
                         Icons.share_outlined,
                         color: AppColors.surface,
-                        size: 19,
+                        size: 22,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 9),
+
+              const SizedBox(height: 11),
+
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 9,
+                  horizontal: 14,
+                  vertical: 12,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.streakHeaderCard,
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,16 +210,19 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
                       '🔥 Keep it up, ${widget.userName}!',
                       style: const TextStyle(
                         color: AppColors.surface,
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+
+                    const SizedBox(height: 4),
+
                     const Text(
                       'You’re building a strong medication routine.',
                       style: TextStyle(
                         color: AppColors.headerSubtext,
-                        fontSize: 9.5,
+                        fontSize: 12,
+                        height: 1.3,
                       ),
                     ),
                   ],
@@ -201,25 +243,33 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
     final summary = _summary;
 
     return _card(
-      padding: const EdgeInsets.fromLTRB(15, 14, 15, 14),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 48,
+            height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: AppColors.streakFireBackground,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(13),
             ),
-            child: const Text('🔥', style: TextStyle(fontSize: 23)),
+            child: const Text('🔥', style: TextStyle(fontSize: 27)),
           ),
-          const SizedBox(height: 7),
+
+          const SizedBox(height: 9),
+
           const Text(
             'Current Streak',
-            style: TextStyle(color: AppColors.formSubtitle, fontSize: 10),
+            style: TextStyle(
+              color: AppColors.formSubtitle,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          const SizedBox(height: 2),
+
+          const SizedBox(height: 4),
+
           FittedBox(
             fit: BoxFit.scaleDown,
             child: RichText(
@@ -229,56 +279,65 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
                     text: '${summary.currentStreak}',
                     style: const TextStyle(
                       color: AppColors.streakHeader,
-                      fontSize: 36,
+                      fontSize: 38,
                       height: 1.1,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+
                   const TextSpan(
                     text: ' Days',
                     style: TextStyle(
                       color: AppColors.streakHeader,
-                      fontSize: 27,
+                      fontSize: 28,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const TextSpan(text: ' 🔥', style: TextStyle(fontSize: 15)),
+
+                  const TextSpan(text: ' 🔥', style: TextStyle(fontSize: 18)),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 9),
+
+          const SizedBox(height: 10),
+
           Text(
             'Goal: ${summary.goalDays} days',
             style: const TextStyle(
               color: AppColors.formSubtitle,
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 5),
+
+          const SizedBox(height: 8),
+
           Row(
             children: [
               const Text(
                 '0',
-                style: TextStyle(color: AppColors.formSubtitle, fontSize: 6.5),
+                style: TextStyle(color: AppColors.formSubtitle, fontSize: 10),
               ),
-              const SizedBox(width: 6),
+
+              const SizedBox(width: 7),
+
               Expanded(
                 child: Stack(
                   alignment: Alignment.centerLeft,
                   children: [
                     Container(
-                      height: 7,
+                      height: 8,
                       decoration: BoxDecoration(
                         color: AppColors.progressTrackLight,
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),
+
                     FractionallySizedBox(
                       widthFactor: summary.goalProgress,
                       child: Container(
-                        height: 7,
+                        height: 8,
                         decoration: BoxDecoration(
                           color: AppColors.streakMint,
                           borderRadius: BorderRadius.circular(20),
@@ -288,25 +347,31 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 6),
+
+              const SizedBox(width: 7),
+
               Text(
                 '${summary.goalDays}',
                 style: const TextStyle(
                   color: AppColors.formSubtitle,
-                  fontSize: 8,
+                  fontSize: 10,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 7),
+
+          const SizedBox(height: 9),
+
           Text(
             summary.daysUntilGoal > 0
                 ? '${summary.daysUntilGoal} more days to reach your goal! 🎉'
                 : 'Goal reached — keep the streak going! 🎉',
+            textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppColors.streakMint,
-              fontSize: 9,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
+              height: 1.3,
             ),
           ),
         ],
@@ -334,7 +399,9 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
             footerColor: AppColors.streakGold,
           ),
         ),
-        const SizedBox(width: 9),
+
+        const SizedBox(width: 10),
+
         Expanded(
           child: _miniStatCard(
             icon: Icons.calendar_today_outlined,
@@ -360,37 +427,51 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
     required Color footerColor,
   }) {
     return _card(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
       child: Column(
         children: [
           Container(
-            width: 31,
-            height: 31,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: iconBackground,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: iconColor, size: 17),
+            child: Icon(icon, color: iconColor, size: 20),
           ),
-          const SizedBox(height: 7),
+
+          const SizedBox(height: 9),
+
           Text(
             label,
-            style: const TextStyle(color: AppColors.formSubtitle, fontSize: 10),
+            style: const TextStyle(
+              color: AppColors.formSubtitle,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          const SizedBox(height: 4),
+
+          const SizedBox(height: 5),
+
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
               style: const TextStyle(
                 color: AppColors.streakHeader,
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(footer, style: TextStyle(color: footerColor, fontSize: 8.5)),
+
+          const SizedBox(height: 5),
+
+          Text(
+            footer,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: footerColor, fontSize: 11),
+          ),
         ],
       ),
     );
@@ -402,7 +483,7 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
 
   Widget _buildTrendCard() {
     return _card(
-      padding: const EdgeInsets.fromLTRB(13, 12, 13, 13),
+      padding: const EdgeInsets.fromLTRB(15, 14, 15, 15),
       child: Column(
         children: [
           Row(
@@ -412,19 +493,24 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
                   'Adherence Trend',
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 12,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
+
               _trendButton(label: '30D', range: StreakTrendRange.thirtyDays),
-              const SizedBox(width: 5),
+
+              const SizedBox(width: 6),
+
               _trendButton(label: '90D', range: StreakTrendRange.ninetyDays),
             ],
           ),
-          const SizedBox(height: 10),
+
+          const SizedBox(height: 14),
+
           SizedBox(
-            height: 116,
+            height: 145,
             width: double.infinity,
             child: _TrendChart(points: _trendPoints, targetPercent: 80),
           ),
@@ -447,18 +533,18 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
         decoration: BoxDecoration(
           color: selected
               ? AppColors.streakMint
               : AppColors.streakMintBackground,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(7),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: selected ? AppColors.surface : AppColors.streakMint,
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -474,7 +560,7 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
     final achievements = _summary.achievements;
 
     return _card(
-      padding: const EdgeInsets.fromLTRB(13, 12, 13, 6),
+      padding: const EdgeInsets.fromLTRB(15, 14, 15, 7),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -482,18 +568,20 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
             'Recent Achievements',
             style: TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 12,
+              fontSize: 15,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 5),
+
+          const SizedBox(height: 7),
+
           if (achievements.isEmpty)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 18),
+              padding: EdgeInsets.symmetric(vertical: 20),
               child: Center(
                 child: Text(
                   'Keep going to unlock achievements',
-                  style: TextStyle(color: AppColors.formSubtitle, fontSize: 8),
+                  style: TextStyle(color: AppColors.formSubtitle, fontSize: 12),
                 ),
               ),
             )
@@ -510,23 +598,25 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
     final iconColor = _achievementColor(achievement.type);
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 9),
+      padding: const EdgeInsets.symmetric(vertical: 11),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.progressTrackLight)),
       ),
       child: Row(
         children: [
           Container(
-            width: 34,
-            height: 34,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: AppColors.streakAchievementBackground,
               shape: BoxShape.circle,
               border: Border.all(color: iconColor.withValues(alpha: 0.35)),
             ),
-            child: Icon(iconData, color: iconColor, size: 17),
+            child: Icon(iconData, color: iconColor, size: 20),
           ),
-          const SizedBox(width: 9),
+
+          const SizedBox(width: 11),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,22 +625,28 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
                   achievement.title,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 10.5,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 2),
+
+                const SizedBox(height: 4),
+
                 Text(
                   achievement.subtitle,
                   style: const TextStyle(
                     color: AppColors.formSubtitle,
-                    fontSize: 8.5,
+                    fontSize: 11,
+                    height: 1.3,
                   ),
                 ),
               ],
             ),
           ),
-          Icon(iconData, color: iconColor, size: 13),
+
+          const SizedBox(width: 6),
+
+          Icon(iconData, color: iconColor, size: 17),
         ],
       ),
     );
@@ -625,7 +721,7 @@ class _TrendChart extends StatelessWidget {
       return const Center(
         child: Text(
           'No trend data',
-          style: TextStyle(color: AppColors.formSubtitle, fontSize: 8),
+          style: TextStyle(color: AppColors.formSubtitle, fontSize: 12),
         ),
       );
     }
@@ -645,10 +741,11 @@ class _TrendChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const left = 25.0;
-    const right = 6.0;
-    const top = 8.0;
-    const bottom = 18.0;
+    // Extra room left/bottom because chart labels are now readable.
+    const left = 36.0;
+    const right = 8.0;
+    const top = 10.0;
+    const bottom = 24.0;
 
     final chartWidth = size.width - left - right;
 
@@ -665,7 +762,7 @@ class _TrendChartPainter extends CustomPainter {
 
     final linePaint = Paint()
       ..color = AppColors.streakTrend
-      ..strokeWidth = 2
+      ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
@@ -723,13 +820,13 @@ class _TrendChartPainter extends CustomPainter {
 
     canvas.drawCircle(
       Offset(latestX, latestY),
-      3.4,
+      4,
       Paint()..color = AppColors.surface,
     );
 
     canvas.drawCircle(
       Offset(latestX, latestY),
-      2.5,
+      3,
       Paint()..color = AppColors.streakTrend,
     );
 
@@ -738,22 +835,22 @@ class _TrendChartPainter extends CustomPainter {
     _drawText(
       canvas,
       '80%',
-      Offset(2, targetY - 4),
+      Offset(3, targetY - 5),
       AppColors.streakTrendTarget,
     );
 
     _drawText(
       canvas,
       '50%',
-      Offset(2, _yForPercent(50, top, chartHeight) - 4),
+      Offset(3, _yForPercent(50, top, chartHeight) - 5),
       AppColors.formSubtitle,
     );
 
-    _drawText(
+    _drawRightText(
       canvas,
       'Target $targetPercent%',
-      Offset(math.max(left, size.width - 52), targetY - 11),
-      AppColors.streakTrendTarget,
+      Offset(left + chartWidth, targetY - 16),
+      color: AppColors.streakTrendTarget,
     );
 
     final firstLabel = _dateLabel(points.first.date);
@@ -765,20 +862,20 @@ class _TrendChartPainter extends CustomPainter {
     _drawText(
       canvas,
       firstLabel,
-      Offset(left, size.height - 11),
+      Offset(left, size.height - 14),
       AppColors.formSubtitle,
     );
 
     _drawCenteredText(
       canvas,
       middleLabel,
-      Offset(left + chartWidth / 2, size.height - 11),
+      Offset(left + chartWidth / 2, size.height - 14),
     );
 
     _drawRightText(
       canvas,
       lastLabel,
-      Offset(left + chartWidth, size.height - 11),
+      Offset(left + chartWidth, size.height - 14),
     );
   }
 
@@ -794,7 +891,7 @@ class _TrendChartPainter extends CustomPainter {
         text: text,
         style: TextStyle(
           color: color,
-          fontSize: 6,
+          fontSize: 9,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -806,25 +903,34 @@ class _TrendChartPainter extends CustomPainter {
 
   void _drawCenteredText(Canvas canvas, String text, Offset center) {
     final painter = TextPainter(
-      text: const TextSpan(),
+      text: TextSpan(
+        text: text,
+        style: const TextStyle(
+          color: AppColors.formSubtitle,
+          fontSize: 9,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
       textDirection: TextDirection.ltr,
-    );
-
-    painter.text = TextSpan(
-      text: text,
-      style: const TextStyle(color: AppColors.formSubtitle, fontSize: 6),
-    );
-
-    painter.layout();
+    )..layout();
 
     painter.paint(canvas, Offset(center.dx - painter.width / 2, center.dy));
   }
 
-  void _drawRightText(Canvas canvas, String text, Offset right) {
+  void _drawRightText(
+    Canvas canvas,
+    String text,
+    Offset right, {
+    Color color = AppColors.formSubtitle,
+  }) {
     final painter = TextPainter(
       text: TextSpan(
         text: text,
-        style: const TextStyle(color: AppColors.formSubtitle, fontSize: 6),
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
@@ -855,56 +961,5 @@ class _TrendChartPainter extends CustomPainter {
   bool shouldRepaint(covariant _TrendChartPainter oldDelegate) {
     return oldDelegate.points != points ||
         oldDelegate.targetPercent != targetPercent;
-  }
-}
-
-// ============================================================
-// BOTTOM BAR
-//
-// Streaks & Stats Home/Dashboard feature hai.
-// TODO Navigation:
-// MedRemindShell initialIndex support hone ke baad selected
-// destination exact tab ke saath open karna hai.
-// ============================================================
-
-class _StreaksBottomBar extends StatelessWidget {
-  const _StreaksBottomBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 0,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.formAccent,
-      unselectedItemColor: AppColors.fieldHint,
-      backgroundColor: AppColors.surface,
-      selectedFontSize: 10,
-      unselectedFontSize: 10,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.medication_rounded),
-          label: 'Meds',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_rounded),
-          label: 'Calendar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_rounded),
-          label: 'Reports',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_rounded),
-          label: 'Settings',
-        ),
-      ],
-      onTap: (index) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MedRemindShell()),
-          (route) => false,
-        );
-      },
-    );
   }
 }

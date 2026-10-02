@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/app_bottom_navigation.dart';
 import 'inventory_data.dart';
 import 'meds_data.dart';
 import 'pharmacy_info_data.dart';
@@ -109,13 +110,29 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
       ..showSnackBar(const SnackBar(content: Text('Pharmacy details saved')));
   }
 
+  // ============================================================
+  // BOTTOM NAVIGATION
+  // ============================================================
+
+  void _onBottomNavigationTap(int index) {
+    // Pharmacy Details Meds flow ka part hai.
+    // Agar already Meds selected tab tap ho to bhi user ko
+    // main Meds screen par le jana hai.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+
       body: Column(
         children: [
           _buildHeader(),
+
           Expanded(
             child: Align(
               alignment: Alignment.topCenter,
@@ -126,13 +143,21 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                   child: Column(
                     children: [
                       _buildPharmacyHero(),
+
                       const SizedBox(height: 16),
+
                       _buildContactCard(),
+
                       const SizedBox(height: 16),
+
                       _buildLinkedMedications(),
+
                       const SizedBox(height: 16),
+
                       _buildOpeningHours(),
+
                       const SizedBox(height: 18),
+
                       _buildEditButton(),
                     ],
                   ),
@@ -142,7 +167,14 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const _PharmacyBottomBar(),
+
+      // Shared app bottom navigation.
+      // Pharmacy Details Meds feature ka child screen hai,
+      // isliye Meds tab selected rahega.
+      bottomNavigationBar: AppBottomNavigation(
+        currentIndex: 1,
+        onTap: _onBottomNavigationTap,
+      ),
     );
   }
 
@@ -174,7 +206,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(width: 12),
+
               const Expanded(
                 child: Text(
                   'Pharmacy Details',
@@ -237,7 +271,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
               size: 27,
             ),
           ),
+
           const SizedBox(height: 12),
+
           Text(
             _pharmacy.name,
             textAlign: TextAlign.center,
@@ -248,7 +284,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
               height: 1.25,
             ),
           ),
+
           const SizedBox(height: 6),
+
           Text(
             _pharmacy.openStatus(_now),
             textAlign: TextAlign.center,
@@ -259,7 +297,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
               height: 1.3,
             ),
           ),
+
           const SizedBox(height: 10),
+
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -281,7 +321,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                     shape: BoxShape.circle,
                   ),
                 ),
+
                 const SizedBox(width: 6),
+
                 Text(
                   isOpen ? 'OPEN NOW' : 'CLOSED',
                   style: TextStyle(
@@ -335,6 +377,7 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                   ),
                 ),
               ),
+
               if (_pharmacy.isPrimary)
                 const Row(
                   children: [
@@ -356,15 +399,19 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                 ),
             ],
           ),
+
           const SizedBox(height: 16),
+
           _contactRow(
             icon: Icons.phone_outlined,
             title: _pharmacy.phone,
             subtitle: 'Direct Pharmacy Line',
             onTap: _callPharmacy,
           ),
+
           if (_pharmacy.address != null) ...[
             const SizedBox(height: 14),
+
             _contactRow(
               icon: Icons.location_on_outlined,
               title: _pharmacy.address!,
@@ -372,7 +419,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
               onTap: _openDirections,
             ),
           ],
+
           const SizedBox(height: 17),
+
           Row(
             children: [
               Expanded(
@@ -399,7 +448,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(width: 10),
+
               Expanded(
                 child: SizedBox(
                   height: 48,
@@ -467,7 +518,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
               ),
               child: Icon(icon, color: AppColors.inventoryOk, size: 20),
             ),
+
             const SizedBox(width: 11),
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -483,8 +536,10 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                       height: 1.25,
                     ),
                   ),
+
                   if (subtitle.isNotEmpty) ...[
                     const SizedBox(height: 4),
+
                     Text(
                       subtitle,
                       maxLines: 2,
@@ -499,7 +554,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                 ],
               ),
             ),
+
             const SizedBox(width: 6),
+
             const Icon(
               Icons.chevron_right_rounded,
               color: AppColors.fieldHint,
@@ -545,6 +602,7 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                   ),
                 ),
               ),
+
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
@@ -562,7 +620,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
               ),
             ],
           ),
+
           const SizedBox(height: 14),
+
           if (_linkedMedicines.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
@@ -574,10 +634,13 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
           else
             for (var i = 0; i < _linkedMedicines.length; i++) ...[
               _linkedMedicationRow(_linkedMedicines[i]),
+
               if (i != _linkedMedicines.length - 1) const SizedBox(height: 12),
             ],
+
           if (_linkedMedicines.any((item) => item.isLowStock)) ...[
             const SizedBox(height: 14),
+
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -586,7 +649,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                   color: AppColors.inventoryLow,
                   size: 18,
                 ),
+
                 const SizedBox(width: 7),
+
                 Expanded(
                   child: Text(
                     _lowStockMessage,
@@ -613,7 +678,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
     return Row(
       children: [
         _medicineImage(item, statusColor),
+
         const SizedBox(width: 11),
+
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,7 +696,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                   height: 1.25,
                 ),
               ),
+
               const SizedBox(height: 4),
+
               Text(
                 item.supplyLabel,
                 maxLines: 1,
@@ -643,7 +712,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
             ],
           ),
         ),
+
         const SizedBox(width: 8),
+
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
@@ -764,12 +835,15 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                   ),
                 ),
               ),
+
               Icon(
                 Icons.schedule_rounded,
                 color: AppColors.inventoryOk,
                 size: 16,
               ),
+
               SizedBox(width: 5),
+
               Text(
                 'Standard Hours',
                 style: TextStyle(
@@ -780,9 +854,12 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
               ),
             ],
           ),
+
           const SizedBox(height: 15),
+
           for (var i = 0; i < _pharmacy.openingHours.length; i++) ...[
             _openingHourRow(_pharmacy.openingHours[i]),
+
             if (i != _pharmacy.openingHours.length - 1)
               const SizedBox(height: 12),
           ],
@@ -806,6 +883,7 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
             ),
           ),
         ),
+
         if (closed)
           Row(
             children: [
@@ -817,7 +895,9 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
                   shape: BoxShape.circle,
                 ),
               ),
+
               const SizedBox(width: 6),
+
               Text(
                 hours.hoursLabel,
                 style: const TextStyle(
@@ -865,60 +945,6 @@ class _PharmacyInfoScreenState extends State<PharmacyInfoScreen> {
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
-    );
-  }
-}
-
-// ============================================================
-// BOTTOM NAVIGATION
-// ============================================================
-
-class _PharmacyBottomBar extends StatelessWidget {
-  const _PharmacyBottomBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 1,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.formAccent,
-      unselectedItemColor: AppColors.fieldHint,
-      backgroundColor: AppColors.surface,
-      elevation: 5,
-      iconSize: 22,
-      selectedFontSize: 11,
-      unselectedFontSize: 11,
-      selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.medication_rounded),
-          label: 'Meds',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          label: 'Calendar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_outlined),
-          label: 'Reports',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          label: 'Settings',
-        ),
-      ],
-      onTap: (index) {
-        // TODO Navigation:
-        // MedRemindShell mein initialIndex support ke baad
-        // exact clicked tab open karna hai.
-
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MedRemindShell()),
-          (route) => false,
-        );
-      },
     );
   }
 }

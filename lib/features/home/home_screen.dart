@@ -7,6 +7,7 @@ import 'dose_action_sheet.dart';
 import 'home_data.dart';
 import 'streaks_stats_screen.dart';
 import '../meds/meds_screen.dart';
+import 'vitals_list_screen.dart';
 
 /// ============================================================
 /// HOME — app ka dil!
@@ -132,6 +133,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ============ VITALS ============
+
+  void _openVitals() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => VitalsListScreen(userName: _selectedMember),
+      ),
+    );
+  }
+
   void _switchMember(FamilyMember member) {
     if (member.name == _selectedMember) {
       return;
@@ -141,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // TODO Backend:
     // Selected family member id ke against today's doses,
-    // adherence history aur streak stats reload karne hain.
+    // adherence history, streak stats aur health data reload karne hain.
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Switched to ${member.name}'s medicines")),
@@ -220,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 16),
 
           // ---- Quick Access ----
-          const _QuickAccessSection(),
+          _QuickAccessSection(onVitalsTap: _openVitals),
 
           const SizedBox(height: 16),
 
@@ -669,7 +680,9 @@ class _ProgressCard extends StatelessWidget {
 // ============================================================
 
 class _QuickAccessSection extends StatelessWidget {
-  const _QuickAccessSection();
+  const _QuickAccessSection({required this.onVitalsTap});
+
+  final VoidCallback onVitalsTap;
 
   static const List<({IconData icon, String label})> _items = [
     (icon: Icons.monitor_heart_outlined, label: 'Vitals'),
@@ -677,6 +690,23 @@ class _QuickAccessSection extends StatelessWidget {
     (icon: Icons.auto_awesome, label: 'AI Assist'),
     (icon: Icons.groups_2_outlined, label: 'Family'),
   ];
+
+  void _onItemTap(BuildContext context, int index) {
+    // Vitals
+    if (index == 0) {
+      onVitalsTap();
+      return;
+    }
+
+    // TODO Navigation:
+    // Doctors / AI Assist / Family screens ready hone par
+    // yahan unki navigation connect karni hai.
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text('${_items[index].label} screen coming next.')),
+      );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -711,9 +741,7 @@ class _QuickAccessSection extends StatelessWidget {
               Expanded(
                 child: GestureDetector(
                   onTap: () {
-                    // TODO Navigation:
-                    // Vitals / Doctors / AI Assist /
-                    // Family screens ready hone par open karni hain.
+                    _onItemTap(context, i);
                   },
                   child: Container(
                     height: 62,

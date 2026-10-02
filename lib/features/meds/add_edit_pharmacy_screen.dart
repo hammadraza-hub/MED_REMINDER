@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/app_bottom_navigation.dart';
 import 'add_edit_pharmacy_data.dart';
 import 'inventory_data.dart';
 import 'meds_data.dart';
@@ -171,6 +172,19 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
   }
 
   // ============================================================
+  // BOTTOM NAVIGATION
+  // ============================================================
+
+  void _onBottomNavigationTap(int index) {
+    // Add/Edit Pharmacy Meds feature ka child screen hai.
+    // Shared bottom bar se exact selected main tab open hoga.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
+      (route) => false,
+    );
+  }
+
+  // ============================================================
   // BUILD
   // ============================================================
 
@@ -191,34 +205,34 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
                 child: SingleChildScrollView(
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.fromLTRB(18, 13, 18, 28),
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 30),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       children: [
                         _buildTopInfo(),
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
 
                         _buildPharmacyForm(),
 
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 18),
 
                         _buildAssignmentHeader(),
 
-                        const SizedBox(height: 9),
+                        const SizedBox(height: 12),
 
                         _buildMedicationAssignments(),
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
 
                         _buildCaregiverSync(),
 
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 18),
 
                         _buildSaveButton(),
 
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
 
                         _buildCancelButton(),
                       ],
@@ -231,7 +245,12 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
         ],
       ),
 
-      bottomNavigationBar: const _AddEditPharmacyBottomBar(),
+      // Shared app-wide bottom navigation.
+      // Pharmacy management Meds flow ka part hai.
+      bottomNavigationBar: AppBottomNavigation(
+        currentIndex: 1,
+        onTap: _onBottomNavigationTap,
+      ),
     );
   }
 
@@ -246,30 +265,30 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 9, 18, 12),
+          padding: const EdgeInsets.fromLTRB(18, 11, 18, 14),
           child: Row(
             children: [
               InkWell(
                 onTap: _cancel,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(24),
                 child: const Padding(
-                  padding: EdgeInsets.all(3),
+                  padding: EdgeInsets.all(4),
                   child: Icon(
                     Icons.arrow_back_rounded,
                     color: AppColors.surface,
-                    size: 23,
+                    size: 24,
                   ),
                 ),
               ),
 
-              const SizedBox(width: 11),
+              const SizedBox(width: 12),
 
               Expanded(
                 child: Text(
                   _isEdit ? 'Edit Pharmacy' : 'Add Pharmacy',
                   style: const TextStyle(
                     color: AppColors.surface,
-                    fontSize: 16,
+                    fontSize: 19,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -279,7 +298,7 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
               // Current user's same profile image jo Home/Meds
               // mein use hoti hai.
               const AppAvatar(
-                size: 30,
+                size: 34,
                 ringColor: AppColors.surface,
                 ringWidth: 1,
               ),
@@ -306,39 +325,47 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
                 'PHARMACY DETAILS',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 9,
+                  fontSize: 12,
                   letterSpacing: 1,
                   fontWeight: FontWeight.w700,
                 ),
               ),
 
-              SizedBox(height: 3),
+              SizedBox(height: 5),
 
               Text(
                 'Manage prescription contact & fulfillment',
-                style: TextStyle(color: AppColors.formAccent, fontSize: 9),
+                style: TextStyle(
+                  color: AppColors.formAccent,
+                  fontSize: 12,
+                  height: 1.3,
+                ),
               ),
             ],
           ),
         ),
 
+        const SizedBox(width: 10),
+
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
           decoration: BoxDecoration(
             color: AppColors.inventoryOkBackground,
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.circle, color: AppColors.inventoryOk, size: 6),
-              SizedBox(width: 5),
+              Icon(Icons.circle, color: AppColors.inventoryOk, size: 7),
+
+              SizedBox(width: 6),
+
               Text(
                 'Fulfillment\nActive',
                 style: TextStyle(
                   color: AppColors.inventoryOk,
-                  fontSize: 8,
-                  height: 1.1,
+                  fontSize: 11,
+                  height: 1.15,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -356,10 +383,10 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
   Widget _buildPharmacyForm() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+      padding: const EdgeInsets.fromLTRB(15, 15, 15, 17),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(13),
         boxShadow: const [
           BoxShadow(
             color: AppColors.inventoryCardShadow,
@@ -375,21 +402,25 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
             trailing: _isEdit ? 'Verified' : null,
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
           TextFormField(
             controller: _nameController,
             textInputAction: TextInputAction.next,
             validator: AddEditPharmacyData.validateName,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
             decoration: _fieldDecoration(hintText: 'Enter pharmacy name'),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           _buildFieldLabel(title: 'Phone Number'),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
           TextFormField(
             controller: _phoneController,
@@ -398,7 +429,7 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
             validator: AddEditPharmacyData.validatePhone,
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
             decoration: _fieldDecoration(
@@ -407,18 +438,22 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           _buildFieldLabel(title: 'Address (optional)'),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
           TextFormField(
             controller: _addressController,
             minLines: 2,
             maxLines: 3,
             textInputAction: TextInputAction.done,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 11),
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              height: 1.35,
+            ),
             decoration: _fieldDecoration(hintText: 'Enter pharmacy address'),
           ),
         ],
@@ -434,7 +469,7 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
             title,
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 9,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -445,7 +480,7 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
             trailing,
             style: const TextStyle(
               color: AppColors.inventoryOk,
-              fontSize: 8,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -459,10 +494,10 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
   }) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(color: AppColors.fieldHint, fontSize: 10),
+      hintStyle: const TextStyle(color: AppColors.fieldHint, fontSize: 13),
       filled: true,
       fillColor: AppColors.inventoryFilterBackground,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
       suffixIcon: suffixIcon == null
           ? null
           : Container(
@@ -471,23 +506,28 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
                 color: AppColors.inventoryOkBackground,
                 shape: BoxShape.circle,
               ),
-              child: Icon(suffixIcon, color: AppColors.inventoryOk, size: 16),
+              child: Icon(suffixIcon, color: AppColors.inventoryOk, size: 19),
             ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.transparent),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.formAccent),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.inventoryLow),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.inventoryLow),
+      ),
+      errorStyle: const TextStyle(
+        color: AppColors.inventoryLow,
+        fontSize: 11,
+        height: 1.2,
       ),
     );
   }
@@ -508,29 +548,33 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
                 'ASSIGN TO MEDICATIONS',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 9,
+                  fontSize: 12,
                   letterSpacing: 0.8,
                   fontWeight: FontWeight.w700,
                 ),
               ),
 
-              SizedBox(height: 3),
+              SizedBox(height: 5),
 
               Text(
                 'This pharmacy will handle automatic refill requests for:',
-                style: TextStyle(color: AppColors.formAccent, fontSize: 8),
+                style: TextStyle(
+                  color: AppColors.formAccent,
+                  fontSize: 12,
+                  height: 1.3,
+                ),
               ),
             ],
           ),
         ),
 
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
 
         Text(
           '$_connectedCount Connected',
           style: const TextStyle(
             color: AppColors.inventoryOk,
-            fontSize: 8,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -545,10 +589,10 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
   Widget _buildMedicationAssignments() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(13),
         boxShadow: const [
           BoxShadow(
             color: AppColors.inventoryCardShadow,
@@ -559,11 +603,11 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
       ),
       child: _medications.isEmpty
           ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: 18),
+              padding: EdgeInsets.symmetric(vertical: 22),
               child: Center(
                 child: Text(
                   'No active medications available',
-                  style: TextStyle(color: AppColors.formSubtitle, fontSize: 10),
+                  style: TextStyle(color: AppColors.formSubtitle, fontSize: 13),
                 ),
               ),
             )
@@ -587,12 +631,12 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
     final selected = _selectedMedicationIds.contains(item.medicationId);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 11),
       child: Row(
         children: [
           _medicineImage(item),
 
-          const SizedBox(width: 9),
+          const SizedBox(width: 11),
 
           Expanded(
             child: Column(
@@ -604,12 +648,12 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 11,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
 
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
 
                 Text(
                   AddEditPharmacyData.unitScheduleLabel(item),
@@ -617,14 +661,14 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.formSubtitle,
-                    fontSize: 8,
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(width: 7),
+          const SizedBox(width: 8),
 
           Switch(
             value: selected,
@@ -647,8 +691,8 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
 
   Widget _medicineImage(InventoryItem item) {
     return Container(
-      width: 38,
-      height: 38,
+      width: 44,
+      height: 44,
       clipBehavior: Clip.antiAlias,
       decoration: const BoxDecoration(
         color: AppColors.cardFill,
@@ -663,14 +707,14 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
                 return Icon(
                   _medicineTypeIcon(item.medicineType),
                   color: AppColors.formAccent,
-                  size: 19,
+                  size: 22,
                 );
               },
             )
           : Icon(
               _medicineTypeIcon(item.medicineType),
               color: AppColors.formAccent,
-              size: 19,
+              size: 22,
             ),
     );
   }
@@ -699,24 +743,24 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
   Widget _buildCaregiverSync() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(11),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.inventorySyncBackground,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: const Row(
         children: [
           SizedBox(
-            width: 34,
-            height: 34,
+            width: 40,
+            height: 40,
             child: Icon(
               Icons.sync_rounded,
               color: AppColors.formAccent,
-              size: 19,
+              size: 22,
             ),
           ),
 
-          SizedBox(width: 8),
+          SizedBox(width: 10),
 
           Expanded(
             child: Column(
@@ -726,16 +770,20 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
                   'Caregiver Real-time Sync',
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 9,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
 
-                SizedBox(height: 3),
+                SizedBox(height: 4),
 
                 Text(
                   'Changes will immediately reflect for the linked care profile.',
-                  style: TextStyle(color: AppColors.formSubtitle, fontSize: 8),
+                  style: TextStyle(
+                    color: AppColors.formSubtitle,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
                 ),
               ],
             ),
@@ -752,7 +800,7 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
-      height: 46,
+      height: 50,
       child: FilledButton.icon(
         onPressed: _saving ? null : _save,
         style: FilledButton.styleFrom(
@@ -760,21 +808,23 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
           foregroundColor: AppColors.surface,
           disabledBackgroundColor: AppColors.inventoryOkBackground,
           elevation: 3,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         icon: _saving
             ? const SizedBox(
-                width: 15,
-                height: 15,
+                width: 17,
+                height: 17,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: AppColors.surface,
                 ),
               )
-            : const Icon(Icons.check_circle_outline_rounded, size: 17),
+            : const Icon(Icons.check_circle_outline_rounded, size: 20),
         label: Text(
           _saving ? 'Saving...' : 'Save Pharmacy',
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -783,67 +833,18 @@ class _AddEditPharmacyScreenState extends State<AddEditPharmacyScreen> {
   Widget _buildCancelButton() {
     return TextButton(
       onPressed: _saving ? null : _cancel,
-      style: TextButton.styleFrom(foregroundColor: AppColors.formAccent),
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.formAccent,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      ),
       child: const Text(
         'Cancel',
         style: TextStyle(
-          fontSize: 10,
+          fontSize: 13,
           fontWeight: FontWeight.w500,
           decoration: TextDecoration.underline,
         ),
       ),
-    );
-  }
-}
-
-// ============================================================
-// BOTTOM NAVIGATION
-// ============================================================
-
-class _AddEditPharmacyBottomBar extends StatelessWidget {
-  const _AddEditPharmacyBottomBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 1,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.formAccent,
-      unselectedItemColor: AppColors.fieldHint,
-      backgroundColor: AppColors.surface,
-      elevation: 5,
-      iconSize: 19,
-      selectedFontSize: 8,
-      unselectedFontSize: 8,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.medication_rounded),
-          label: 'Meds',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          label: 'Calendar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_outlined),
-          label: 'Reports',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          label: 'Settings',
-        ),
-      ],
-      onTap: (index) {
-        // TODO Navigation:
-        // MedRemindShell initialIndex support ke baad
-        // clicked tab ko exact index par open karna hai.
-
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MedRemindShell()),
-          (route) => false,
-        );
-      },
     );
   }
 }
