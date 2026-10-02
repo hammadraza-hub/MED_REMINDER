@@ -6,13 +6,21 @@ import 'meds_data.dart';
 /// Real-time remaining medication supply ke liye calculation/data
 /// layer.
 ///
-/// Abhi deterministic dummy inventory use ho rahi hai.
+/// IMPORTANT:
+/// Medication identity (name, dose, type) MedsData se aati hai.
+/// Inventory sirf stock-specific information maintain karti hai.
+///
+/// Iska faida:
+/// • Meds aur Inventory medicine list synchronized rehti hai.
+/// • Name / strength / type duplicate hardcode nahi hote.
+/// • Active medicine Inventory mein automatically include hoti hai.
 ///
 /// TODO Backend:
 /// Current signed-in user / selected family member ke active
-/// medication inventory documents Firestore se fetch karne hain.
+/// medications aur unke inventory documents Firestore se fetch
+/// karne hain.
 ///
-/// Suggested fields:
+/// Suggested inventory fields:
 /// • medicationId
 /// • remainingQuantity
 /// • packageQuantity
@@ -22,7 +30,7 @@ import 'meds_data.dart';
 /// • lastAdjustedAt
 /// • adjustmentSource
 ///
-/// UI LOW / OK status ko hardcode nahi karti.
+/// UI LOW / OK status hardcode nahi karti.
 /// Status remaining supply se calculate hota hai.
 /// ============================================================
 
@@ -50,10 +58,12 @@ class InventoryItem {
 
   final MedicineType medicineType;
 
+  /// Manual adjustment ke baad locally update hoti hai.
   int remainingQuantity;
 
   final int packageQuantity;
 
+  /// Roz kitni units consume hoti hain.
   final double unitsPerDay;
 
   final String unitLabel;
@@ -107,6 +117,7 @@ class InventoryItem {
         '~$estimatedDaysRemaining days';
   }
 
+  /// Same medicine image mapping jo Meds feature use karta hai.
   String? get medicineImageAsset {
     switch (medicineType) {
       case MedicineType.tablet:
@@ -150,57 +161,212 @@ class InventoryItem {
   }
 }
 
+/// ============================================================
+/// TEMPORARY STOCK DATA
+///
+/// Medication ki identity yahan duplicate nahi rakhi ja rahi.
+/// Sirf Inventory-specific values hain.
+///
+/// TODO Backend:
+/// Ye poora stock config Firestore inventory documents se replace
+/// hoga aur medicationId active medication document ko reference
+/// karega.
+/// ============================================================
+
+class _InventoryStock {
+  const _InventoryStock({
+    required this.remainingQuantity,
+    required this.packageQuantity,
+    required this.unitsPerDay,
+    required this.unitLabel,
+    this.lowStockThresholdDays = 7,
+  });
+
+  final int remainingQuantity;
+  final int packageQuantity;
+  final double unitsPerDay;
+  final String unitLabel;
+  final int lowStockThresholdDays;
+}
+
 class InventoryData {
   InventoryData._();
 
   // ============================================================
-  // DUMMY INVENTORY
+  // DUMMY STOCK CONFIG
+  //
+  // Key medicine name hai sirf current dummy phase ke liye.
   //
   // TODO Backend:
-  // Is list ko Firestore repository query se replace karna hai.
-  // medicationId ke through inventory active medicine se linked
-  // rahegi.
+  // Production/Firebase mein medicine name ko relation key mat
+  // banana. Stable medication document ID use karna hai.
+  // ============================================================
+
+  static const Map<String, _InventoryStock> _stockByMedicine = {
+    'Metformin': _InventoryStock(
+      remainingQuantity: 18,
+      packageQuantity: 100,
+
+      // Meds: 2x daily
+      unitsPerDay: 2,
+
+      unitLabel: 'tablet',
+      lowStockThresholdDays: 7,
+    ),
+
+    'Amlodipine': _InventoryStock(
+      remainingQuantity: 42,
+      packageQuantity: 60,
+
+      // Meds: 1x daily
+      unitsPerDay: 1,
+
+      unitLabel: 'tablet',
+      lowStockThresholdDays: 7,
+    ),
+
+    'Vitamin D3 Drops': _InventoryStock(
+      remainingQuantity: 1,
+      packageQuantity: 1,
+
+      // Bottle-based supply.
+      // Approx 30 days per bottle in current dummy data.
+      unitsPerDay: 0.033,
+
+      unitLabel: 'bottle',
+      lowStockThresholdDays: 7,
+    ),
+
+    'Amoxicillin': _InventoryStock(
+      // Current Meds data says course has roughly 4 days
+      // supply remaining and medicine is taken 3x daily.
+      remainingQuantity: 12,
+      packageQuantity: 30,
+      unitsPerDay: 3,
+      unitLabel: 'capsule',
+      lowStockThresholdDays: 5,
+    ),
+  };
+
+  // ============================================================
+  // INVENTORY
+  //
+  // Active medication list ka single source MedsData hai.
   // ============================================================
 
   static List<InventoryItem> inventory() {
-    return [
-      InventoryItem(
-        id: 'inventory_metformin',
-        medicationId: 'med_metformin',
-        medicineName: 'Metformin',
-        strength: '500mg',
-        medicineType: MedicineType.tablet,
-        remainingQuantity: 18,
-        packageQuantity: 100,
-        unitsPerDay: 3,
-        unitLabel: 'tablet',
-        lowStockThresholdDays: 7,
-      ),
-      InventoryItem(
-        id: 'inventory_amlodipine',
-        medicationId: 'med_amlodipine',
-        medicineName: 'Amlodipine',
-        strength: '5mg',
-        medicineType: MedicineType.tablet,
-        remainingQuantity: 42,
-        packageQuantity: 60,
-        unitsPerDay: 2,
-        unitLabel: 'tablet',
-        lowStockThresholdDays: 7,
-      ),
-      InventoryItem(
-        id: 'inventory_vitamin_d3',
-        medicationId: 'med_vitamin_d3',
-        medicineName: 'Vitamin D3',
-        strength: 'Drops',
-        medicineType: MedicineType.drops,
-        remainingQuantity: 1,
-        packageQuantity: 1,
-        unitsPerDay: 0.033,
-        unitLabel: 'bottle',
-        lowStockThresholdDays: 7,
-      ),
-    ];
+    final activeMedicines = MedsData.medicines();
+
+    final items = <InventoryItem>[];
+
+    for (var index = 0; index < activeMedicines.length; index++) {
+      final medicine = activeMedicines[index];
+
+      final stock = _stockByMedicine[medicine.name];
+
+      // Agar medicine ke liye stock configuration abhi available
+      // nahi hai to fallback us medicine ko Inventory se gayab
+      // nahi hone deta.
+      final resolvedStock = stock ?? _fallbackStockFor(medicine);
+
+      items.add(
+        InventoryItem(
+          id: 'inventory_$index',
+
+          // TODO Backend:
+          // Firebase mein yahan actual medication document ID
+          // use hoga. Index/name based ID use nahi karni.
+          medicationId: 'med_$index',
+
+          // Medicine identity MedsData se directly aa rahi hai.
+          medicineName: medicine.name,
+          strength: medicine.dose,
+          medicineType: medicine.type,
+
+          remainingQuantity: resolvedStock.remainingQuantity,
+          packageQuantity: resolvedStock.packageQuantity,
+          unitsPerDay: resolvedStock.unitsPerDay,
+          unitLabel: resolvedStock.unitLabel,
+          lowStockThresholdDays: resolvedStock.lowStockThresholdDays,
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  // ============================================================
+  // FALLBACK STOCK
+  //
+  // Agar future dummy medicine MedsData mein add ho aur temporary
+  // stock config add karna reh jaye, tab bhi Inventory mein
+  // medicine visible rahegi.
+  //
+  // TODO Backend:
+  // Firebase phase mein missing inventory document ke liye proper
+  // initialization strategy use karni hai.
+  // ============================================================
+
+  static _InventoryStock _fallbackStockFor(Medicine medicine) {
+    final unitsPerDay = _unitsPerDayFromFrequency(medicine.frequency);
+
+    final unitLabel = _unitLabelForType(medicine.type);
+
+    final estimatedQuantity = (medicine.supplyDaysLeft * unitsPerDay)
+        .round()
+        .clamp(0, 999999);
+
+    return _InventoryStock(
+      remainingQuantity: estimatedQuantity,
+      packageQuantity: estimatedQuantity > 0 ? estimatedQuantity : 1,
+      unitsPerDay: unitsPerDay,
+      unitLabel: unitLabel,
+      lowStockThresholdDays: 7,
+    );
+  }
+
+  // ============================================================
+  // FREQUENCY → UNITS PER DAY
+  // ============================================================
+
+  static double _unitsPerDayFromFrequency(String frequency) {
+    final normalized = frequency.toLowerCase();
+
+    final match = RegExp(r'(\d+)\s*x\s*daily').firstMatch(normalized);
+
+    if (match != null) {
+      final value = int.tryParse(match.group(1) ?? '');
+
+      if (value != null && value > 0) {
+        return value.toDouble();
+      }
+    }
+
+    // Safe dummy fallback.
+    return 1;
+  }
+
+  // ============================================================
+  // MEDICINE TYPE → INVENTORY UNIT
+  // ============================================================
+
+  static String _unitLabelForType(MedicineType type) {
+    switch (type) {
+      case MedicineType.tablet:
+        return 'tablet';
+
+      case MedicineType.capsule:
+        return 'capsule';
+
+      case MedicineType.liquid:
+        return 'dose';
+
+      case MedicineType.drops:
+        return 'bottle';
+
+      case MedicineType.injection:
+        return 'dose';
+    }
   }
 
   // ============================================================

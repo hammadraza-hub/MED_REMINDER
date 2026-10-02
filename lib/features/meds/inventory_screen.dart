@@ -5,6 +5,8 @@ import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import 'inventory_data.dart';
 import 'meds_data.dart';
+import 'refill_alert_detail_screen.dart';
+import 'adjust_inventory_count_sheet.dart';
 
 /// ============================================================
 /// INVENTORY
@@ -61,119 +63,48 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // ============================================================
 
   Future<void> _adjustCount(InventoryItem item) async {
-    final controller = TextEditingController(text: '${item.remainingQuantity}');
+    final result = await showAdjustInventoryCountSheet(context, item: item);
 
-    final result = await showDialog<int>(
-      context: context,
-      builder: (dialogContext) {
-        String? error;
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              title: Text(
-                'Adjust ${item.medicineName}',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Current: ${item.supplyLabel}',
-                    style: const TextStyle(
-                      color: AppColors.formSubtitle,
-                      fontSize: 11,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Remaining ${item.unitLabel}s',
-                      errorText: error,
-                      filled: true,
-                      fillColor: AppColors.inventoryFilterBackground,
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: AppColors.inventoryBorder,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                          color: AppColors.formAccent,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop();
-                  },
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    final value = int.tryParse(controller.text.trim());
-
-                    if (value == null || value < 0) {
-                      setDialogState(() {
-                        error = 'Enter a valid count';
-                      });
-                      return;
-                    }
-
-                    Navigator.of(dialogContext).pop(value);
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.formAccent,
-                    foregroundColor: AppColors.surface,
-                  ),
-                  child: const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    controller.dispose();
-
+    // Cancel / outside tap / back → kuch save nahi hoga.
     if (!mounted || result == null) {
       return;
     }
 
+    // Safety: result isi medication ka hona chahiye.
+    if (result.medicationId != item.medicationId) {
+      return;
+    }
+
     setState(() {
-      item.remainingQuantity = result;
+      item.remainingQuantity = result.remainingQuantity;
     });
 
+    // LOW / OK, estimatedDaysRemaining aur supplyProgress
+    // InventoryItem ke computed getters hain, isliye count update
+    // hote hi automatically recalculate ho jayenge.
+
     // TODO Backend:
-    // Existing inventory document ko medicationId se update karna hai.
-    // medicationId = item.medicationId
-    // remainingQuantity = result
-    // lastAdjustedAt = serverTimestamp
+    // Existing inventory document ko medicationId se UPDATE karna hai:
+    //
+    // medicationId = result.medicationId
+    // remainingQuantity = result.remainingQuantity
+    // adjustmentReason = result.reason
     // adjustmentSource = 'manual'
+    // lastAdjustedAt = serverTimestamp
     // adjustedByUserId = currentUser.uid
     //
-    // Naya duplicate inventory document create nahi karna.
+    // IMPORTANT:
+    // Duplicate inventory document create NAHI karna.
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(content: Text('${item.medicineName} count updated')),
+        SnackBar(
+          content: Text(
+            '${item.medicineName} count updated to '
+            '${result.remainingQuantity}',
+          ),
+        ),
       );
   }
 
@@ -181,24 +112,25 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // REFILL DETAIL
   // ============================================================
 
-  void _openRefillDetail(InventoryItem item) {
-    // TODO Navigation:
-    // RefillAlertDetailScreen ready hone ke baad yahan same
-    // medicationId ke saath detail screen open karni hai.
-    //
-    // TODO Backend:
-    // Refill detail medication inventory document,
-    // pharmacy connection aur refill history se load karni hai.
+  Future<void> _openRefillDetail(InventoryItem item) async {
+    final refilled = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => RefillAlertDetailScreen(inventoryItem: item),
+      ),
+    );
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            'Refill detail for ${item.medicineName} — screen pending',
-          ),
-        ),
-      );
+    if (!mounted) {
+      return;
+    }
+
+    if (refilled == true) {
+      setState(() {});
+
+      // TODO Backend:
+      // Firebase phase mein Refill Detail screen existing inventory
+      // document update karegi aur inventory stream automatically
+      // refreshed values provide karegi.
+    }
   }
 
   // ============================================================

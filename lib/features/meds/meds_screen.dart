@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import 'meds_data.dart';
+import 'inventory_data.dart';
 import 'add_medication_screen.dart';
 import 'edit_medication_screen.dart';
 import 'discontinue_medication_screen.dart';
@@ -16,7 +17,12 @@ import 'inventory_screen.dart';
 /// Active medicine:
 /// Left swipe → Discontinue → confirmation → Archived
 ///
-/// Backend: MedsData se — UI zero change! 🎯
+/// Inventory LOW badge:
+/// InventoryData ke calculated stock status se aata hai.
+/// Hardcoded LOW count nahi hai.
+///
+/// Backend: MedsData / InventoryData repositories future mein
+/// Firebase data provide karengi.
 /// ============================================================
 class MedsScreen extends StatefulWidget {
   const MedsScreen({super.key});
@@ -27,10 +33,13 @@ class MedsScreen extends StatefulWidget {
 
 class _MedsScreenState extends State<MedsScreen> {
   final _searchController = TextEditingController();
+
   bool _showArchived = false;
 
   // ============ STATE — MedsData se ============
-  // Backend: Firebase Stream se update hongi
+  // TODO Backend:
+  // Current user / selected member ke active aur archived
+  // medication documents Firebase stream/repository se load karne hain.
   final List<Medicine> _medicines = MedsData.medicines();
   final List<Medicine> _archived = MedsData.archived();
 
@@ -40,15 +49,39 @@ class _MedsScreenState extends State<MedsScreen> {
     super.dispose();
   }
 
-  // ============ FILTERED — search + tab combo ============
+  // ============================================================
+  // FILTERED — search + tab combo
+  // ============================================================
+
   List<Medicine> get _filteredMeds {
     final source = _showArchived ? _archived : _medicines;
 
     return MedsData.search(source, _searchController.text);
   }
 
-  // ============ COMPUTED (data se! — hardcoded nahi) ============
-  int get _lowStockCount => Medicine.lowStockCount(_medicines);
+  // ============================================================
+  // INVENTORY LOW STOCK COUNT
+  //
+  // IMPORTANT:
+  // Ye number MedsData ke isLowStock flag se hardcode nahi hota.
+  //
+  // InventoryItem:
+  // remainingQuantity + unitsPerDay
+  //          ↓
+  // estimatedDaysRemaining
+  //          ↓
+  // lowStockThresholdDays
+  //          ↓
+  // LOW / OK
+  //          ↓
+  // Meds Inventory badge
+  // ============================================================
+
+  int get _lowStockCount {
+    final inventoryItems = InventoryData.inventory();
+
+    return InventoryData.lowStockCount(inventoryItems);
+  }
 
   // ============================================================
   // ACTIONS
@@ -61,9 +94,21 @@ class _MedsScreenState extends State<MedsScreen> {
 
   // ================= INVENTORY =================
 
-  void _openInventory() {
-    Navigator.of(context)
+  Future<void> _openInventory() async {
+    await Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const InventoryScreen()));
+
+    if (!mounted) {
+      return;
+    }
+
+    // Inventory mein manual stock adjustment ke baad Meds screen
+    // rebuild hogi taa-ke LOW badge latest calculated value dikhaye.
+    //
+    // TODO Backend:
+    // Firebase Stream/Provider aane ke baad manual setState ki
+    // zarurat nahi hogi; inventory changes automatically reflect hongi.
+    setState(() {});
   }
 
   void _showMessage(String message) {
@@ -127,15 +172,18 @@ class _MedsScreenState extends State<MedsScreen> {
     );
 
     // TODO Backend:
-    // Firestore / medication repository mein medicine.id
-    // ka existing document update karna hai:
+    // Firestore / medication repository mein existing medicine
+    // document ko update karna hai:
     //
     // isArchived = true
     // discontinueReason = reason
     // discontinuedAt = serverTimestamp
     //
-    // Previous medication/dose history delete NAHI karni.
-    // Reports / adherence future mein preserved history use karegi.
+    // Previous medication / dose history delete NAHI karni.
+    // Reports / adherence preserved history use karegi.
+    //
+    // Linked active inventory record ko bhi medicationId ke
+    // according active Inventory query se remove/hide karna hai.
   }
 
   // ============================================================
@@ -230,12 +278,18 @@ class _MedsScreenState extends State<MedsScreen> {
           Row(
             children: [
               // ================= INVENTORY =================
-
               Expanded(
                 child: _ManageTile(
                   icon: Icons.inventory_2_outlined,
                   label: 'Inventory',
-                  badge: '$_lowStockCount LOW',
+
+                  // Dynamic:
+                  // 0 LOW → badge hidden
+                  // 1 LOW → "1 LOW"
+                  // 2 LOW → "2 LOW"
+                  // etc.
+                  badge: _lowStockCount > 0 ? '$_lowStockCount LOW' : null,
+
                   onTap: _openInventory,
                 ),
               ),
@@ -248,7 +302,9 @@ class _MedsScreenState extends State<MedsScreen> {
                   icon: Icons.shield_outlined,
                   label: 'Allergies',
                   count: '${MedsData.allergiesCount()}',
-                  onTap: () => _showMessage('Allergies — coming soon'),
+                  onTap: () {
+                    _showMessage('Allergies — coming soon');
+                  },
                 ),
               ),
 
@@ -259,7 +315,9 @@ class _MedsScreenState extends State<MedsScreen> {
                 child: _ManageTile(
                   icon: Icons.assignment_outlined,
                   label: 'Side Effects',
-                  onTap: () => _showMessage('Side Effects — coming soon'),
+                  onTap: () {
+                    _showMessage('Side Effects — coming soon');
+                  },
                 ),
               ),
 
@@ -270,7 +328,9 @@ class _MedsScreenState extends State<MedsScreen> {
                 child: _ManageTile(
                   icon: Icons.local_pharmacy_outlined,
                   label: 'Pharmacy',
-                  onTap: () => _showMessage('Pharmacy — coming soon'),
+                  onTap: () {
+                    _showMessage('Pharmacy — coming soon');
+                  },
                 ),
               ),
             ],
@@ -295,12 +355,18 @@ class _MedsScreenState extends State<MedsScreen> {
                 child: _showArchived
                     ? _MedicineCard(
                         medicine: medicine,
-                        onTap: () => _openMedicine(medicine),
+                        onTap: () {
+                          _openMedicine(medicine);
+                        },
                       )
                     : _SwipeMedicineCard(
                         medicine: medicine,
-                        onTap: () => _openMedicine(medicine),
-                        onDiscontinue: () => _discontinueMedicine(medicine),
+                        onTap: () {
+                          _openMedicine(medicine);
+                        },
+                        onDiscontinue: () {
+                          _discontinueMedicine(medicine);
+                        },
                       ),
               ),
             ),
@@ -588,9 +654,9 @@ class AppAvatarPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO Backend:
-    // Same current-user profile image source
-    // Home aur Meds dono par use karna hai.
+    // TODO Backend/Auth:
+    // Same current-user profile image source Home aur Meds
+    // dono par use karna hai.
 
     return Container(
       width: 35,
@@ -668,6 +734,7 @@ class _ManageTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+
   final String? badge;
   final String? count;
 
@@ -865,7 +932,6 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
           // ==================================================
           // RED ACTION
           // ==================================================
-
           Positioned.fill(
             child: Align(
               alignment: Alignment.centerRight,
@@ -883,9 +949,7 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
                           color: AppColors.surface,
                           size: 23,
                         ),
-
                         SizedBox(height: 5),
-
                         Text(
                           'Discontinue',
                           style: TextStyle(
@@ -983,7 +1047,6 @@ class _MedicineCardContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ============ IMAGE ============
-
           Container(
             width: 50,
             height: 50,
@@ -1037,7 +1100,6 @@ class _MedicineCardContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ===== Title + badge =====
-
                 Row(
                   children: [
                     Expanded(
