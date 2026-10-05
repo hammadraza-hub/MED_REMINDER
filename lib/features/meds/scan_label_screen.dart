@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../widgets/app_avatar.dart';
 import '../../core/services/camera_service.dart';
 import '../../core/services/ocr_service.dart';
 import 'review_scan_screen.dart';
@@ -1230,18 +1231,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
                   ),
                 ),
 
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: AppColors.formIcon,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                const AppAvatar(
+                  size: 34,
+                  ringColor: AppColors.surface,
+                  ringWidth: 2,
                 ),
               ],
             ),

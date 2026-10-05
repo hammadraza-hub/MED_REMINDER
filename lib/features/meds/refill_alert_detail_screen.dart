@@ -7,6 +7,7 @@ import 'inventory_data.dart';
 import 'meds_data.dart';
 import 'refill_alert_detail_data.dart';
 import 'pharmacy_info_screen.dart';
+import '../../widgets/app_avatar.dart';
 
 /// ============================================================
 /// REFILL ALERT DETAIL
@@ -259,18 +260,10 @@ class _RefillAlertDetailScreenState extends State<RefillAlertDetailScreen> {
               // TODO Backend/Auth:
               // Current signed-in user's actual profile image
               // Home ke same profile source se load karni hai.
-              Container(
-                width: 34,
-                height: 34,
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: AppColors.headerDark,
-                  size: 20,
-                ),
+              const AppAvatar(
+                size: 34,
+                ringColor: AppColors.surface,
+                ringWidth: 2,
               ),
             ],
           ),

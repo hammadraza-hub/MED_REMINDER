@@ -1,28 +1,57 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
-import 'meds_data.dart';
-import 'inventory_data.dart';
+import '../../core/medications/local_medication_repository.dart';
+import '../../core/medications/local_medication_schedule_repository.dart';
+import '../../core/medications/medication_repository.dart';
+import '../../core/medications/medication_schedule_repository.dart';
+import '../../core/profile/profile_controller.dart';
+import '../../widgets/app_avatar.dart';
 import 'add_medication_screen.dart';
-import 'edit_medication_screen.dart';
 import 'discontinue_medication_screen.dart';
+import 'edit_medication_screen.dart';
+import 'inventory_data.dart';
 import 'inventory_screen.dart';
+import 'meds_data.dart';
 
 /// ============================================================
 /// MEDS — saari medications
 ///
-/// Dark header (Home jaisa) + search + MANAGE tools +
-/// Active/Archived tabs + progress-bar cards.
+/// CURRENT DATA ARCHITECTURE:
+///
+/// Medications:
+/// UI → MedicationRepository → LocalMedicationRepository → SQLite
+///
+/// Schedules:
+/// UI → MedicationScheduleRepository
+///    → LocalMedicationScheduleRepository
+///    → SQLite
+///
+/// Selected family member:
+/// ProfileController.memberId
+///
+/// Inventory:
+/// Existing InventoryData temporarily preserved.
+/// InventoryRecords migration next phase mein hogi.
 ///
 /// Active medicine:
-/// Left swipe → Discontinue → confirmation → Archived
+/// Left swipe → Discontinue → confirmation → SQLite archive.
 ///
-/// Inventory LOW badge:
-/// InventoryData ke calculated stock status se aata hai.
-/// Hardcoded LOW count nahi hai.
+/// IMPORTANT:
+/// Swipe sirf action reveal karta hai.
+/// Medicine confirmation ke baad hi discontinue/archive hoti hai.
 ///
-/// Backend: MedsData / InventoryData repositories future mein
-/// Firebase data provide karengi.
+/// Seeded Sarah medicines ke schedule rows abhi SQLite mein nahi hain,
+/// isliye unke liye legacy schedule presentation fallback temporarily
+/// preserve hai. Newly-added medicines SQLite schedules use karti hain.
+///
+/// TODO Backend:
+/// FirebaseMedicationRepository aur
+/// FirebaseMedicationScheduleRepository same contracts implement karengi.
+/// Screen ko Firestore-specific code ki zarurat nahi hogi.
 /// ============================================================
 class MedsScreen extends StatefulWidget {
   const MedsScreen({super.key});
@@ -34,47 +63,621 @@ class MedsScreen extends StatefulWidget {
 class _MedsScreenState extends State<MedsScreen> {
   final _searchController = TextEditingController();
 
-  bool _showArchived = false;
+  final MedicationRepository _medicationRepository =
+      LocalMedicationRepository();
 
-  // ============ STATE — MedsData se ============
-  // TODO Backend:
-  // Current user / selected member ke active aur archived
-  // medication documents Firebase stream/repository se load karne hain.
-  final List<Medicine> _medicines = MedsData.medicines();
-  final List<Medicine> _archived = MedsData.archived();
+  final MedicationScheduleRepository _scheduleRepository =
+      LocalMedicationScheduleRepository();
+
+  StreamSubscription<List<MedicationProfile>>? _activeSubscription;
+  StreamSubscription<List<MedicationProfile>>? _archivedSubscription;
+
+  /// Har medication ka apna schedule stream hai.
+  final Map<String, StreamSubscription<List<MedicationScheduleProfile>>>
+  _scheduleSubscriptions = {};
+
+  /// medicationId → persisted schedules
+  final Map<String, List<MedicationScheduleProfile>> _schedulesByMedication =
+      {};
+
+  bool _showArchived = false;
+  bool _medicationsLoading = true;
+
+  String? _listeningMemberId;
+
+  List<MedicationProfile> _activeProfiles = [];
+  List<MedicationProfile> _archivedProfiles = [];
+
+  /// Existing presentation data ab sirf:
+  /// - seeded medicines ke schedule fallback
+  /// - inventory/course presentation
+  ///
+  /// ke liye temporarily use hota hai.
+  late final List<Medicine> _legacyPresentationData = [
+    ...MedsData.medicines(),
+    ...MedsData.archived(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    ProfileController.instance.addListener(_handleSelectedMemberChanged);
+
+    _loadSelectedMemberMedications();
+  }
 
   @override
   void dispose() {
+    ProfileController.instance.removeListener(_handleSelectedMemberChanged);
+
+    _activeSubscription?.cancel();
+    _archivedSubscription?.cancel();
+
+    for (final subscription in _scheduleSubscriptions.values) {
+      subscription.cancel();
+    }
+
+    _scheduleSubscriptions.clear();
+    _schedulesByMedication.clear();
+
     _searchController.dispose();
+
     super.dispose();
   }
 
   // ============================================================
-  // FILTERED — search + tab combo
+  // SELECTED MEMBER
   // ============================================================
 
-  List<Medicine> get _filteredMeds {
-    final source = _showArchived ? _archived : _medicines;
+  void _handleSelectedMemberChanged() {
+    final memberId = ProfileController.instance.memberId;
 
-    return MedsData.search(source, _searchController.text);
+    if (memberId == null ||
+        memberId.isEmpty ||
+        memberId == _listeningMemberId) {
+      return;
+    }
+
+    _loadSelectedMemberMedications();
+  }
+
+  Future<void> _loadSelectedMemberMedications() async {
+    final memberId = ProfileController.instance.memberId;
+
+    if (memberId == null || memberId.isEmpty) {
+      await _cancelScheduleSubscriptions();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _listeningMemberId = null;
+        _activeProfiles = [];
+        _archivedProfiles = [];
+        _schedulesByMedication.clear();
+        _medicationsLoading = false;
+      });
+
+      return;
+    }
+
+    if (_listeningMemberId == memberId &&
+        (_activeSubscription != null || _archivedSubscription != null)) {
+      return;
+    }
+
+    await _activeSubscription?.cancel();
+    await _archivedSubscription?.cancel();
+    await _cancelScheduleSubscriptions();
+
+    _activeSubscription = null;
+    _archivedSubscription = null;
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _listeningMemberId = memberId;
+      _activeProfiles = [];
+      _archivedProfiles = [];
+      _schedulesByMedication.clear();
+      _medicationsLoading = true;
+    });
+
+    try {
+      await _medicationRepository.seedInitialMedicationsIfNeeded(memberId);
+
+      if (!mounted || _listeningMemberId != memberId) {
+        return;
+      }
+
+      _activeSubscription = _medicationRepository
+          .watchActiveMedications(memberId)
+          .listen(
+            (medications) {
+              if (!mounted || _listeningMemberId != memberId) {
+                return;
+              }
+
+              setState(() {
+                _activeProfiles = medications;
+                _medicationsLoading = false;
+              });
+
+              _syncScheduleSubscriptions();
+            },
+            onError: (Object error, StackTrace stackTrace) {
+              debugPrint('Active medications stream failed: $error');
+              debugPrintStack(stackTrace: stackTrace);
+
+              if (!mounted || _listeningMemberId != memberId) {
+                return;
+              }
+
+              setState(() {
+                _medicationsLoading = false;
+              });
+            },
+          );
+
+      _archivedSubscription = _medicationRepository
+          .watchArchivedMedications(memberId)
+          .listen(
+            (medications) {
+              if (!mounted || _listeningMemberId != memberId) {
+                return;
+              }
+
+              setState(() {
+                _archivedProfiles = medications;
+                _medicationsLoading = false;
+              });
+
+              _syncScheduleSubscriptions();
+            },
+            onError: (Object error, StackTrace stackTrace) {
+              debugPrint('Archived medications stream failed: $error');
+              debugPrintStack(stackTrace: stackTrace);
+
+              if (!mounted || _listeningMemberId != memberId) {
+                return;
+              }
+
+              setState(() {
+                _medicationsLoading = false;
+              });
+            },
+          );
+    } catch (error, stackTrace) {
+      debugPrint('Medication initialization failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted || _listeningMemberId != memberId) {
+        return;
+      }
+
+      setState(() {
+        _medicationsLoading = false;
+      });
+    }
+  }
+
+  // ============================================================
+  // SCHEDULE STREAMS
+  // ============================================================
+
+  Future<void> _cancelScheduleSubscriptions() async {
+    final subscriptions = _scheduleSubscriptions.values.toList();
+
+    _scheduleSubscriptions.clear();
+
+    for (final subscription in subscriptions) {
+      await subscription.cancel();
+    }
+  }
+
+  void _syncScheduleSubscriptions() {
+    final currentMemberId = _listeningMemberId;
+
+    if (currentMemberId == null) {
+      return;
+    }
+
+    final medicationIds = <String>{
+      ..._activeProfiles.map((profile) => profile.id),
+      ..._archivedProfiles.map((profile) => profile.id),
+    };
+
+    final staleIds = _scheduleSubscriptions.keys
+        .where((id) => !medicationIds.contains(id))
+        .toList();
+
+    for (final id in staleIds) {
+      _scheduleSubscriptions.remove(id)?.cancel();
+      _schedulesByMedication.remove(id);
+    }
+
+    for (final medicationId in medicationIds) {
+      if (_scheduleSubscriptions.containsKey(medicationId)) {
+        continue;
+      }
+
+      _scheduleSubscriptions[medicationId] = _scheduleRepository
+          .watchSchedulesForMedication(medicationId)
+          .listen(
+            (schedules) {
+              if (!mounted || _listeningMemberId != currentMemberId) {
+                return;
+              }
+
+              final validSchedules =
+                  schedules
+                      .where((schedule) => schedule.memberId == currentMemberId)
+                      .toList()
+                    ..sort((a, b) => a.timeOfDay.compareTo(b.timeOfDay));
+
+              setState(() {
+                _schedulesByMedication[medicationId] = validSchedules;
+              });
+            },
+            onError: (Object error, StackTrace stackTrace) {
+              debugPrint(
+                'Medication schedule stream failed for $medicationId: $error',
+              );
+              debugPrintStack(stackTrace: stackTrace);
+            },
+          );
+    }
+  }
+
+  // ============================================================
+  // UI MEDICINE MAPPING
+  // ============================================================
+
+  List<_MedicationListItem> get _activeItems {
+    return _activeProfiles.map(_toListItem).toList();
+  }
+
+  List<_MedicationListItem> get _archivedItems {
+    return _archivedProfiles.map(_toListItem).toList();
+  }
+
+  _MedicationListItem _toListItem(MedicationProfile profile) {
+    final legacy = _findLegacyPresentation(profile);
+
+    final schedules =
+        _schedulesByMedication[profile.id] ??
+        const <MedicationScheduleProfile>[];
+
+    final enabledSchedules = schedules
+        .where((schedule) => schedule.isEnabled)
+        .toList();
+
+    final hasPersistedSchedule = enabledSchedules.isNotEmpty;
+
+    final frequency = hasPersistedSchedule
+        ? _scheduleFrequency(enabledSchedules)
+        : legacy?.frequency ?? 'Schedule not set';
+
+    final nextDose = hasPersistedSchedule
+        ? _nextDoseLabel(enabledSchedules)
+        : legacy?.nextDose ?? '—';
+
+    return _MedicationListItem(
+      profile: profile,
+      schedules: enabledSchedules,
+      medicine: Medicine(
+        name: profile.name,
+        dose: profile.displayStrength,
+        type: _medicineTypeFromProfile(profile),
+        frequency: frequency,
+        nextDose: nextDose,
+
+        // InventoryRecords migration abhi pending hai.
+        supplyDaysLeft: legacy?.supplyDaysLeft ?? 0,
+        isLowStock: legacy?.isLowStock ?? false,
+
+        // Course metadata bhi abhi legacy presentation se aa rahi hai.
+        courseDay: legacy?.courseDay,
+        courseTotalDays: legacy?.courseTotalDays,
+
+        isArchived: !profile.isActive,
+      ),
+      imagePath: profile.imagePath,
+    );
+  }
+
+  Medicine? _findLegacyPresentation(MedicationProfile profile) {
+    final normalizedName = profile.name.trim().toLowerCase();
+
+    for (final medicine in _legacyPresentationData) {
+      if (medicine.name.trim().toLowerCase() == normalizedName) {
+        return medicine;
+      }
+    }
+
+    return null;
+  }
+
+  MedicineType _medicineTypeFromProfile(MedicationProfile profile) {
+    switch (profile.medicineForm?.trim().toLowerCase()) {
+      case 'capsule':
+        return MedicineType.capsule;
+
+      case 'liquid':
+        return MedicineType.liquid;
+
+      case 'drops':
+        return MedicineType.drops;
+
+      case 'injection':
+        return MedicineType.injection;
+
+      case 'tablet':
+      default:
+        return MedicineType.tablet;
+    }
+  }
+
+  // ============================================================
+  // SCHEDULE PRESENTATION
+  // ============================================================
+
+  String _scheduleFrequency(List<MedicationScheduleProfile> schedules) {
+    if (schedules.isEmpty) {
+      return 'Schedule not set';
+    }
+
+    final scheduleType = schedules.first.scheduleType.trim().toLowerCase();
+
+    switch (scheduleType) {
+      case 'prn':
+        return 'As needed';
+
+      case 'specific_days':
+        return schedules.length == 1
+            ? '1x on selected days'
+            : '${schedules.length}x on selected days';
+
+      case 'cyclical':
+        return schedules.length == 1
+            ? '1x cyclical'
+            : '${schedules.length}x cyclical';
+
+      case 'tapering':
+        return 'Tapering schedule';
+
+      case 'daily':
+      default:
+        return schedules.length == 1
+            ? '1x daily'
+            : '${schedules.length}x daily';
+    }
+  }
+
+  String _nextDoseLabel(List<MedicationScheduleProfile> schedules) {
+    if (schedules.isEmpty) {
+      return '—';
+    }
+
+    final next = _findNextScheduleOccurrence(schedules);
+
+    if (next == null) {
+      return '—';
+    }
+
+    final now = DateTime.now();
+
+    final today = DateTime(now.year, now.month, now.day);
+    final nextDay = DateTime(next.year, next.month, next.day);
+
+    final difference = nextDay.difference(today).inDays;
+
+    final time = _formatTime(next);
+
+    if (difference == 0) {
+      return time;
+    }
+
+    if (difference == 1) {
+      return 'Tomorrow $time';
+    }
+
+    return '${_shortWeekday(next.weekday)} $time';
+  }
+
+  DateTime? _findNextScheduleOccurrence(
+    List<MedicationScheduleProfile> schedules,
+  ) {
+    final now = DateTime.now();
+
+    DateTime? closest;
+
+    for (final schedule in schedules) {
+      if (!schedule.isEnabled) {
+        continue;
+      }
+
+      final time = _parseStoredTime(schedule.timeOfDay);
+
+      if (time == null) {
+        continue;
+      }
+
+      for (var dayOffset = 0; dayOffset <= 7; dayOffset++) {
+        final date = now.add(Duration(days: dayOffset));
+
+        final candidate = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        );
+
+        if (!candidate.isAfter(now)) {
+          continue;
+        }
+
+        if (!_scheduleAppliesOnDate(schedule, candidate)) {
+          continue;
+        }
+
+        if (closest == null || candidate.isBefore(closest)) {
+          closest = candidate;
+        }
+
+        break;
+      }
+    }
+
+    return closest;
+  }
+
+  bool _scheduleAppliesOnDate(
+    MedicationScheduleProfile schedule,
+    DateTime date,
+  ) {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+
+    final start = DateTime(
+      schedule.startDate.year,
+      schedule.startDate.month,
+      schedule.startDate.day,
+    );
+
+    if (dateOnly.isBefore(start)) {
+      return false;
+    }
+
+    if (schedule.endDate != null) {
+      final end = DateTime(
+        schedule.endDate!.year,
+        schedule.endDate!.month,
+        schedule.endDate!.day,
+      );
+
+      if (dateOnly.isAfter(end)) {
+        return false;
+      }
+    }
+
+    final type = schedule.scheduleType.trim().toLowerCase();
+
+    if (type == 'prn') {
+      // PRN ka fixed "next dose" technically due nahi hota.
+      // Current UI expects a time, so configured reminder time use hota hai.
+      // DoseEvents migration ke baad PRN presentation improve hogi.
+      return true;
+    }
+
+    final weekdays = _parseWeekdays(schedule.daysOfWeek);
+
+    if (weekdays.isEmpty) {
+      return true;
+    }
+
+    return weekdays.contains(date.weekday);
+  }
+
+  Set<int> _parseWeekdays(String? storedDays) {
+    if (storedDays == null || storedDays.trim().isEmpty) {
+      return <int>{};
+    }
+
+    return storedDays
+        .split(',')
+        .map((value) => int.tryParse(value.trim()))
+        .whereType<int>()
+        .where((day) => day >= DateTime.monday && day <= DateTime.sunday)
+        .toSet();
+  }
+
+  TimeOfDay? _parseStoredTime(String storedTime) {
+    final parts = storedTime.split(':');
+
+    if (parts.length != 2) {
+      return null;
+    }
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+
+    if (hour == null ||
+        minute == null ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59) {
+      return null;
+    }
+
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute;
+
+    final period = hour >= 12 ? 'PM' : 'AM';
+
+    final twelveHour = hour == 0
+        ? 12
+        : hour > 12
+        ? hour - 12
+        : hour;
+
+    final minuteText = minute.toString().padLeft(2, '0');
+
+    return '$twelveHour:$minuteText $period';
+  }
+
+  String _shortWeekday(int weekday) {
+    switch (weekday) {
+      case DateTime.monday:
+        return 'Mon';
+      case DateTime.tuesday:
+        return 'Tue';
+      case DateTime.wednesday:
+        return 'Wed';
+      case DateTime.thursday:
+        return 'Thu';
+      case DateTime.friday:
+        return 'Fri';
+      case DateTime.saturday:
+        return 'Sat';
+      case DateTime.sunday:
+      default:
+        return 'Sun';
+    }
+  }
+
+  // ============================================================
+  // FILTERED — search + tab
+  // ============================================================
+
+  List<_MedicationListItem> get _filteredMeds {
+    final source = _showArchived ? _archivedItems : _activeItems;
+    final query = _searchController.text.trim().toLowerCase();
+
+    if (query.isEmpty) {
+      return source;
+    }
+
+    return source.where((item) {
+      return item.profile.name.toLowerCase().contains(query) ||
+          item.profile.displayStrength.toLowerCase().contains(query);
+    }).toList();
   }
 
   // ============================================================
   // INVENTORY LOW STOCK COUNT
   //
-  // IMPORTANT:
-  // Ye number MedsData ke isLowStock flag se hardcode nahi hota.
-  //
-  // InventoryItem:
-  // remainingQuantity + unitsPerDay
-  //          ↓
-  // estimatedDaysRemaining
-  //          ↓
-  // lowStockThresholdDays
-  //          ↓
-  // LOW / OK
-  //          ↓
-  // Meds Inventory badge
+  // Inventory migration abhi pending hai.
+  // Existing InventoryData calculated source preserve kiya gaya hai.
   // ============================================================
 
   int get _lowStockCount {
@@ -87,9 +690,14 @@ class _MedsScreenState extends State<MedsScreen> {
   // ACTIONS
   // ============================================================
 
-  void _addMedicine() {
-    Navigator.of(context)
+  Future<void> _addMedicine() async {
+    await Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const AddMedicationScreen()));
+
+    // Medication repository stream new medication automatically show karegi.
+    //
+    // TODO Backend:
+    // Firebase implementation mein same repository contract use hoga.
   }
 
   // ================= INVENTORY =================
@@ -102,12 +710,11 @@ class _MedsScreenState extends State<MedsScreen> {
       return;
     }
 
-    // Inventory mein manual stock adjustment ke baad Meds screen
-    // rebuild hogi taa-ke LOW badge latest calculated value dikhaye.
+    // Existing InventoryData in-memory adjustment ke liye rebuild.
     //
-    // TODO Backend:
-    // Firebase Stream/Provider aane ke baad manual setState ki
-    // zarurat nahi hogi; inventory changes automatically reflect hongi.
+    // TODO Local Storage:
+    // InventoryRecords repository stream migration ke baad manual
+    // setState ki zarurat nahi hogi.
     setState(() {});
   }
 
@@ -122,24 +729,21 @@ class _MedsScreenState extends State<MedsScreen> {
   /// Confirmation modal open hoti hai.
   ///
   /// null   → Keep Active / Back / outside tap
-  /// String → Archive confirm (reason empty bhi ho sakta hai)
+  /// String → Archive confirm
+  ///
+  /// IMPORTANT:
+  /// SQLite update sirf successful confirmation ke baad.
   /// ============================================================
-  Future<void> _discontinueMedicine(Medicine medicine) async {
+  Future<void> _discontinueMedicine(_MedicationListItem item) async {
     final reason = await showGeneralDialog<String?>(
       context: context,
-
-      // Background Meds screen visible + dim rahegi
       barrierDismissible: true,
       barrierLabel: 'Close discontinue medication',
       barrierColor: AppColors.headerDark.withValues(alpha: 0.55),
-
       transitionDuration: const Duration(milliseconds: 220),
-
       pageBuilder: (context, animation, secondaryAnimation) {
-        return DiscontinueMedicationScreen(medicine: medicine);
+        return DiscontinueMedicationScreen(medicine: item.medicine);
       },
-
-      // Soft fade + scale — modal feel
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         final curvedAnimation = CurvedAnimation(
           parent: animation,
@@ -157,33 +761,47 @@ class _MedsScreenState extends State<MedsScreen> {
       },
     );
 
-    // User ne Keep Active, outside tap ya back use kiya
     if (reason == null || !mounted) {
       return;
     }
 
-    setState(() {
-      _medicines.remove(medicine);
-      _archived.add(medicine);
-    });
+    try {
+      await _medicationRepository.discontinueMedication(
+        medicationId: item.profile.id,
+        discontinuedAt: DateTime.now(),
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${medicine.name} moved to Archived')),
-    );
+      if (!mounted) {
+        return;
+      }
 
-    // TODO Backend:
-    // Firestore / medication repository mein existing medicine
-    // document ko update karna hai:
-    //
-    // isArchived = true
-    // discontinueReason = reason
-    // discontinuedAt = serverTimestamp
-    //
-    // Previous medication / dose history delete NAHI karni.
-    // Reports / adherence preserved history use karegi.
-    //
-    // Linked active inventory record ko bhi medicationId ke
-    // according active Inventory query se remove/hide karna hai.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${item.profile.name} moved to Archived')),
+      );
+
+      // TODO Local Storage:
+      // Discontinue reason ke liye dedicated persisted field/domain
+      // migration future step mein add karni hai.
+      //
+      // Existing DoseEvents/history delete nahi karni.
+      //
+      // TODO Backend:
+      // Firebase repository isActive/discontinuedAt/reason save karegi
+      // aur historical dose data preserve karegi.
+    } catch (error, stackTrace) {
+      debugPrint('Discontinue medication failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not discontinue medication. Please try again.'),
+        ),
+      );
+    }
   }
 
   // ============================================================
@@ -194,13 +812,9 @@ class _MedsScreenState extends State<MedsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
       body: Column(
         children: [
-          // ================= DARK HEADER =================
           _buildHeader(),
-
-          // ================= MAIN CONTENT =================
           Expanded(
             child: Center(
               child: ConstrainedBox(
@@ -211,8 +825,6 @@ class _MedsScreenState extends State<MedsScreen> {
           ),
         ],
       ),
-
-      // ================= ADD MEDICINE =================
       floatingActionButton: Padding(
         padding: EdgeInsets.only(
           right: MediaQuery.sizeOf(context).width > 480
@@ -241,12 +853,10 @@ class _MedsScreenState extends State<MedsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ---- Search ----
           _buildSearch(),
 
           const SizedBox(height: 12),
 
-          // ---- MANAGE header ----
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -272,31 +882,19 @@ class _MedsScreenState extends State<MedsScreen> {
 
           const SizedBox(height: 9),
 
-          // ==================================================
-          // QUICK TOOLS
-          // ==================================================
           Row(
             children: [
-              // ================= INVENTORY =================
               Expanded(
                 child: _ManageTile(
                   icon: Icons.inventory_2_outlined,
                   label: 'Inventory',
-
-                  // Dynamic:
-                  // 0 LOW → badge hidden
-                  // 1 LOW → "1 LOW"
-                  // 2 LOW → "2 LOW"
-                  // etc.
                   badge: _lowStockCount > 0 ? '$_lowStockCount LOW' : null,
-
                   onTap: _openInventory,
                 ),
               ),
 
               const SizedBox(width: 7),
 
-              // ================= ALLERGIES =================
               Expanded(
                 child: _ManageTile(
                   icon: Icons.shield_outlined,
@@ -310,7 +908,6 @@ class _MedsScreenState extends State<MedsScreen> {
 
               const SizedBox(width: 7),
 
-              // ================= SIDE EFFECTS =================
               Expanded(
                 child: _ManageTile(
                   icon: Icons.assignment_outlined,
@@ -323,7 +920,6 @@ class _MedsScreenState extends State<MedsScreen> {
 
               const SizedBox(width: 7),
 
-              // ================= PHARMACY =================
               Expanded(
                 child: _ManageTile(
                   icon: Icons.local_pharmacy_outlined,
@@ -338,34 +934,34 @@ class _MedsScreenState extends State<MedsScreen> {
 
           const SizedBox(height: 16),
 
-          // ---- Active / Archived tabs ----
           _buildTabs(),
 
           const SizedBox(height: 16),
 
-          // ---- Medicine list ----
-          if (_filteredMeds.isEmpty)
+          if (_medicationsLoading)
+            _buildLoadingState()
+          else if (_filteredMeds.isEmpty)
             _buildEmptyState()
           else
             ..._filteredMeds.map(
-              (medicine) => Padding(
+              (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-
-                // Archived list mein swipe nahi hoga
                 child: _showArchived
                     ? _MedicineCard(
-                        medicine: medicine,
+                        medicine: item.medicine,
+                        imagePath: item.imagePath,
                         onTap: () {
-                          _openMedicine(medicine);
+                          _openMedicine(item);
                         },
                       )
                     : _SwipeMedicineCard(
-                        medicine: medicine,
+                        medicine: item.medicine,
+                        imagePath: item.imagePath,
                         onTap: () {
-                          _openMedicine(medicine);
+                          _openMedicine(item);
                         },
                         onDiscontinue: () {
-                          _discontinueMedicine(medicine);
+                          _discontinueMedicine(item);
                         },
                       ),
               ),
@@ -379,23 +975,43 @@ class _MedsScreenState extends State<MedsScreen> {
   // OPEN MEDICINE
   // ============================================================
 
-  void _openMedicine(Medicine medicine) {
-    Navigator.of(context).push(
+  Future<void> _openMedicine(_MedicationListItem item) async {
+    final medicine = item.medicine;
+
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => EditMedicationScreen(
           medicineName: medicine.name,
           medicineStrength: medicine.dose,
           medicineForm: medicine.typeLabel,
-          dosesPerDay: medicine.frequency.contains('2x')
-              ? 2
-              : medicine.frequency.contains('3x')
-              ? 3
-              : 1,
+          dosesPerDay: item.schedules.isNotEmpty
+              ? item.schedules.length
+              : _dosesPerDayFromFrequency(medicine.frequency),
           pillsRemaining: medicine.supplyDaysLeft,
           isLowStock: medicine.isLowStock,
         ),
       ),
     );
+
+    // TODO Local Storage:
+    // EditMedicationScreen ko stable medicationId dena aur medication +
+    // schedule repositories se actual persisted editing karna next step hai.
+    //
+    // TODO Backend:
+    // Same edit controller/repository boundary backend implementation
+    // ke saath reuse hogi.
+  }
+
+  int _dosesPerDayFromFrequency(String frequency) {
+    if (frequency.contains('3x')) {
+      return 3;
+    }
+
+    if (frequency.contains('2x')) {
+      return 2;
+    }
+
+    return 1;
   }
 
   // ============================================================
@@ -413,7 +1029,6 @@ class _MedsScreenState extends State<MedsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ============ ROW 1 ============
               Row(
                 children: [
                   const Expanded(
@@ -427,7 +1042,6 @@ class _MedsScreenState extends State<MedsScreen> {
                     ),
                   ),
 
-                  // Bell + red dot
                   Stack(
                     clipBehavior: Clip.none,
                     children: [
@@ -459,16 +1073,15 @@ class _MedsScreenState extends State<MedsScreen> {
 
               const SizedBox(height: 12),
 
-              // ============ ROW 2 ============
               Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'My Medications',
-                          style: TextStyle(
+                        Text(
+                          '${ProfileController.instance.displayName}\'s Medications',
+                          style: const TextStyle(
                             color: AppColors.surface,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -478,7 +1091,7 @@ class _MedsScreenState extends State<MedsScreen> {
                         const SizedBox(height: 3),
 
                         Text(
-                          '${_medicines.length} active medications',
+                          '${_activeProfiles.length} active medications',
                           style: const TextStyle(
                             color: AppColors.headerSubtext,
                             fontSize: 11,
@@ -588,7 +1201,7 @@ class _MedsScreenState extends State<MedsScreen> {
     return Row(
       children: [
         _TabButton(
-          label: 'Active (${_medicines.length})',
+          label: 'Active (${_activeProfiles.length})',
           selected: !_showArchived,
           onTap: () {
             setState(() {
@@ -600,7 +1213,7 @@ class _MedsScreenState extends State<MedsScreen> {
         const SizedBox(width: 8),
 
         _TabButton(
-          label: 'Archived (${_archived.length})',
+          label: 'Archived (${_archivedProfiles.length})',
           selected: _showArchived,
           onTap: () {
             setState(() {
@@ -609,6 +1222,19 @@ class _MedsScreenState extends State<MedsScreen> {
           },
         ),
       ],
+    );
+  }
+
+  // ============================================================
+  // LOADING
+  // ============================================================
+
+  Widget _buildLoadingState() {
+    return const SizedBox(
+      height: 200,
+      child: Center(
+        child: CircularProgressIndicator(color: AppColors.formAccent),
+      ),
     );
   }
 
@@ -646,6 +1272,24 @@ class _MedsScreenState extends State<MedsScreen> {
 }
 
 // ============================================================
+// MEDICATION LIST ITEM
+// ============================================================
+
+class _MedicationListItem {
+  const _MedicationListItem({
+    required this.profile,
+    required this.medicine,
+    required this.schedules,
+    this.imagePath,
+  });
+
+  final MedicationProfile profile;
+  final Medicine medicine;
+  final List<MedicationScheduleProfile> schedules;
+  final String? imagePath;
+}
+
+// ============================================================
 // HEADER AVATAR
 // ============================================================
 
@@ -654,19 +1298,10 @@ class AppAvatarPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO Backend/Auth:
-    // Same current-user profile image source Home aur Meds
-    // dono par use karna hai.
-
-    return Container(
-      width: 35,
-      height: 35,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.surface, width: 2),
-      ),
-      child: const Icon(Icons.person, color: AppColors.fieldHint, size: 24),
+    return const AppAvatar(
+      size: 35,
+      ringColor: AppColors.surface,
+      ringWidth: 2,
     );
   }
 }
@@ -793,7 +1428,6 @@ class _ManageTile extends StatelessWidget {
             ),
           ),
 
-          // ============ LOW badge ============
           if (badge != null)
             Positioned(
               top: -6,
@@ -819,7 +1453,6 @@ class _ManageTile extends StatelessWidget {
               ),
             ),
 
-          // ============ Count badge ============
           if (count != null)
             Positioned(
               top: -6,
@@ -850,13 +1483,6 @@ class _ManageTile extends StatelessWidget {
 
 // ============================================================
 // SWIPE MEDICINE CARD
-//
-// Active medication:
-// Left swipe → Discontinue action reveal
-//
-// IMPORTANT:
-// Swipe medicine ko archive NAHI karta.
-// Discontinue button confirmation modal open karta hai.
 // ============================================================
 
 class _SwipeMedicineCard extends StatefulWidget {
@@ -864,9 +1490,11 @@ class _SwipeMedicineCard extends StatefulWidget {
     required this.medicine,
     required this.onTap,
     required this.onDiscontinue,
+    this.imagePath,
   });
 
   final Medicine medicine;
+  final String? imagePath;
   final VoidCallback onTap;
   final VoidCallback onDiscontinue;
 
@@ -879,17 +1507,12 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
 
   double _dragOffset = 0;
 
-  // ================= DRAG UPDATE =================
-
   void _handleDragUpdate(DragUpdateDetails details) {
     setState(() {
       _dragOffset += details.delta.dx;
-
       _dragOffset = _dragOffset.clamp(-_actionWidth, 0.0);
     });
   }
-
-  // ================= DRAG END =================
 
   void _handleDragEnd(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
@@ -903,8 +1526,6 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
     });
   }
 
-  // ================= CLOSE =================
-
   void _closeAction() {
     if (_dragOffset == 0) {
       return;
@@ -915,11 +1536,8 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
     });
   }
 
-  // ================= DISCONTINUE =================
-
   void _handleDiscontinueTap() {
     _closeAction();
-
     widget.onDiscontinue();
   }
 
@@ -929,9 +1547,6 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
       borderRadius: BorderRadius.circular(15),
       child: Stack(
         children: [
-          // ==================================================
-          // RED ACTION
-          // ==================================================
           Positioned.fill(
             child: Align(
               alignment: Alignment.centerRight,
@@ -966,9 +1581,6 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
             ),
           ),
 
-          // ==================================================
-          // MOVING MEDICINE CARD
-          // ==================================================
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
@@ -985,7 +1597,10 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
 
                 widget.onTap();
               },
-              child: _MedicineCardContent(medicine: widget.medicine),
+              child: _MedicineCardContent(
+                medicine: widget.medicine,
+                imagePath: widget.imagePath,
+              ),
             ),
           ),
         ],
@@ -999,16 +1614,21 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
 // ============================================================
 
 class _MedicineCard extends StatelessWidget {
-  const _MedicineCard({required this.medicine, required this.onTap});
+  const _MedicineCard({
+    required this.medicine,
+    required this.onTap,
+    this.imagePath,
+  });
 
   final Medicine medicine;
+  final String? imagePath;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: _MedicineCardContent(medicine: medicine),
+      child: _MedicineCardContent(medicine: medicine, imagePath: imagePath),
     );
   }
 }
@@ -1018,9 +1638,10 @@ class _MedicineCard extends StatelessWidget {
 // ============================================================
 
 class _MedicineCardContent extends StatelessWidget {
-  const _MedicineCardContent({required this.medicine});
+  const _MedicineCardContent({required this.medicine, this.imagePath});
 
   final Medicine medicine;
+  final String? imagePath;
 
   @override
   Widget build(BuildContext context) {
@@ -1029,6 +1650,8 @@ class _MedicineCardContent extends StatelessWidget {
         (medicine.isCourse && medicine.supplyDaysLeft <= 5);
 
     final isCourse = medicine.isCourse;
+
+    final effectiveImagePath = imagePath ?? medicine.typeImageAsset;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 15, 14, 14),
@@ -1046,7 +1669,6 @@ class _MedicineCardContent extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ============ IMAGE ============
           Container(
             width: 50,
             height: 50,
@@ -1061,24 +1683,13 @@ class _MedicineCardContent extends StatelessWidget {
               ],
             ),
             child: ClipOval(
-              child: medicine.typeImageAsset != null
-                  ? Image.asset(
-                      medicine.typeImageAsset!,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.high,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Icon(
-                            medicine.typeIcon,
-                            color: isLow
-                                ? AppColors.lowBadgeText
-                                : AppColors.formAccent,
-                            size: 25,
-                          ),
-                        );
-                      },
+              child: effectiveImagePath != null
+                  ? _MedicationImage(
+                      path: effectiveImagePath,
+                      fallbackIcon: medicine.typeIcon,
+                      fallbackColor: isLow
+                          ? AppColors.lowBadgeText
+                          : AppColors.formAccent,
                     )
                   : Center(
                       child: Icon(
@@ -1094,12 +1705,10 @@ class _MedicineCardContent extends StatelessWidget {
 
           const SizedBox(width: 13),
 
-          // ============ INFO ============
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ===== Title + badge =====
                 Row(
                   children: [
                     Expanded(
@@ -1142,7 +1751,6 @@ class _MedicineCardContent extends StatelessWidget {
 
                 const SizedBox(height: 5),
 
-                // ===== Next / Ends =====
                 Row(
                   children: [
                     Icon(
@@ -1157,15 +1765,19 @@ class _MedicineCardContent extends StatelessWidget {
 
                     const SizedBox(width: 4),
 
-                    Text(
-                      isCourse
-                          ? 'Ends ${medicine.endsOnLabel}'
-                          : 'Next: ${medicine.nextDose}',
-                      style: TextStyle(
-                        color: isCourse
-                            ? AppColors.lowBadgeText
-                            : AppColors.formSubtitle,
-                        fontSize: 10,
+                    Expanded(
+                      child: Text(
+                        isCourse
+                            ? 'Ends ${medicine.endsOnLabel}'
+                            : 'Next: ${medicine.nextDose}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isCourse
+                              ? AppColors.lowBadgeText
+                              : AppColors.formSubtitle,
+                          fontSize: 10,
+                        ),
                       ),
                     ),
                   ],
@@ -1173,7 +1785,6 @@ class _MedicineCardContent extends StatelessWidget {
 
                 const SizedBox(height: 9),
 
-                // ===== Progress =====
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1227,6 +1838,67 @@ class _MedicineCardContent extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ============================================================
+// MEDICATION IMAGE
+//
+// Supports:
+// - bundled asset
+// - local file path
+//
+// TODO Backend:
+// Firebase Storage / remote URL image support can be added through
+// repository/domain image references without changing medication data flow.
+// ============================================================
+
+class _MedicationImage extends StatelessWidget {
+  const _MedicationImage({
+    required this.path,
+    required this.fallbackIcon,
+    required this.fallbackColor,
+  });
+
+  final String path;
+  final IconData fallbackIcon;
+  final Color fallbackColor;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget fallback() {
+      return Center(child: Icon(fallbackIcon, color: fallbackColor, size: 25));
+    }
+
+    if (path.startsWith('assets/')) {
+      return Image.asset(
+        path,
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (context, error, stackTrace) {
+          return fallback();
+        },
+      );
+    }
+
+    final file = File(path);
+
+    if (!file.existsSync()) {
+      return fallback();
+    }
+
+    return Image.file(
+      file,
+      width: 50,
+      height: 50,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.high,
+      errorBuilder: (context, error, stackTrace) {
+        return fallback();
+      },
     );
   }
 }

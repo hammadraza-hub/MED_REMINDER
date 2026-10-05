@@ -2,41 +2,72 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/medications/local_medication_repository.dart';
+import '../../core/medications/local_medication_schedule_repository.dart';
+import '../../core/medications/medication_draft.dart';
+import '../../core/medications/medication_repository.dart';
+import '../../core/medications/medication_schedule_repository.dart';
+import '../../core/profile/profile_controller.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_bottom_navigation.dart';
 
 /// ============================================================
-/// SCHEDULE SCREEN — Step 2 of 2 (wizard FINAL!)
+/// SCHEDULE SCREEN — Step 2 of 2
 ///
-/// Review/Manual → YE SCREEN → Confirm → Medicine COMPLETE!
+/// Add Manual
+///      ↓
+/// MedicationDraft
+///      ↓
+/// Schedule
+///      ↓
+/// Confirm
+///      ↓
+/// Medications + MedicationSchedules
+///      ↓
+/// Drift / SQLite
 ///
-/// 5 schedule types (Tapering tak!) + dose names + meal toggle
-/// + date range + smart validations!
+/// One schedule row = one reminder/dose time.
 ///
-/// System: AppColors + shared AppBottomNavigation + tablet cap
+/// Example:
+/// Metformin:
+/// 08:30 → schedule row 1
+/// 20:00 → schedule row 2
 ///
 /// TODO Backend:
-/// - Medication + schedule current authenticated user/family member ke
-///   Firestore documents mein save karna
-/// - Dose reminder notifications schedule/reschedule karna
-/// - Inventory document medicationId ke against initialize/update karna
-/// - Schedule edit mode mein existing schedule document update karna
+/// Firebase phase mein same repository contracts ke backend
+/// implementations use hongi.
+///
+/// TODO Local Storage / Notifications:
+/// Persisted schedule rows ke basis par notification scheduling
+/// future notification service karegi.
 /// ============================================================
 class ScheduleScreen extends StatefulWidget {
-  const ScheduleScreen({super.key, this.medicineName, this.medicineStrength});
+  const ScheduleScreen({super.key, required this.medicationDraft});
 
-  final String? medicineName;
-  final String? medicineStrength;
+  final MedicationDraft medicationDraft;
 
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  // ================= STATE =================
+  // ============================================================
+  // REPOSITORIES
+  // ============================================================
+
+  final MedicationRepository _medicationRepository =
+      LocalMedicationRepository();
+
+  final MedicationScheduleRepository _scheduleRepository =
+      LocalMedicationScheduleRepository();
+
+  // ============================================================
+  // STATE
+  // ============================================================
+
   String _scheduleType = 'Daily';
 
-  final Set<int> _selectedDays = {1, 2, 3, 4, 5}; // Mon-Fri
+  final Set<int> _selectedDays = {1, 2, 3, 4, 5, 6, 7};
 
   int _weeksOn = 3;
   int _weeksOff = 1;
@@ -57,7 +88,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   bool _isConfirming = false;
 
-  // ================= DATA =================
+  // ============================================================
+  // DATA
+  // ============================================================
+
   static const List<({String title, String description})> _scheduleTypes = [
     (title: 'Daily', description: 'Every day without exception'),
     (title: 'Specific Days', description: 'Choose days of the week'),
@@ -76,7 +110,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     (7, 'S'),
   ];
 
-  // ================= BUILD =================
+  // ============================================================
+  // BUILD
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
@@ -103,8 +140,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ],
       ),
-
-      // Schedule belongs to the Meds flow.
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: 1,
         onTap: _onBottomNavigationTap,
@@ -112,7 +147,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ================= SHARED BOTTOM NAVIGATION =================
+  // ============================================================
+  // SHARED BOTTOM NAVIGATION
+  // ============================================================
+
   void _onBottomNavigationTap(int index) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
@@ -120,7 +158,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ================= HEADER =================
+  // ============================================================
+  // HEADER
+  // ============================================================
+
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -131,7 +172,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           padding: const EdgeInsets.fromLTRB(13, 10, 13, 14),
           child: Column(
             children: [
-              // ---- Row 1: Back + Title + Cancel + Done ----
               Row(
                 children: [
                   InkWell(
@@ -160,9 +200,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                   ),
 
-                  // Cancel
                   TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: _isConfirming
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.surface,
                       padding: const EdgeInsets.symmetric(
@@ -182,7 +223,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
                   const SizedBox(width: 4),
 
-                  // Done ✓ (header se bhi confirm!)
                   SizedBox(
                     height: 40,
                     child: FilledButton(
@@ -195,13 +235,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      child: const Text(
-                        'Done ✓',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      child: _isConfirming
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.surface,
+                              ),
+                            )
+                          : const Text(
+                              'Done ✓',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -209,7 +258,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
               const SizedBox(height: 11),
 
-              // ---- Row 2: Medicine info + doses badge ----
               Row(
                 children: [
                   Container(
@@ -243,7 +291,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
                   const SizedBox(width: 8),
 
-                  // LIVE doses count badge!
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -254,7 +301,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       borderRadius: BorderRadius.circular(13),
                     ),
                     child: Text(
-                      '${_doseTimes.length} Doses Daily',
+                      '${_doseTimes.length} '
+                      '${_doseTimes.length == 1 ? 'Dose' : 'Doses'}',
                       style: const TextStyle(
                         color: AppColors.surface,
                         fontSize: 12,
@@ -272,25 +320,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   String get _medicineTitle {
-    final name = widget.medicineName?.trim() ?? '';
-    final strength = widget.medicineStrength?.trim() ?? '';
-
-    if (name.isEmpty && strength.isEmpty) {
-      return 'Medication';
-    }
-
-    if (strength.isEmpty) {
-      return name;
-    }
-
-    if (name.isEmpty) {
-      return strength;
-    }
-
-    return '$name $strength';
+    return '${widget.medicationDraft.name} '
+        '${widget.medicationDraft.displayStrength}';
   }
 
-  // ================= STEP INDICATOR — 2/2 ACTIVE! =================
+  // ============================================================
+  // STEP INDICATOR
+  // ============================================================
+
   Widget _buildStepIndicator() {
     return Container(
       height: 56,
@@ -298,7 +335,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Row(
         children: [
-          // Step 1: DONE!
           Container(
             width: 25,
             height: 25,
@@ -327,14 +363,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
           const SizedBox(width: 12),
 
-          // Full progress!
           Expanded(
             child: Stack(
               alignment: Alignment.centerLeft,
               children: [
                 Container(height: 2, color: AppColors.stepTrack),
                 FractionallySizedBox(
-                  widthFactor: 1.0,
+                  widthFactor: 1,
                   child: Container(height: 2, color: AppColors.stepActive),
                 ),
               ],
@@ -343,7 +378,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
           const SizedBox(width: 14),
 
-          // Step 2: ACTIVE!
           Container(
             width: 25,
             height: 25,
@@ -377,49 +411,55 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ================= CONTENT =================
+  // ============================================================
+  // CONTENT
+  // ============================================================
+
   Widget _buildContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(14, 16, 14, 28),
       child: Column(
         children: [
-          // 1. Schedule Type + Days
           _buildScheduleCard(),
+
           const SizedBox(height: 14),
 
-          // 2. Cycle (sirf Cyclical mein!)
           if (_scheduleType == 'Cyclical') ...[
             _buildCycleCard(),
             const SizedBox(height: 14),
           ],
 
-          // 3. Dose Times
           _buildDoseTimesCard(),
+
           const SizedBox(height: 14),
 
-          // 4. Meal Timing
           _buildMealTimingCard(),
+
           const SizedBox(height: 14),
 
-          // 5. Date Range
           _buildDateRangeCard(),
+
           const SizedBox(height: 18),
 
-          // Confirm!
           _buildConfirmButton(),
+
           const SizedBox(height: 10),
         ],
       ),
     );
   }
 
-  // ================= SCHEDULE TYPE + DAYS =================
+  // ============================================================
+  // SCHEDULE TYPE
+  // ============================================================
+
   Widget _buildScheduleCard() {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('SCHEDULE TYPE'),
+
           const SizedBox(height: 12),
 
           ..._scheduleTypes.map(
@@ -427,10 +467,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
 
           const SizedBox(height: 10),
+
           const Divider(height: 1, color: AppColors.outline),
+
           const SizedBox(height: 15),
 
           _sectionTitle('REPEAT ON'),
+
           const SizedBox(height: 13),
 
           _buildDaySelector(),
@@ -458,12 +501,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         setState(() {
           _scheduleType = title;
 
-          // Type ke hisaab se days RESET
-          if (title == 'Daily') {
-            _selectedDays
-              ..clear()
-              ..addAll({1, 2, 3, 4, 5, 6, 7});
-          } else if (title == 'As Needed (PRN)' || title == 'Tapering Dose') {
+          if (title == 'Daily' ||
+              title == 'As Needed (PRN)' ||
+              title == 'Tapering Dose') {
             _selectedDays
               ..clear()
               ..addAll({1, 2, 3, 4, 5, 6, 7});
@@ -475,17 +515,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
         decoration: BoxDecoration(
-          color: selected ? AppColors.successBackground : Colors.transparent,
+          color: selected ? AppColors.successBackground : AppColors.transparent,
           borderRadius: BorderRadius.circular(9),
           border: Border.all(
-            color: selected ? AppColors.formAccent : Colors.transparent,
+            color: selected ? AppColors.formAccent : AppColors.transparent,
             width: selected ? 1.5 : 1,
           ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Radio dot
             Container(
               width: 21,
               height: 21,
@@ -553,7 +592,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ================= DAY SELECTOR =================
+  // ============================================================
+  // DAY SELECTOR
+  // ============================================================
+
   Widget _buildDaySelector() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -608,13 +650,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return 'Reminders will fire only on selected days';
   }
 
-  // ================= CYCLE =================
+  // ============================================================
+  // CYCLE
+  // ============================================================
+
   Widget _buildCycleCard() {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('CYCLE PATTERN'),
+
           const SizedBox(height: 16),
 
           _buildCycleRow(
@@ -641,7 +687,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
           const SizedBox(height: 16),
 
-          // Pattern summary
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
@@ -650,8 +695,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               borderRadius: BorderRadius.circular(7),
             ),
             child: Text(
-              'Pattern: $_weeksOn ${_weekWord(_weeksOn)} on · '
-              '$_weeksOff ${_weekWord(_weeksOff)} off',
+              'Pattern: $_weeksOn '
+              '${_weekWord(_weeksOn)} on · '
+              '$_weeksOff '
+              '${_weekWord(_weeksOff)} off',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.formAccent,
@@ -684,7 +731,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ),
 
-        // Minus
         _circleCounterButton(
           icon: Icons.remove_rounded,
           filled: false,
@@ -695,7 +741,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           },
         ),
 
-        // Value
         SizedBox(
           width: 42,
           child: Text(
@@ -709,7 +754,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ),
 
-        // Plus
         _circleCounterButton(
           icon: Icons.add_rounded,
           filled: true,
@@ -762,7 +806,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return count == 1 ? 'week' : 'weeks';
   }
 
-  // ================= DOSE TIMES =================
+  // ============================================================
+  // DOSE TIMES
+  // ============================================================
+
   Widget _buildDoseTimesCard() {
     return _card(
       child: Column(
@@ -772,7 +819,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             children: [
               Expanded(child: _sectionTitle('DOSE TIMES')),
 
-              // Add Another Time
               GestureDetector(
                 onTap: _addDoseTime,
                 child: Container(
@@ -841,7 +887,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
           const SizedBox(width: 8),
 
-          // Dose name + meal
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -871,7 +916,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
 
-          // Time button
           GestureDetector(
             onTap: () => _pickTime(index),
             child: Container(
@@ -894,7 +938,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+
                   const SizedBox(width: 3),
+
                   const Icon(
                     Icons.keyboard_arrow_down_rounded,
                     color: AppColors.formAccent,
@@ -907,7 +953,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
           const SizedBox(width: 4),
 
-          // Delete
           if (_doseTimes.length > 1)
             GestureDetector(
               onTap: () => _removeDose(index),
@@ -925,7 +970,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ================= MEAL TIMING =================
+  // ============================================================
+  // MEAL TIMING
+  // ============================================================
+
   Widget _buildMealTimingCard() {
     return _card(
       child: Column(
@@ -945,7 +993,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+
                     SizedBox(height: 4),
+
                     Text(
                       'Link dose timing to meals',
                       style: TextStyle(
@@ -970,6 +1020,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
           if (_mealRelativeTiming) ...[
             const SizedBox(height: 12),
+
             Row(
               children: [
                 Expanded(child: _mealTimingChip('Before meal')),
@@ -1034,19 +1085,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ================= DATE RANGE =================
+  // ============================================================
+  // DATE RANGE
+  // ============================================================
+
   Widget _buildDateRangeCard() {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle('DATE RANGE'),
+
           const SizedBox(height: 14),
 
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Start
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1072,7 +1126,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
               const SizedBox(width: 9),
 
-              // End
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1150,7 +1203,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ================= CONFIRM =================
+  // ============================================================
+  // CONFIRM BUTTON
+  // ============================================================
+
   Widget _buildConfirmButton() {
     return SizedBox(
       width: double.infinity,
@@ -1184,7 +1240,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ================= ACTIONS =================
+  // ============================================================
+  // TIME ACTIONS
+  // ============================================================
+
   Future<void> _pickTime(int index) async {
     final picked = await showTimePicker(
       context: context,
@@ -1229,6 +1288,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     });
   }
 
+  // ============================================================
+  // DATE ACTIONS
+  // ============================================================
+
   Future<void> _pickStartDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -1244,7 +1307,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     setState(() {
       _startDate = picked;
 
-      // SMART — start aage badha to end reset!
       if (_endDate != null && _endDate!.isBefore(picked)) {
         _endDate = null;
         _hasEndDate = false;
@@ -1270,8 +1332,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     });
   }
 
+  // ============================================================
+  // FINAL LOCAL SAVE
+  // ============================================================
+
   Future<void> _confirmSchedule() async {
-    // Validations
     if (_selectedDays.isEmpty) {
       _showMessage('Please select at least one reminder day.');
       return;
@@ -1282,19 +1347,87 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       return;
     }
 
-    setState(() => _isConfirming = true);
+    final memberId = ProfileController.instance.memberId;
+
+    if (memberId == null || memberId.trim().isEmpty) {
+      _showMessage('Please select a family member first.');
+      return;
+    }
+
+    setState(() {
+      _isConfirming = true;
+    });
 
     try {
-      // TODO Backend:
-      // 1. Save/update medication for current user/family member.
-      // 2. Save schedule type, selected days, cycle, dose times,
-      //    meal timing and date range.
-      // 3. Create/update inventory using medicationId.
-      //    Do NOT create duplicate inventory documents.
-      // 4. Schedule local/Firebase medication notifications.
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+      final now = DateTime.now();
 
-      if (!mounted) return;
+      // Stable local medication identity.
+      //
+      // TODO Backend:
+      // Firebase phase mein Firestore generated medication
+      // document ID use hoga.
+      final medicationId = 'local_${memberId}_${now.microsecondsSinceEpoch}';
+
+      final draft = widget.medicationDraft;
+
+      final medication = MedicationProfile(
+        id: medicationId,
+        memberId: memberId,
+        name: draft.name,
+        strength: draft.strength,
+        strengthUnit: draft.strengthUnit,
+        medicineForm: draft.medicineForm.trim().toLowerCase(),
+        colorName: draft.colorName,
+        instructions: draft.instructions,
+        imagePath: draft.imagePath,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      // Medication basic record.
+      await _medicationRepository.saveMedication(medication);
+
+      final sortedDays = _selectedDays.toList()..sort();
+
+      final daysOfWeek = sortedDays.join(',');
+
+      final storedScheduleType = _scheduleTypeToStorageValue(_scheduleType);
+
+      // Strength is NOT dose amount.
+      //
+      // Example:
+      // 500 mg tablet = medicine strength
+      // Take 1 tablet = scheduled dose.
+      final doseUnit = _doseUnitForMedicineForm(draft.medicineForm);
+
+      for (var index = 0; index < _doseTimes.length; index++) {
+        final scheduleId = '${medicationId}_schedule_${index + 1}';
+
+        final schedule = MedicationScheduleProfile(
+          id: scheduleId,
+          medicationId: medicationId,
+          memberId: memberId,
+          scheduleType: storedScheduleType,
+          timeOfDay: _timeOfDayStorageValue(_doseTimes[index]),
+          daysOfWeek: daysOfWeek,
+          doseAmount: 1,
+          doseUnit: doseUnit,
+          startDate: _dateOnly(_startDate),
+          endDate: _hasEndDate && _endDate != null
+              ? _dateOnly(_endDate!)
+              : null,
+          isEnabled: true,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        await _scheduleRepository.saveSchedule(schedule);
+      }
+
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -1303,25 +1436,108 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             duration: const Duration(seconds: 3),
             content: Text(
               '🎉 $_medicineTitle scheduled!\n'
-              '${_doseTimes.length} doses · '
+              '${_doseTimes.length} '
+              '${_doseTimes.length == 1 ? 'dose' : 'doses'} · '
               '${_scheduleType.toLowerCase()}',
             ),
           ),
         );
 
-      // Wizard COMPLETE — directly Meds tab.
+      // TODO Local Storage / Notifications:
+      // Persisted schedules ke basis par local notifications
+      // schedule/reschedule karni hain.
+      //
+      // TODO Backend:
+      // Firebase implementation ideally medication + schedules
+      // ko batch/transaction write karegi.
+
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => const MedRemindShell(initialIndex: 1),
         ),
         (route) => false,
       );
+    } catch (error, stackTrace) {
+      debugPrint('Medication schedule save failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) {
+        return;
+      }
+
+      _showMessage('Could not save medication. Please try again.');
     } finally {
       if (mounted) {
-        setState(() => _isConfirming = false);
+        setState(() {
+          _isConfirming = false;
+        });
       }
     }
   }
+
+  // ============================================================
+  // STORAGE HELPERS
+  // ============================================================
+
+  String _scheduleTypeToStorageValue(String value) {
+    switch (value) {
+      case 'Specific Days':
+        return 'specific_days';
+
+      case 'Cyclical':
+        return 'cyclical';
+
+      case 'As Needed (PRN)':
+        return 'prn';
+
+      case 'Tapering Dose':
+        return 'tapering';
+
+      case 'Daily':
+      default:
+        return 'daily';
+    }
+  }
+
+  String _doseUnitForMedicineForm(String form) {
+    switch (form.trim().toLowerCase()) {
+      case 'tablet':
+        return 'tablet';
+
+      case 'capsule':
+        return 'capsule';
+
+      case 'drops':
+        return 'drop';
+
+      case 'liquid':
+        return 'dose';
+
+      case 'injection':
+        return 'dose';
+
+      default:
+        final custom = form.trim().toLowerCase();
+
+        return custom.isEmpty ? 'dose' : custom;
+    }
+  }
+
+  String _timeOfDayStorageValue(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+
+    final minute = time.minute.toString().padLeft(2, '0');
+
+    return '$hour:$minute';
+  }
+
+  DateTime _dateOnly(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  // ============================================================
+  // GENERAL HELPERS
+  // ============================================================
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
@@ -1329,7 +1545,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  // ================= HELPERS =================
   Widget _card({required Widget child}) {
     return Container(
       width: double.infinity,
@@ -1340,7 +1555,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         border: Border.all(color: AppColors.outline),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.035),
+            color: AppColors.textPrimary.withValues(alpha: 0.035),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1369,7 +1584,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     final period = time.period == DayPeriod.am ? 'AM' : 'PM';
 
-    return '${hour.toString().padLeft(2, '0')} : $minute $period';
+    return '${hour.toString().padLeft(2, '0')} : '
+        '$minute $period';
   }
 
   String _formatDate(DateTime date) {

@@ -6,7 +6,9 @@ import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'vitals_data.dart';
+import 'vitals_chart_screen.dart';
 import 'add_vitals_entry_screen.dart';
+import '../../widgets/app_avatar.dart';
 
 /// ============================================================
 /// VITALS LIST
@@ -36,9 +38,14 @@ import 'add_vitals_entry_screen.dart';
 /// - Profile/caregiver sync state backend se load.
 /// ============================================================
 class VitalsListScreen extends StatefulWidget {
-  const VitalsListScreen({super.key, required this.userName});
+  const VitalsListScreen({
+    super.key,
+    required this.userName,
+    this.profileImagePath,
+  });
 
   final String userName;
+  final String? profileImagePath;
 
   @override
   State<VitalsListScreen> createState() => _VitalsListScreenState();
@@ -66,14 +73,14 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
   }
 
   void _openVitalChart(VitalMetric metric) {
-    // TODO Navigation:
-    // Next screen:
-    // VitalsChartScreen(metric: metric)
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('${metric.title} chart / trend screen next.')),
-      );
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => VitalsChartScreen(
+          userName: widget.userName,
+          vitalType: metric.type,
+        ),
+      ),
+    );
   }
 
   Future<void> _addVitalEntry() async {
@@ -158,21 +165,14 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
                   ),
                 ),
 
-                // TODO Backend:
-                // Authenticated user's actual AppAvatar/photo use karna.
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.surface, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    color: AppColors.fieldHint,
-                    size: 25,
-                  ),
+                // TODO Backend / Firebase Storage:
+                // Selected member ke memberId se profileImageUrl load karke
+                // profileImagePath ki jagah persistent profile URL use karna.
+                AppAvatar(
+                  size: 38,
+                  imagePath: widget.profileImagePath,
+                  ringColor: AppColors.surface,
+                  ringWidth: 2,
                 ),
               ],
             ),

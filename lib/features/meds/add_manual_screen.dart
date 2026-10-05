@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/medications/medication_draft.dart';
 import '../../main_shell.dart';
+import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'schedule_screen.dart';
 
@@ -21,8 +23,27 @@ import 'schedule_screen.dart';
 /// + color selector
 /// + instructions
 ///
-/// System:
-/// AppColors + shared AppBottomNavigation
+/// LOCAL STORAGE FLOW:
+///
+/// AddManualScreen
+///       ↓
+/// MedicationDraft
+///       ↓
+/// ScheduleScreen
+///       ↓
+/// Confirm
+///       ↓
+/// MedicationRepository + MedicationScheduleRepository
+///       ↓
+/// Drift / SQLite
+///
+/// IMPORTANT:
+/// Is screen par medicine final DB record nahi banti.
+/// Final persistence Schedule confirmation par hogi.
+///
+/// TODO Backend:
+/// Firebase phase mein same domain details repository contract
+/// ke through Firestore/backend mein persist hongi.
 /// ============================================================
 class AddManualScreen extends StatefulWidget {
   const AddManualScreen({
@@ -123,11 +144,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
   void initState() {
     super.initState();
 
-    // Scan fallback → pre-fill
+    // Scan fallback → pre-fill.
     _nameController.text = widget.prefillName ?? '';
-
     _strengthController.text = widget.prefillStrength ?? '';
-
     _instructionsController.text = widget.prefillInstructions ?? '';
   }
 
@@ -166,7 +185,33 @@ class _AddManualScreenState extends State<AddManualScreen> {
     return _selectedForm;
   }
 
-  String get _selectedColorName => _colorOptions[_selectedColor].$2;
+  String get _selectedColorName {
+    return _colorOptions[_selectedColor].$2;
+  }
+
+  /// Existing medicine image assets ko consistent rakhne ke liye
+  /// selected medication form ko matching image asset se map karta hai.
+  ///
+  /// Custom/Other form ke liye null return hota hai aur Meds card
+  /// apna form/icon fallback use karega.
+  String? _imageAssetForForm(String form) {
+    switch (form.trim().toLowerCase()) {
+      case 'tablet':
+        return 'assets/images/tablet.jpg';
+
+      case 'capsule':
+        return 'assets/images/capsule.jpg';
+
+      case 'liquid':
+        return 'assets/images/liquid.jpg';
+
+      case 'injection':
+        return 'assets/images/injection.jpg';
+
+      default:
+        return null;
+    }
+  }
 
   // ============================================================
   // ACTIONS
@@ -174,10 +219,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
 
   void _continueToSchedule() {
     final name = _nameController.text.trim();
-
     final strength = _strengthController.text.trim();
-
     final customForm = _customFormController.text.trim();
+    final instructions = _instructionsController.text.trim();
 
     setState(() {
       _nameError = name.isEmpty;
@@ -191,39 +235,58 @@ class _AddManualScreenState extends State<AddManualScreen> {
       return;
     }
 
-    // TODO Backend:
-    // Medicine save karte waqt ye details persist hongi:
+    // ==========================================================
+    // WIZARD DRAFT
+    // ==========================================================
     //
-    // medicationName      = name
-    // strength            = strength
-    // strengthUnit        = _selectedUnit
-    // medicationForm      = _finalMedicationForm
-    // selectedColor       = _selectedColorName
-    // instructions        = _instructionsController.text.trim()
+    // Abhi database mein save nahi karna.
     //
-    // Agar form "Other" hai to custom form bhi Firestore
-    // medicine document mein preserve hoga.
-
-    // TODO Backend/Model:
-    // ScheduleScreen mein medication form parameter add hone
-    // ke baad _finalMedicationForm bhi pass karna hai.
+    // Schedule final confirmation par:
+    //
+    // MedicationDraft
+    //       ↓
+    // MedicationProfile
+    //       ↓
+    // MedicationRepository
+    //       ↓
+    // Drift / SQLite
+    //
+    // Isse user Schedule screen se back/cancel kare to incomplete
+    // active medication DB mein nahi chhutti.
+    final draft = MedicationDraft(
+      name: name,
+      strength: strength,
+      strengthUnit: _selectedUnit,
+      medicineForm: _finalMedicationForm,
+      colorName: _selectedColorName,
+      instructions: instructions.isEmpty ? null : instructions,
+      imagePath: _imageAssetForForm(_finalMedicationForm),
+    );
 
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ScheduleScreen(
-          medicineName: name,
-          medicineStrength: '$strength $_selectedUnit',
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => ScheduleScreen(medicationDraft: draft)),
     );
+
+    // TODO Backend:
+    // Firebase phase mein bhi Add wizard domain draft ko carry
+    // karega. Final confirmation repository implementation ko
+    // medication + schedules save karne ko bolegi.
   }
 
   void _saveDraft() {
-    // TODO Backend:
-    // Draft local storage / Firestore mein save hoga.
+    // Draft intentionally Active Medications table mein save nahi
+    // kiya ja raha.
     //
-    // Custom form ke case mein:
-    // medicationForm = _finalMedicationForm
+    // Active medicine aur incomplete draft ko mix karna incorrect
+    // persistence semantics create karega.
+    //
+    // TODO Local Storage:
+    // Agar Draft feature retain karna hai to dedicated draft model/table
+    // ya explicit medication draft state add karni hai.
+    //
+    // TODO Backend:
+    // Firebase phase mein drafts ke liye dedicated draft document/state
+    // use karna hai; active medication document nahi.
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -293,7 +356,6 @@ class _AddManualScreenState extends State<AddManualScreen> {
         ],
       ),
 
-      // Add Medication Meds flow ka part hai.
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: 1,
         onTap: _onBottomNavigationTap,
@@ -373,19 +435,15 @@ class _AddManualScreenState extends State<AddManualScreen> {
 
                 const SizedBox(width: 9),
 
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: AppColors.formIcon,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.surface, width: 1.5),
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    size: 21,
-                    color: AppColors.surface,
-                  ),
+                // Central selected member avatar.
+                //
+                // TODO Backend / Firebase Storage:
+                // Firebase profile repository later same AppAvatar ko
+                // Storage download URL provide karegi.
+                const AppAvatar(
+                  size: 34,
+                  ringColor: AppColors.surface,
+                  ringWidth: 1.5,
                 ),
               ],
             ),
@@ -646,7 +704,13 @@ class _AddManualScreenState extends State<AddManualScreen> {
           controller: _nameController,
           textInputAction: TextInputAction.next,
           style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) {
+            setState(() {
+              if (_nameError) {
+                _nameError = _nameController.text.trim().isEmpty;
+              }
+            });
+          },
           decoration: _inputDecoration(
             hintText: 'Enter medication name',
             error: _nameError,
@@ -695,6 +759,13 @@ class _AddManualScreenState extends State<AddManualScreen> {
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
       textInputAction: TextInputAction.next,
       style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+      onChanged: (_) {
+        if (_strengthError) {
+          setState(() {
+            _strengthError = _strengthController.text.trim().isEmpty;
+          });
+        }
+      },
       decoration: _inputDecoration(hintText: 'e.g. 500', error: _strengthError),
     );
   }

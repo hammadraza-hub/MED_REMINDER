@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/medications/medication_draft.dart';
 import '../../core/services/ocr_service.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_bottom_navigation.dart';
@@ -18,10 +19,16 @@ import 'schedule_screen.dart';
 /// System: AppColors + shared AppBottomNavigation
 /// UX: Dynamic warning — strength mili to GAYAB!
 ///
+/// Local-first:
+/// - Is screen par medication DB mein save NAHI hoti.
+/// - Confirm par MedicationDraft Schedule screen ko pass hota hai.
+/// - Final medication + schedules Schedule confirmation par save hote hain.
+///
 /// TODO Backend:
 /// - OCR result ko current user/family medication draft se associate karna
-/// - Confirmed scan data ko medication setup flow mein persist karna
-/// - Final medication + schedule Firebase mein save karna
+/// - OCR/image upload ko backend storage implementation se connect karna
+/// - Final medication + schedule repository ko Firebase/backend
+///   implementation se replace karna
 /// ============================================================
 class ReviewScanScreen extends StatefulWidget {
   const ReviewScanScreen({
@@ -53,7 +60,13 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
     super.initState();
 
     // OCR data → PRE-FILL (user sirf correct kare!)
-    _medicineController = TextEditingController(text: _buildMedicineName());
+    //
+    // Important:
+    // Medication name aur strength DB mein separate structured fields hain,
+    // isliye name controller mein sirf medicine name rakha jata hai.
+    _medicineController = TextEditingController(
+      text: widget.medicine.name.trim(),
+    );
 
     _instructionsController = TextEditingController(
       text: widget.medicine.instructions ?? '',
@@ -62,19 +75,6 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
     _strengthController = TextEditingController(
       text: widget.medicine.strength ?? '',
     );
-  }
-
-  /// Display: "Metformin 500mg" (naam + strength ek saath)
-  /// Strength separate controller mein bhi — structured data next step ke liye
-  String _buildMedicineName() {
-    final name = widget.medicine.name.trim();
-    final strength = widget.medicine.strength?.trim();
-
-    if (strength == null || strength.isEmpty) {
-      return name;
-    }
-
-    return '$name $strength';
   }
 
   @override
@@ -90,12 +90,64 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
     super.dispose();
   }
 
+  // ================= STRENGTH PARSING =================
+
+  /// OCR aksar "500mg", "250 mg", "5MG", "1000 IU" deta hai.
+  ///
+  /// MedicationDraft structured fields expect:
+  /// strength     = "500"
+  /// strengthUnit = "mg"
+  ///
+  /// Agar unit detect na ho to value preserve hoti hai aur unit fallback
+  /// "mg" use hota hai, taake current Schedule/Medication flow compatible rahe.
+  ({String value, String unit}) _parseStrength(String rawStrength) {
+    final trimmed = rawStrength.trim();
+
+    final match = RegExp(r'^([0-9]+(?:[.,][0-9]+)?)\s*([a-zA-Zµμ]+)?$')
+        .firstMatch(trimmed);
+
+    if (match == null) {
+      return (value: trimmed, unit: 'mg');
+    }
+
+    final value = (match.group(1) ?? trimmed).replaceAll(',', '.');
+    final rawUnit = match.group(2);
+
+    if (rawUnit == null || rawUnit.trim().isEmpty) {
+      return (value: value, unit: 'mg');
+    }
+
+    return (value: value, unit: _normalizeStrengthUnit(rawUnit));
+  }
+
+  String _normalizeStrengthUnit(String unit) {
+    final normalized = unit.trim().toLowerCase();
+
+    switch (normalized) {
+      case 'mg':
+        return 'mg';
+      case 'g':
+        return 'g';
+      case 'mcg':
+      case 'µg':
+      case 'μg':
+        return 'mcg';
+      case 'iu':
+        return 'IU';
+      case 'ml':
+        return 'mL';
+      default:
+        return unit.trim();
+    }
+  }
+
   // ================= CONTINUE =================
   Future<void> _confirmAndContinue() async {
     if (_isContinuing) return;
 
     final medicineName = _medicineController.text.trim();
-    final strength = _strengthController.text.trim();
+    final rawStrength = _strengthController.text.trim();
+    final instructions = _instructionsController.text.trim();
 
     // Validation — focus jump ke sath!
     if (medicineName.isEmpty) {
@@ -104,7 +156,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
       return;
     }
 
-    if (strength.isEmpty) {
+    if (rawStrength.isEmpty) {
       _strengthFocus.requestFocus();
       _showMessage('Please enter the medication strength.');
       return;
@@ -113,30 +165,35 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
     setState(() => _isContinuing = true);
 
     try {
-      // TODO Backend:
-      // Confirmed OCR values ko medication draft/model mein store karein.
-      // Final Firestore save Schedule flow complete hone par hoga.
+      final parsedStrength = _parseStrength(rawStrength);
 
-      if (!mounted) return;
+      // Scan flow currently OCR se medicine form reliably detect nahi karta.
+      // "Other" safe fallback hai; future OCR parsing isko improve karegi.
+      final draft = MedicationDraft(
+        name: medicineName,
+        strength: parsedStrength.value,
+        strengthUnit: parsedStrength.unit,
+        medicineForm: 'Other',
+        colorName: 'Default',
+        instructions: instructions.isEmpty ? null : instructions,
 
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ScheduleScreen(
-            medicineName: medicineName,
-            medicineStrength: strength,
-          ),
-        ),
+        // Scanned label image local file hai.
+        // Isko medication image ke tor par permanently depend nahi karte,
+        // kyun ke camera/cache file lifecycle alag ho sakta hai.
+        imagePath: null,
       );
 
+      // TODO Backend:
+      // Confirmed OCR values ko backend medication draft/session se associate
+      // karein. Final medication + schedule repository save Schedule screen
+      // confirmation par hota hai.
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('Scan confirmed — Schedule agla step hai!'),
-          ),
-        );
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ScheduleScreen(medicationDraft: draft),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isContinuing = false);
@@ -241,7 +298,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
     );
   }
 
-  // ================= STEP INDICATOR (wizard!) =================
+  // ================= STEP INDICATOR =================
   Widget _buildStepIndicator() {
     return Container(
       height: 56,

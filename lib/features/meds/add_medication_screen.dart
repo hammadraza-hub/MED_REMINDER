@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_bottom_navigation.dart';
+import '../../widgets/app_avatar.dart';
 import 'add_medication_data.dart';
 import 'scan_label_screen.dart';
 import 'add_manual_screen.dart';
@@ -261,23 +262,13 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                   ),
                 ),
 
-                // User avatar
-                //
-                // TODO Backend:
-                // Replace placeholder with authenticated user's AppAvatar.
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.surface, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    size: 26,
-                    color: AppColors.fieldHint,
-                  ),
+                // TODO Backend / Firebase Storage:
+                // Central selected user/member profile se profileImageUrl lena hai.
+                // AppAvatar local asset aur Firebase/network URL dono support karta hai.
+                const AppAvatar(
+                  size: 38,
+                  ringColor: AppColors.surface,
+                  ringWidth: 2,
                 ),
               ],
             ),

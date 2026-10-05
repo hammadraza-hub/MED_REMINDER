@@ -5,6 +5,7 @@ import '../meds/meds_data.dart';
 import 'adherence_detail_screen.dart';
 import 'calendar_data.dart';
 import 'missed_dose_reason_modal.dart';
+import '../../widgets/app_avatar.dart';
 
 /// ============================================================
 /// CALENDAR — DOSE HISTORY
@@ -362,10 +363,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ],
                   ),
 
-                  const CircleAvatar(
-                    radius: 17,
-                    backgroundColor: AppColors.surface,
-                    child: Icon(Icons.person, color: AppColors.headerDark),
+                  const AppAvatar(
+                    size: 34,
+                    ringColor: AppColors.surface,
+                    ringWidth: 2,
                   ),
                 ],
               ),

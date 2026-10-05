@@ -1,21 +1,48 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/members/local_member_repository.dart';
+import '../../core/members/member_repository.dart';
+import '../../core/profile/profile_controller.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/profile_photo_picker.dart';
+import '../meds/meds_screen.dart';
 import 'dose_action_sheet.dart';
 import 'home_data.dart';
 import 'streaks_stats_screen.dart';
-import '../meds/meds_screen.dart';
 import 'vitals_list_screen.dart';
 
 /// ============================================================
 /// HOME — app ka dil!
 ///
-/// UI Layer: SIRF dikhata hai — saara data HomeData se aata hai.
-/// Bottom navigation MedRemindShell ka kaam hai — ye screen bar NAHI rakhti!
-/// Backend aane par: HomeData ke methods Firebase se data denge,
-/// ye screen ka EK LINE change nahi hoga! 🎯
+/// CURRENT DATA ARCHITECTURE:
+///
+/// Family members:
+/// Home
+///   ↓
+/// MemberRepository
+///   ↓
+/// LocalMemberRepository
+///   ↓
+/// Drift / SQLite
+///
+/// Selected profile:
+/// Home
+///   ↓
+/// ProfileController
+///   ↓
+/// LocalProfileRepository
+///
+/// Doses:
+/// Abhi HomeData dummy/in-memory source se.
+/// Next local-storage phase mein DoseRepository par migrate honge.
+///
+/// FUTURE BACKEND:
+/// Local repositories ko Firebase/real backend repositories se
+/// replace kiya jayega. UI structure same reh sakta hai.
 /// ============================================================
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,20 +53,81 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedFilter = 'All';
-  String _selectedMember = 'Sarah'; // konsa member selected — UI state
 
-  // ============ STATE — HomeData se initialize ============
-  // Backend: ye lists Firebase Stream se update hongi
+  final MemberRepository _memberRepository = LocalMemberRepository();
+
+  StreamSubscription<List<MemberProfile>>? _membersSubscription;
+
+  List<MemberProfile> _members = [];
+
+  String? _selectedMemberId;
+
+  bool _membersLoading = true;
+
+  /// Initial persisted member sirf first DB snapshot par resolve hoga.
+  ///
+  /// Uske baad member/photo DB stream update hone par currently selected
+  /// Home member preserve hoga aur Sarah par reset nahi hoga.
+  bool _didResolveInitialMember = false;
+
+  // ============ DOSES ============
+  // TODO Local Storage:
+  // DoseRepository + Drift DoseEvents/Schedules migration ke baad
+  // selected memberId aur selected date ke against load karna hai.
   late final List<Dose> _doses = HomeData.todayDoses();
-  List<FamilyMember> _members = HomeData.familyMembers();
 
-  // ============ COMPUTED — HomeData ke pure functions ============
+  // ============ COMPUTED — DOSES ============
+
   int get _takenCount => HomeData.takenCount(_doses);
+
   int get _pendingCount => HomeData.pendingCount(_doses);
+
   int get _missedCount => HomeData.missedCount(_doses);
+
   double get _progress => HomeData.progress(_doses);
 
-  // ============ FILTERED ============
+  // ============ SELECTED MEMBER ============
+
+  MemberProfile? get _selectedMember {
+    final selectedId = _selectedMemberId;
+
+    if (selectedId == null) {
+      return null;
+    }
+
+    for (final member in _members) {
+      if (member.id == selectedId) {
+        return member;
+      }
+    }
+
+    return null;
+  }
+
+  String get _selectedMemberName {
+    return _selectedMember?.displayName ??
+        ProfileController.instance.displayName;
+  }
+
+  String? get _selectedMemberImagePath {
+    final selected = _selectedMember;
+
+    if (selected == null) {
+      return ProfileController.instance.profileImagePath;
+    }
+
+    // Selected member ki latest controller image use kar sakte hain
+    // jab tak Members SQLite stream updated record emit karti hai.
+    if (ProfileController.instance.memberId == selected.id) {
+      return ProfileController.instance.profileImagePath ??
+          selected.profileImagePath;
+    }
+
+    return selected.profileImagePath;
+  }
+
+  // ============ FILTERED DOSES ============
+
   List<Dose> get _filteredDoses {
     switch (_selectedFilter) {
       case 'Pending':
@@ -53,26 +141,165 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ============ DOSE ACTIONS — backend: yahan DB update hoga ============
+  // ============================================================
+  // LIFECYCLE
+  // ============================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    _initializeMembers();
+  }
+
+  @override
+  void dispose() {
+    _membersSubscription?.cancel();
+
+    super.dispose();
+  }
+
+  // ============================================================
+  // MEMBER INITIALIZATION
+  // ============================================================
+
+  Future<void> _initializeMembers() async {
+    try {
+      await _memberRepository.seedInitialMembersIfNeeded();
+
+      if (!mounted) {
+        return;
+      }
+
+      _membersSubscription = _memberRepository.watchActiveMembers().listen(
+        (members) {
+          if (!mounted) {
+            return;
+          }
+
+          _handleMembersUpdate(members);
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          debugPrint('Home member stream failed: $error');
+          debugPrintStack(stackTrace: stackTrace);
+
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            _membersLoading = false;
+          });
+        },
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Home member initialization failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _membersLoading = false;
+      });
+    }
+  }
+
+  void _handleMembersUpdate(List<MemberProfile> members) {
+    final profileController = ProfileController.instance;
+
+    MemberProfile? memberToSelect;
+
+    // ============================================================
+    // FIRST DATABASE SNAPSHOT
+    // ============================================================
+    //
+    // ProfileController.initialize() app startup par persisted stable
+    // memberId restore karta hai. First SQLite member snapshot mein
+    // us exact member ko select karna hai.
+    if (!_didResolveInitialMember) {
+      final persistedMemberId = profileController.memberId;
+
+      if (persistedMemberId != null) {
+        for (final member in members) {
+          if (member.id == persistedMemberId) {
+            memberToSelect = member;
+            break;
+          }
+        }
+      }
+    }
+
+    // ============================================================
+    // CURRENT HOME SELECTION
+    // ============================================================
+    //
+    // Initial resolution ke baad DB stream update — for example profile
+    // photo save — current member selection ko preserve kare.
+    final currentSelectedId = _selectedMemberId;
+
+    if (memberToSelect == null && currentSelectedId != null) {
+      for (final member in members) {
+        if (member.id == currentSelectedId) {
+          memberToSelect = member;
+          break;
+        }
+      }
+    }
+
+    // Fresh install/default → first active member, currently Sarah.
+    memberToSelect ??= members.isNotEmpty ? members.first : null;
+
+    setState(() {
+      _members = members;
+      _selectedMemberId = memberToSelect?.id;
+      _membersLoading = false;
+      _didResolveInitialMember = true;
+    });
+
+    if (memberToSelect != null) {
+      _syncSelectedProfile(memberToSelect);
+    }
+  }
+
+  Future<void> _syncSelectedProfile(MemberProfile member) async {
+    await ProfileController.instance.selectProfile(
+      memberId: member.id,
+      displayName: member.displayName,
+      profileImagePath: member.profileImagePath,
+    );
+
+    // TODO Backend:
+    // Firebase phase mein selected member document Firestore stream se
+    // aayega. ProfileController stable memberId ke saath sync hoga.
+  }
+
+  // ============================================================
+  // DOSE ACTIONS
+  // ============================================================
+
   void _markTaken(Dose dose) {
     setState(() => dose.status = DoseStatus.taken);
 
+    // TODO Local Storage:
+    // DoseRepository ke through existing DoseEvent ko status=taken
+    // aur completedAt=current timestamp ke saath update karna hai.
+    //
     // TODO Backend:
-    // Current user/member ki dose document ko taken mark karna hai.
-    // Fields: status=taken, completedAt=serverTimestamp.
+    // Firebase repository later same domain action persist karegi.
 
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('${dose.name} marked as taken ✓')));
   }
 
-  // ===== UNDO — galti se Taken? Wapas Pending! =====
   void _markUntaken(Dose dose) {
     setState(() => dose.status = DoseStatus.pending);
 
-    // TODO Backend:
-    // Dose status ko pending revert karna hai aur completedAt clear
-    // karna hai taa-ke adherence/streak history bhi recalculate ho.
+    // TODO Local Storage:
+    // Existing DoseEvent ko pending revert aur completedAt clear karna.
+    // Adherence/streak raw DoseEvents se recalculate honge.
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${dose.name} marked as untaken 🔄')),
@@ -82,9 +309,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _skipDose(Dose dose, {String? reason}) {
     setState(() => dose.status = DoseStatus.skipped);
 
-    // TODO Backend:
-    // Dose document mein status=skipped, optional skipReason
-    // aur action timestamp save karna hai.
+    // TODO Local Storage:
+    // Existing DoseEvent mein status=skipped, optional reason aur
+    // action timestamp persist karna hai.
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -98,9 +325,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _snoozeDose(Dose dose, int minutes) {
-    // TODO Backend / Notifications:
-    // Dose ka nextReminderAt persist karke local/push notification
-    // ko selected minutes ke liye reschedule karna hai.
+    // TODO Local Storage / Notifications:
+    // DoseEvent/schedule mein snoozedUntil persist karke local
+    // notification selected duration ke liye reschedule karni hai.
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -111,7 +338,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ===== DOSE ACTION SHEET — dose card tap par =====
   void _openDoseSheet(Dose dose) {
     showDoseActionSheet(
       context,
@@ -123,41 +349,122 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============ STREAKS & STATS ============
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
 
   void _openStreaksStats() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => StreaksStatsScreen(userName: _selectedMember),
+        builder: (_) => StreaksStatsScreen(userName: _selectedMemberName),
       ),
     );
   }
-
-  // ============ VITALS ============
 
   void _openVitals() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => VitalsListScreen(userName: _selectedMember),
+        builder: (_) => VitalsListScreen(
+          userName: _selectedMemberName,
+          profileImagePath: _selectedMemberImagePath,
+        ),
       ),
     );
+
+    // TODO Local Storage:
+    // Vitals screens ko next migration mein userName ki jagah
+    // stable memberId bhi pass/use karna hai.
   }
 
-  void _switchMember(FamilyMember member) {
-    if (member.name == _selectedMember) {
+  // ============================================================
+  // FAMILY MEMBER SWITCH
+  // ============================================================
+
+  Future<void> _switchMember(MemberProfile member) async {
+    if (member.id == _selectedMemberId) {
       return;
     }
 
-    setState(() => _selectedMember = member.name);
+    setState(() {
+      _selectedMemberId = member.id;
+    });
 
+    // ProfileController:
+    // - app-wide selected member update karega
+    // - SharedPreferences mein selected stable memberId persist karega
+    // - selected profile metadata persist karega
+    await _syncSelectedProfile(member);
+
+    if (!mounted) {
+      return;
+    }
+
+    // TODO Local Storage:
+    // Medicines, doses, adherence, inventory aur vitals repositories
+    // ko selected member.id ke against query karna hai.
+    //
     // TODO Backend:
-    // Selected family member id ke against today's doses,
-    // adherence history, streak stats aur health data reload karne hain.
+    // Firebase phase mein exact same memberId-oriented flow rahega.
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Switched to ${member.name}'s medicines")),
-    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text("Switched to ${member.displayName}'s medicines"),
+        ),
+      );
   }
+
+  // ============================================================
+  // PROFILE PHOTO
+  // ============================================================
+
+  Future<void> _openProfilePhotoPicker() async {
+    final selected = _selectedMember;
+
+    if (selected == null) {
+      return;
+    }
+
+    // Picker ProfileController ke CURRENT selected memberId ke liye
+    // permanent local image file create/remove karta hai.
+    await showProfilePhotoPicker(context);
+
+    if (!mounted) {
+      return;
+    }
+
+    final controller = ProfileController.instance;
+
+    // Safety:
+    // Async picker ke dauran selected member unexpectedly change ho
+    // jaye to doosre member record mein image persist na ho.
+    if (controller.memberId != selected.id) {
+      return;
+    }
+
+    // Image path member-specific SQLite record mein persist hota hai.
+    //
+    // Example:
+    // local_sarah → Sarah image
+    // local_mom   → Mom image
+    // local_jake  → Jake image
+    await _memberRepository.saveMember(
+      selected.copyWith(
+        profileImagePath: controller.profileImagePath,
+        removeProfileImage: controller.profileImagePath == null,
+        updatedAt: DateTime.now(),
+      ),
+    );
+
+    // TODO Backend / Firebase Storage:
+    // FirebaseMemberRepository phase mein member document ka
+    // profileImageUrl Storage upload result se update hoga.
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -166,19 +473,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
       body: Column(
         children: [
-          // ============ DARK HEADER ============
           _HomeHeader(
             greeting: HomeData.greeting(),
             dateLabel: HomeData.dateLabel(),
             streakDays: HomeData.streakDays(),
-            userImagePath: HomeData.userProfileImage(),
-            selectedMemberName: _selectedMember,
+            selectedMemberImagePath: _selectedMemberImagePath,
+            selectedMemberName: _selectedMemberName,
+            selectedMemberId: _selectedMemberId,
             members: _members,
+            membersLoading: _membersLoading,
             onMemberTap: _switchMember,
             onStreakTap: _openStreaksStats,
+            onProfilePhotoTap: _openProfilePhotoPicker,
           ),
 
-          // ============ SCROLLABLE CONTENT ============
           Expanded(
             child: Center(
               child: ConstrainedBox(
@@ -190,7 +498,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      // ============ FLOATING ADD BUTTON ============
       floatingActionButton: Padding(
         padding: EdgeInsets.only(
           right: MediaQuery.sizeOf(context).width > 480
@@ -212,7 +519,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ================= HOME CONTENT =================
+  // ============================================================
+  // HOME CONTENT
+  // ============================================================
 
   Widget _buildHomeContent() {
     return SingleChildScrollView(
@@ -220,7 +529,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ---- Progress Card (LIVE) ----
           _ProgressCard(
             progress: _progress,
             taken: _takenCount,
@@ -230,12 +538,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 16),
 
-          // ---- Quick Access ----
           _QuickAccessSection(onVitalsTap: _openVitals),
 
           const SizedBox(height: 16),
 
-          // ---- Schedule + Filters ----
           Row(
             children: [
               const Expanded(
@@ -266,7 +572,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 12),
 
-          // ---- Dose Cards ----
           for (final dose in _filteredDoses)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -285,7 +590,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ============================================================
-// DARK HEADER — greeting + family + streak
+// DARK HEADER — selected profile + family + streak
 // ============================================================
 
 class _HomeHeader extends StatelessWidget {
@@ -293,28 +598,36 @@ class _HomeHeader extends StatelessWidget {
     required this.greeting,
     required this.dateLabel,
     required this.streakDays,
-    this.userImagePath,
+    this.selectedMemberImagePath,
     required this.selectedMemberName,
+    required this.selectedMemberId,
     required this.members,
+    required this.membersLoading,
     required this.onMemberTap,
     required this.onStreakTap,
+    required this.onProfilePhotoTap,
   });
 
   final String greeting;
   final String dateLabel;
   final int streakDays;
-  final String? userImagePath;
+
+  final String? selectedMemberImagePath;
   final String selectedMemberName;
+  final String? selectedMemberId;
 
-  final List<FamilyMember> members;
+  final List<MemberProfile> members;
 
-  final ValueChanged<FamilyMember> onMemberTap;
+  final bool membersLoading;
+
+  final ValueChanged<MemberProfile> onMemberTap;
 
   final VoidCallback onStreakTap;
 
+  final VoidCallback onProfilePhotoTap;
+
   @override
   Widget build(BuildContext context) {
-    // Dark header → white status bar icons
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: AppColors.transparent,
@@ -336,21 +649,29 @@ class _HomeHeader extends StatelessWidget {
               // ============ ROW 1 ============
               Row(
                 children: [
-                  AppAvatar(
-                    size: 30,
-                    imagePath: userImagePath,
-                    ringColor: AppColors.surface,
-                    ringWidth: 2,
+                  GestureDetector(
+                    onTap: onProfilePhotoTap,
+                    child: AppAvatar(
+                      size: 34,
+                      imagePath: selectedMemberImagePath,
+
+                      // Explicit selected member image use hogi.
+                      // Null hone par global image leak nahi hogi.
+                      useSelectedProfileImage: false,
+
+                      ringColor: AppColors.surface,
+                      ringWidth: 2,
+                    ),
                   ),
 
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 9),
 
                   Expanded(
                     child: Text(
-                      '$greeting, Sarah 👋',
+                      '$greeting, $selectedMemberName 👋',
                       style: const TextStyle(
                         color: AppColors.surface,
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -362,14 +683,14 @@ class _HomeHeader extends StatelessWidget {
                       const Icon(
                         Icons.notifications_none_rounded,
                         color: AppColors.surface,
-                        size: 22,
+                        size: 24,
                       ),
                       Positioned(
                         top: 1,
                         right: 1,
                         child: Container(
-                          width: 6,
-                          height: 6,
+                          width: 7,
+                          height: 7,
                           decoration: const BoxDecoration(
                             color: AppColors.notificationDot,
                             shape: BoxShape.circle,
@@ -381,29 +702,49 @@ class _HomeHeader extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 11),
+              const SizedBox(height: 12),
 
               // ============ ROW 2 ============
-              Row(
-                children: [
-                  for (var i = 0; i < members.length; i++) ...[
-                    if (i != 0) const SizedBox(width: 17),
-                    _FamilyMemberAvatar(
-                      member: members[i],
-                      isSelected: members[i].name == selectedMemberName,
-                      onTap: () => onMemberTap(members[i]),
+              if (membersLoading && members.isEmpty)
+                const SizedBox(
+                  height: 60,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.surface,
+                      ),
                     ),
-                  ],
+                  ),
+                )
+              else
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < members.length; i++) ...[
+                        if (i != 0) const SizedBox(width: 17),
 
-                  const SizedBox(width: 17),
+                        _FamilyMemberAvatar(
+                          member: members[i],
+                          isSelected: members[i].id == selectedMemberId,
+                          onTap: () => onMemberTap(members[i]),
+                        ),
+                      ],
 
-                  const _AddMemberButton(),
-                ],
-              ),
+                      if (members.isNotEmpty) const SizedBox(width: 17),
+
+                      const _AddMemberButton(),
+                    ],
+                  ),
+                ),
 
               const SizedBox(height: 10),
 
-              // ============ ROW 3: Date + Streak ============
+              // ============ ROW 3 ============
               Row(
                 children: [
                   Expanded(
@@ -411,20 +752,19 @@ class _HomeHeader extends StatelessWidget {
                       dateLabel,
                       style: const TextStyle(
                         color: AppColors.headerSubtext,
-                        fontSize: 11,
+                        fontSize: 13,
                       ),
                     ),
                   ),
 
-                  // Tap → Streaks & Stats
                   Material(
                     color: AppColors.transparent,
                     child: InkWell(
                       onTap: onStreakTap,
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
-                        height: 26,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        height: 30,
+                        padding: const EdgeInsets.symmetric(horizontal: 11),
                         decoration: BoxDecoration(
                           color: AppColors.formAccent,
                           borderRadius: BorderRadius.circular(20),
@@ -434,8 +774,8 @@ class _HomeHeader extends StatelessWidget {
                           children: [
                             const Icon(
                               Icons.local_fire_department_rounded,
-                              color: AppColors.homeStreakPill,
-                              size: 16,
+                              color: AppColors.homeStreakFlame,
+                              size: 18,
                             ),
 
                             const SizedBox(width: 4),
@@ -444,7 +784,7 @@ class _HomeHeader extends StatelessWidget {
                               '$streakDays Day Streak',
                               style: const TextStyle(
                                 color: AppColors.surface,
-                                fontSize: 10,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -454,7 +794,7 @@ class _HomeHeader extends StatelessWidget {
                             const Icon(
                               Icons.chevron_right_rounded,
                               color: AppColors.surface,
-                              size: 13,
+                              size: 15,
                             ),
                           ],
                         ),
@@ -472,7 +812,7 @@ class _HomeHeader extends StatelessWidget {
 }
 
 // ============================================================
-// FAMILY MEMBER AVATAR — tap → switch
+// FAMILY MEMBER AVATAR
 // ============================================================
 
 class _FamilyMemberAvatar extends StatelessWidget {
@@ -482,7 +822,7 @@ class _FamilyMemberAvatar extends StatelessWidget {
     required this.onTap,
   });
 
-  final FamilyMember member;
+  final MemberProfile member;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -493,57 +833,33 @@ class _FamilyMemberAvatar extends StatelessWidget {
       child: Column(
         children: [
           AppAvatar(
-            size: 38,
-            imagePath: member.imagePath,
+            size: 40,
+
+            // IMPORTANT:
+            // Family row mein sirf isi exact member ka SQLite image path
+            // render hoga.
+            //
+            // Sarah ki selected/global image Mom/Jake par fallback
+            // nahi hogi.
+            imagePath: member.profileImagePath,
+            useSelectedProfileImage: false,
+
             ringColor: isSelected
                 ? AppColors.avatarSelected
                 : AppColors.surface.withValues(alpha: 0.54),
             ringWidth: isSelected ? 2 : 1,
           ),
 
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
 
           Text(
-            member.name,
+            member.displayName,
             style: TextStyle(
               color: isSelected
                   ? AppColors.surface
                   : AppColors.surface.withValues(alpha: 0.70),
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddMemberButton extends StatelessWidget {
-  const _AddMemberButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // TODO Navigation/Backend:
-        // Family member add flow open karke new member profile
-        // Firebase mein current account ke under save karna hai.
-      },
-      child: Column(
-        children: [
-          const CircleAvatar(
-            radius: 19,
-            backgroundColor: AppColors.transparent,
-            child: Icon(Icons.add, color: AppColors.surface, size: 20),
-          ),
-
-          const SizedBox(height: 3),
-
-          Text(
-            'Add',
-            style: TextStyle(
-              color: AppColors.surface.withValues(alpha: 0.70),
-              fontSize: 10,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             ),
           ),
         ],
@@ -553,7 +869,50 @@ class _AddMemberButton extends StatelessWidget {
 }
 
 // ============================================================
-// PROGRESS CARD — ring + dots
+// ADD MEMBER
+// ============================================================
+
+class _AddMemberButton extends StatelessWidget {
+  const _AddMemberButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // TODO Local Storage / Navigation:
+        // Add Family Member screen create karke
+        // MemberRepository.saveMember() se naya stable memberId
+        // SQLite mein persist karna hai.
+        //
+        // TODO Backend:
+        // FirebaseMemberRepository later current account ke under
+        // member Firestore document create karegi.
+      },
+      child: Column(
+        children: [
+          const CircleAvatar(
+            radius: 20,
+            backgroundColor: AppColors.transparent,
+            child: Icon(Icons.add, color: AppColors.surface, size: 22),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            'Add',
+            style: TextStyle(
+              color: AppColors.surface.withValues(alpha: 0.70),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// PROGRESS CARD
 // ============================================================
 
 class _ProgressCard extends StatelessWidget {
@@ -572,7 +931,7 @@ class _ProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 88,
+      height: 96,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -588,14 +947,14 @@ class _ProgressCard extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 58,
-            height: 58,
+            width: 62,
+            height: 62,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: 56,
-                  height: 56,
+                  width: 60,
+                  height: 60,
                   child: CircularProgressIndicator(
                     value: progress,
                     strokeWidth: 7,
@@ -613,7 +972,7 @@ class _ProgressCard extends StatelessWidget {
                       '${(progress * 100).round()}%',
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 16,
+                        fontSize: 17,
                         height: 1,
                         fontWeight: FontWeight.w800,
                       ),
@@ -623,7 +982,7 @@ class _ProgressCard extends StatelessWidget {
                       'Daily',
                       style: TextStyle(
                         color: AppColors.formAccent,
-                        fontSize: 9,
+                        fontSize: 11,
                       ),
                     ),
                   ],
@@ -657,8 +1016,8 @@ class _ProgressCard extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 7,
-          height: 7,
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 7),
@@ -666,7 +1025,7 @@ class _ProgressCard extends StatelessWidget {
           label,
           style: TextStyle(
             color: color,
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -676,7 +1035,7 @@ class _ProgressCard extends StatelessWidget {
 }
 
 // ============================================================
-// QUICK ACCESS — 4 tiles
+// QUICK ACCESS
 // ============================================================
 
 class _QuickAccessSection extends StatelessWidget {
@@ -692,15 +1051,11 @@ class _QuickAccessSection extends StatelessWidget {
   ];
 
   void _onItemTap(BuildContext context, int index) {
-    // Vitals
     if (index == 0) {
       onVitalsTap();
       return;
     }
 
-    // TODO Navigation:
-    // Doctors / AI Assist / Family screens ready hone par
-    // yahan unki navigation connect karni hai.
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -719,19 +1074,19 @@ class _QuickAccessSection extends StatelessWidget {
               'QUICK ACCESS',
               style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.3,
               ),
             ),
             Text(
               'Shortcuts',
-              style: TextStyle(color: AppColors.formAccent, fontSize: 11),
+              style: TextStyle(color: AppColors.formAccent, fontSize: 13),
             ),
           ],
         ),
 
-        const SizedBox(height: 7),
+        const SizedBox(height: 9),
 
         Row(
           children: [
@@ -740,11 +1095,9 @@ class _QuickAccessSection extends StatelessWidget {
 
               Expanded(
                 child: GestureDetector(
-                  onTap: () {
-                    _onItemTap(context, i);
-                  },
+                  onTap: () => _onItemTap(context, i),
                   child: Container(
-                    height: 62,
+                    height: 70,
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(9),
@@ -760,8 +1113,8 @@ class _QuickAccessSection extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 31,
-                          height: 31,
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
                             color: AppColors.primaryLight,
                             borderRadius: BorderRadius.circular(7),
@@ -769,15 +1122,17 @@ class _QuickAccessSection extends StatelessWidget {
                           child: Icon(
                             _items[i].icon,
                             color: AppColors.textPrimary,
-                            size: 18,
+                            size: 20,
                           ),
                         ),
-                        const SizedBox(height: 4),
+
+                        const SizedBox(height: 5),
+
                         Text(
                           _items[i].label,
                           style: const TextStyle(
                             color: AppColors.formAccent,
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -814,7 +1169,7 @@ class _FilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 26,
+        height: 30,
         padding: const EdgeInsets.symmetric(horizontal: 11),
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -826,7 +1181,7 @@ class _FilterChip extends StatelessWidget {
           label,
           style: TextStyle(
             color: isSelected ? AppColors.surface : AppColors.formAccent,
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -836,7 +1191,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 // ============================================================
-// DOSE CARD — EK renderer, SAB medicines!
+// DOSE CARD
 // ============================================================
 
 class _DoseCard extends StatelessWidget {
@@ -857,15 +1212,13 @@ class _DoseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTaken = dose.status == DoseStatus.taken;
-
     final isSkipped = dose.status == DoseStatus.skipped;
-
     final isPending = dose.status == DoseStatus.pending;
 
     return GestureDetector(
       onTap: (isPending || isTaken) ? onCardTap : null,
       child: Container(
-        padding: const EdgeInsets.all(13),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(15),
@@ -884,13 +1237,12 @@ class _DoseCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // ================= ROW 1 =================
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 43,
-                  height: 43,
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.cardFill,
@@ -903,12 +1255,12 @@ class _DoseCard extends StatelessWidget {
                   ),
                   child: Icon(
                     isTaken ? Icons.check_rounded : Icons.medication_outlined,
-                    size: 22,
+                    size: 24,
                     color: isTaken
                         ? AppColors.success
-                        : (isPending
-                              ? AppColors.formAccent
-                              : AppColors.fieldHint),
+                        : isPending
+                        ? AppColors.formAccent
+                        : AppColors.fieldHint,
                   ),
                 ),
 
@@ -922,7 +1274,7 @@ class _DoseCard extends StatelessWidget {
                         '${dose.name} ${dose.doseAmount}',
                         style: TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize: 13,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                           decoration: isTaken
                               ? TextDecoration.lineThrough
@@ -937,17 +1289,17 @@ class _DoseCard extends StatelessWidget {
                         dose.details,
                         style: const TextStyle(
                           color: AppColors.formSubtitle,
-                          fontSize: 10,
+                          fontSize: 12,
                         ),
                       ),
 
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 5),
 
                       Row(
                         children: [
                           Icon(
                             isTaken ? Icons.check_circle : Icons.access_time,
-                            size: 11,
+                            size: 14,
                             color: isTaken
                                 ? AppColors.success
                                 : AppColors.formSubtitle,
@@ -961,7 +1313,7 @@ class _DoseCard extends StatelessWidget {
                               color: isTaken
                                   ? AppColors.success
                                   : AppColors.formSubtitle,
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -975,7 +1327,6 @@ class _DoseCard extends StatelessWidget {
               ],
             ),
 
-            // ================= ROW 2 =================
             if (isPending) ...[
               const SizedBox(height: 14),
 
@@ -1004,13 +1355,12 @@ class _DoseCard extends StatelessWidget {
               ),
             ],
 
-            // ================= ROW 3 =================
             if (isPending && dose.isRunningLow) ...[
               const SizedBox(height: 10),
 
               Container(
-                height: 31,
-                padding: const EdgeInsets.symmetric(horizontal: 9),
+                constraints: const BoxConstraints(minHeight: 36),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.hintBackground,
                   borderRadius: BorderRadius.circular(6),
@@ -1020,34 +1370,35 @@ class _DoseCard extends StatelessWidget {
                     const Icon(
                       Icons.warning_amber_rounded,
                       color: AppColors.hintAccent,
-                      size: 13,
+                      size: 16,
                     ),
 
                     const SizedBox(width: 5),
 
                     Expanded(
                       child: Text(
-                        '${dose.name} running low · ${dose.daysLeft} days left',
+                        '${dose.name} running low · '
+                        '${dose.daysLeft} days left',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.hintAccent,
-                          fontSize: 9,
+                          fontSize: 11,
                         ),
                       ),
                     ),
 
                     GestureDetector(
                       onTap: () {
-                        // TODO Backend/Navigation:
-                        // Medication refill flow open karke
-                        // refill event/history save karni hai.
+                        // TODO Local Storage / Navigation:
+                        // Inventory/refill repository ke through
+                        // selected medication refill flow open karna.
                       },
                       child: const Text(
                         'Refill →',
                         style: TextStyle(
                           color: AppColors.hintAccent,
-                          fontSize: 9,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1064,7 +1415,7 @@ class _DoseCard extends StatelessWidget {
                 'Skipped — kal se phir reminder aayega',
                 style: TextStyle(
                   color: AppColors.error,
-                  fontSize: 9,
+                  fontSize: 11,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -1083,7 +1434,7 @@ class _DoseCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 34,
+        height: 38,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: filled ? AppColors.formAccent : AppColors.surface,
@@ -1094,7 +1445,7 @@ class _DoseCard extends StatelessWidget {
           label,
           style: TextStyle(
             color: filled ? AppColors.surface : AppColors.formAccent,
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -1151,7 +1502,7 @@ class _StatusBadge extends StatelessWidget {
     required String text,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(7),
@@ -1160,7 +1511,7 @@ class _StatusBadge extends StatelessWidget {
         text,
         style: TextStyle(
           color: foreground,
-          fontSize: 9,
+          fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
       ),
