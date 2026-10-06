@@ -343,4 +343,38 @@ class AppColors {
 
   static const Color inventoryCardShadow = Color(0x120A4054);
   static const Color inventoryBorder = Color(0xFFD6E5E7);
+  // ============================================================
+  // SIDE EFFECTS
+  // ============================================================
+
+  /// Symptom icon circle — normal severity
+  static const Color symptomIconFill = Color(0xFFE3F1EF);
+
+  /// Severe symptom — icon + severity dots/label
+  static const Color symptomSevere = Color(0xFFE84F5F);
+
+  /// Severe symptom icon circle tint
+  static const Color symptomSevereFill = Color(0xFFFFECEE);
+
+  /// Severity dots — empty track
+  static const Color symptomDotEmpty = Color(0xFFE5EDEF);
+
+  // ============================================================
+  // ADD SYMPTOM SCREEN
+  // ============================================================
+
+  /// Mild severity label text (Add Symptom).
+  static const Color symptomMild = Color(0xFF005139);
+
+  /// Mild severity marker dot (Add Symptom).
+  static const Color symptomMildDot = Color(0xFF83D7B1);
+
+  /// Save toast ka dark background.
+  static const Color toastBackground = Color(0xFF2C3134);
+
+  /// Toast ke task icon ka halka green.
+  static const Color toastIcon = Color(0xFF83D7B1);
+
+  /// Toast ki "Synced" label.
+  static const Color toastSynced = Color(0xFFABEDFF);
 }

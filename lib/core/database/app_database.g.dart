@@ -677,6 +677,39 @@ class $MedicationsTable extends Medications
         type: DriftSqlType.dateTime,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _discontinuedReasonMeta =
+      const VerificationMeta('discontinuedReason');
+  @override
+  late final GeneratedColumn<String> discontinuedReason =
+      GeneratedColumn<String>(
+        'discontinued_reason',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _courseDayMeta = const VerificationMeta(
+    'courseDay',
+  );
+  @override
+  late final GeneratedColumn<int> courseDay = GeneratedColumn<int>(
+    'course_day',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _courseTotalDaysMeta = const VerificationMeta(
+    'courseTotalDays',
+  );
+  @override
+  late final GeneratedColumn<int> courseTotalDays = GeneratedColumn<int>(
+    'course_total_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -713,6 +746,9 @@ class $MedicationsTable extends Medications
     linkedPharmacyId,
     isActive,
     discontinuedAt,
+    discontinuedReason,
+    courseDay,
+    courseTotalDays,
     createdAt,
     updatedAt,
   ];
@@ -820,6 +856,30 @@ class $MedicationsTable extends Medications
         ),
       );
     }
+    if (data.containsKey('discontinued_reason')) {
+      context.handle(
+        _discontinuedReasonMeta,
+        discontinuedReason.isAcceptableOrUnknown(
+          data['discontinued_reason']!,
+          _discontinuedReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('course_day')) {
+      context.handle(
+        _courseDayMeta,
+        courseDay.isAcceptableOrUnknown(data['course_day']!, _courseDayMeta),
+      );
+    }
+    if (data.containsKey('course_total_days')) {
+      context.handle(
+        _courseTotalDaysMeta,
+        courseTotalDays.isAcceptableOrUnknown(
+          data['course_total_days']!,
+          _courseTotalDaysMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -893,6 +953,18 @@ class $MedicationsTable extends Medications
         DriftSqlType.dateTime,
         data['${effectivePrefix}discontinued_at'],
       ),
+      discontinuedReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}discontinued_reason'],
+      ),
+      courseDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}course_day'],
+      ),
+      courseTotalDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}course_total_days'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -923,6 +995,9 @@ class Medication extends DataClass implements Insertable<Medication> {
   final String? linkedPharmacyId;
   final bool isActive;
   final DateTime? discontinuedAt;
+  final String? discontinuedReason;
+  final int? courseDay;
+  final int? courseTotalDays;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Medication({
@@ -938,6 +1013,9 @@ class Medication extends DataClass implements Insertable<Medication> {
     this.linkedPharmacyId,
     required this.isActive,
     this.discontinuedAt,
+    this.discontinuedReason,
+    this.courseDay,
+    this.courseTotalDays,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -969,6 +1047,15 @@ class Medication extends DataClass implements Insertable<Medication> {
     map['is_active'] = Variable<bool>(isActive);
     if (!nullToAbsent || discontinuedAt != null) {
       map['discontinued_at'] = Variable<DateTime>(discontinuedAt);
+    }
+    if (!nullToAbsent || discontinuedReason != null) {
+      map['discontinued_reason'] = Variable<String>(discontinuedReason);
+    }
+    if (!nullToAbsent || courseDay != null) {
+      map['course_day'] = Variable<int>(courseDay);
+    }
+    if (!nullToAbsent || courseTotalDays != null) {
+      map['course_total_days'] = Variable<int>(courseTotalDays);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1003,6 +1090,15 @@ class Medication extends DataClass implements Insertable<Medication> {
       discontinuedAt: discontinuedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(discontinuedAt),
+      discontinuedReason: discontinuedReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(discontinuedReason),
+      courseDay: courseDay == null && nullToAbsent
+          ? const Value.absent()
+          : Value(courseDay),
+      courseTotalDays: courseTotalDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(courseTotalDays),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1026,6 +1122,11 @@ class Medication extends DataClass implements Insertable<Medication> {
       linkedPharmacyId: serializer.fromJson<String?>(json['linkedPharmacyId']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       discontinuedAt: serializer.fromJson<DateTime?>(json['discontinuedAt']),
+      discontinuedReason: serializer.fromJson<String?>(
+        json['discontinuedReason'],
+      ),
+      courseDay: serializer.fromJson<int?>(json['courseDay']),
+      courseTotalDays: serializer.fromJson<int?>(json['courseTotalDays']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1046,6 +1147,9 @@ class Medication extends DataClass implements Insertable<Medication> {
       'linkedPharmacyId': serializer.toJson<String?>(linkedPharmacyId),
       'isActive': serializer.toJson<bool>(isActive),
       'discontinuedAt': serializer.toJson<DateTime?>(discontinuedAt),
+      'discontinuedReason': serializer.toJson<String?>(discontinuedReason),
+      'courseDay': serializer.toJson<int?>(courseDay),
+      'courseTotalDays': serializer.toJson<int?>(courseTotalDays),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1064,6 +1168,9 @@ class Medication extends DataClass implements Insertable<Medication> {
     Value<String?> linkedPharmacyId = const Value.absent(),
     bool? isActive,
     Value<DateTime?> discontinuedAt = const Value.absent(),
+    Value<String?> discontinuedReason = const Value.absent(),
+    Value<int?> courseDay = const Value.absent(),
+    Value<int?> courseTotalDays = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Medication(
@@ -1083,6 +1190,13 @@ class Medication extends DataClass implements Insertable<Medication> {
     discontinuedAt: discontinuedAt.present
         ? discontinuedAt.value
         : this.discontinuedAt,
+    discontinuedReason: discontinuedReason.present
+        ? discontinuedReason.value
+        : this.discontinuedReason,
+    courseDay: courseDay.present ? courseDay.value : this.courseDay,
+    courseTotalDays: courseTotalDays.present
+        ? courseTotalDays.value
+        : this.courseTotalDays,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1110,6 +1224,13 @@ class Medication extends DataClass implements Insertable<Medication> {
       discontinuedAt: data.discontinuedAt.present
           ? data.discontinuedAt.value
           : this.discontinuedAt,
+      discontinuedReason: data.discontinuedReason.present
+          ? data.discontinuedReason.value
+          : this.discontinuedReason,
+      courseDay: data.courseDay.present ? data.courseDay.value : this.courseDay,
+      courseTotalDays: data.courseTotalDays.present
+          ? data.courseTotalDays.value
+          : this.courseTotalDays,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1130,6 +1251,9 @@ class Medication extends DataClass implements Insertable<Medication> {
           ..write('linkedPharmacyId: $linkedPharmacyId, ')
           ..write('isActive: $isActive, ')
           ..write('discontinuedAt: $discontinuedAt, ')
+          ..write('discontinuedReason: $discontinuedReason, ')
+          ..write('courseDay: $courseDay, ')
+          ..write('courseTotalDays: $courseTotalDays, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1150,6 +1274,9 @@ class Medication extends DataClass implements Insertable<Medication> {
     linkedPharmacyId,
     isActive,
     discontinuedAt,
+    discontinuedReason,
+    courseDay,
+    courseTotalDays,
     createdAt,
     updatedAt,
   );
@@ -1169,6 +1296,9 @@ class Medication extends DataClass implements Insertable<Medication> {
           other.linkedPharmacyId == this.linkedPharmacyId &&
           other.isActive == this.isActive &&
           other.discontinuedAt == this.discontinuedAt &&
+          other.discontinuedReason == this.discontinuedReason &&
+          other.courseDay == this.courseDay &&
+          other.courseTotalDays == this.courseTotalDays &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1186,6 +1316,9 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
   final Value<String?> linkedPharmacyId;
   final Value<bool> isActive;
   final Value<DateTime?> discontinuedAt;
+  final Value<String?> discontinuedReason;
+  final Value<int?> courseDay;
+  final Value<int?> courseTotalDays;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1202,6 +1335,9 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
     this.linkedPharmacyId = const Value.absent(),
     this.isActive = const Value.absent(),
     this.discontinuedAt = const Value.absent(),
+    this.discontinuedReason = const Value.absent(),
+    this.courseDay = const Value.absent(),
+    this.courseTotalDays = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1219,6 +1355,9 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
     this.linkedPharmacyId = const Value.absent(),
     this.isActive = const Value.absent(),
     this.discontinuedAt = const Value.absent(),
+    this.discontinuedReason = const Value.absent(),
+    this.courseDay = const Value.absent(),
+    this.courseTotalDays = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -1241,6 +1380,9 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
     Expression<String>? linkedPharmacyId,
     Expression<bool>? isActive,
     Expression<DateTime>? discontinuedAt,
+    Expression<String>? discontinuedReason,
+    Expression<int>? courseDay,
+    Expression<int>? courseTotalDays,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1258,6 +1400,9 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
       if (linkedPharmacyId != null) 'linked_pharmacy_id': linkedPharmacyId,
       if (isActive != null) 'is_active': isActive,
       if (discontinuedAt != null) 'discontinued_at': discontinuedAt,
+      if (discontinuedReason != null) 'discontinued_reason': discontinuedReason,
+      if (courseDay != null) 'course_day': courseDay,
+      if (courseTotalDays != null) 'course_total_days': courseTotalDays,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1277,6 +1422,9 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
     Value<String?>? linkedPharmacyId,
     Value<bool>? isActive,
     Value<DateTime?>? discontinuedAt,
+    Value<String?>? discontinuedReason,
+    Value<int?>? courseDay,
+    Value<int?>? courseTotalDays,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -1294,6 +1442,9 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
       linkedPharmacyId: linkedPharmacyId ?? this.linkedPharmacyId,
       isActive: isActive ?? this.isActive,
       discontinuedAt: discontinuedAt ?? this.discontinuedAt,
+      discontinuedReason: discontinuedReason ?? this.discontinuedReason,
+      courseDay: courseDay ?? this.courseDay,
+      courseTotalDays: courseTotalDays ?? this.courseTotalDays,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1339,6 +1490,15 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
     if (discontinuedAt.present) {
       map['discontinued_at'] = Variable<DateTime>(discontinuedAt.value);
     }
+    if (discontinuedReason.present) {
+      map['discontinued_reason'] = Variable<String>(discontinuedReason.value);
+    }
+    if (courseDay.present) {
+      map['course_day'] = Variable<int>(courseDay.value);
+    }
+    if (courseTotalDays.present) {
+      map['course_total_days'] = Variable<int>(courseTotalDays.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1366,6 +1526,9 @@ class MedicationsCompanion extends UpdateCompanion<Medication> {
           ..write('linkedPharmacyId: $linkedPharmacyId, ')
           ..write('isActive: $isActive, ')
           ..write('discontinuedAt: $discontinuedAt, ')
+          ..write('discontinuedReason: $discontinuedReason, ')
+          ..write('courseDay: $courseDay, ')
+          ..write('courseTotalDays: $courseTotalDays, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -6567,6 +6730,9 @@ typedef $$MedicationsTableCreateCompanionBuilder =
       Value<String?> linkedPharmacyId,
       Value<bool> isActive,
       Value<DateTime?> discontinuedAt,
+      Value<String?> discontinuedReason,
+      Value<int?> courseDay,
+      Value<int?> courseTotalDays,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -6585,6 +6751,9 @@ typedef $$MedicationsTableUpdateCompanionBuilder =
       Value<String?> linkedPharmacyId,
       Value<bool> isActive,
       Value<DateTime?> discontinuedAt,
+      Value<String?> discontinuedReason,
+      Value<int?> courseDay,
+      Value<int?> courseTotalDays,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -6753,6 +6922,21 @@ class $$MedicationsTableFilterComposer
 
   ColumnFilters<DateTime> get discontinuedAt => $composableBuilder(
     column: $table.discontinuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get discontinuedReason => $composableBuilder(
+    column: $table.discontinuedReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get courseDay => $composableBuilder(
+    column: $table.courseDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get courseTotalDays => $composableBuilder(
+    column: $table.courseTotalDays,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6954,6 +7138,21 @@ class $$MedicationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get discontinuedReason => $composableBuilder(
+    column: $table.discontinuedReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get courseDay => $composableBuilder(
+    column: $table.courseDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get courseTotalDays => $composableBuilder(
+    column: $table.courseTotalDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -7037,6 +7236,19 @@ class $$MedicationsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get discontinuedAt => $composableBuilder(
     column: $table.discontinuedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get discontinuedReason => $composableBuilder(
+    column: $table.discontinuedReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get courseDay =>
+      $composableBuilder(column: $table.courseDay, builder: (column) => column);
+
+  GeneratedColumn<int> get courseTotalDays => $composableBuilder(
+    column: $table.courseTotalDays,
     builder: (column) => column,
   );
 
@@ -7217,6 +7429,9 @@ class $$MedicationsTableTableManager
                 Value<String?> linkedPharmacyId = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime?> discontinuedAt = const Value.absent(),
+                Value<String?> discontinuedReason = const Value.absent(),
+                Value<int?> courseDay = const Value.absent(),
+                Value<int?> courseTotalDays = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -7233,6 +7448,9 @@ class $$MedicationsTableTableManager
                 linkedPharmacyId: linkedPharmacyId,
                 isActive: isActive,
                 discontinuedAt: discontinuedAt,
+                discontinuedReason: discontinuedReason,
+                courseDay: courseDay,
+                courseTotalDays: courseTotalDays,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -7251,6 +7469,9 @@ class $$MedicationsTableTableManager
                 Value<String?> linkedPharmacyId = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime?> discontinuedAt = const Value.absent(),
+                Value<String?> discontinuedReason = const Value.absent(),
+                Value<int?> courseDay = const Value.absent(),
+                Value<int?> courseTotalDays = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -7267,6 +7488,9 @@ class $$MedicationsTableTableManager
                 linkedPharmacyId: linkedPharmacyId,
                 isActive: isActive,
                 discontinuedAt: discontinuedAt,
+                discontinuedReason: discontinuedReason,
+                courseDay: courseDay,
+                courseTotalDays: courseTotalDays,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

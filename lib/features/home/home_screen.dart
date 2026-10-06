@@ -9,7 +9,9 @@ import '../../core/members/member_repository.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_photo_picker.dart';
+import '../doctors/doctors_screen.dart';
 import '../meds/meds_screen.dart';
+import '../../features/profile/profiles_screen.dart';
 import 'dose_action_sheet.dart';
 import 'home_data.dart';
 import 'streaks_stats_screen.dart';
@@ -39,6 +41,10 @@ import 'vitals_list_screen.dart';
 /// Doses:
 /// Abhi HomeData dummy/in-memory source se.
 /// Next local-storage phase mein DoseRepository par migrate honge.
+///
+/// NAVIGATION:
+/// Quick Access "Family" tile + header "Add" button
+/// → ProfilesScreen (managed profiles switch/invite).
 ///
 /// FUTURE BACKEND:
 /// Local repositories ko Firebase/real backend repositories se
@@ -149,14 +155,41 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
+    // Profiles screen (ya koi bhi jagah) se member switch hone par
+    // Home header/greeting sync rahe — controller listener.
+    ProfileController.instance.addListener(_handleProfileChanged);
+
     _initializeMembers();
   }
 
   @override
   void dispose() {
+    ProfileController.instance.removeListener(_handleProfileChanged);
+
     _membersSubscription?.cancel();
 
     super.dispose();
+  }
+
+  /// Profiles screen se switch → controller memberId update karta hai.
+  /// Home ka local selection bhi usi par sync karo — warna Home apni
+  /// purani local state par Sarah dikhta reh jata hai.
+  void _handleProfileChanged() {
+    final controllerMemberId = ProfileController.instance.memberId;
+
+    if (controllerMemberId == null || controllerMemberId == _selectedMemberId) {
+      return;
+    }
+
+    for (final member in _members) {
+      if (member.id == controllerMemberId) {
+        setState(() {
+          _selectedMemberId = member.id;
+        });
+
+        return;
+      }
+    }
   }
 
   // ============================================================
@@ -248,9 +281,23 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    // Fresh install/default → first active member, currently Sarah.
-    memberToSelect ??= members.isNotEmpty ? members.first : null;
+    // Fallback priority:
+    // 1. Current controller member (Profiles screen se switch ho sakta hai)
+    // 2. First active member (fresh install/default — Sarah)
+    if (memberToSelect == null) {
+      final controllerMemberId = profileController.memberId;
 
+      if (controllerMemberId != null) {
+        for (final member in members) {
+          if (member.id == controllerMemberId) {
+            memberToSelect = member;
+            break;
+          }
+        }
+      }
+    }
+
+    memberToSelect ??= members.isNotEmpty ? members.first : null;
     setState(() {
       _members = members;
       _selectedMemberId = memberToSelect?.id;
@@ -264,6 +311,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _syncSelectedProfile(MemberProfile member) async {
+    // Safety:
+    // Agar controller already isi member par hai (Profiles screen se
+    // switch hua), to dobara selectProfile() call karne se loop
+    // trigger nahi hoga, lekin phir bhi skip karna cleaner hai.
+    if (ProfileController.instance.memberId == member.id) {
+      return;
+    }
+
     await ProfileController.instance.selectProfile(
       memberId: member.id,
       displayName: member.displayName,
@@ -376,6 +431,16 @@ class _HomeScreenState extends State<HomeScreen> {
     // stable memberId bhi pass/use karna hai.
   }
 
+  void _openDoctors() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const DoctorsScreen()));
+  }
+
+  void _openProfiles() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const ProfilesScreen()));
+  }
+
   // ============================================================
   // FAMILY MEMBER SWITCH
   // ============================================================
@@ -485,6 +550,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onMemberTap: _switchMember,
             onStreakTap: _openStreaksStats,
             onProfilePhotoTap: _openProfilePhotoPicker,
+            onAddMemberTap: _openProfiles,
           ),
 
           Expanded(
@@ -538,7 +604,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 16),
 
-          _QuickAccessSection(onVitalsTap: _openVitals),
+          _QuickAccessSection(
+            onVitalsTap: _openVitals,
+            onDoctorsTap: _openDoctors,
+            onProfilesTap: _openProfiles,
+          ),
 
           const SizedBox(height: 16),
 
@@ -606,6 +676,7 @@ class _HomeHeader extends StatelessWidget {
     required this.onMemberTap,
     required this.onStreakTap,
     required this.onProfilePhotoTap,
+    required this.onAddMemberTap,
   });
 
   final String greeting;
@@ -625,6 +696,8 @@ class _HomeHeader extends StatelessWidget {
   final VoidCallback onStreakTap;
 
   final VoidCallback onProfilePhotoTap;
+
+  final VoidCallback onAddMemberTap;
 
   @override
   Widget build(BuildContext context) {
@@ -737,7 +810,7 @@ class _HomeHeader extends StatelessWidget {
 
                       if (members.isNotEmpty) const SizedBox(width: 17),
 
-                      const _AddMemberButton(),
+                      _AddMemberButton(onTap: onAddMemberTap),
                     ],
                   ),
                 ),
@@ -869,25 +942,18 @@ class _FamilyMemberAvatar extends StatelessWidget {
 }
 
 // ============================================================
-// ADD MEMBER
+// ADD MEMBER → ProfilesScreen (managed profiles + invite)
 // ============================================================
 
 class _AddMemberButton extends StatelessWidget {
-  const _AddMemberButton();
+  const _AddMemberButton({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // TODO Local Storage / Navigation:
-        // Add Family Member screen create karke
-        // MemberRepository.saveMember() se naya stable memberId
-        // SQLite mein persist karna hai.
-        //
-        // TODO Backend:
-        // FirebaseMemberRepository later current account ke under
-        // member Firestore document create karegi.
-      },
+      onTap: onTap,
       child: Column(
         children: [
           const CircleAvatar(
@@ -1039,9 +1105,15 @@ class _ProgressCard extends StatelessWidget {
 // ============================================================
 
 class _QuickAccessSection extends StatelessWidget {
-  const _QuickAccessSection({required this.onVitalsTap});
+  const _QuickAccessSection({
+    required this.onVitalsTap,
+    required this.onDoctorsTap,
+    required this.onProfilesTap,
+  });
 
   final VoidCallback onVitalsTap;
+  final VoidCallback onDoctorsTap;
+  final VoidCallback onProfilesTap;
 
   static const List<({IconData icon, String label})> _items = [
     (icon: Icons.monitor_heart_outlined, label: 'Vitals'),
@@ -1053,6 +1125,16 @@ class _QuickAccessSection extends StatelessWidget {
   void _onItemTap(BuildContext context, int index) {
     if (index == 0) {
       onVitalsTap();
+      return;
+    }
+
+    if (index == 1) {
+      onDoctorsTap();
+      return;
+    }
+
+    if (index == 3) {
+      onProfilesTap();
       return;
     }
 
@@ -1130,6 +1212,8 @@ class _QuickAccessSection extends StatelessWidget {
 
                         Text(
                           _items[i].label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.formAccent,
                             fontSize: 12,

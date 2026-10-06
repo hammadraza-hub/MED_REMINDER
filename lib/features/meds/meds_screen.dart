@@ -16,6 +16,7 @@ import 'edit_medication_screen.dart';
 import 'inventory_data.dart';
 import 'inventory_screen.dart';
 import 'meds_data.dart';
+import 'side_effects_screen.dart';
 
 /// ============================================================
 /// MEDS — saari medications
@@ -358,13 +359,14 @@ class _MedsScreenState extends State<MedsScreen> {
 
     final hasPersistedSchedule = enabledSchedules.isNotEmpty;
 
+    // 🆕 MODULE 1: Schedule fallback remove — sirf persisted SQLite schedules.
     final frequency = hasPersistedSchedule
         ? _scheduleFrequency(enabledSchedules)
-        : legacy?.frequency ?? 'Schedule not set';
+        : 'Schedule not set';
 
     final nextDose = hasPersistedSchedule
         ? _nextDoseLabel(enabledSchedules)
-        : legacy?.nextDose ?? '—';
+        : '—';
 
     return _MedicationListItem(
       profile: profile,
@@ -380,9 +382,9 @@ class _MedsScreenState extends State<MedsScreen> {
         supplyDaysLeft: legacy?.supplyDaysLeft ?? 0,
         isLowStock: legacy?.isLowStock ?? false,
 
-        // Course metadata bhi abhi legacy presentation se aa rahi hai.
-        courseDay: legacy?.courseDay,
-        courseTotalDays: legacy?.courseTotalDays,
+        // 🆕 MODULE 2: Course ab SQLite medications se aa raha hai.
+        courseDay: profile.courseDay,
+        courseTotalDays: profile.courseTotalDays,
 
         isArchived: !profile.isActive,
       ),
@@ -390,8 +392,31 @@ class _MedsScreenState extends State<MedsScreen> {
     );
   }
 
+  /// 🆕 MODULE 1:
+  /// Legacy presentation ab sirf SEEDED medication IDs par apply hoti
+  /// hai — name matching remove kar diya. Is se user-added medicines
+  /// par Sarah ka legacy inventory/course data ghalat na lage.
+  ///
+  /// NOTE: supplyDaysLeft / isLowStock / course abhi bhi legacy se
+  /// aa rahe hain — Module 2 (course fields) aur Module 4
+  /// (InventoryRecords) mein migrate honge.
   Medicine? _findLegacyPresentation(MedicationProfile profile) {
-    final normalizedName = profile.name.trim().toLowerCase();
+    switch (profile.id) {
+      case 'local_sarah_metformin':
+        return _findLegacyMedicineByName('Metformin');
+      case 'local_sarah_amlodipine':
+        return _findLegacyMedicineByName('Amlodipine');
+      case 'local_sarah_vitamin_d3_drops':
+        return _findLegacyMedicineByName('Vitamin D3 Drops');
+      case 'local_sarah_amoxicillin':
+        return _findLegacyMedicineByName('Amoxicillin');
+      default:
+        return null;
+    }
+  }
+
+  Medicine? _findLegacyMedicineByName(String name) {
+    final normalizedName = name.trim().toLowerCase();
 
     for (final medicine in _legacyPresentationData) {
       if (medicine.name.trim().toLowerCase() == normalizedName) {
@@ -717,6 +742,12 @@ class _MedsScreenState extends State<MedsScreen> {
     // setState ki zarurat nahi hogi.
     setState(() {});
   }
+  // ================= SIDE EFFECTS =================
+
+  Future<void> _openSideEffects() async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const SideEffectsScreen()));
+  }
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
@@ -766,9 +797,11 @@ class _MedsScreenState extends State<MedsScreen> {
     }
 
     try {
+      // 🆕 MODULE 2: Modal ka reason SQLite mein persist hota hai.
       await _medicationRepository.discontinueMedication(
         medicationId: item.profile.id,
         discontinuedAt: DateTime.now(),
+        reason: reason,
       );
 
       if (!mounted) {
@@ -778,11 +811,6 @@ class _MedsScreenState extends State<MedsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${item.profile.name} moved to Archived')),
       );
-
-      // TODO Local Storage:
-      // Discontinue reason ke liye dedicated persisted field/domain
-      // migration future step mein add karni hai.
-      //
       // Existing DoseEvents/history delete nahi karni.
       //
       // TODO Backend:
@@ -912,9 +940,7 @@ class _MedsScreenState extends State<MedsScreen> {
                 child: _ManageTile(
                   icon: Icons.assignment_outlined,
                   label: 'Side Effects',
-                  onTap: () {
-                    _showMessage('Side Effects — coming soon');
-                  },
+                  onTap: _openSideEffects,
                 ),
               ),
 

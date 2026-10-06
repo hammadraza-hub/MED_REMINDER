@@ -9,6 +9,10 @@
 ///
 /// FUTURE:
 /// Firestore / Backend → MedicationProfile
+///
+/// 🆕 MODULE 2:
+/// - discontinuedReason (discontinue modal ka reason)
+/// - courseDay / courseTotalDays (course wali dawai)
 /// ============================================================
 class MedicationProfile {
   const MedicationProfile({
@@ -24,6 +28,9 @@ class MedicationProfile {
     this.linkedPharmacyId,
     this.isActive = true,
     this.discontinuedAt,
+    this.discontinuedReason,
+    this.courseDay,
+    this.courseTotalDays,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -68,6 +75,20 @@ class MedicationProfile {
   final bool isActive;
   final DateTime? discontinuedAt;
 
+  /// 🆕 MODULE 2:
+  /// Discontinue modal ka selected reason.
+  /// SQLite medications.discontinued_reason mein persist hota hai.
+  final String? discontinuedReason;
+
+  /// 🆕 MODULE 2:
+  /// Course wali dawai ka progress (Amoxicillin type).
+  /// Example: Day 4 of 10 → courseDay = 4, courseTotalDays = 10.
+  ///
+  /// Abhi seed/demo data fixed hai.
+  /// Module 5 (DoseEvents) se ye dynamic banega.
+  final int? courseDay;
+  final int? courseTotalDays;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -80,6 +101,8 @@ class MedicationProfile {
 
     return '$strength$unit';
   }
+
+  bool get isCourse => courseDay != null && courseTotalDays != null;
 
   MedicationProfile copyWith({
     String? id,
@@ -95,6 +118,11 @@ class MedicationProfile {
     bool? isActive,
     DateTime? discontinuedAt,
     bool clearDiscontinuedAt = false,
+    String? discontinuedReason,
+    bool clearDiscontinuedReason = false,
+    int? courseDay,
+    int? courseTotalDays,
+    bool clearCourse = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -113,6 +141,13 @@ class MedicationProfile {
       discontinuedAt: clearDiscontinuedAt
           ? null
           : discontinuedAt ?? this.discontinuedAt,
+      discontinuedReason: clearDiscontinuedReason
+          ? null
+          : discontinuedReason ?? this.discontinuedReason,
+      courseDay: clearCourse ? null : courseDay ?? this.courseDay,
+      courseTotalDays: clearCourse
+          ? null
+          : courseTotalDays ?? this.courseTotalDays,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -148,10 +183,15 @@ abstract class MedicationRepository {
 
   /// Medicine archive/discontinue karo.
   ///
+  /// 🆕 MODULE 2:
+  /// [reason] optional hai — discontinue modal ka selected reason
+  /// SQLite mein persist hota hai.
+  ///
   /// Historical medication/dose records delete nahi honge.
   Future<void> discontinueMedication({
     required String medicationId,
     required DateTime discontinuedAt,
+    String? reason,
   });
 
   /// Development/local migration ke initial medicine records.

@@ -22,6 +22,12 @@ part 'app_database.g.dart';
 ///
 /// Is boundary ki wajah se backend migration ke waqt UI ko
 /// rewrite nahi karna padega.
+///
+/// 🆕 MODULE 2:
+/// schemaVersion 1 → 2
+/// Medications table mein 3 naye columns:
+/// - discontinuedReason (discontinue modal ka reason)
+/// - courseDay / courseTotalDays (course wali dawai)
 /// ============================================================
 
 // ============================================================
@@ -77,6 +83,16 @@ class Medications extends Table {
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
   DateTimeColumn get discontinuedAt => dateTime().nullable()();
+
+  // 🆕 MODULE 2: Discontinue modal ka reason persist karta hai.
+  TextColumn get discontinuedReason => text().nullable()();
+
+  // 🆕 MODULE 2: Course wali dawai (Amoxicillin type).
+  // Example: Day 4 of 10 → courseDay = 4, courseTotalDays = 10.
+  // Course progression Module 5 (DoseEvents) se dynamic banegi.
+  IntColumn get courseDay => integer().nullable()();
+
+  IntColumn get courseTotalDays => integer().nullable()();
 
   DateTimeColumn get createdAt => dateTime()();
 
@@ -317,8 +333,28 @@ class AppDatabase extends _$AppDatabase {
   /// Tests ke liye in-memory/custom executor inject kiya ja sakta hai.
   AppDatabase.forTesting(super.executor);
 
+  // 🆕 MODULE 2: schemaVersion 1 → 2
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  // 🆕 MODULE 2: Migration
+  //
+  // Purane installs (version 1) naye columns ke saath upgrade hote hain.
+  // Existing data SAFE rehta hai — kuch delete nahi hota.
+  //
+  // Fresh install pe onUpgrade nahi chalti (direct v2 banti hai),
+  // sirf pehle se installed apps pe chalega.
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        await m.addColumn(medications, medications.discontinuedReason);
+
+        await m.addColumn(medications, medications.courseDay);
+        await m.addColumn(medications, medications.courseTotalDays);
+      }
+    },
+  );
 
   // TODO Backend:
   // Screens ko AppDatabase directly inject/use nahi karna.
