@@ -36,7 +36,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF006B4D),
+                      color: const Color(0xFF006F56),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -153,7 +153,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 children: [
                   Checkbox(
                     value: _agreeToTerms,
-                    activeColor: const Color(0xFF006B4D),
+                    activeColor: const Color(0xFF006F56),
                     onChanged: (val) {
                       setState(() {
                         _agreeToTerms = val ?? false;

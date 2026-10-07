@@ -8,6 +8,7 @@ import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'profiles_data.dart';
 import 'invite_member_screen.dart';
+import 'member_permissions_screen.dart';
 
 /// ============================================================
 /// PROFILES — switch between managed family members
@@ -24,6 +25,8 @@ import 'invite_member_screen.dart';
 /// USER ACTIONS:
 /// • Tap to switch active profile → ProfileController.selectProfile
 ///   (saari member-isolated screens auto-reload — listener pattern)
+/// • Permissions button → MemberPermissionsScreen (per-member:
+///   Viewer/Co-manager + visibility toggles + revoke access)
 /// • Tap + to add/invite another (family setup / invite phase)
 ///
 /// DATA:
@@ -494,7 +497,57 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                 ],
               ],
             ),
+
+            const SizedBox(width: 6),
+
+            // Permissions → MemberPermissionsScreen (per-member)
+            _buildPermissionsButton(profile),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // PERMISSIONS BUTTON — per-member configure karo
+  //
+  // Linked-Profile Dashboard yahan se MemberPermissionsScreen
+  // kholti hai — back karne par wapas isi dashboard par aata hai.
+  // ============================================================
+
+  Widget _buildPermissionsButton(ManagedProfile profile) {
+    return Tooltip(
+      message: 'Permissions — ${profile.displayName}',
+      child: GestureDetector(
+        onTap: () {
+          _openMemberPermissions(profile);
+        },
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: const BoxDecoration(
+            color: AppColors.manageIconFill,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: const Icon(
+            Icons.manage_accounts_outlined,
+            size: 18,
+            color: AppColors.formAccent,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openMemberPermissions(ManagedProfile profile) {
+    Navigator.of(context).push(
+      MaterialPageRoute<bool>(
+        builder: (_) => MemberPermissionsScreen(
+          memberId: profile.memberId,
+          memberDisplayName: profile.displayName,
+          memberRelationship: profile.relationship,
+          memberProfileImagePath: profile.imagePath,
         ),
       ),
     );

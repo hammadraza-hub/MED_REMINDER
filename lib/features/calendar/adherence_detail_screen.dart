@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../meds/meds_data.dart';
+import '../reports/report_preview_screen.dart';
 import 'adherence_data.dart';
 
 /// ============================================================
@@ -162,19 +163,12 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
   void _exportToReports() {
     // TODO Backend:
     // Selected adherence range + medication filter
-    // ko Reports export/save flow mein persist karna hai.
-    //
-    // TODO Navigation:
-    // ReportsScreen ready hone par Reports screen/tab
-    // ko selected filters ke saath open karna hai.
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('Export to Reports — reports screen pending'),
-        ),
-      );
+    // Reports export/save flow mein persist karni hai.
+    // Abhi export CONFIG screen khulti hai
+    // (options select → generate → PDF preview).
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ReportPreviewScreen()),
+    );
   }
 
   // ============================================================

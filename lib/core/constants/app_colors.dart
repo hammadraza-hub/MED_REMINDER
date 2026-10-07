@@ -7,7 +7,7 @@ class AppColors {
 
   // ================= PRIMARY GREEN =================
   /// Main app green — buttons, active dots (onboarding design se)
-  static const Color primary = Color(0xFF007A5E);
+  static const Color primary = Color(0xFF006F56);
 
   /// Primary ka dark shade — button shadows
   static const Color primaryDark = Color(0xFF006F56);
@@ -156,7 +156,7 @@ class AppColors {
 
   // ================= FORM (Signup design ke exact colors) =================
   /// Signup design ka action green — buttons, links, strength bars
-  static const Color formAccent = Color(0xFF007A67);
+  static const Color formAccent = Color(0xFF006F56);
 
   /// Signup input fields ka border
   static const Color fieldBorder = Color(0xFF0D7890);
@@ -229,7 +229,7 @@ class AppColors {
   static const Color calendarWeekdayText = Color(0xFF39768A);
 
   /// Day with all doses taken
-  static const Color calendarTaken = Color(0xFF008768);
+  static const Color calendarTaken = Color(0xFF006F56);
 
   /// Taken day light background
   static const Color calendarTakenBackground = Color(0xFFE7F5EF);
@@ -277,7 +277,7 @@ class AppColors {
   /// Adherence secondary card background
   static const Color adherenceCardBackground = Color(0xFFF7FAFB);
 
-  static const Color adherenceExportGreen = Color(0xFF36B37E);
+  static const Color adherenceExportGreen = Color(0xFF006F56);
   static const Color adherenceExportRed = Color(0xFFE85D68);
   static const Color adherenceExportBlue = Color(0xFF2F80ED);
   // ============================================================
@@ -293,10 +293,10 @@ class AppColors {
   static const Color streakGold = Color(0xFFF5A300);
   static const Color streakGoldBackground = Color(0xFFFFF4D8);
 
-  static const Color streakMint = Color(0xFF00896D);
+  static const Color streakMint = Color(0xFF006F56);
   static const Color streakMintBackground = Color(0xFFE9F6F1);
 
-  static const Color streakTrend = Color(0xFF087B70);
+  static const Color streakTrend = Color(0xFF006F56);
   static const Color streakTrendTarget = Color(0xFFF2A000);
   static const Color streakTrendGrid = Color(0xFFDDE9ED);
 
@@ -314,7 +314,7 @@ class AppColors {
   static const Color missedReasonDanger = Color(0xFFE84F5F);
   static const Color missedReasonDangerBackground = Color(0xFFFFECEE);
 
-  static const Color missedReasonSelected = Color(0xFF00866A);
+  static const Color missedReasonSelected = Color(0xFF006F56);
   static const Color missedReasonSelectedBackground = Color(0xFFE8F5F1);
 
   static const Color missedReasonWarning = Color(0xFFF2A000);
@@ -331,7 +331,7 @@ class AppColors {
   static const Color inventoryLow = Color(0xFFCF1B1F);
   static const Color inventoryLowBackground = Color(0xFFFFE9E9);
 
-  static const Color inventoryOk = Color(0xFF00866A);
+  static const Color inventoryOk = Color(0xFF006F56);
   static const Color inventoryOkBackground = Color(0xFFE8F5F1);
 
   static const Color inventoryWarning = Color(0xFFCF1B1F);
@@ -377,4 +377,141 @@ class AppColors {
 
   /// Toast ki "Synced" label.
   static const Color toastSynced = Color(0xFFABEDFF);
+
+  // ============================================================
+  // CAREGIVER PERMISSIONS (screen design ke exact colors)
+  // ============================================================
+
+  /// Permissions header bg + dark navy titles/section labels
+  static const Color permissionsHeader = Color(0xFF053F5C);
+
+  /// Section subtitles, meta text, small icons (secondary teal)
+  static const Color permissionsSecondary = Color(0xFF136778);
+
+  /// Active radio/toggle + Save button green (tertiary-container)
+  static const Color permissionsGreen = Color(0xFF006F56);
+
+  /// Save success state ka dark green (tertiary)
+  static const Color permissionsGreenDark = Color(0xFF002C1D);
+
+  /// "Co-Manager" badge + online dot ka light green bg
+  static const Color permissionsBadgeBackground = Color(0xFF9FF4CC);
+
+  /// Toggle row icon circle + dividers (surface-container-low)
+  static const Color permissionsChipFill = Color(0xFFF0F4F7);
+
+  /// Inactive radio + toggle track (surface-container-high)
+  static const Color permissionsInactiveFill = Color(0xFFE5E9EC);
+
+  /// Card shadow — rgba(5,63,92,0.08)
+  static const Color permissionsCardShadow = Color(0x14053F5C);
+
+  /// Header shadow — rgba(5,63,92,0.16)
+  static const Color permissionsHeaderShadow = Color(0x29053F5C);
+
+  /// Revoke button bg (error-container)
+  static const Color permissionsErrorContainer = Color(0xFFFFDAD6);
+
+  /// Revoke button text (on-error-container)
+  static const Color permissionsErrorText = Color(0xFF93000A);
+
+  /// Revoke icon red (error)
+  static const Color permissionsErrorIcon = Color(0xFFBA1A1A);
+
+  // ============================================================
+  // REPORT PREVIEW (screen design ke exact colors)
+  // Reuse: permissionsHeader, permissionsSecondary, permissionsGreen,
+  // permissionsBadgeBackground, permissionsChipFill, permissionsInactiveFill,
+  // permissionsErrorContainer/Text/Icon, background, surface
+  // ============================================================
+
+  /// Report ki bold patient name (primary #00283D)
+  static const Color reportPrimary = Color(0xFF00283D);
+
+  /// Icon boxes, divider, recipient rows, close button (surface-container)
+  static const Color reportSurfaceContainer = Color(0xFFEAEEF1);
+
+  /// Watermark icon + "Save PDF" recipient bg (surface-variant/highest)
+  static const Color reportChipHigh = Color(0xFFDFE3E6);
+
+  /// "Target met" chip text (on-tertiary-fixed)
+  static const Color reportTargetText = Color(0xFF002115);
+
+  /// Document card shadow — rgba(5,63,92,0.12)
+  static const Color reportCardShadow = Color(0x1E053F5C);
+
+  /// Header shadow — rgba(5,63,92,0.18)
+  static const Color reportHeaderShadow = Color(0x2E053F5C);
+
+  /// Share button shadow — rgba(0,111,86,0.35)
+  static const Color reportShareShadow = Color(0x59006F56);
+
+  // ============================================================
+  // SHARE SHEET (screen design ke exact colors)
+  // Reuse: permissionsHeader (title + backdrop), surface
+  // ============================================================
+
+  /// Sheet subtitle, tile labels, chevrons, Cancel (secondary teal)
+  static const Color shareSecondaryText = Color(0xFF16697A);
+
+  /// Grid icons + CSV row text + Share Now button (action green)
+  static const Color shareActionGreen = Color(0xFF006F56);
+
+  /// Grid tile + secondary row fill
+  static const Color shareTileFill = Color(0xFFF4F8FB);
+
+  /// Tile/row border, handle bar, home indicator
+  static const Color shareBorder = Color(0xFFE0E0E0);
+
+  /// Sheet ke andar ka divider (#F0F0F0)
+  static const Color shareDivider = Color(0xFFF0F0F0);
+
+  /// Share Now shadow — rgba(0,111,86,0.25)
+  static const Color shareButtonShadow = Color(0x40006F56);
+
+  /// Sheet top shadow — rgba(5,63,92,0.25)
+  static const Color shareSheetShadow = Color(0x40053F5C);
+
+  // ============================================================
+  // BUILD REPORT (config screen design ke exact colors)
+  // Reuse: permissionsHeader (chip active + primary-container),
+  // permissionsSecondary, permissionsGreen (tertiary-container),
+  // permissionsBadgeBackground (tertiary-fixed), permissionsChipFill
+  // (surface-container-low), permissionsInactiveFill
+  // (surface-container-high), reportSurfaceContainer, reportPrimary,
+  // reportChipHigh, surface
+  // ============================================================
+
+  /// Vitals icon tile bg (secondary-container #A4EBFE)
+  static const Color reportVitalsTile = Color(0xFFA4EBFE);
+
+  /// Config cards shadow — rgba(5,63,92,0.06)
+  static const Color reportConfigShadow = Color(0x0F053F5C);
+
+  /// Generate button shadow — rgba(0,111,86,0.32)
+  static const Color reportGenerateShadow = Color(0x52006F56);
+
+  // ============================================================
+  // MED ASSISTANT CHAT (screen design ke exact colors)
+  // Reuse: permissionsHeader, permissionsSecondary, permissionsGreen,
+  // permissionsErrorContainer, permissionsErrorIcon, permissionsChipFill,
+  // permissionsCardShadow, reportPrimary, reportVitalsTile,
+  // reportCardShadow, reportConfigShadow, reportGenerateShadow,
+  // surface, background
+  // ============================================================
+
+  /// Header status line (on-primary-container #7EAACC)
+  static const Color assistantOnlineText = Color(0xFF7EAACC);
+
+  /// Pending pill text + verified_user icon (on-secondary-container #1A6C7D)
+  static const Color assistantPendingText = Color(0xFF1A6C7D);
+
+  /// Insight icon tile + date-divider dot (secondary-fixed-dim #8AD1E4)
+  static const Color assistantInsightTile = Color(0xFF8AD1E4);
+
+  /// Note box + caution/disclaimer text (on-surface-variant #41474D)
+  static const Color assistantNoteText = Color(0xFF41474D);
+
+  /// Online dot + adherence sparkline (unified primary #006F56)
+  static const Color assistantLiveGreen = Color(0xFF006F56);
 }

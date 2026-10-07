@@ -9,6 +9,7 @@ import '../../core/members/member_repository.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_photo_picker.dart';
+import '../assistant/assistant_chat_screen.dart';
 import '../doctors/doctors_screen.dart';
 import '../meds/meds_screen.dart';
 import '../../features/profile/profiles_screen.dart';
@@ -441,6 +442,12 @@ class _HomeScreenState extends State<HomeScreen> {
         .push(MaterialPageRoute(builder: (_) => const ProfilesScreen()));
   }
 
+  void _openAssistant() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AssistantChatScreen()),
+    );
+  }
+
   // ============================================================
   // FAMILY MEMBER SWITCH
   // ============================================================
@@ -607,6 +614,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _QuickAccessSection(
             onVitalsTap: _openVitals,
             onDoctorsTap: _openDoctors,
+            onAssistantTap: _openAssistant,
             onProfilesTap: _openProfiles,
           ),
 
@@ -1108,11 +1116,13 @@ class _QuickAccessSection extends StatelessWidget {
   const _QuickAccessSection({
     required this.onVitalsTap,
     required this.onDoctorsTap,
+    required this.onAssistantTap,
     required this.onProfilesTap,
   });
 
   final VoidCallback onVitalsTap;
   final VoidCallback onDoctorsTap;
+  final VoidCallback onAssistantTap;
   final VoidCallback onProfilesTap;
 
   static const List<({IconData icon, String label})> _items = [
@@ -1130,6 +1140,11 @@ class _QuickAccessSection extends StatelessWidget {
 
     if (index == 1) {
       onDoctorsTap();
+      return;
+    }
+
+    if (index == 2) {
+      onAssistantTap();
       return;
     }
 

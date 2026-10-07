@@ -7,6 +7,8 @@ import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'invites_data.dart';
+import 'member_permissions_data.dart';
+import 'member_permissions_screen.dart';
 
 /// ============================================================
 /// INVITE MEMBER
@@ -380,6 +382,13 @@ class _InviteMemberScreenState extends State<InviteMemberScreen> {
         const SizedBox(height: 14),
 
         // ======================================================
+        // ADVANCED PERMISSIONS → MemberPermissionsScreen
+        // ======================================================
+        _buildAdvancedPermissionsButton(),
+
+        const SizedBox(height: 14),
+
+        // ======================================================
         // MANAGED BY ME — dependents ke liye
         // ======================================================
         _buildManagedByMeCard(),
@@ -709,6 +718,83 @@ class _InviteMemberScreenState extends State<InviteMemberScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // ADVANCED PERMISSIONS — link to MemberPermissionsScreen
+  // ============================================================
+
+  Widget _buildAdvancedPermissionsButton() {
+    return GestureDetector(
+      onTap: _openMemberPermissions,
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.formAccent.withValues(alpha: 0.45),
+            width: 1.1,
+          ),
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.manage_accounts_outlined,
+              size: 19,
+              color: AppColors.formAccent,
+            ),
+
+            SizedBox(width: 10),
+
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Advanced Permissions',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+
+                  SizedBox(height: 1),
+                  Text(
+                    'Visibility toggles, reports & revoke access',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.fieldHint,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openMemberPermissions() {
+    Navigator.of(context).push(
+      MaterialPageRoute<bool>(
+        builder: (_) => MemberPermissionsScreen(
+          initialAccessLevel: _permissionLevel == PermissionLevel.viewer
+              ? AccessLevel.viewer
+              : AccessLevel.coManager,
         ),
       ),
     );
