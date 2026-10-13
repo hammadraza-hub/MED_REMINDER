@@ -4,6 +4,7 @@ import 'core/constants/app_colors.dart';
 import 'features/home/home_screen.dart';
 import 'features/meds/meds_screen.dart';
 import 'features/calendar/calendar_screen.dart';
+import 'features/settings/settings_screen.dart';
 import 'widgets/app_bottom_navigation.dart';
 
 /// ============================================================
@@ -54,7 +55,7 @@ class _MedRemindShellState extends State<MedRemindShell> {
     MedsScreen(),
     CalendarScreen(),
     _PlaceholderTab(title: 'Reports', icon: Icons.bar_chart_rounded),
-    _PlaceholderTab(title: 'Settings', icon: Icons.settings_rounded),
+    SettingsScreen(),
   ];
 
   @override

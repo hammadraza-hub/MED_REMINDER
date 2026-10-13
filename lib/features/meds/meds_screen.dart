@@ -11,6 +11,8 @@ import '../../core/medications/medication_schedule_repository.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../widgets/app_avatar.dart';
 import 'add_medication_screen.dart';
+import 'allergies_data.dart';
+import 'allergies_screen.dart';
 import 'discontinue_medication_screen.dart';
 import 'edit_medication_screen.dart';
 import 'inventory_data.dart';
@@ -749,6 +751,24 @@ class _MedsScreenState extends State<MedsScreen> {
         .push(MaterialPageRoute(builder: (_) => const SideEffectsScreen()));
   }
 
+  // ================= ALLERGIES =================
+
+  Future<void> _openAllergies() async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const AllergiesScreen()));
+
+    if (!mounted) {
+      return;
+    }
+
+    // Existing AllergiesData in-memory updates ke liye rebuild.
+    //
+    // TODO Local Storage:
+    // Allergies repository stream migration ke baad manual
+    // setState ki zarurat nahi hogi.
+    setState(() {});
+  }
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
@@ -927,10 +947,8 @@ class _MedsScreenState extends State<MedsScreen> {
                 child: _ManageTile(
                   icon: Icons.shield_outlined,
                   label: 'Allergies',
-                  count: '${MedsData.allergiesCount()}',
-                  onTap: () {
-                    _showMessage('Allergies — coming soon');
-                  },
+                  count: '${AllergiesData.countFor(ProfileController.instance.memberId)}',
+                  onTap: _openAllergies,
                 ),
               ),
 

@@ -1,8 +1,8 @@
 # 📋 AUDIT REPORT — MedRemind (med_remind_app)
 
-**Scope:** Poora `lib/` (86 Dart files, ~48,000 lines, 174 TODO markers) + pubspec + README
-**Date:** 2026-10-07
-**Verdict:** UI-wise mazboot prototype, lekin **production-ready nahi** — data layer adhoora, auth/notifications fake, navigation mein structural bugs.
+**Scope:** Poora `lib/` (**139 Dart files, ~71,241 lines, 241 TODO/FIXME markers**) + pubspec + tests + assets
+**Date:** 2026-10-13 (previous audit 2026-10-07 covered 86 files / ~48k lines)
+**Verdict:** UI/product polish tez hai (paywall funnel, settings, localization infra add ho chuki), lekin **production-ready nahi** — core reminder feature, real auth, aur 80% data persistence ab bhi missing. Naya sabse bada debt: **localization adhoora**.
 
 ---
 
@@ -10,174 +10,153 @@
 
 | Area | Score | Comment |
 |---|---|---|
-| UI/Design system | 8/10 | `AppColors` centralization achhi, components reusable |
-| Architecture | 6/10 | Repository pattern sahi hai, lekin adha implement |
-| Data persistence | 3/10 | Sirf meds/members/profile save; baqi sab dummy |
-| Navigation | 4/10 | Shell pattern sahi, par 24 jagah duplicate shell bug |
-| Code quality | 5/10 | Consistent style, par duplication + dead code bahut |
+| UI/Design system | 8/10 | `AppColors` centralization mazboot; naye screens bhi convention follow karte hain |
+| Architecture | 6/10 | Repository pattern sahi, lekin sirf 4 resources ke liye |
+| Data persistence | 3/10 | Sirf meds/schedules/members/profile SQLite; baqi memory-only |
+| Navigation | 7/10 | **C4 fix ho gaya** — sab detail nav ab `pushAndRemoveUntil` |
+| Code quality | 5/10 | Consistent style, par dead code + duplication + 241 TODO |
+| Localization | 4/10 | Infra + 5 languages ready, lekin **83/102 feature files** abhi hardcoded English |
 | Security/Auth | 1/10 | Koi real auth nahi |
-| Testing | 0/10 | Zero tests |
+| Testing | 1/10 | 3 smoke-test files, coverage ~0 |
 | Production readiness | 3/10 | |
 
 ---
 
-## 🔴 CRITICAL (P0 — pehle fix karo)
+## 🆕 Is Audit Ke Naye / Bade Findings
+
+### N1. 🔴 Localization debt — ab sabse bada kaam
+Infra (`l10n.yaml`, 5 ARB files, `AppLocalizations`, locale controller, RTL) **tayaar hai**, lekin migration adhoori:
+- **83 / 102** feature screens abhi `AppLocalizations` use **nahi** karte.
+- **51** direct hardcoded `Text('...')` literals (excluding `l10n/`).
+- Bahut si strings `*_data.dart` files aur constructor params mein chhupi hain (e.g. `label: 'Price'`), jo simple grep mein nahi aati.
+- Sirf ~19 feature files localized (home, dose sheet, settings, language, about, help, data-export, upgrade, compare, payment, subscription, privacy, accessibility — partial).
+→ Har screen banane ke baad usay migrate karna baaki hai; warna non-English users ko English UI milega.
+
+### N2. 🟠 Hardcoded colors (design system violations)
+`app_colors.dart` ke bahar hardcoded hex:
+| File | Count |
+|---|---|
+| `features/onboarding/create_account_screen.dart` | 18 |
+| `features/profile/health_profile_screen.dart` | 6 (badge colors) |
+| `features/profile/member_permissions_screen.dart` | 3 (alpha hex) |
+| `widgets/social_icons.dart` | 1 |
+
+Saath hi **~47** literal `Colors.white` / `Colors.black` usages (shadows, progress indicators) jinhe AppColors constant banaya ja sakta hai. `create_account_screen` sabse heavy (aur yeh file dead bhi hai — dekho N3).
+
+### N3. 🟠 Dead code ab bhi pada hai
+Orphan files (0 references):
+- `features/onboarding/splash_screen.dart`
+- `features/onboarding/create_account_screen.dart` (signup ka abandoned duplicate)
+- `features/profile/health_profile_screen.dart`
+- `features/community/community_screen.dart` (nav se wired nahi)
+- `core/theme/app_theme.dart` — **duplicate palette**, dead par dangerous
+
+Onboarding/auth chain **unreachable** hai: `splash_screen → onboarding_screen`, lekin `splash_screen` khud kisi se call nahi hota. Wahi `health_profile → notification_setup → family_setup`. Matlab pura Splash→Onboarding→Signup→Login flow dead hai (app seedha Home kholti hai).
+
+### N4. 🟠 `.env` build/security issue
+`pubspec.yaml` assets mein `.env` **bundle** kiya gaya hai:
+- `.env` gitignored hai (sahi), lekin assets mein listed hone ki wajah se **fresh clone par `flutter build` fail** hoga (file missing).
+- Agar `.env` mein real API key hai to woh **app binary ke andar chala jata hai** (extractable). Better: `--dart-define` / secure storage use karo, aur `.env` ko asset list se hatao.
+
+### N5. 🟡 Reports tab ab bhi placeholder
+`main_shell.dart:57` — `_PlaceholderTab(title: 'Reports', ...)`. Reports feature ke data/screen files maujood hain (`report_preview_*`) lekin shell se wired nahi.
+
+### N6. 🟡 Analyzer — 15 issues (0 errors)
+Baseline stable rakha ja sakta hai: 13 info + 1 warning + 1 info. Mukhya:
+- `warning`: unused import `package:flutter/material.dart` — `features/meds/add_medication_data.dart:1`
+- `deprecated_member_use`: `activeColor` → `activeThumbColor` (`add_doctor_screen.dart:597`, `invite_member_screen.dart:855`)
+- 8× `dangling_library_doc_comments` (data files)
+- 3× `unnecessary_import` (`dart:typed_data` / `dart:ui`)
+
+### N7. 🟡 Tests
+`test/` mein 3 files: `widget_test.dart`, `assistant_chat_smoke_test.dart`, `report_preview_smoke_test.dart`. **Zero** repository/OCR/parser unit tests.
+
+---
+
+## 🔴 CRITICAL (P0 — abhi bhi khule)
 
 ### C1. Reminder app mein reminder hi nahi hai
-`pubspec.yaml` mein `flutter_local_notifications` jaisa koi package hi nahi. Dose reminders, refill alerts, appointment reminders — kuch bhi schedule nahi hota. App ka core purpose missing hai.
-→ Impact: App ka naam "Med Reminder" hai but reminder feature exists hi nahi.
+`pubspec.yaml` mein `flutter_local_notifications` jaisa koi package **nahi**. Dose/refill/appointment reminders kuch bhi schedule nahi hota. *(Confirmed: 2026-10-13)*
 
 ### C2. Auth pura fake hai
-- `login_screen.dart:39` — non-empty check, phir SnackBar *"Login successful!"*. Koi credential verify nahi hota.
-- Signup — data kahin save nahi hota. Reset password — sirf `debugPrint`.
-- **Worse:** yeh pura flow (Splash→Onboarding→Signup→Login) **dead code** hai — `main.dart` isse kabhi call nahi karta. App seedha Home pe khulti hai, koi gate nahi.
+`features/auth/login_screen.dart:40-42` — non-empty check ke baad SnackBar *"Login successful!"*, koi credential verify nahi. Signup/reset bhi dummy. Yeh flow dead bhi hai (C/N3). *(Confirmed)*
 
 ### C3. Data loss — 80% features restart pe gayab
+Persistence sirf in repositories mein hai:
+`medication_repository`, `medication_schedule_repository`, `member_repository`, `profile_repository` (SQLite/Drift).
+Doses, vitals, adherence, streaks, inventory, refills, pharmacies, appointments, doctor-notes, side-effects, invites, doctors — **memory-only**.
 
-| Save hota hai (SQLite) | Sirf memory hai (restart = gayab) |
-|---|---|
-| Members, Medications, Schedules, Profile/photo | Doses, vitals, adherence, streaks, inventory, refills, pharmacies, appointments, doctor notes, side effects, invites, doctors |
-
-User "Mark Refilled" kare → restart → wapas purana count. Symptom log kare → gayab.
-
-### C4. Navigation — duplicate shell stacking (24 jagah)
-Detail screens aise karti hain:
-
-```dart
-Navigator.push(MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: 0)));
-```
-
-Har baar **naya shell** stack pe chadhta hai (purana nahi hota) → back pe stale shell, unbounded stack growth. Sahi tarika pop-to-shell ya `pushAndRemoveUntil` consistently.
+### C4. ✅ Navigation duplicate-shell bug — **FIXED**
+Pehle 24 jagah `Navigator.push(... MedRemindShell ...)` tha. Ab saare detail-screen shell navigations `pushAndRemoveUntil` use karte hain (verify kiya). Sirf `main.dart` aur `main_shell.dart` mein legit references bache hain. Yeh item close.
 
 ---
 
-## 🟠 HIGH (P1 — functional bugs)
-
-### H1. Saved vitals kabhi list/chart mein nahi aati
-`vitals_list_screen.dart` — `AddVitalsEntryScreen` se result **discard** ho jata hai (khud TODO accept kiya). Chart bhi refresh nahi hota. User form bharta hai, kuch nahi hota.
-
-### H2. Missed-dose reason persist nahi hota
-`missed_dose_reason_modal.dart` → result sirf SnackBar dikhata hai. `CalendarData.dosesForDate()` const items return karta hai bina reason ke → "Tap to update" kabhi saved reason dikha nahi sakta.
-
-### H3. Edit Medication stable ID nahi rakhta
-`EditMedicationScreen` ko display strings milti hain (`medicineName, strength...`), **`medicationId` nahi** → edits SQLite mein round-trip nahi hote (`meds_screen.dart` ka khud TODO).
-
-### H4. Member switching inconsistent
-
-| Data | `memberId` se filter? |
-|---|---|
-| Doctors, members, meds, profile | ✅ Haan |
-| Home doses, calendar, vitals, adherence, streaks | ❌ Nahi |
-
-Mom pe switch karo → Doctors khali ho jate hain, Home pe Sarah ke doses dikhte rehte hain.
-
-### H5. Medication lists alag-alag (4 sources)
-Home=5 meds, Calendar=3, Adherence=4, AddDoctor=3 — koi shared source nahi. Same app mein user ko alag med lists dikhti hain.
-
-### H6. Health profile data throw-away
-`health_profile_screen.dart` — conditions/allergies input liya, aage pass hi nahi kiya, save kahin nahi. (Aur yeh screen bhi dead code hai.)
-
-### H7. `FamilySetupScreen` navigation bug
-`pushAndRemoveUntil(HomeScreen())` — seedha HomeScreen push karti hai **MedRemindShell nahi** → bottom bar gayab (agar yeh kabhi launch ho).
+## 🟠 HIGH (P1 — functional bugs, mostly prior findings, largely still open)
+- **H1** Saved vitals list/chart mein nahi aati (result discard).
+- **H2** Missed-dose reason persist nahi hota.
+- **H3** `EditMedicationScreen` ko `medicationId` nahi milta → edits round-trip nahi.
+- **H4** Member switching inconsistent (doctors/meds/profile filter, home/calendar/vitals nahi).
+- **H5** Medication lists 4 different sources (Home/Calendar/Adherence/AddDoctor).
+- **H6** Health profile data throw-away (aur screen dead).
+- **H7** `FamilySetupScreen` nav bug (`pushAndRemoveUntil(HomeScreen())`, shell nahi).
 
 ---
 
-## 🟡 MEDIUM (P2 — quality/maintainability)
-
-### M1. Dead code — ~10 files / pura auth+setup flow
-`splash_screen`, `onboarding_screen`, `create_account_screen`, `health_profile_screen`, `notification_setup_screen`, `family_setup_screen`, `app_theme.dart` — sab unreferenced. `create_account_screen` = `signup_screen` ka abandoned duplicate (hardcoded hex ke saath, empty button).
-
-### M2. Design system violations
-- `create_account_screen.dart` — 18 hardcoded hex
-- `health_profile_screen.dart` — 6 hardcoded hex
-- `app_theme.dart` ek **doosra hi palette** (`#006B4D` vs `AppColors.primary #007A5E`) — dead par dangerous
-- Duplicate constants: `streakGreen`==`streakFlame`, `inventoryWarning`==`inventoryLow`
-
-### M3. Duplication — refactor candidates
-- 4 dose-status enums (`DoseStatus`, `DoseHistoryStatus`, `StreakDoseStatus` [dead], `AdherenceDoseStatus`)
-- 2 vital-type enums (`VitalType` vs `AddVitalType`)
-- Medicine-image `switch` ×4, `_medicineTypeIcon` ×3, date/time formatters ×6+
-- Dark header code copy-paste (Profiles vs Invite)
-- Responsive tablet math copy-paste 4+ files mein
-
-### M4. Performance smells
-- `adherence_detail_screen` + `streaks_stats_screen` — getters har build pe 365-day dummy history regenerate karte hain (3+ baar per build)
-- `calendar_screen` — `dosesForDate` har build pe re-generate
-- Regex loops in OCR parsing per-line re-compile
-
-### M5. Fake async / misleading UI
-- `Future.delayed(300–400ms)` = fake network spinner (invite, vitals, doctor, appointment save)
-- "Smart Caregiver Alert — reminder scheduled automatically" → kuch schedule nahi hota
-- "HIPAA-compliant encryption" banner → koi encryption nahi
-- "Caregiver Real-time Sync" → hardcoded `true`
-
-### M6. Schema issues
-- `Medications.linkedPharmacyId` — FK **bina** `.references()` (sirf yeh wala FK)
-- `scheduleType` ke 2 alag vocabularies: `daily/specificDays/interval` (DB) vs `daily/specific_days/cyclical/prn/tapering` (repo) — free-form strings, no enum
-- `watchSchedules` filters `isEnabled=true`, `getSchedules` nahi karta (asymmetric)
-- `DoseEvents` + `RefillEvents` tables bani hain, **koi repository/UI nahi**
-
-### M7. Hardcoded magic values
-`'Sarah'` default, streak `12`, goal `80%` ×2, previous-period `82%`, Pulse `72 bpm`, med lists, `local_sarah*` seed IDs, `'3 notes'`, `'Sep 22'`, `'2 appointments scheduled'`, demo prefill (128/82/96/68.4).
+## 🟡 MEDIUM (P2)
+- 4 dose-status enums, 2 vital-type enums, medicine-image switch ×4, formatters ×6+ — unify karo `utils` mein.
+- Per-build 365-day dummy history regenerate (`adherence_detail`, `streaks_stats`, `calendar`).
+- Fake `Future.delayed` spinners; misleading copy ("reminder scheduled automatically", "HIPAA-compliant encryption", hardcoded sync=true).
+- Schema: `linkedPharmacyId` FK bina `.references()`; `scheduleType` do vocabularies; `DoseEvents`/`RefillEvents` tables bina repository/UI.
+- Magic values: default `'Sarah'`, streak `12`, goal `80%`, demo vitals prefill, seed IDs.
+- `main.dart:60-104` — `ListenableBuilder` wrap karte waqt body re-indent nahi hui (cosmetic).
 
 ---
 
 ## 🟢 LOW (P3 — polish)
-
-| # | Issue | Location |
-|---|---|---|
-| L1 | Leftover editor comment: `// ← YE LINE TUMHARI FILE MEIN THI HI NAHI!` | `custom_button.dart:43` |
-| L2 | Description = template default *"A new Flutter project."* | `pubspec.yaml` |
-| L3 | README markdown line ~249 ke baad toota (headings ke `#` gayab) | `README.md` |
-| L4 | `OcrService`/`CameraService` chatty `debugPrint` (raw OCR text) release mein bhi | core/services |
-| L5 | `DatabaseProvider.close()` — kabhi call nahi hota | `database_provider.dart` |
-| L6 | `sqlite3_flutter_libs ^0.6.0+eol` — upstream **end-of-life** | `pubspec.yaml` |
-| L7 | A11y: back button = bare `GestureDetector` (no 48dp touch target) | `onboarding_header.dart` |
-| L8 | Manual `hasError` flag, Form/validation integration nahi | `custom_text_field.dart` |
-| L9 | "Yesterday" sirf `day` compare karke — month boundary pe false positive | `doctor_notes_screen.dart` |
-| L10 | `day % 7` check `day % 5` **pehle** → day 35/70 partial ki jagah full "missed" | `calendar_data.dart` |
-| L11 | Signup mein `pill.png` precache hota hai par use `signup_pill2.jpg` | `signup_screen.dart` |
-| L12 | Bottom-nav `currentIndex` inconsistency: Meds children = 1, Appointments/Notes = 0 | meds feature |
+- Leftover editor comment `custom_button.dart:43`.
+- `pubspec.yaml:2` description = *"A new Flutter project."*
+- README (~503 lines) tail mein markdown/emoji encoding toota hua.
+- `sqlite3_flutter_libs ^0.6.0+eol` — upstream **end-of-life**.
+- Chatty `debugPrint` (raw OCR text) release mein.
+- `DatabaseProvider.close()` kabhi call nahi hota.
+- `day % 7` check `day % 5` se pehle (`calendar_data.dart`) → day 35/70 galat classification.
 
 ---
 
-## ✅ Achhi cheezein (yeh preserve karo)
-
-1. **Repository + contract pattern** — `abstract MedicationRepository` → `LocalMedicationRepository`, Firebase swap sirf naya implementation = UI untouched
-2. **`AppColors` ek jagah** — 150+ named colors, private constructor
-3. **Screen vs `*_data.dart` separation** — UI aur dummy data alag
-4. **Drift schema + migration** (v1→v2 upgrade working) + `AppDatabase.forTesting`
-5. **`IndexedStack` shell** — tab state preserve hoti hai
-6. **OCR pipeline** (camera → ML Kit → heuristic parser) genuinely solid — strength/name/form/frequency extraction, confidence scoring
-7. **Member isolation mechanism** (`ProfileController` + `useSelectedProfileImage:false` contract) — jab poori tarah lag jaye ga achha hoga
-8. **Idempotent seeding** — deterministic IDs se double-seed nahi hota
+## ✅ Achhi cheezein (preserve karo)
+1. **Repository + contract pattern** — Firebase swap ke liye ready.
+2. **`AppColors` ek jagah** — 200+ named colors, private constructor.
+3. **Screen vs `*_data.dart` separation.**
+4. **Drift schema + migrations** (v1→v2) + `AppDatabase.forTesting`.
+5. **`IndexedStack` shell** — tab state preserve.
+6. **OCR pipeline** (camera → ML Kit → heuristic parser) genuinely solid.
+7. **Localization infra** — `l10n.yaml` + 5 ARB + locale/RTL controller, `AppLocalizations.supportedLocales` single source of truth.
+8. **Design-system compliance naye screens mein** — Upgrade/Compare/Payment/About/Help/DataExport sab `AppColors` + convention follow karte hain (0 hardcoded hex).
 
 ---
 
-## 🗺️ Recommended Fix Roadmap
+## 🗺️ Recommended Roadmap
 
 ### Sprint 1 — Foundation (P0)
-1. Notifications package add + dose scheduling (app ka core)
-2. Navigation fix: detail screens → pop-to-shell (24 sites, ek helper banao)
-3. `DoseEvents` repository banao + home/calendar ko real data pe lagao
-4. Dead code delete karo (~10 files, 2-3k lines)
+1. **Notifications** package add + dose scheduling (app ka core).
+2. **Auth decide** karo: Firebase Auth ya guest mode + onboarding skip.
+3. **Dead code delete** (~5 files: splash, create_account, health_profile, app_theme, community ya wire karo).
+4. `DoseEvents`/`RefillEvents` repository banao; home/calendar ko real data pe lagao.
 
-### Sprint 2 — Data integrity (P1)
-5. Vitals/missed-reason/invite results persist karo
-6. `EditMedicationScreen` ko `medicationId` do
-7. Shared `MedicationRepository` se Home/Calendar/Adherence ki lists unify karo
-8. Har feature data ko `memberId` se filter karo
+### Sprint 2 — Localization (P0/P1) — naya priority
+5. Har feature ko `AppLocalizations` pe migrate karo — 83 files pending; data-file strings bhi.
+6. Hardcoded hex (N2) → `AppColors` constants.
 
-### Sprint 3 — Quality (P2)
-9. Enums unify (4 dose-status → 1), formatters/icon helpers ek `utils` file mein
-10. Hardcoded hex hatao, `app_theme.dart` delete ya merge karo
-11. Fake delays/`Future.delayed` hatao, misleading UI copy sahi karo
-12. Pehle 10-15 unit tests (repositories + OCR parser)
+### Sprint 3 — Data integrity (P1)
+7. Vitals/missed-reason/invite results persist karo.
+8. `EditMedicationScreen` ko `medicationId` do.
+9. Shared `MedicationRepository` se Home/Calendar/Adherence unify; sab `memberId` se filter.
 
-### Sprint 4 — Release (P1/P3)
-13. Auth decide karo: Firebase Auth ya onboarding skip + guest mode
-14. README fix, pubspec description, eol dependency upgrade
+### Sprint 4 — Quality & Release
+10. Enums/formatters unify; fake delays hatao; analyzer warnings clear karo.
+11. `.env` asset list se hatao (`--dart-define`/secure storage); eol dependency upgrade; README/pubspec fix.
+12. Pehle 10–15 unit tests (repositories + OCR parser).
 
 ---
 
-**Bottom line:** Design system aur architecture ki neev achhi hai, lekin app abhi **UI demo** hai — 80% data dummy hai, core "reminder" feature missing hai, aur navigation mein ek structural bug hai. Sprint 1 ke 4 points agar kar lo, app usable ban jayegi.
+**Bottom line:** Pichhle audit ke baad UI aur navigation behtar hue (C4 fix, naye funnel screens, localization infra). Lekin app abhi bhi **UI demo** hai — reminder feature, real auth, aur 80% persistence missing, aur ab **localization migration** sabse bada baaki kaam hai. Sprint 1 + localization ko pehle nipta lo to app usable ban jayegi.

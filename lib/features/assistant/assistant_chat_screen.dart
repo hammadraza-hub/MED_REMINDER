@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/ai_service.dart';
 import 'assistant_chat_data.dart';
+import 'assistant_context.dart';
+import 'assistant_history_screen.dart';
 
 /// ============================================================
 /// MED ASSISTANT CHAT THREAD
@@ -13,18 +16,19 @@ import 'assistant_chat_data.dart';
 ///
 /// FLOW:
 /// Home → Quick Access "AI Assist" → [CHAT THREAD]
-///   • Seed thread: greeting, missed-dose answer + insight card
+///   • Thread khaali start hota hai — sirf user ke messages.
 ///   • Suggested chip tap → sawaal auto-send
-///   • Type + send → user bubble + 450ms dummy AI reply
-/// History button → Chat History List (pending screen).
+///   • Type + send → user bubble + real AI reply (Gemini)
+///   • AI ko user ka real data (meds, dose time, refill) diya jata hai
+/// History button → Chat History List.
 ///
 /// NOTE:
 /// Design mein bottom nav NAHI hai — input area bottom par
 /// sticky hai, back button se pop hota hai.
 ///
 /// TODO Backend:
-/// AI reply (logged data + model), voice input aur chat history
-/// backend par depend karte hain.
+/// AI reply (logged data + model) aur voice input backend par
+/// depend karte hain.
 /// ============================================================
 class AssistantChatScreen extends StatefulWidget {
   const AssistantChatScreen({super.key});
@@ -34,14 +38,41 @@ class AssistantChatScreen extends StatefulWidget {
 }
 
 class _AssistantChatScreenState extends State<AssistantChatScreen> {
-  final List<AssistantMessage> _messages =
-      List.of(AssistantChatData.seedMessages);
+  /// Thread khaali start hota hai — koi dummy/seed messages nahi.
+  final List<AssistantMessage> _messages = [];
 
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  final AiService _aiService = AiService();
+
+  /// User ka real app data (meds/schedule/refill/vitals) — AI ke liye.
+  String _dataContext = '';
+  bool _contextLoaded = false;
+
   /// Ek reply pending — double-send (chip/enter) rokne ke liye.
   bool _isReplying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContext();
+  }
+
+  /// Context ek baar load karo (screen khulte hi), background mein.
+  Future<void> _loadContext() async {
+    try {
+      final context = await AssistantContext.build();
+      if (!mounted) return;
+      setState(() {
+        _dataContext = context;
+        _contextLoaded = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _contextLoaded = true);
+    }
+  }
 
   @override
   void dispose() {
@@ -51,12 +82,21 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
   }
 
   // ============================================================
-  // SEND + DUMMY AI REPLY
+  // SEND + AI REPLY (Google Gemini)
   // ============================================================
 
-  void _sendText(String raw) {
+  Future<void> _sendText(String raw) async {
     final String text = raw.trim();
     if (text.isEmpty || _isReplying) return;
+
+    // AI ko bhejne se pehle ka conversation context.
+    final List<AiChatTurn> history = [
+      for (final message in _messages)
+        AiChatTurn(
+          isUser: message.role == AssistantMessageRole.user,
+          text: message.text,
+        ),
+    ];
 
     _inputController.clear();
     setState(() {
@@ -71,23 +111,38 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
     });
     _scrollToBottom();
 
-    // TODO Backend:
-    // User ke sawaal ka asli AI answer (logged data + model) yahan aayega.
-    Future.delayed(const Duration(milliseconds: 450), () {
-      if (!mounted) return;
-      setState(() {
-        _isReplying = false;
-        _messages.add(
-          const AssistantMessage(
-            role: AssistantMessageRole.assistant,
-            text: AssistantChatData.dynamicReply,
-            time: 'Just now',
-            boldSegment: AssistantChatData.dynamicReplyBold,
-          ),
-        );
-      });
-      _scrollToBottom();
+    // Context pehli baar load ho raha ho to wait karo.
+    if (!_contextLoaded) {
+      await _loadContext();
+    }
+
+    String replyText;
+    try {
+      replyText = await _aiService.sendMessage(
+        message: text,
+        history: history,
+        context: _dataContext,
+      );
+    } on AiServiceException catch (error) {
+      replyText = error.message;
+    } catch (_) {
+      replyText =
+          'Something went wrong while contacting the AI. Please try again.';
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isReplying = false;
+      _messages.add(
+        AssistantMessage(
+          role: AssistantMessageRole.assistant,
+          text: replyText,
+          time: 'Just now',
+        ),
+      );
     });
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -104,12 +159,9 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
   // ---- Pending destinations (screens abhi nahi bane) ----
 
   void _openChatHistory() {
-    // TODO Backend: Chat History List screen aayegi.
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(content: Text('Chat History — coming next')),
-      );
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AssistantHistoryScreen()),
+    );
   }
 
   void _onVoiceInput() {
@@ -297,6 +349,11 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
       items.add(_buildMessageItem(_messages[i]));
     }
 
+    if (_isReplying) {
+      items.add(const SizedBox(height: 16));
+      items.add(_buildTypingIndicator());
+    }
+
     items.add(const SizedBox(height: 16));
     items.add(_buildSuggestedSection());
     items.add(const SizedBox(height: 12));
@@ -349,6 +406,63 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
     return message.role == AssistantMessageRole.user
         ? _buildUserMessage(message)
         : _buildAssistantMessage(message);
+  }
+
+  // ---- "AI is typing" indicator ----
+
+  Widget _buildTypingIndicator() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            margin: const EdgeInsets.only(bottom: 4),
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.permissionsCardShadow,
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.smart_toy,
+              size: 16,
+              color: AppColors.permissionsSecondary,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+                bottomLeft: Radius.circular(4),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.permissionsCardShadow,
+                  blurRadius: 4,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 2),
+              child: _TypingDots(color: AppColors.permissionsSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // ---- Assistant bubble (avatar + timestamp + optional insight) ----
@@ -747,14 +861,15 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
 
         const SizedBox(height: 8),
 
-        SizedBox(
-          height: 40,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: AssistantChatData.prompts.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, index) =>
-                _buildPromptChip(AssistantChatData.prompts[index]),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (var i = 0; i < AssistantChatData.prompts.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                _buildPromptChip(AssistantChatData.prompts[i]),
+              ],
+            ],
           ),
         ),
       ],
@@ -1034,5 +1149,71 @@ class _SparklinePainter extends CustomPainter {
   @override
   bool shouldRepaint(_SparklinePainter oldDelegate) {
     return oldDelegate.color != color;
+  }
+}
+
+/// ============================================================
+/// TYPING DOTS
+///
+/// AI reply pending hone par "[ • • • ]" wali animated 3-dot
+/// loading (circular spinner ki jagah). Dots staggered pulse
+/// (opacity + up-down) karte hain.
+/// ============================================================
+class _TypingDots extends StatefulWidget {
+  const _TypingDots({required this.color});
+
+  final Color color;
+
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1000),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (index) {
+            // Har dot thoda offset se pulse kare.
+            final double phase = (_controller.value + index * 0.2) % 1.0;
+            final double wave = (phase * 2 - 1).abs(); // 1 → 0 → 1
+            final double lift = (1 - wave) * 3;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2.5),
+              child: Opacity(
+                opacity: 0.4 + (1 - wave) * 0.6,
+                child: Transform.translate(
+                  offset: Offset(0, -lift),
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: widget.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    );
   }
 }

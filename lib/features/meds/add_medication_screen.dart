@@ -6,6 +6,8 @@ import '../../main_shell.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_avatar.dart';
 import 'add_medication_data.dart';
+import 'interaction_warning_data.dart';
+import 'interaction_warning_screen.dart';
 import 'scan_label_screen.dart';
 import 'add_manual_screen.dart';
 
@@ -66,15 +68,31 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   }
 
   // ================= ACTIONS =================
-  void _selectMedicine(MedSearchResult med) {
+  Future<void> _selectMedicine(MedSearchResult med) async {
     // TODO Backend:
-    // Selected FDA medication should later be passed into the
-    // medication setup flow and saved for the current user/family member.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${med.name} ${med.strength} selected — details next!'),
+    // Interaction engine / rules se check karna hai ke selected
+    // medication user ki current medications se interact karti hai
+    // ya nahi. Abhi demo ke liye warning hamesha dikha rahe hain.
+    final action = await Navigator.of(context).push<InteractionWarningAction>(
+      MaterialPageRoute(
+        builder: (_) => const InteractionWarningScreen(
+          data: InteractionWarningData.sample,
+        ),
       ),
     );
+
+    if (!mounted || action == null) return;
+
+    if (action == InteractionWarningAction.proceed) {
+      // TODO Backend:
+      // Selected FDA medication ko medication setup flow mein pass
+      // karke current user/family member ke liye save karna hai.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${med.name} ${med.strength} selected — details next!'),
+        ),
+      );
+    }
   }
 
   void _scanLabel() {

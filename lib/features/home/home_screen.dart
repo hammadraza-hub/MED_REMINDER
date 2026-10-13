@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/members/local_member_repository.dart';
 import '../../core/members/member_repository.dart';
 import '../../core/profile/profile_controller.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_photo_picker.dart';
 import '../assistant/assistant_chat_screen.dart';
@@ -59,7 +60,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _selectedFilter = 'All';
+  // Internal filter codes — display labels localization se aate hain.
+  String _selectedFilter = 'all';
 
   final MemberRepository _memberRepository = LocalMemberRepository();
 
@@ -137,10 +139,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Dose> get _filteredDoses {
     switch (_selectedFilter) {
-      case 'Pending':
+      case 'pending':
         return _doses.where((d) => d.status == DoseStatus.pending).toList();
 
-      case 'Taken':
+      case 'taken':
         return _doses.where((d) => d.status == DoseStatus.taken).toList();
 
       default:
@@ -345,9 +347,13 @@ class _HomeScreenState extends State<HomeScreen> {
     // TODO Backend:
     // Firebase repository later same domain action persist karegi.
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('${dose.name} marked as taken ✓')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context).homeMarkedTaken(dose.name),
+        ),
+      ),
+    );
   }
 
   void _markUntaken(Dose dose) {
@@ -358,7 +364,11 @@ class _HomeScreenState extends State<HomeScreen> {
     // Adherence/streak raw DoseEvents se recalculate honge.
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${dose.name} marked as untaken 🔄')),
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context).homeMarkedUntaken(dose.name),
+        ),
+      ),
     );
   }
 
@@ -369,12 +379,14 @@ class _HomeScreenState extends State<HomeScreen> {
     // Existing DoseEvent mein status=skipped, optional reason aur
     // action timestamp persist karna hai.
 
+    final l10n = AppLocalizations.of(context);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           reason == null
-              ? '${dose.name} skipped'
-              : '${dose.name} skipped — $reason',
+              ? l10n.homeSkipped(dose.name)
+              : l10n.homeSkippedReason(dose.name, reason),
         ),
       ),
     );
@@ -388,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${dose.name} snoozed — $minutes min mein phir reminder!',
+          AppLocalizations.of(context).homeSnoozed(dose.name, minutes),
         ),
       ),
     );
@@ -443,9 +455,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openAssistant() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AssistantChatScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const AssistantChatScreen()));
   }
 
   // ============================================================
@@ -482,7 +493,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text("Switched to ${member.displayName}'s medicines"),
+          content: Text(
+            AppLocalizations.of(context).homeSwitchedMember(member.displayName),
+          ),
         ),
       );
   }
@@ -540,14 +553,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    final greeting = switch (HomeData.greetingBucket()) {
+      'morning' => l10n.homeGreetingMorning,
+      'afternoon' => l10n.homeGreetingAfternoon,
+      _ => l10n.homeGreetingEvening,
+    };
+
+    // MaterialLocalizations current locale ke hisab se date deta hai.
+    final dateLabel = MaterialLocalizations.of(
+      context,
+    ).formatFullDate(DateTime.now());
+
     return Scaffold(
       backgroundColor: AppColors.background,
 
       body: Column(
         children: [
           _HomeHeader(
-            greeting: HomeData.greeting(),
-            dateLabel: HomeData.dateLabel(),
+            greeting: greeting,
+            dateLabel: dateLabel,
             streakDays: HomeData.streakDays(),
             selectedMemberImagePath: _selectedMemberImagePath,
             selectedMemberName: _selectedMemberName,
@@ -597,6 +623,16 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============================================================
 
   Widget _buildHomeContent() {
+    final l10n = AppLocalizations.of(context);
+
+    String filterLabel(String code) {
+      return switch (code) {
+        'pending' => l10n.homeFilterPending,
+        'taken' => l10n.homeFilterTaken,
+        _ => l10n.homeFilterAll,
+      };
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 90),
       child: Column(
@@ -622,21 +658,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  "Today's Schedule",
-                  style: TextStyle(
+                  l10n.homeTodaySchedule,
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.formAccent,
                   ),
                 ),
               ),
-              for (final filter in ['All', 'Pending', 'Taken'])
+              for (final filter in ['all', 'pending', 'taken'])
                 Padding(
                   padding: const EdgeInsets.only(left: 5),
                   child: _FilterChip(
-                    label: filter,
+                    label: filterLabel(filter),
                     isSelected: filter == _selectedFilter,
                     onTap: () {
                       setState(() {
@@ -709,6 +745,8 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: AppColors.transparent,
@@ -749,7 +787,9 @@ class _HomeHeader extends StatelessWidget {
 
                   Expanded(
                     child: Text(
-                      '$greeting, $selectedMemberName 👋',
+                      l10n.homeGreetingWithName(greeting, selectedMemberName),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.surface,
                         fontSize: 15,
@@ -862,7 +902,7 @@ class _HomeHeader extends StatelessWidget {
                             const SizedBox(width: 4),
 
                             Text(
-                              '$streakDays Day Streak',
+                              l10n.homeDayStreak(streakDays),
                               style: const TextStyle(
                                 color: AppColors.surface,
                                 fontSize: 12,
@@ -973,7 +1013,7 @@ class _AddMemberButton extends StatelessWidget {
           const SizedBox(height: 4),
 
           Text(
-            'Add',
+            AppLocalizations.of(context).homeAdd,
             style: TextStyle(
               color: AppColors.surface.withValues(alpha: 0.70),
               fontSize: 12,
@@ -1004,6 +1044,8 @@ class _ProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       height: 96,
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1052,9 +1094,9 @@ class _ProgressCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    const Text(
-                      'Daily',
-                      style: TextStyle(
+                    Text(
+                      l10n.homeDaily,
+                      style: const TextStyle(
                         color: AppColors.formAccent,
                         fontSize: 11,
                       ),
@@ -1073,11 +1115,11 @@ class _ProgressCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _dotStat(AppColors.success, '$taken Taken'),
+                _dotStat(AppColors.success, l10n.homeStatTaken(taken)),
                 const SizedBox(height: 8),
-                _dotStat(AppColors.accentOrange, '$pending Pending'),
+                _dotStat(AppColors.accentOrange, l10n.homeStatPending(pending)),
                 const SizedBox(height: 8),
-                _dotStat(AppColors.error, '$missed Missed'),
+                _dotStat(AppColors.error, l10n.homeStatMissed(missed)),
               ],
             ),
           ),
@@ -1125,12 +1167,21 @@ class _QuickAccessSection extends StatelessWidget {
   final VoidCallback onAssistantTap;
   final VoidCallback onProfilesTap;
 
-  static const List<({IconData icon, String label})> _items = [
-    (icon: Icons.monitor_heart_outlined, label: 'Vitals'),
-    (icon: Icons.medical_services_outlined, label: 'Doctors'),
-    (icon: Icons.auto_awesome, label: 'AI Assist'),
-    (icon: Icons.groups_2_outlined, label: 'Family'),
+  static const List<String> _images = [
+    'assets/images/vitals.png',
+    'assets/images/doctors.png',
+    'assets/images/AI_assets.png',
+    'assets/images/family.png',
   ];
+
+  String _itemLabel(AppLocalizations l10n, int index) {
+    return switch (index) {
+      0 => l10n.homeQuickVitals,
+      1 => l10n.homeQuickDoctors,
+      2 => l10n.homeQuickAI,
+      _ => l10n.homeQuickFamily,
+    };
+  }
 
   void _onItemTap(BuildContext context, int index) {
     if (index == 0) {
@@ -1152,24 +1203,20 @@ class _QuickAccessSection extends StatelessWidget {
       onProfilesTap();
       return;
     }
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('${_items[index].label} screen coming next.')),
-      );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       children: [
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'QUICK ACCESS',
-              style: TextStyle(
+              l10n.homeQuickAccess,
+              style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -1177,8 +1224,11 @@ class _QuickAccessSection extends StatelessWidget {
               ),
             ),
             Text(
-              'Shortcuts',
-              style: TextStyle(color: AppColors.formAccent, fontSize: 13),
+              l10n.homeShortcuts,
+              style: const TextStyle(
+                color: AppColors.formAccent,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -1187,7 +1237,7 @@ class _QuickAccessSection extends StatelessWidget {
 
         Row(
           children: [
-            for (var i = 0; i < _items.length; i++) ...[
+            for (var i = 0; i < _images.length; i++) ...[
               if (i != 0) const SizedBox(width: 7),
 
               Expanded(
@@ -1209,24 +1259,17 @@ class _QuickAccessSection extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: Icon(
-                            _items[i].icon,
-                            color: AppColors.textPrimary,
-                            size: 20,
-                          ),
+                        Image.asset(
+                          _images[i],
+                          width: 36,
+                          height: 36,
+                          fit: BoxFit.contain,
                         ),
 
                         const SizedBox(height: 5),
 
                         Text(
-                          _items[i].label,
+                          _itemLabel(l10n, i),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1310,6 +1353,8 @@ class _DoseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     final isTaken = dose.status == DoseStatus.taken;
     final isSkipped = dose.status == DoseStatus.skipped;
     final isPending = dose.status == DoseStatus.pending;
@@ -1385,7 +1430,7 @@ class _DoseCard extends StatelessWidget {
                       const SizedBox(height: 4),
 
                       Text(
-                        dose.details,
+                        dose.localizedDetails(l10n),
                         style: const TextStyle(
                           color: AppColors.formSubtitle,
                           fontSize: 12,
@@ -1433,7 +1478,7 @@ class _DoseCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _actionButton(
-                      '✓ Taken',
+                      '✓ ${l10n.homeActionTaken}',
                       filled: true,
                       onTap: onTaken,
                     ),
@@ -1442,13 +1487,19 @@ class _DoseCard extends StatelessWidget {
                   const SizedBox(width: 7),
 
                   Expanded(
-                    child: _actionButton('Skip', onTap: () => onSkip(null)),
+                    child: _actionButton(
+                      l10n.homeActionSkip,
+                      onTap: () => onSkip(null),
+                    ),
                   ),
 
                   const SizedBox(width: 7),
 
                   Expanded(
-                    child: _actionButton('Snooze', onTap: () => onSnooze(10)),
+                    child: _actionButton(
+                      l10n.homeActionSnooze,
+                      onTap: () => onSnooze(10),
+                    ),
                   ),
                 ],
               ),
@@ -1476,8 +1527,7 @@ class _DoseCard extends StatelessWidget {
 
                     Expanded(
                       child: Text(
-                        '${dose.name} running low · '
-                        '${dose.daysLeft} days left',
+                        l10n.homeRunningLow(dose.name, dose.daysLeft),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -1493,9 +1543,9 @@ class _DoseCard extends StatelessWidget {
                         // Inventory/refill repository ke through
                         // selected medication refill flow open karna.
                       },
-                      child: const Text(
-                        'Refill →',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.homeRefill,
+                        style: const TextStyle(
                           color: AppColors.hintAccent,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -1510,9 +1560,9 @@ class _DoseCard extends StatelessWidget {
             if (isSkipped) ...[
               const SizedBox(height: 8),
 
-              const Text(
-                'Skipped — kal se phir reminder aayega',
-                style: TextStyle(
+              Text(
+                l10n.homeSkippedNote,
+                style: const TextStyle(
                   color: AppColors.error,
                   fontSize: 11,
                   fontStyle: FontStyle.italic,
@@ -1564,33 +1614,35 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     switch (status) {
       case DoseStatus.pending:
         return _badge(
           background: AppColors.pendingBackground,
           foreground: AppColors.statusPendingText,
-          text: 'PENDING',
+          text: l10n.homeStatusPending,
         );
 
       case DoseStatus.taken:
         return _badge(
           background: AppColors.successBackground,
           foreground: AppColors.success,
-          text: '✓ TAKEN',
+          text: '✓ ${l10n.homeStatusTaken}',
         );
 
       case DoseStatus.upcoming:
         return _badge(
           background: AppColors.successBackground,
           foreground: AppColors.formAccent,
-          text: 'UPCOMING',
+          text: l10n.homeStatusUpcoming,
         );
 
       case DoseStatus.skipped:
         return _badge(
           background: AppColors.hintBackground,
           foreground: AppColors.hintAccent,
-          text: 'SKIPPED',
+          text: l10n.homeStatusSkipped,
         );
     }
   }

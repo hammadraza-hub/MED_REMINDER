@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import 'home_data.dart';
@@ -91,6 +92,7 @@ class _DoseActionSheetState extends State<_DoseActionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final dose = widget.dose;
     final isTaken = dose.status == DoseStatus.taken;
 
@@ -159,7 +161,7 @@ class _DoseActionSheetState extends State<_DoseActionSheet> {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          dose.details,
+                          dose.localizedDetails(l10n),
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.formSubtitle,
@@ -177,7 +179,9 @@ class _DoseActionSheetState extends State<_DoseActionSheet> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              isTaken ? dose.time : '${dose.time} · Due soon',
+                              isTaken
+                                  ? dose.time
+                                  : l10n.doseDueSoon(dose.time),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -205,7 +209,7 @@ class _DoseActionSheetState extends State<_DoseActionSheet> {
                       borderRadius: BorderRadius.circular(7),
                     ),
                     child: Text(
-                      isTaken ? 'TAKEN' : 'PENDING',
+                      isTaken ? l10n.homeStatusTaken : l10n.homeStatusPending,
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -222,14 +226,14 @@ class _DoseActionSheetState extends State<_DoseActionSheet> {
               // ===== MAIN BUTTON — taken? Untaken(undo) : Taken =====
               isTaken
                   ? CustomButton.classic(
-                      label: 'Mark as Untaken',
+                      label: l10n.doseMarkUntaken,
                       trailingIcon: Icons.undo_rounded,
                       radius: 14,
                       elevation: 0,
                       onPressed: _untaken,
                     )
                   : CustomButton.classic(
-                      label: 'Mark as Taken',
+                      label: l10n.doseMarkTaken,
                       trailingIcon: Icons.check_rounded,
                       radius: 14,
                       elevation: 0,
@@ -243,7 +247,9 @@ class _DoseActionSheetState extends State<_DoseActionSheet> {
                   children: [
                     Expanded(
                       child: _secondaryButton(
-                        label: _showSkip ? 'Hide Reason' : 'Skip Dose',
+                        label: _showSkip
+                            ? l10n.doseHideReason
+                            : l10n.doseSkipDose,
                         icon: Icons.close_rounded,
                         color: AppColors.error,
                         onTap: () => setState(() {
@@ -255,7 +261,7 @@ class _DoseActionSheetState extends State<_DoseActionSheet> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _secondaryButton(
-                        label: 'Snooze',
+                        label: l10n.homeActionSnooze,
                         icon: Icons.snooze_rounded,
                         color: AppColors.formAccent,
                         onTap: () => setState(() {
@@ -270,9 +276,9 @@ class _DoseActionSheetState extends State<_DoseActionSheet> {
                 // ===== Snooze options (expand) =====
                 if (_showSnooze) ...[
                   const SizedBox(height: 14),
-                  const Text(
-                    'SNOOZE FOR',
-                    style: TextStyle(
+                  Text(
+                    l10n.doseSnoozeFor,
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1,
@@ -296,8 +302,8 @@ class _DoseActionSheetState extends State<_DoseActionSheet> {
                   const SizedBox(height: 14),
                   CustomTextField(
                     controller: _reasonController,
-                    label: 'Reason (optional)',
-                    hint: 'e.g., Feeling nauseous',
+                    label: l10n.doseReasonLabel,
+                    hint: l10n.doseReasonHint,
                     icon: Icons.notes_rounded,
                     variant: FieldVariant.bordered,
                     textInputAction: TextInputAction.done,
@@ -312,9 +318,9 @@ class _DoseActionSheetState extends State<_DoseActionSheet> {
                         color: AppColors.error,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Text(
-                        'Confirm Skip',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.doseConfirmSkip,
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,

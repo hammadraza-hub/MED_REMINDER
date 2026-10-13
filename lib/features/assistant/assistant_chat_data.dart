@@ -104,7 +104,7 @@ extension AssistantPromptLabels on AssistantPromptKind {
       };
 }
 
-/// Screen ke saare static labels + seed thread.
+/// Screen ke saare static labels.
 class AssistantChatData {
   const AssistantChatData._();
 
@@ -122,52 +122,5 @@ class AssistantChatData {
     AssistantPrompt(AssistantPromptKind.sideEffects),
     AssistantPrompt(AssistantPromptKind.streak),
     AssistantPrompt(AssistantPromptKind.nextDose),
-  ];
-
-  /// Har user message ke baad dummy AI reply (450ms delay se).
-  static const String dynamicReply =
-      'Looking at your profile: you have Metformin (500mg) scheduled at '
-      '8:00 PM today with food. You have a 4-day adherence streak going '
-      'strong!';
-  static const String dynamicReplyBold = 'Metformin (500mg)';
-
-  /// Screen khulte hi dikhne wala thread (HTML jaisa).
-  static const List<AssistantMessage> seedMessages = [
-    AssistantMessage(
-      role: AssistantMessageRole.assistant,
-      time: '9:02 AM',
-      text:
-          'Hi Sarah! I can answer questions about your medications, '
-          'schedules, and your logged data. What would you like to know?',
-    ),
-    AssistantMessage(
-      role: AssistantMessageRole.user,
-      time: '9:03 AM',
-      text: 'How many doses did I miss this week?',
-    ),
-    AssistantMessage(
-      role: AssistantMessageRole.assistant,
-      time: '9:03 AM',
-      text: 'This week you took 12 of 14 doses (86%).',
-      stats: AssistantStats(
-        pills: [
-          AssistantStatPill(label: '12 TAKEN', kind: AssistantPillKind.taken),
-          AssistantStatPill(
-            label: '1 PENDING',
-            kind: AssistantPillKind.pending,
-          ),
-          AssistantStatPill(label: '1 MISSED', kind: AssistantPillKind.missed),
-        ],
-        noteLead: 'The missed dose was ',
-        noteHighlight: 'Vitamin D3',
-        noteTail:
-            ' on Saturday evening. For clinical changes, please confirm '
-            'with your doctor.',
-      ),
-      insight: AssistantInsight(
-        title: 'Adherence Trend',
-        subtitle: '+4% better than last week',
-      ),
-    ),
   ];
 }

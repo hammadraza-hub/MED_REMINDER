@@ -158,6 +158,9 @@ class AppColors {
   /// Signup design ka action green — buttons, links, strength bars
   static const Color formAccent = Color(0xFF006F56);
 
+  /// formAccent ka halka tint — selected rows / soft green backgrounds
+  static const Color formAccentSoft = Color(0xFFE6F2ED);
+
   /// Signup input fields ka border
   static const Color fieldBorder = Color(0xFF0D7890);
 
@@ -514,4 +517,115 @@ class AppColors {
 
   /// Online dot + adherence sparkline (unified primary #006F56)
   static const Color assistantLiveGreen = Color(0xFF006F56);
+
+  /// "+ Start New Chat" button bg (action green #00694A)
+  static const Color assistantNewChatGreen = Color(0xFF00694A);
+
+  /// Start New Chat shadow — rgba(0,105,74,0.30)
+  static const Color assistantNewChatShadow = Color(0x4D00694A);
+
+  // ============================================================
+  // INTERACTION WARNING (screen design ke exact colors)
+  // Reuse: permissionsHeader, reportPrimary, shareSecondaryText
+  // (#16697A), shareTileFill (#F4F8FB), shareBorder (#E0E0E0),
+  // surface, background
+  // ============================================================
+
+  /// Severity badge + disclaimer icon (amber #F4A300)
+  static const Color interactionWarningAmber = Color(0xFFF4A300);
+
+  /// Alert badge + "Proceed Anyway" button (danger red #E53935)
+  static const Color interactionWarningRed = Color(0xFFE53935);
+
+  /// Proceed button shadow — rgba(229,57,53,0.28)
+  static const Color interactionWarningRedShadow = Color(0x47E53935);
+
+  /// "Go Back and Edit" border/text (action green #00694A)
+  static const Color interactionWarningGreen = Color(0xFF00694A);
+
+  /// Backdrop overlay — rgba(5,63,92,0.60)
+  static const Color interactionWarningScrim = Color(0x99053F5C);
+
+  /// Modal card shadow — rgba(5,63,92,0.35)
+  static const Color interactionWarningCardShadow = Color(0x59053F5C);
+
+  /// Header shadow — rgba(0,0,0,0.04)
+  static const Color interactionWarningHeaderShadow = Color(0x0A000000);
+
+  /// iOS-style home indicator — rgba(255,255,255,0.40)
+  static const Color interactionWarningHomeIndicator = Color(0x66FFFFFF);
+
+  // ============================================================
+  // ALLERGIES (screen design ke exact colors)
+  // Reuse: permissionsHeader (#053F5C header), permissionsSecondary
+  // (#136778), permissionsBadgeBackground (#9FF4CC), permissionsGreenDark
+  // (#002C1D), reportPrimary (#00283D), permissionsChipFill (#F0F4F7),
+  // permissionsErrorIcon (#BA1A1A), permissionsErrorContainer (#FFDAD6),
+  // reportVitalsTile (#A4EBFE), formAccent (#006F56 action green),
+  // shareButtonShadow (green button shadow), fieldFill, fieldHint,
+  // textSecondary, surface, background
+  // ============================================================
+
+  /// Moderate severity dot/text (on-secondary-fixed-variant #004E5C)
+  static const Color allergyModerateDot = Color(0xFF004E5C);
+
+  /// Add/Edit sheet backdrop — rgba(5,63,92,0.60)
+  static const Color allergyScrim = Color(0x99053F5C);
+
+  // ============================================================
+  // NOTIFICATIONS PREFERENCES
+  // Reuse: permissionsHeader (#053F5C header), permissionsSecondary
+  // (#136778), permissionsChipFill (#F0F4F7), reportSurfaceContainer
+  // (#EAEEF1), reportPrimary (#00283D), reportChipHigh (#DFE3E6),
+  // permissionsCardShadow, formAccent (#006F56 action green),
+  // surface, background
+  // ============================================================
+
+  /// Saved confirmation state (secondary #136778)
+  static const Color notificationsSaved = Color(0xFF136778);
+
+  // ============================================================
+  // SUBSCRIPTION (screen design ke exact colors)
+  // Reuse: permissionsHeader (#053F5C header/plan/titles), shareSecondaryText
+  // (#16697A), shareTileFill (#F4F8FB), shareBorder (#E0E0E0),
+  // shareDivider (#F0F0F0), formAccent (#006F56 action green),
+  // interactionWarningRed (#E53935 cancel), surface, background
+  // ============================================================
+
+  /// Plan badge star gold (#FFD700)
+  static const Color subscriptionGold = Color(0xFFFFD700);
+
+  // ============================================================
+  // PRIVACY & SECURITY (screen design ke exact colors)
+  // Reuse: headerDark (app bar), permissionsHeader (#053F5C titles),
+  // permissionsSecondary (#136778), permissionsChipFill (#F0F4F7 icon boxes),
+  // reportSurfaceContainer (#EAEEF1 divider), reportChipHigh (#DFE3E6 toggle off),
+  // permissionsErrorIcon (#BA1A1A sign out), formAccent (#006F56),
+  // permissionsCardShadow, surface, background
+  // ============================================================
+
+  /// Toggle knob drop shadow — rgba(0,0,0,0.10)
+  static const Color toggleKnobShadow = Color(0x1A000000);
+
+  // ============================================================
+  // LANGUAGE FLAGS (round icons — Language screen)
+  // CustomPainter se draw hote hain, is liye exact flag colors.
+  // ============================================================
+
+  static const Color flagWhite = Color(0xFFFFFFFF);
+
+  static const Color flagFranceBlue = Color(0xFF0055A4);
+  static const Color flagFranceRed = Color(0xFFEF4135);
+
+  static const Color flagSpainRed = Color(0xFFAA151B);
+  static const Color flagSpainYellow = Color(0xFFF1BF00);
+
+  static const Color flagIndiaSaffron = Color(0xFFFF9933);
+  static const Color flagIndiaGreen = Color(0xFF138808);
+  static const Color flagIndiaNavy = Color(0xFF000080);
+
+  static const Color flagUsRed = Color(0xFFB22234);
+  static const Color flagUsBlue = Color(0xFF3C3B6E);
+
+  static const Color flagSaudiGreen = Color(0xFF006C35);
 }

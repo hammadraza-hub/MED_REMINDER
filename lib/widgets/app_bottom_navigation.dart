@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import '../l10n/app_localizations.dart';
 
 /// ============================================================
 /// APP BOTTOM NAVIGATION
@@ -43,6 +44,8 @@ class AppBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
@@ -72,35 +75,35 @@ class AppBottomNavigation extends StatelessWidget {
         fontWeight: FontWeight.w500,
       ),
 
-      items: const [
+      items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home_rounded),
-          label: 'Home',
+          icon: const Icon(Icons.home_outlined),
+          activeIcon: const Icon(Icons.home_rounded),
+          label: l10n.navHome,
         ),
 
         BottomNavigationBarItem(
-          icon: Icon(Icons.medication_outlined),
-          activeIcon: Icon(Icons.medication_rounded),
-          label: 'Meds',
+          icon: const Icon(Icons.medication_outlined),
+          activeIcon: const Icon(Icons.medication_rounded),
+          label: l10n.navMeds,
         ),
 
         BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          activeIcon: Icon(Icons.calendar_month_rounded),
-          label: 'Calendar',
+          icon: const Icon(Icons.calendar_month_outlined),
+          activeIcon: const Icon(Icons.calendar_month_rounded),
+          label: l10n.navCalendar,
         ),
 
         BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_outlined),
-          activeIcon: Icon(Icons.bar_chart_rounded),
-          label: 'Reports',
+          icon: const Icon(Icons.bar_chart_outlined),
+          activeIcon: const Icon(Icons.bar_chart_rounded),
+          label: l10n.navReports,
         ),
 
         BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          activeIcon: Icon(Icons.settings_rounded),
-          label: 'Settings',
+          icon: const Icon(Icons.settings_outlined),
+          activeIcon: const Icon(Icons.settings_rounded),
+          label: l10n.navSettings,
         ),
       ],
     );
