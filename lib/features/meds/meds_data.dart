@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// ============================================================
 /// MEDS DATA — backend-ready
 /// Backend: Firebase se medicines collection — UI zero change!
@@ -7,6 +9,47 @@ import 'package:flutter/material.dart';
 
 /// Medicine type
 enum MedicineType { tablet, capsule, liquid, drops, injection }
+
+/// Medicine type ka localized form label.
+String medicineTypeLabel(AppLocalizations l10n, MedicineType type) {
+  return switch (type) {
+    MedicineType.tablet => l10n.doseFormTablet,
+    MedicineType.liquid => l10n.doseFormLiquid,
+    MedicineType.capsule => l10n.medsFormCapsule,
+    MedicineType.drops => l10n.medsFormDrops,
+    MedicineType.injection => l10n.medsFormInjection,
+  };
+}
+
+/// Frequency text ("2x daily") ko localized label banao.
+/// Parse na ho to original text hi return (fallback).
+String localizedFrequency(AppLocalizations l10n, String frequency) {
+  final match = RegExp(r'(\d+)').firstMatch(frequency);
+  final count = int.tryParse(match?.group(1) ?? '');
+  if (count == null || count < 1) return frequency;
+  return l10n.medsFrequencyDaily(count);
+}
+
+/// Dose form id ("Tablet", "Capsule", ...) ka localized label.
+/// Unknown id → wahi id wapas (safe fallback).
+String medFormLabel(AppLocalizations l10n, String formId) {
+  switch (formId) {
+    case 'Tablet':
+      return l10n.doseFormTablet;
+    case 'Capsule':
+      return l10n.medsFormCapsule;
+    case 'Drops':
+      return l10n.medsFormDrops;
+    case 'Liquid':
+      return l10n.doseFormLiquid;
+    case 'Injection':
+      return l10n.medsFormInjection;
+    case 'Extended Release':
+      return l10n.medFormExtendedRelease;
+    default:
+      return formId;
+  }
+}
 
 /// Ek medicine ki poori info
 class Medicine {
@@ -49,10 +92,10 @@ class Medicine {
   /// Backend: courseTotalDays se calculate hoga
   String get endsOnLabel => 'Sep 22'; // TODO Backend: date math
 
-  /// Display label — "Day 4 of 10" ya "5 days left"
-  String get supplyLabel {
-    if (isCourse) return 'Day $courseDay of $courseTotalDays';
-    return '$supplyDaysLeft days left';
+  /// Display label — "Day 4 of 10" ya "5 days left" (localized).
+  String supplyLabel(AppLocalizations l10n) {
+    if (isCourse) return l10n.medsDayOf(courseDay!, courseTotalDays!);
+    return l10n.medsDaysLeft(supplyDaysLeft);
   }
 
   /// Progress bar value — 0.0 to 1.0

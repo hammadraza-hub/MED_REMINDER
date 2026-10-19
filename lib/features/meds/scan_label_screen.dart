@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/app_avatar.dart';
 import '../../core/services/camera_service.dart';
 import '../../core/services/ocr_service.dart';
@@ -254,8 +255,9 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
       if (!mounted) return;
 
       if (photo == null) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Capture failed — try again.')),
+          SnackBar(content: Text(l10n.scanCaptureFailed)),
         );
         return;
       }
@@ -275,8 +277,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not capture image. Try again.')),
+        SnackBar(content: Text(l10n.scanCaptureError)),
       );
     } finally {
       if (mounted) {
@@ -328,8 +332,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open image. Try again.')),
+        SnackBar(content: Text(l10n.scanGalleryError)),
       );
 
       if (_cameraReady && _capturedPhoto == null) {
@@ -365,6 +371,8 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       setState(() {
         _detectedMedicines = medicines;
       });
@@ -377,8 +385,8 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
               duration: const Duration(seconds: 4),
               content: Text(
                 medicines.length == 1
-                    ? '✓ Detected: ${medicines.first.displayName}'
-                    : '✓ ${medicines.length} medicines detected',
+                    ? l10n.scanDetectedOne(medicines.first.displayName)
+                    : l10n.scanDetectedCount(medicines.length),
               ),
             ),
           );
@@ -386,24 +394,18 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
-            const SnackBar(
-              duration: Duration(seconds: 4),
-              content: Text(
-                'Text was detected, but medicine details '
-                'could not be identified.',
-              ),
+            SnackBar(
+              duration: const Duration(seconds: 4),
+              content: Text(l10n.scanTextNoMedicine),
             ),
           );
       } else {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
-            const SnackBar(
-              duration: Duration(seconds: 4),
-              content: Text(
-                'No text detected. Keep the document '
-                'clear, flat and well lit.',
-              ),
+            SnackBar(
+              duration: const Duration(seconds: 4),
+              content: Text(l10n.scanNoText),
             ),
           );
       }
@@ -413,11 +415,11 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('Could not read the image. Try again.')),
-        );
+        ..showSnackBar(SnackBar(content: Text(l10n.scanReadError)));
     } finally {
       if (mounted) {
         setState(() {
@@ -482,8 +484,9 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
     final XFile? photo = _capturedPhoto;
 
     if (photo == null) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please scan the medicine again.')),
+        SnackBar(content: Text(l10n.scanRescanAgain)),
       );
 
       return;
@@ -538,6 +541,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
   // ============================================================
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
       child: Column(
@@ -547,20 +551,20 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
           const SizedBox(height: 12),
 
           // Only one instruction on the screen.
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Icons.center_focus_strong_rounded,
                 size: 16,
                 color: AppColors.formAccent,
               ),
-              SizedBox(width: 7),
+              const SizedBox(width: 7),
               Flexible(
                 child: Text(
-                  'Fit the medicine label or full prescription inside the frame',
+                  l10n.scanFitFrameHint,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -576,7 +580,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
           TextButton.icon(
             onPressed: _enterManually,
             icon: const Icon(Icons.edit_outlined, size: 15),
-            label: const Text('Enter medication manually'),
+            label: Text(l10n.scanEnterManually),
             style: TextButton.styleFrom(
               foregroundColor: AppColors.formAccent,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -598,7 +602,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
             OutlinedButton.icon(
               onPressed: _isProcessing ? null : _retryCapture,
               icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Retake Photo'),
+              label: Text(l10n.scanRetakePhoto),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.formAccent,
                 side: const BorderSide(color: AppColors.outline),
@@ -632,6 +636,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
   // ============================================================
 
   Widget _buildCameraPreview() {
+    final l10n = AppLocalizations.of(context);
     return AspectRatio(
       // Portrait frame suitable for prescription pages.
       aspectRatio: 3 / 4,
@@ -697,10 +702,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
                         color: AppColors.headerDark.withValues(alpha: 0.94),
                         borderRadius: BorderRadius.circular(22),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          SizedBox(
+                          const SizedBox(
                             width: 17,
                             height: 17,
                             child: CircularProgressIndicator(
@@ -708,10 +713,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
                               strokeWidth: 2,
                             ),
                           ),
-                          SizedBox(width: 9),
+                          const SizedBox(width: 9),
                           Text(
-                            'Reading prescription...',
-                            style: TextStyle(
+                            l10n.scanReadingPrescription,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -747,7 +752,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
                     Expanded(
                       child: Text(
-                        _cameraStatusText,
+                        _cameraStatusText(l10n),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -774,7 +779,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
                           const SizedBox(width: 5),
 
                           Text(
-                            _statusChipText,
+                            _statusChipText(l10n),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 8,
@@ -811,60 +816,60 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
     return AppColors.headerDark;
   }
 
-  String get _statusChipText {
+  String _statusChipText(AppLocalizations l10n) {
     if (_isProcessing) {
-      return 'READING';
+      return l10n.scanStatusReading;
     }
 
     if (_detectedMedicines.isNotEmpty) {
-      return 'FOUND';
+      return l10n.scanStatusFound;
     }
 
     if (_medicineInFrame && _capturedPhoto == null) {
-      return 'IN FRAME';
+      return l10n.scanStatusInFrame;
     }
 
-    return 'READY';
+    return l10n.scanStatusReady;
   }
 
   // ============================================================
   // CAMERA STATUS TEXT
   // ============================================================
 
-  String get _cameraStatusText {
+  String _cameraStatusText(AppLocalizations l10n) {
     if (_cameraFailed) {
-      return 'Camera unavailable';
+      return l10n.scanCameraUnavailable;
     }
 
     if (!_cameraReady) {
-      return 'Starting camera...';
+      return l10n.scanStartingCamera;
     }
 
     if (_isCapturing) {
-      return 'Capturing document...';
+      return l10n.scanCapturingDocument;
     }
 
     if (_isProcessing) {
-      return 'Reading medicine text...';
+      return l10n.scanReadingMedicineText;
     }
 
     if (_detectedMedicines.isNotEmpty) {
       if (_detectedMedicines.length == 1) {
-        return 'Medicine detected';
+        return l10n.scanMedicineDetected;
       }
 
-      return '${_detectedMedicines.length} medicines detected';
+      return l10n.scanMedicinesDetected(_detectedMedicines.length);
     }
 
     if (_capturedPhoto != null) {
-      return 'Image captured';
+      return l10n.scanImageCaptured;
     }
 
     if (_medicineInFrame) {
-      return 'Medicine or prescription detected';
+      return l10n.scanMedicineOrRxDetected;
     }
 
-    return 'Point camera at medicine or prescription';
+    return l10n.scanPointCameraHint;
   }
 
   // ============================================================
@@ -872,6 +877,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
   // ============================================================
 
   Widget _buildCameraControls() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -901,7 +907,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
                 icon: _camera.flashOn
                     ? Icons.flash_on_rounded
                     : Icons.flash_off_rounded,
-                label: 'Flash',
+                label: l10n.scanFlash,
                 active: _camera.flashOn,
                 onTap: _toggleFlash,
               ),
@@ -967,9 +973,9 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
                   const SizedBox(height: 4),
 
-                  const Text(
-                    'Scan',
-                    style: TextStyle(
+                  Text(
+                    l10n.scanShutter,
+                    style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -983,7 +989,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
               // =================================================
               _CameraAction(
                 icon: Icons.photo_library_outlined,
-                label: 'Gallery',
+                label: l10n.scanGallery,
                 onTap: _pickFromGallery,
               ),
             ],
@@ -998,6 +1004,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
   // ============================================================
 
   Widget _buildCameraLoading() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       color: AppColors.textPrimary.withValues(alpha: 0.45),
       alignment: Alignment.center,
@@ -1013,9 +1020,9 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
                 const SizedBox(height: 10),
 
-                const Text(
-                  'Camera unavailable',
-                  style: TextStyle(
+                Text(
+                  l10n.scanCameraUnavailable,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -1035,7 +1042,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.formAccent,
                   ),
-                  child: const Text('Try Again'),
+                  child: Text(l10n.scanTryAgain),
                 ),
               ],
             )
@@ -1051,6 +1058,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
     required DetectedMedicine medicine,
     required int index,
   }) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -1072,19 +1080,19 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
               const SizedBox(width: 8),
 
-              Expanded(
-                child: Text(
-                  _detectedMedicines.length > 1
-                      ? 'MEDICINE ${index + 1} DETECTED'
-                      : 'MEDICINE DETECTED',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.6,
-                    color: AppColors.success,
+                Expanded(
+                  child: Text(
+                    _detectedMedicines.length > 1
+                        ? l10n.scanMedicineBadgeNumber(index + 1)
+                        : l10n.scanMedicineBadgeSingular,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                      color: AppColors.success,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
 
@@ -1105,7 +1113,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
             _medicineDetailRow(
               Icons.science_outlined,
-              'Strength',
+              AppLocalizations.of(context).scanFieldStrength,
               medicine.strength!,
             ),
           ],
@@ -1115,7 +1123,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
             _medicineDetailRow(
               Icons.medication_outlined,
-              'Form',
+              AppLocalizations.of(context).scanFieldForm,
               medicine.form!,
             ),
           ],
@@ -1126,7 +1134,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
             _medicineDetailRow(
               Icons.schedule_rounded,
-              'Frequency',
+              AppLocalizations.of(context).scanFieldFrequency,
               medicine.frequency!,
             ),
           ],
@@ -1137,7 +1145,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
             _medicineDetailRow(
               Icons.notes_rounded,
-              'Instructions',
+              AppLocalizations.of(context).medsFieldInstructionsShort,
               medicine.instructions!,
             ),
           ],
@@ -1156,9 +1164,9 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
-                'Review & Add Medication',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              child: Text(
+                l10n.scanReviewAdd,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -1167,7 +1175,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
     );
   }
 
-  Widget _medicineDetailRow(IconData icon, String title, String value) {
+  Widget _medicineDetailRow(IconData icon, String titleLabel, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1177,7 +1185,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
         Expanded(
           child: Text(
-            '$title: $value',
+            '$titleLabel: $value',
             style: const TextStyle(
               fontSize: 12,
               height: 1.35,
@@ -1194,6 +1202,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
   // ============================================================
 
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       color: AppColors.headerDark,
@@ -1220,10 +1229,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
                 const SizedBox(width: 8),
 
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Add Medication',
-                    style: TextStyle(
+                    l10n.addMedTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,

@@ -1,3 +1,87 @@
+# ───────────────────────────────────────────────────────────
+# FIREBASE / SENSITIVE FILES
+# ───────────────────────────────────────────────────────────
+
+# .env file (real API keys — NEVER commit)
+.env
+.env.local
+.env.*.local
+
+# Firebase config backups (production config separate rakho)
+lib/firebase_options_prod.dart
+
+# Debug keystore (Windows signing report ke time generate hota)
+*.keystore
+!debug.keystore
+
+# Firebase emulator logs
+firestore-debug.log
+pubsub-debug.log
+ui-debug.log
+functions-debug.log
+
+# Firebase functions build
+functions/lib/
+functions/node_modules/
+
+# Test coverage
+coverage/
+
+# Build outputs
+build/
+
+# ───────────────────────────────────────────────────────────
+# NODE / NPM
+# ───────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ───────────────────────────────────────────────────────────
+# AI AGENT SKILLS (not project code)
+# ───────────────────────────────────────────────────────────
+.agents/
+skills-lock.json
+
+# ───────────────────────────────────────────────────────────
+# APP HOSTING (we're not using — Flutter mobile app only)
+# ───────────────────────────────────────────────────────────
+apphosting.emulator.yaml
+apphosting.yaml
+
+# ───────────────────────────────────────────────────────────
+# ANDROID / iOS
+# ───────────────────────────────────────────────────────────
+
+# Android native libs
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+
+# iOS CocoaPods
+ios/Pods/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# ───────────────────────────────────────────────────────────
+# FLUTTER / DART
+# ───────────────────────────────────────────────────────────
+
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+# pubspec.lock  ← NOTE: is par depend karta hai aap practice ke upar, discuss ahead
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+graphify-out/
+
 # Miscellaneous
 *.class
 *.log
@@ -47,6 +131,5 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# Secrets — never commit real API keys (.env.example is safe)
-.env
+
 

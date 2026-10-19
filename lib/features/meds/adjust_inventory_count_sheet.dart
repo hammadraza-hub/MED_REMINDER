@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import 'adjust_inventory_count_data.dart';
 import 'inventory_data.dart';
 import 'meds_data.dart';
@@ -110,9 +111,12 @@ class _AdjustInventoryCountSheetState
   Widget build(BuildContext context) {
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    final refillOption = AdjustInventoryCountData.refillOption(widget.item);
+    final l10n = AppLocalizations.of(context);
+
+    final refillOption = AdjustInventoryCountData.refillOption(l10n, widget.item);
 
     final secondaryOption = AdjustInventoryCountData.secondaryOption(
+      l10n,
       widget.item,
     );
 
@@ -140,9 +144,9 @@ class _AdjustInventoryCountSheetState
               const SizedBox(height: 13),
 
               // ================= TITLE =================
-              const Text(
-                'Adjust Count',
-                style: TextStyle(
+              Text(
+                l10n.inventoryAdjustCount,
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
@@ -183,7 +187,8 @@ class _AdjustInventoryCountSheetState
                       const SizedBox(height: 5),
 
                       Text(
-                        AdjustInventoryCountData.unitForCount(
+                        inventoryUnitLabel(
+                          l10n,
                           _count,
                           widget.item.unitLabel,
                         ).toUpperCase(),
@@ -234,11 +239,11 @@ class _AdjustInventoryCountSheetState
               const SizedBox(height: 18),
 
               // ================= REASON =================
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Adjustment Reason (Optional)',
-                  style: TextStyle(
+                  l10n.inventoryAdjustReasonLabel,
+                  style: const TextStyle(
                     color: AppColors.formAccent,
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
@@ -257,7 +262,7 @@ class _AdjustInventoryCountSheetState
                   fontSize: 11,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Reason for adjustment (optional)...',
+                  hintText: l10n.inventoryAdjustReasonHint,
                   hintStyle: const TextStyle(
                     color: AppColors.fieldHint,
                     fontSize: 10,
@@ -297,20 +302,20 @@ class _AdjustInventoryCountSheetState
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Save Count',
-                        style: TextStyle(
+                        l10n.inventoryAdjustSave,
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
 
-                      SizedBox(width: 7),
+                      const SizedBox(width: 7),
 
-                      Icon(Icons.check_rounded, size: 16),
+                      const Icon(Icons.check_rounded, size: 16),
                     ],
                   ),
                 ),
@@ -327,9 +332,9 @@ class _AdjustInventoryCountSheetState
                   foregroundColor: AppColors.formAccent,
                   minimumSize: const Size(80, 34),
                 ),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(
+                child: Text(
+                  l10n.cancel,
+                  style: const TextStyle(
                     fontSize: 10,
                     decoration: TextDecoration.underline,
                     fontWeight: FontWeight.w500,
@@ -355,6 +360,7 @@ class _MedicineSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       constraints: const BoxConstraints(maxWidth: 230),
       padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
@@ -388,9 +394,14 @@ class _MedicineSummary extends StatelessWidget {
                 const SizedBox(height: 3),
 
                 Text(
-                  'Current on hand: '
-                  '${item.remainingQuantity} '
-                  '${AdjustInventoryCountData.unitForCount(item.remainingQuantity, item.unitLabel)}',
+                  l10n.inventoryCurrentOnHand(
+                    item.remainingQuantity,
+                    inventoryUnitLabel(
+                      l10n,
+                      item.remainingQuantity,
+                      item.unitLabel,
+                    ),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

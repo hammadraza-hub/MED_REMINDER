@@ -1,4 +1,5 @@
 import 'inventory_data.dart';
+import '../../l10n/app_localizations.dart';
 
 /// ============================================================
 /// ADJUST INVENTORY COUNT DATA
@@ -46,9 +47,12 @@ class AdjustInventoryCountData {
   AdjustInventoryCountData._();
 
   /// Refill ke baad normal package quantity.
-  static InventoryCountQuickOption refillOption(InventoryItem item) {
+  static InventoryCountQuickOption refillOption(
+    AppLocalizations l10n,
+    InventoryItem item,
+  ) {
     return InventoryCountQuickOption(
-      label: 'After refill: ${item.packageQuantity}',
+      label: l10n.inventoryAfterRefill(item.packageQuantity),
       quantity: item.packageQuantity,
     );
   }
@@ -57,12 +61,15 @@ class AdjustInventoryCountData {
   ///
   /// Tablet/capsule/dose medicines ke liye half package.
   /// Bottle inventory ke liye full package.
-  static InventoryCountQuickOption secondaryOption(InventoryItem item) {
+  static InventoryCountQuickOption secondaryOption(
+    AppLocalizations l10n,
+    InventoryItem item,
+  ) {
     final normalizedUnit = item.unitLabel.toLowerCase();
 
     if (normalizedUnit == 'bottle') {
       return InventoryCountQuickOption(
-        label: 'Full bottle: ${item.packageQuantity}',
+        label: l10n.inventoryFullBottle(item.packageQuantity),
         quantity: item.packageQuantity,
       );
     }
@@ -70,31 +77,8 @@ class AdjustInventoryCountData {
     final halfPackage = (item.packageQuantity / 2).round();
 
     return InventoryCountQuickOption(
-      label: 'Half pack: $halfPackage',
+      label: l10n.inventoryHalfPack(halfPackage),
       quantity: halfPackage,
     );
-  }
-
-  static String unitForCount(int count, String source) {
-    if (count == 1) {
-      return source;
-    }
-
-    switch (source.toLowerCase()) {
-      case 'tablet':
-        return 'tablets';
-
-      case 'capsule':
-        return 'capsules';
-
-      case 'bottle':
-        return 'bottles';
-
-      case 'dose':
-        return 'doses';
-
-      default:
-        return '${source}s';
-    }
   }
 }

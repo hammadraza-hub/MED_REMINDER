@@ -21,6 +21,9 @@
 ///   createdAt
 /// }
 /// ============================================================
+library;
+
+import '../../l10n/app_localizations.dart';
 
 class PrescriberDoctor {
   const PrescriberDoctor({
@@ -64,8 +67,8 @@ class PrescriberDoctor {
 
   int get medsCount => linkedMeds.length;
 
-  /// Chip label: "1 med" | "2 meds"
-  String get chipLabel => medsCount == 1 ? '1 med' : '$medsCount meds';
+  /// Chip label: "1 med" | "2 meds" — localized.
+  String chipLabel(AppLocalizations l10n) => l10n.doctorsMedCount(medsCount);
 
   /// Card footer summary: "Metformin 500mg, Amlodipine 5mg"
   String get medsSummary => linkedMeds.join(', ');

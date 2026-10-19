@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "957865189048",
+    "project_id": "medapp-staging",
+    "storage_bucket": "medapp-staging.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:957865189048:android:23fc3d6e4c4c949cd6de4d",
+        "android_client_info": {
+          "package_name": "com.medreminder.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPRlHlejBZ6RFoFFwBwTJiOsFST-12aNU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

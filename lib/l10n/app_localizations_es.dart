@@ -849,4 +849,811 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get paymentUnlockNote =>
       'Las verificaciones de interacciones, alertas de reabastecimiento e informes ya están activos';
+
+  @override
+  String get doctorsTitle => 'Médicos';
+
+  @override
+  String get doctorsAdd => 'Agregar médico';
+
+  @override
+  String get doctorsAdded => 'Médico agregado correctamente';
+
+  @override
+  String doctorsCountOnFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count médicos registrados',
+      one: '1 médico registrado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get doctorsEmptyTitle => 'No hay médicos registrados';
+
+  @override
+  String get doctorsEmptySubtitle => 'Agrega un médico para vincular recetas';
+
+  @override
+  String get doctorsUpcomingVisits => 'Próximas visitas';
+
+  @override
+  String doctorsAppointmentsScheduled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count citas programadas',
+      one: '1 cita programada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get doctorsView => 'Ver →';
+
+  @override
+  String get doctorsHint => 'Toca un médico para ver detalles o editar';
+
+  @override
+  String doctorsMedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count medicamentos',
+      one: '1 medicamento',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get doctorsDetailsSection => 'DATOS DEL MÉDICO';
+
+  @override
+  String get doctorsFieldFullName => 'Nombre completo *';
+
+  @override
+  String get doctorsHintFullName => 'Ingresa el nombre completo';
+
+  @override
+  String get doctorsFieldSpecialty => 'Especialidad';
+
+  @override
+  String get doctorsHintSpecialty => 'Ingresa la especialidad';
+
+  @override
+  String get doctorsFieldPhone => 'Número de teléfono';
+
+  @override
+  String get doctorsHintPhone => 'Ingresa el número de teléfono';
+
+  @override
+  String get doctorsFieldClinic => 'Clínica / Dirección (opcional)';
+
+  @override
+  String get doctorsHintClinic => 'Ingresa la clínica o dirección';
+
+  @override
+  String get doctorsLinkMedications => 'VINCULAR MEDICAMENTOS';
+
+  @override
+  String get doctorsLinkPrompt => '¿Qué medicamentos receta este médico?';
+
+  @override
+  String get doctorsSave => 'Guardar médico';
+
+  @override
+  String get doctorsNameRequired => 'Ingresa el nombre completo del médico.';
+
+  @override
+  String get medsTitle => 'Medicamentos';
+
+  @override
+  String medsMemberMedications(String name) {
+    return 'Medicamentos de $name';
+  }
+
+  @override
+  String medsActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count medicamentos activos',
+      one: '1 medicamento activo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get medsManageHeader => 'GESTIONAR';
+
+  @override
+  String get medsQuickTools => 'Herramientas rápidas';
+
+  @override
+  String get medsInventory => 'Inventario';
+
+  @override
+  String medsLowBadge(int count) {
+    return '$count BAJO';
+  }
+
+  @override
+  String get medsAllergies => 'Alergias';
+
+  @override
+  String get medsSideEffects => 'Efectos secundarios';
+
+  @override
+  String get medsPharmacy => 'Farmacia';
+
+  @override
+  String get medsSearchHint => 'Buscar medicamentos...';
+
+  @override
+  String medsTabActive(int count) {
+    return 'Activos ($count)';
+  }
+
+  @override
+  String medsTabArchived(int count) {
+    return 'Archivados ($count)';
+  }
+
+  @override
+  String get medsEmptyArchived => 'No hay medicamentos archivados';
+
+  @override
+  String get medsEmpty => 'No se encontraron medicamentos';
+
+  @override
+  String medsMovedToArchived(String name) {
+    return '$name movido a Archivados';
+  }
+
+  @override
+  String get medsDiscontinueError =>
+      'No se pudo suspender el medicamento. Inténtalo de nuevo.';
+
+  @override
+  String get medsDiscontinueBarrierLabel => 'Cerrar suspender medicamento';
+
+  @override
+  String get medsDiscontinue => 'Suspender';
+
+  @override
+  String get medsLowStock => 'STOCK BAJO';
+
+  @override
+  String get medsBadgeActive => 'ACTIVO';
+
+  @override
+  String get medsScheduleNotSet => 'Horario no definido';
+
+  @override
+  String get medsFrequencyAsNeeded => 'Según necesidad';
+
+  @override
+  String medsFrequencySelectedDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${count}x en días seleccionados',
+      one: '1x en días seleccionados',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsFrequencyCyclical(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${count}x cíclico',
+      one: '1x cíclico',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get medsFrequencyTapering => 'Pauta descendente';
+
+  @override
+  String medsFrequencyDaily(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${count}x al día',
+      one: '1x al día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsNextDoseTomorrow(String time) {
+    return 'Mañana $time';
+  }
+
+  @override
+  String medsNextDoseWeekday(String day, String time) {
+    return '$day $time';
+  }
+
+  @override
+  String medsEnds(String date) {
+    return 'Termina el $date';
+  }
+
+  @override
+  String medsNext(String time) {
+    return 'Próxima: $time';
+  }
+
+  @override
+  String get medsWeekdayMon => 'lun';
+
+  @override
+  String get medsWeekdayTue => 'mar';
+
+  @override
+  String get medsWeekdayWed => 'mié';
+
+  @override
+  String get medsWeekdayThu => 'jue';
+
+  @override
+  String get medsWeekdayFri => 'vie';
+
+  @override
+  String get medsWeekdaySat => 'sáb';
+
+  @override
+  String get medsWeekdaySun => 'dom';
+
+  @override
+  String get medsFormCapsule => 'Cápsula';
+
+  @override
+  String get medsFormDrops => 'Gotas';
+
+  @override
+  String get medsFormInjection => 'Inyección';
+
+  @override
+  String medsDayOf(int day, int total) {
+    return 'Día $day de $total';
+  }
+
+  @override
+  String medsDaysLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'quedan $count días',
+      one: 'queda 1 día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitTablet(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'comprimidos',
+      one: 'comprimido',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitCapsule(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'cápsulas',
+      one: 'cápsula',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitBottle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'frascos',
+      one: 'frasco',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitDose(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'dosis',
+      one: 'dosis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inventoryTitle => 'Inventario';
+
+  @override
+  String inventoryMedicationsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count medicamentos',
+      one: '1 medicamento',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inventoryTrackedSupply => 'Suministro registrado';
+
+  @override
+  String inventoryLowStockCount(int count) {
+    return '$count STOCK BAJO';
+  }
+
+  @override
+  String get inventoryFilterAll => 'Todos';
+
+  @override
+  String get inventoryFilterLow => 'Stock bajo';
+
+  @override
+  String get inventoryFilterOk => 'OK';
+
+  @override
+  String get inventoryEmptyFilter => 'No hay medicamentos en este filtro';
+
+  @override
+  String get inventoryStatusLow => 'BAJO';
+
+  @override
+  String get inventoryStatusOk => 'OK';
+
+  @override
+  String get inventoryRunningLow => 'Por agotarse — pide reabastecimiento';
+
+  @override
+  String get inventoryRefill => 'Recargar →';
+
+  @override
+  String get inventoryAdjustCount => 'Ajustar cantidad';
+
+  @override
+  String get inventorySufficient => 'Suministro suficiente';
+
+  @override
+  String get inventorySufficientNext =>
+      'Suficiente hasta el próximo reabastecimiento';
+
+  @override
+  String get inventoryEdit => 'Editar';
+
+  @override
+  String get inventoryAutoSyncTitle =>
+      'Sincronización automática con la farmacia';
+
+  @override
+  String get inventoryAutoSyncSubtitle =>
+      'Conecta tu farmacia para actualizaciones automáticas de reabastecimiento';
+
+  @override
+  String get inventoryAutoSyncPending =>
+      'Integración de sincronización con farmacia pendiente';
+
+  @override
+  String inventoryCountUpdated(String name, int count) {
+    return '$name actualizado a $count';
+  }
+
+  @override
+  String inventorySupplyDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '~$count días',
+      one: '~1 día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inventoryAdjustReasonLabel => 'Motivo del ajuste (opcional)';
+
+  @override
+  String get inventoryAdjustReasonHint => 'Motivo del ajuste (opcional)...';
+
+  @override
+  String get inventoryAdjustSave => 'Guardar cantidad';
+
+  @override
+  String inventoryCurrentOnHand(int quantity, String unit) {
+    return 'Disponible actual: $quantity $unit';
+  }
+
+  @override
+  String inventoryAfterRefill(int quantity) {
+    return 'Tras reabastecer: $quantity';
+  }
+
+  @override
+  String inventoryFullBottle(int quantity) {
+    return 'Frasco completo: $quantity';
+  }
+
+  @override
+  String inventoryHalfPack(int quantity) {
+    return 'Medio paquete: $quantity';
+  }
+
+  @override
+  String get medFormExtendedRelease => 'Liberación prolongada';
+
+  @override
+  String get medRouteOral => 'Oral';
+
+  @override
+  String get medRouteSubcutaneous => 'Subcutánea';
+
+  @override
+  String get medConditionDiabetes => 'Diabetes';
+
+  @override
+  String get medConditionType2Diabetes => 'Diabetes tipo 2';
+
+  @override
+  String get medConditionHighBloodPressure => 'Presión arterial alta';
+
+  @override
+  String get medConditionHypertension => 'Hipertensión';
+
+  @override
+  String get medConditionHeartHealth => 'Salud cardíaca';
+
+  @override
+  String get medConditionHighCholesterol => 'Colesterol alto';
+
+  @override
+  String get medConditionBacterialInfection => 'Infección bacteriana';
+
+  @override
+  String get medConditionPainInflammation => 'Dolor e inflamación';
+
+  @override
+  String get medConditionBoneHealth => 'Salud ósea';
+
+  @override
+  String get medConditionAcidReflux => 'Reflujo ácido';
+
+  @override
+  String get addMedDailyDose => 'Dosis diaria';
+
+  @override
+  String addMedCommonFor(String condition) {
+    return 'Común para: $condition';
+  }
+
+  @override
+  String get addManualColorWhite => 'Blanco';
+
+  @override
+  String get addManualColorYellow => 'Amarillo';
+
+  @override
+  String get addManualColorPink => 'Rosa';
+
+  @override
+  String get addManualColorBlue => 'Azul';
+
+  @override
+  String get addManualColorOrange => 'Naranja';
+
+  @override
+  String get addManualColorPeach => 'Durazno';
+
+  @override
+  String get addManualColorGreen => 'Verde';
+
+  @override
+  String get addManualDraftSaved => 'Borrador guardado: ¡complétalo más tarde!';
+
+  @override
+  String get addMedTitle => 'Agregar medicamento';
+
+  @override
+  String get addManualRxVerified => 'RX VERIFICADA';
+
+  @override
+  String get medsMedicationDetails => 'DETALLES DEL MEDICAMENTO';
+
+  @override
+  String get medsFieldName => 'Nombre del medicamento';
+
+  @override
+  String get medsFieldStrength => 'Concentración';
+
+  @override
+  String get medsFieldForm => 'Forma del medicamento';
+
+  @override
+  String get addManualSelectForm => 'Seleccionar forma';
+
+  @override
+  String get addManualColorOptional => 'Color (opcional)';
+
+  @override
+  String get medsFieldInstructions => 'Instrucciones especiales';
+
+  @override
+  String get addManualOptional => 'Opcional';
+
+  @override
+  String get addManualInstructionsHint =>
+      'p. ej. Tomar con comida después del desayuno, evitar toronja...';
+
+  @override
+  String get addManualContinueToSchedule => 'Continuar al horario →';
+
+  @override
+  String get addManualSaveDraft => 'Guardar como borrador';
+
+  @override
+  String get addManualNameHint => 'Ingresa el nombre del medicamento';
+
+  @override
+  String get addManualMatchesIndex => 'Coincide con el índice clínico';
+
+  @override
+  String get addManualStrengthHint => 'p. ej. 500';
+
+  @override
+  String get addManualFormOther => 'Otra';
+
+  @override
+  String get addManualFormOtherSubtitle => 'Ingresa otra forma de medicamento';
+
+  @override
+  String get addManualCustomForm => 'Forma personalizada';
+
+  @override
+  String get addManualCustomFormHint =>
+      'p. ej. Crema, Inhalador, Parche, Aerosol...';
+
+  @override
+  String get addManualCustomFormRequired => 'Ingresa la forma del medicamento';
+
+  @override
+  String get addManualInteractionTitle =>
+      'Verificaciones automáticas de interacción';
+
+  @override
+  String get addManualInteractionBody =>
+      'Compararemos esta dosis con tus medicamentos ya registrados en el siguiente paso.';
+
+  @override
+  String addMedSelected(String name, String strength) {
+    return '$name $strength seleccionado: ¡detalles a continuación!';
+  }
+
+  @override
+  String get addMedPrivateNote => 'Privado y cifrado en este dispositivo';
+
+  @override
+  String get addMedScanLabel => 'Escanear etiqueta';
+
+  @override
+  String get addMedSearch => 'Buscar';
+
+  @override
+  String get addMedManualEntry => 'Entrada manual';
+
+  @override
+  String addMedMatchingCount(int count) {
+    return 'Medicamentos coincidentes ($count)';
+  }
+
+  @override
+  String get addMedFdaApproved => 'Aprobado por la FDA';
+
+  @override
+  String get addMedTipTitle => 'Consejo: busca el grabado';
+
+  @override
+  String get addMedTipBody =>
+      'La mayoría de las tabletas de metformina tienen números como \'500\' o \'M\' grabados al frente para garantizar la dosis exacta.';
+
+  @override
+  String get addMedCantFind => '¿No encuentras tu medicamento?';
+
+  @override
+  String get addMedAddManually => 'Agregar manualmente';
+
+  @override
+  String get addMedEmptyTitle => 'Busca un medicamento';
+
+  @override
+  String get addMedEmptySubtitle =>
+      'Escribe el nombre arriba o escanea su etiqueta';
+
+  @override
+  String get addMedNoResultsTitle => 'No se encontraron medicamentos';
+
+  @override
+  String addMedNoResultsFor(String query) {
+    return 'Sin resultados para \"$query\"';
+  }
+
+  @override
+  String get addMedSelectAction => 'Seleccionar ›';
+
+  @override
+  String get reviewScanNameRequired => 'Ingresa el nombre del medicamento.';
+
+  @override
+  String get reviewScanStrengthRequired =>
+      'Ingresa la concentración del medicamento.';
+
+  @override
+  String get reviewScanTitle => 'Revisar escaneo';
+
+  @override
+  String get scanCaptureFailed => 'Captura fallida, inténtalo de nuevo.';
+
+  @override
+  String get scanCaptureError =>
+      'No se pudo capturar la imagen. Inténtalo de nuevo.';
+
+  @override
+  String get scanGalleryError =>
+      'No se pudo abrir la imagen. Inténtalo de nuevo.';
+
+  @override
+  String scanDetectedOne(String name) {
+    return '✓ Detectado: $name';
+  }
+
+  @override
+  String scanDetectedCount(int count) {
+    return '✓ $count medicamentos detectados';
+  }
+
+  @override
+  String get scanTextNoMedicine =>
+      'Se detectó texto, pero no se pudieron identificar los detalles del medicamento.';
+
+  @override
+  String get scanNoText =>
+      'No se detectó texto. Mantén el documento claro, plano y bien iluminado.';
+
+  @override
+  String get scanReadError => 'No se pudo leer la imagen. Inténtalo de nuevo.';
+
+  @override
+  String get scanRescanAgain => 'Escanea el medicamento de nuevo.';
+
+  @override
+  String get scanFitFrameHint =>
+      'Coloca la etiqueta del medicamento o la receta completa dentro del marco';
+
+  @override
+  String get scanEnterManually => 'Ingresar medicamento manualmente';
+
+  @override
+  String get scanRetakePhoto => 'Tomar foto de nuevo';
+
+  @override
+  String get scanReadingPrescription => 'Leyendo receta...';
+
+  @override
+  String get scanStatusReading => 'LEYENDO';
+
+  @override
+  String get scanStatusFound => 'ENCONTRADO';
+
+  @override
+  String get scanStatusInFrame => 'EN MARCO';
+
+  @override
+  String get scanStatusReady => 'LISTO';
+
+  @override
+  String get scanCameraUnavailable => 'Cámara no disponible';
+
+  @override
+  String get scanStartingCamera => 'Iniciando cámara...';
+
+  @override
+  String get scanCapturingDocument => 'Capturando documento...';
+
+  @override
+  String get scanReadingMedicineText => 'Leyendo texto del medicamento...';
+
+  @override
+  String get scanMedicineDetected => 'Medicamento detectado';
+
+  @override
+  String scanMedicinesDetected(int count) {
+    return '$count medicamentos detectados';
+  }
+
+  @override
+  String get scanImageCaptured => 'Imagen capturada';
+
+  @override
+  String get scanMedicineOrRxDetected => 'Medicamento o receta detectados';
+
+  @override
+  String get scanPointCameraHint => 'Apunta la cámara al medicamento o receta';
+
+  @override
+  String get scanFlash => 'Flash';
+
+  @override
+  String get scanShutter => 'Escanear';
+
+  @override
+  String get scanGallery => 'Galería';
+
+  @override
+  String get scanTryAgain => 'Reintentar';
+
+  @override
+  String scanMedicineBadgeNumber(int index) {
+    return 'MEDICAMENTO $index DETECTADO';
+  }
+
+  @override
+  String get scanMedicineBadgeSingular => 'MEDICAMENTO DETECTADO';
+
+  @override
+  String get scanFieldStrength => 'Concentración';
+
+  @override
+  String get scanFieldForm => 'Forma';
+
+  @override
+  String get scanFieldFrequency => 'Frecuencia';
+
+  @override
+  String get medsFieldInstructionsShort => 'Instrucciones';
+
+  @override
+  String get scanReviewAdd => 'Revisar y agregar medicamento';
+
+  @override
+  String get stepSchedule => 'Horario';
+
+  @override
+  String get reviewScanScanned => 'ESCANEADO';
+
+  @override
+  String get reviewScanReadSuccess =>
+      'Hemos leído estos datos de tu etiqueta: ¡revisa y corrige si es necesario!';
+
+  @override
+  String get reviewScanInstructionsHint =>
+      'Ingresa las instrucciones del medicamento';
+
+  @override
+  String get reviewScanStrengthUnclear =>
+      'El campo de concentración no fue claro en la foto: verifícalo manualmente.';
+
+  @override
+  String get reviewScanRequired => 'OBLIGATORIO';
+
+  @override
+  String get reviewScanStrengthHint => 'Ingresa la concentración, p. ej. 500mg';
+
+  @override
+  String get reviewScanConfirmContinue => 'Confirmar y continuar →';
 }

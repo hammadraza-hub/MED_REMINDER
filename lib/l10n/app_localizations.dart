@@ -1615,6 +1615,1260 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Interaction checks, refill alerts & reports are now active'**
   String get paymentUnlockNote;
+
+  /// No description provided for @doctorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctors'**
+  String get doctorsTitle;
+
+  /// No description provided for @doctorsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Doctor'**
+  String get doctorsAdd;
+
+  /// No description provided for @doctorsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor added successfully'**
+  String get doctorsAdded;
+
+  /// No description provided for @doctorsCountOnFile.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 doctor on file} other{{count} doctors on file}}'**
+  String doctorsCountOnFile(int count);
+
+  /// No description provided for @doctorsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No doctors on file'**
+  String get doctorsEmptyTitle;
+
+  /// No description provided for @doctorsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a doctor to link prescriptions'**
+  String get doctorsEmptySubtitle;
+
+  /// No description provided for @doctorsUpcomingVisits.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming Visits'**
+  String get doctorsUpcomingVisits;
+
+  /// No description provided for @doctorsAppointmentsScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 appointment scheduled} other{{count} appointments scheduled}}'**
+  String doctorsAppointmentsScheduled(int count);
+
+  /// No description provided for @doctorsView.
+  ///
+  /// In en, this message translates to:
+  /// **'View →'**
+  String get doctorsView;
+
+  /// No description provided for @doctorsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a doctor to view details or edit'**
+  String get doctorsHint;
+
+  /// No description provided for @doctorsMedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 med} other{{count} meds}}'**
+  String doctorsMedCount(int count);
+
+  /// No description provided for @doctorsDetailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'DOCTOR DETAILS'**
+  String get doctorsDetailsSection;
+
+  /// No description provided for @doctorsFieldFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name *'**
+  String get doctorsFieldFullName;
+
+  /// No description provided for @doctorsHintFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter full name'**
+  String get doctorsHintFullName;
+
+  /// No description provided for @doctorsFieldSpecialty.
+  ///
+  /// In en, this message translates to:
+  /// **'Specialty'**
+  String get doctorsFieldSpecialty;
+
+  /// No description provided for @doctorsHintSpecialty.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter specialty'**
+  String get doctorsHintSpecialty;
+
+  /// No description provided for @doctorsFieldPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get doctorsFieldPhone;
+
+  /// No description provided for @doctorsHintPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter phone number'**
+  String get doctorsHintPhone;
+
+  /// No description provided for @doctorsFieldClinic.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinic / Address (optional)'**
+  String get doctorsFieldClinic;
+
+  /// No description provided for @doctorsHintClinic.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter clinic or address'**
+  String get doctorsHintClinic;
+
+  /// No description provided for @doctorsLinkMedications.
+  ///
+  /// In en, this message translates to:
+  /// **'LINK TO MEDICATIONS'**
+  String get doctorsLinkMedications;
+
+  /// No description provided for @doctorsLinkPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Which medications does this doctor prescribe?'**
+  String get doctorsLinkPrompt;
+
+  /// No description provided for @doctorsSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Doctor'**
+  String get doctorsSave;
+
+  /// No description provided for @doctorsNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the doctor\'s full name.'**
+  String get doctorsNameRequired;
+
+  /// No description provided for @medsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Medications'**
+  String get medsTitle;
+
+  /// No description provided for @medsMemberMedications.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s Medications'**
+  String medsMemberMedications(String name);
+
+  /// No description provided for @medsActiveCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 active medication} other{{count} active medications}}'**
+  String medsActiveCount(int count);
+
+  /// No description provided for @medsManageHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'MANAGE'**
+  String get medsManageHeader;
+
+  /// No description provided for @medsQuickTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Tools'**
+  String get medsQuickTools;
+
+  /// No description provided for @medsInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get medsInventory;
+
+  /// No description provided for @medsLowBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} LOW'**
+  String medsLowBadge(int count);
+
+  /// No description provided for @medsAllergies.
+  ///
+  /// In en, this message translates to:
+  /// **'Allergies'**
+  String get medsAllergies;
+
+  /// No description provided for @medsSideEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'Side Effects'**
+  String get medsSideEffects;
+
+  /// No description provided for @medsPharmacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get medsPharmacy;
+
+  /// No description provided for @medsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search medications...'**
+  String get medsSearchHint;
+
+  /// No description provided for @medsTabActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active ({count})'**
+  String medsTabActive(int count);
+
+  /// No description provided for @medsTabArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived ({count})'**
+  String medsTabArchived(int count);
+
+  /// No description provided for @medsEmptyArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived medicines'**
+  String get medsEmptyArchived;
+
+  /// No description provided for @medsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No medicines found'**
+  String get medsEmpty;
+
+  /// No description provided for @medsMovedToArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} moved to Archived'**
+  String medsMovedToArchived(String name);
+
+  /// No description provided for @medsDiscontinueError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not discontinue medication. Please try again.'**
+  String get medsDiscontinueError;
+
+  /// No description provided for @medsDiscontinueBarrierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close discontinue medication'**
+  String get medsDiscontinueBarrierLabel;
+
+  /// No description provided for @medsDiscontinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Discontinue'**
+  String get medsDiscontinue;
+
+  /// No description provided for @medsLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'LOW STOCK'**
+  String get medsLowStock;
+
+  /// No description provided for @medsBadgeActive.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE'**
+  String get medsBadgeActive;
+
+  /// No description provided for @medsScheduleNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule not set'**
+  String get medsScheduleNotSet;
+
+  /// No description provided for @medsFrequencyAsNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'As needed'**
+  String get medsFrequencyAsNeeded;
+
+  /// No description provided for @medsFrequencySelectedDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1x on selected days} other{{count}x on selected days}}'**
+  String medsFrequencySelectedDays(int count);
+
+  /// No description provided for @medsFrequencyCyclical.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1x cyclical} other{{count}x cyclical}}'**
+  String medsFrequencyCyclical(int count);
+
+  /// No description provided for @medsFrequencyTapering.
+  ///
+  /// In en, this message translates to:
+  /// **'Tapering schedule'**
+  String get medsFrequencyTapering;
+
+  /// No description provided for @medsFrequencyDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1x daily} other{{count}x daily}}'**
+  String medsFrequencyDaily(int count);
+
+  /// No description provided for @medsNextDoseTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow {time}'**
+  String medsNextDoseTomorrow(String time);
+
+  /// No description provided for @medsNextDoseWeekday.
+  ///
+  /// In en, this message translates to:
+  /// **'{day} {time}'**
+  String medsNextDoseWeekday(String day, String time);
+
+  /// No description provided for @medsEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends {date}'**
+  String medsEnds(String date);
+
+  /// No description provided for @medsNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {time}'**
+  String medsNext(String time);
+
+  /// No description provided for @medsWeekdayMon.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get medsWeekdayMon;
+
+  /// No description provided for @medsWeekdayTue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get medsWeekdayTue;
+
+  /// No description provided for @medsWeekdayWed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get medsWeekdayWed;
+
+  /// No description provided for @medsWeekdayThu.
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get medsWeekdayThu;
+
+  /// No description provided for @medsWeekdayFri.
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get medsWeekdayFri;
+
+  /// No description provided for @medsWeekdaySat.
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get medsWeekdaySat;
+
+  /// No description provided for @medsWeekdaySun.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get medsWeekdaySun;
+
+  /// No description provided for @medsFormCapsule.
+  ///
+  /// In en, this message translates to:
+  /// **'Capsule'**
+  String get medsFormCapsule;
+
+  /// No description provided for @medsFormDrops.
+  ///
+  /// In en, this message translates to:
+  /// **'Drops'**
+  String get medsFormDrops;
+
+  /// No description provided for @medsFormInjection.
+  ///
+  /// In en, this message translates to:
+  /// **'Injection'**
+  String get medsFormInjection;
+
+  /// No description provided for @medsDayOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Day {day} of {total}'**
+  String medsDayOf(int day, int total);
+
+  /// No description provided for @medsDaysLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day left} other{{count} days left}}'**
+  String medsDaysLeft(int count);
+
+  /// No description provided for @medsUnitTablet.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{tablet} other{tablets}}'**
+  String medsUnitTablet(int count);
+
+  /// No description provided for @medsUnitCapsule.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{capsule} other{capsules}}'**
+  String medsUnitCapsule(int count);
+
+  /// No description provided for @medsUnitBottle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{bottle} other{bottles}}'**
+  String medsUnitBottle(int count);
+
+  /// No description provided for @medsUnitDose.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{dose} other{doses}}'**
+  String medsUnitDose(int count);
+
+  /// No description provided for @inventoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get inventoryTitle;
+
+  /// No description provided for @inventoryMedicationsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Medication} other{{count} Medications}}'**
+  String inventoryMedicationsCount(int count);
+
+  /// No description provided for @inventoryTrackedSupply.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked supply'**
+  String get inventoryTrackedSupply;
+
+  /// No description provided for @inventoryLowStockCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} LOW STOCK'**
+  String inventoryLowStockCount(int count);
+
+  /// No description provided for @inventoryFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get inventoryFilterAll;
+
+  /// No description provided for @inventoryFilterLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Stock'**
+  String get inventoryFilterLow;
+
+  /// No description provided for @inventoryFilterOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get inventoryFilterOk;
+
+  /// No description provided for @inventoryEmptyFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No medications in this filter'**
+  String get inventoryEmptyFilter;
+
+  /// No description provided for @inventoryStatusLow.
+  ///
+  /// In en, this message translates to:
+  /// **'LOW'**
+  String get inventoryStatusLow;
+
+  /// No description provided for @inventoryStatusOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get inventoryStatusOk;
+
+  /// No description provided for @inventoryRunningLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Running low — order refill'**
+  String get inventoryRunningLow;
+
+  /// No description provided for @inventoryRefill.
+  ///
+  /// In en, this message translates to:
+  /// **'Refill →'**
+  String get inventoryRefill;
+
+  /// No description provided for @inventoryAdjustCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust Count'**
+  String get inventoryAdjustCount;
+
+  /// No description provided for @inventorySufficient.
+  ///
+  /// In en, this message translates to:
+  /// **'Sufficient supply'**
+  String get inventorySufficient;
+
+  /// No description provided for @inventorySufficientNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Sufficient through next refill'**
+  String get inventorySufficientNext;
+
+  /// No description provided for @inventoryEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get inventoryEdit;
+
+  /// No description provided for @inventoryAutoSyncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-Sync Pharmacy'**
+  String get inventoryAutoSyncTitle;
+
+  /// No description provided for @inventoryAutoSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your pharmacy for automatic refill updates'**
+  String get inventoryAutoSyncSubtitle;
+
+  /// No description provided for @inventoryAutoSyncPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy auto-sync integration pending'**
+  String get inventoryAutoSyncPending;
+
+  /// No description provided for @inventoryCountUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} count updated to {count}'**
+  String inventoryCountUpdated(String name, int count);
+
+  /// No description provided for @inventorySupplyDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{~1 day} other{~{count} days}}'**
+  String inventorySupplyDays(int count);
+
+  /// No description provided for @inventoryAdjustReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment Reason (Optional)'**
+  String get inventoryAdjustReasonLabel;
+
+  /// No description provided for @inventoryAdjustReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for adjustment (optional)...'**
+  String get inventoryAdjustReasonHint;
+
+  /// No description provided for @inventoryAdjustSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Count'**
+  String get inventoryAdjustSave;
+
+  /// No description provided for @inventoryCurrentOnHand.
+  ///
+  /// In en, this message translates to:
+  /// **'Current on hand: {quantity} {unit}'**
+  String inventoryCurrentOnHand(int quantity, String unit);
+
+  /// No description provided for @inventoryAfterRefill.
+  ///
+  /// In en, this message translates to:
+  /// **'After refill: {quantity}'**
+  String inventoryAfterRefill(int quantity);
+
+  /// No description provided for @inventoryFullBottle.
+  ///
+  /// In en, this message translates to:
+  /// **'Full bottle: {quantity}'**
+  String inventoryFullBottle(int quantity);
+
+  /// No description provided for @inventoryHalfPack.
+  ///
+  /// In en, this message translates to:
+  /// **'Half pack: {quantity}'**
+  String inventoryHalfPack(int quantity);
+
+  /// No description provided for @medFormExtendedRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'Extended Release'**
+  String get medFormExtendedRelease;
+
+  /// No description provided for @medRouteOral.
+  ///
+  /// In en, this message translates to:
+  /// **'Oral'**
+  String get medRouteOral;
+
+  /// No description provided for @medRouteSubcutaneous.
+  ///
+  /// In en, this message translates to:
+  /// **'Subcutaneous'**
+  String get medRouteSubcutaneous;
+
+  /// No description provided for @medConditionDiabetes.
+  ///
+  /// In en, this message translates to:
+  /// **'Diabetes'**
+  String get medConditionDiabetes;
+
+  /// No description provided for @medConditionType2Diabetes.
+  ///
+  /// In en, this message translates to:
+  /// **'Type 2 Diabetes'**
+  String get medConditionType2Diabetes;
+
+  /// No description provided for @medConditionHighBloodPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'High Blood Pressure'**
+  String get medConditionHighBloodPressure;
+
+  /// No description provided for @medConditionHypertension.
+  ///
+  /// In en, this message translates to:
+  /// **'Hypertension'**
+  String get medConditionHypertension;
+
+  /// No description provided for @medConditionHeartHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart Health'**
+  String get medConditionHeartHealth;
+
+  /// No description provided for @medConditionHighCholesterol.
+  ///
+  /// In en, this message translates to:
+  /// **'High Cholesterol'**
+  String get medConditionHighCholesterol;
+
+  /// No description provided for @medConditionBacterialInfection.
+  ///
+  /// In en, this message translates to:
+  /// **'Bacterial Infection'**
+  String get medConditionBacterialInfection;
+
+  /// No description provided for @medConditionPainInflammation.
+  ///
+  /// In en, this message translates to:
+  /// **'Pain & Inflammation'**
+  String get medConditionPainInflammation;
+
+  /// No description provided for @medConditionBoneHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Bone Health'**
+  String get medConditionBoneHealth;
+
+  /// No description provided for @medConditionAcidReflux.
+  ///
+  /// In en, this message translates to:
+  /// **'Acid Reflux'**
+  String get medConditionAcidReflux;
+
+  /// No description provided for @addMedDailyDose.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Dose'**
+  String get addMedDailyDose;
+
+  /// No description provided for @addMedCommonFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Common for: {condition}'**
+  String addMedCommonFor(String condition);
+
+  /// No description provided for @addManualColorWhite.
+  ///
+  /// In en, this message translates to:
+  /// **'White'**
+  String get addManualColorWhite;
+
+  /// No description provided for @addManualColorYellow.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get addManualColorYellow;
+
+  /// No description provided for @addManualColorPink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink'**
+  String get addManualColorPink;
+
+  /// No description provided for @addManualColorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get addManualColorBlue;
+
+  /// No description provided for @addManualColorOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get addManualColorOrange;
+
+  /// No description provided for @addManualColorPeach.
+  ///
+  /// In en, this message translates to:
+  /// **'Peach'**
+  String get addManualColorPeach;
+
+  /// No description provided for @addManualColorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get addManualColorGreen;
+
+  /// No description provided for @addManualDraftSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved — complete it later!'**
+  String get addManualDraftSaved;
+
+  /// No description provided for @addMedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Medication'**
+  String get addMedTitle;
+
+  /// No description provided for @addManualRxVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'RX VERIFIED'**
+  String get addManualRxVerified;
+
+  /// No description provided for @medsMedicationDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'MEDICATION DETAILS'**
+  String get medsMedicationDetails;
+
+  /// No description provided for @medsFieldName.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication Name'**
+  String get medsFieldName;
+
+  /// No description provided for @medsFieldStrength.
+  ///
+  /// In en, this message translates to:
+  /// **'Strength'**
+  String get medsFieldStrength;
+
+  /// No description provided for @medsFieldForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication Form'**
+  String get medsFieldForm;
+
+  /// No description provided for @addManualSelectForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Select form'**
+  String get addManualSelectForm;
+
+  /// No description provided for @addManualColorOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Color (optional)'**
+  String get addManualColorOptional;
+
+  /// No description provided for @medsFieldInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Special Instructions'**
+  String get medsFieldInstructions;
+
+  /// No description provided for @addManualOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get addManualOptional;
+
+  /// No description provided for @addManualInstructionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Take with food after breakfast, avoid grapefruit...'**
+  String get addManualInstructionsHint;
+
+  /// No description provided for @addManualContinueToSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to Schedule →'**
+  String get addManualContinueToSchedule;
+
+  /// No description provided for @addManualSaveDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as Draft'**
+  String get addManualSaveDraft;
+
+  /// No description provided for @addManualNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter medication name'**
+  String get addManualNameHint;
+
+  /// No description provided for @addManualMatchesIndex.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches clinical index'**
+  String get addManualMatchesIndex;
+
+  /// No description provided for @addManualStrengthHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 500'**
+  String get addManualStrengthHint;
+
+  /// No description provided for @addManualFormOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get addManualFormOther;
+
+  /// No description provided for @addManualFormOtherSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter another medication form'**
+  String get addManualFormOtherSubtitle;
+
+  /// No description provided for @addManualCustomForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Medication Form'**
+  String get addManualCustomForm;
+
+  /// No description provided for @addManualCustomFormHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Cream, Inhaler, Patch, Spray...'**
+  String get addManualCustomFormHint;
+
+  /// No description provided for @addManualCustomFormRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the medication form'**
+  String get addManualCustomFormRequired;
+
+  /// No description provided for @addManualInteractionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic Interaction Checks'**
+  String get addManualInteractionTitle;
+
+  /// No description provided for @addManualInteractionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll cross-reference this dosage against your existing logged medications in the next step.'**
+  String get addManualInteractionBody;
+
+  /// No description provided for @addMedSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} {strength} selected — details next!'**
+  String addMedSelected(String name, String strength);
+
+  /// No description provided for @addMedPrivateNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Private and encrypted on this device'**
+  String get addMedPrivateNote;
+
+  /// No description provided for @addMedScanLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Label'**
+  String get addMedScanLabel;
+
+  /// No description provided for @addMedSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get addMedSearch;
+
+  /// No description provided for @addMedManualEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Entry'**
+  String get addMedManualEntry;
+
+  /// No description provided for @addMedMatchingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching Medications ({count})'**
+  String addMedMatchingCount(int count);
+
+  /// No description provided for @addMedFdaApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'FDA Approved'**
+  String get addMedFdaApproved;
+
+  /// No description provided for @addMedTipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: Look for the imprint'**
+  String get addMedTipTitle;
+
+  /// No description provided for @addMedTipBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Most Metformin tablets have numbers like \'500\' or \'M\' pressed on the front to guarantee the exact dosage match.'**
+  String get addMedTipBody;
+
+  /// No description provided for @addMedCantFind.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t find your medication?'**
+  String get addMedCantFind;
+
+  /// No description provided for @addMedAddManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Manually'**
+  String get addMedAddManually;
+
+  /// No description provided for @addMedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for a medication'**
+  String get addMedEmptyTitle;
+
+  /// No description provided for @addMedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a medicine name above or scan its label'**
+  String get addMedEmptySubtitle;
+
+  /// No description provided for @addMedNoResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No medications found'**
+  String get addMedNoResultsTitle;
+
+  /// No description provided for @addMedNoResultsFor.
+  ///
+  /// In en, this message translates to:
+  /// **'No results for \"{query}\"'**
+  String addMedNoResultsFor(String query);
+
+  /// No description provided for @addMedSelectAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Select ›'**
+  String get addMedSelectAction;
+
+  /// No description provided for @reviewScanNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the medication name.'**
+  String get reviewScanNameRequired;
+
+  /// No description provided for @reviewScanStrengthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the medication strength.'**
+  String get reviewScanStrengthRequired;
+
+  /// No description provided for @reviewScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Scan'**
+  String get reviewScanTitle;
+
+  /// No description provided for @scanCaptureFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture failed — try again.'**
+  String get scanCaptureFailed;
+
+  /// No description provided for @scanCaptureError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not capture image. Try again.'**
+  String get scanCaptureError;
+
+  /// No description provided for @scanGalleryError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open image. Try again.'**
+  String get scanGalleryError;
+
+  /// No description provided for @scanDetectedOne.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Detected: {name}'**
+  String scanDetectedOne(String name);
+
+  /// No description provided for @scanDetectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ {count} medicines detected'**
+  String scanDetectedCount(int count);
+
+  /// No description provided for @scanTextNoMedicine.
+  ///
+  /// In en, this message translates to:
+  /// **'Text was detected, but medicine details could not be identified.'**
+  String get scanTextNoMedicine;
+
+  /// No description provided for @scanNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'No text detected. Keep the document clear, flat and well lit.'**
+  String get scanNoText;
+
+  /// No description provided for @scanReadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the image. Try again.'**
+  String get scanReadError;
+
+  /// No description provided for @scanRescanAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Please scan the medicine again.'**
+  String get scanRescanAgain;
+
+  /// No description provided for @scanFitFrameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit the medicine label or full prescription inside the frame'**
+  String get scanFitFrameHint;
+
+  /// No description provided for @scanEnterManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter medication manually'**
+  String get scanEnterManually;
+
+  /// No description provided for @scanRetakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Retake Photo'**
+  String get scanRetakePhoto;
+
+  /// No description provided for @scanReadingPrescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading prescription...'**
+  String get scanReadingPrescription;
+
+  /// No description provided for @scanStatusReading.
+  ///
+  /// In en, this message translates to:
+  /// **'READING'**
+  String get scanStatusReading;
+
+  /// No description provided for @scanStatusFound.
+  ///
+  /// In en, this message translates to:
+  /// **'FOUND'**
+  String get scanStatusFound;
+
+  /// No description provided for @scanStatusInFrame.
+  ///
+  /// In en, this message translates to:
+  /// **'IN FRAME'**
+  String get scanStatusInFrame;
+
+  /// No description provided for @scanStatusReady.
+  ///
+  /// In en, this message translates to:
+  /// **'READY'**
+  String get scanStatusReady;
+
+  /// No description provided for @scanCameraUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera unavailable'**
+  String get scanCameraUnavailable;
+
+  /// No description provided for @scanStartingCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting camera...'**
+  String get scanStartingCamera;
+
+  /// No description provided for @scanCapturingDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Capturing document...'**
+  String get scanCapturingDocument;
+
+  /// No description provided for @scanReadingMedicineText.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading medicine text...'**
+  String get scanReadingMedicineText;
+
+  /// No description provided for @scanMedicineDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine detected'**
+  String get scanMedicineDetected;
+
+  /// No description provided for @scanMedicinesDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} medicines detected'**
+  String scanMedicinesDetected(int count);
+
+  /// No description provided for @scanImageCaptured.
+  ///
+  /// In en, this message translates to:
+  /// **'Image captured'**
+  String get scanImageCaptured;
+
+  /// No description provided for @scanMedicineOrRxDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine or prescription detected'**
+  String get scanMedicineOrRxDetected;
+
+  /// No description provided for @scanPointCameraHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point camera at medicine or prescription'**
+  String get scanPointCameraHint;
+
+  /// No description provided for @scanFlash.
+  ///
+  /// In en, this message translates to:
+  /// **'Flash'**
+  String get scanFlash;
+
+  /// No description provided for @scanShutter.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get scanShutter;
+
+  /// No description provided for @scanGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get scanGallery;
+
+  /// No description provided for @scanTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get scanTryAgain;
+
+  /// No description provided for @scanMedicineBadgeNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'MEDICINE {index} DETECTED'**
+  String scanMedicineBadgeNumber(int index);
+
+  /// No description provided for @scanMedicineBadgeSingular.
+  ///
+  /// In en, this message translates to:
+  /// **'MEDICINE DETECTED'**
+  String get scanMedicineBadgeSingular;
+
+  /// No description provided for @scanFieldStrength.
+  ///
+  /// In en, this message translates to:
+  /// **'Strength'**
+  String get scanFieldStrength;
+
+  /// No description provided for @scanFieldForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Form'**
+  String get scanFieldForm;
+
+  /// No description provided for @scanFieldFrequency.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get scanFieldFrequency;
+
+  /// No description provided for @medsFieldInstructionsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get medsFieldInstructionsShort;
+
+  /// No description provided for @scanReviewAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & Add Medication'**
+  String get scanReviewAdd;
+
+  /// No description provided for @stepSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get stepSchedule;
+
+  /// No description provided for @reviewScanScanned.
+  ///
+  /// In en, this message translates to:
+  /// **'SCANNED'**
+  String get reviewScanScanned;
+
+  /// No description provided for @reviewScanReadSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve read these details from your label — check and correct if needed!'**
+  String get reviewScanReadSuccess;
+
+  /// No description provided for @reviewScanInstructionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter medication instructions'**
+  String get reviewScanInstructionsHint;
+
+  /// No description provided for @reviewScanStrengthUnclear.
+  ///
+  /// In en, this message translates to:
+  /// **'Strength field was unclear in the photo — please verify manually.'**
+  String get reviewScanStrengthUnclear;
+
+  /// No description provided for @reviewScanRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'REQUIRED'**
+  String get reviewScanRequired;
+
+  /// No description provided for @reviewScanStrengthHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter strength e.g. 500mg'**
+  String get reviewScanStrengthHint;
+
+  /// No description provided for @reviewScanConfirmContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm & Continue →'**
+  String get reviewScanConfirmContinue;
 }
 
 class _AppLocalizationsDelegate

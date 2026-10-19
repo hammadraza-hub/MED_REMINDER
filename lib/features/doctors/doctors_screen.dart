@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/app_avatar.dart';
 import 'add_doctor_screen.dart';
 import 'doctors_data.dart';
@@ -58,13 +59,8 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
   // HELPERS
   // ============================================================
 
-  String get _countLabel {
-    if (_doctors.length == 1) {
-      return '1 doctor on file';
-    }
-
-    return '${_doctors.length} doctors on file';
-  }
+  String _countLabel(AppLocalizations l10n) =>
+      l10n.doctorsCountOnFile(_doctors.length);
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
@@ -148,10 +144,10 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
 
               const SizedBox(width: 4),
 
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Doctors',
-                  style: TextStyle(
+                  AppLocalizations.of(context).doctorsTitle,
+                  style: const TextStyle(
                     color: AppColors.surface,
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -213,7 +209,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
       children: [
         Expanded(
           child: Text(
-            _countLabel,
+            _countLabel(AppLocalizations.of(context)),
             style: const TextStyle(
               color: AppColors.textTeal,
               fontSize: 12,
@@ -237,7 +233,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                 );
               });
 
-              _showMessage('Doctor added successfully');
+              _showMessage(AppLocalizations.of(context).doctorsAdded);
             }
           },
           child: Container(
@@ -246,10 +242,10 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
               color: AppColors.primaryDark,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
+                const Text(
                   '+',
                   style: TextStyle(
                     color: AppColors.surface,
@@ -259,11 +255,11 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                   ),
                 ),
 
-                SizedBox(width: 6),
+                const SizedBox(width: 6),
 
                 Text(
-                  'Add Doctor',
-                  style: TextStyle(
+                  AppLocalizations.of(context).doctorsAdd,
+                  style: const TextStyle(
                     color: AppColors.surface,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -282,6 +278,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
   // ============================================================
 
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 160,
       alignment: Alignment.center,
@@ -296,9 +293,9 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
 
           const SizedBox(height: 10),
 
-          const Text(
-            'No doctors on file',
-            style: TextStyle(
+          Text(
+            l10n.doctorsEmptyTitle,
+            style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -307,9 +304,9 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
 
           const SizedBox(height: 4),
 
-          const Text(
-            'Add a doctor to link prescriptions',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+          Text(
+            l10n.doctorsEmptySubtitle,
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
           ),
         ],
       ),
@@ -324,7 +321,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
     return GestureDetector(
       onTap: () {
         // TODO: Doctor detail/edit screen — reference UI pending.
-        _showMessage('${doctor.name} — coming soon');
+        _showMessage(AppLocalizations.of(context).comingSoon(doctor.name));
       },
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -408,7 +405,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                     ),
                   ),
                   child: Text(
-                    doctor.chipLabel.toUpperCase(),
+                    doctor.chipLabel(AppLocalizations.of(context)).toUpperCase(),
                     style: const TextStyle(
                       color: AppColors.textTeal,
                       fontSize: 10,
@@ -473,6 +470,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
   // ============================================================
 
   Widget _buildUpcomingVisitsBanner() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -502,22 +500,25 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
 
           const SizedBox(width: 10),
 
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Upcoming Visits',
-                  style: TextStyle(
+                  l10n.doctorsUpcomingVisits,
+                  style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 1),
+                const SizedBox(height: 1),
                 Text(
-                  '2 appointments scheduled',
-                  style: TextStyle(color: AppColors.textTeal, fontSize: 10),
+                  l10n.doctorsAppointmentsScheduled(2),
+                  style: const TextStyle(
+                    color: AppColors.textTeal,
+                    fontSize: 10,
+                  ),
                 ),
               ],
             ),
@@ -525,9 +526,9 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
 
           GestureDetector(
             onTap: _openAppointments,
-            child: const Text(
-              'View →',
-              style: TextStyle(
+            child: Text(
+              l10n.doctorsView,
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -544,12 +545,12 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
   // ============================================================
 
   Widget _buildHint() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Text(
-        'Tap a doctor to view details or edit',
+        AppLocalizations.of(context).doctorsHint,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: const TextStyle(
           color: AppColors.textTeal,
           fontSize: 11,
           fontWeight: FontWeight.w500,

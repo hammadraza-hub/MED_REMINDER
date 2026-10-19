@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/medications/medication_draft.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
+import 'meds_data.dart';
 import 'schedule_screen.dart';
 
 /// ============================================================
@@ -189,6 +191,28 @@ class _AddManualScreenState extends State<AddManualScreen> {
     return _colorOptions[_selectedColor].$2;
   }
 
+  /// Color id ka localized display label.
+  String _colorLabel(AppLocalizations l10n, int index) {
+    switch (_colorOptions[index].$2) {
+      case 'White':
+        return l10n.addManualColorWhite;
+      case 'Yellow':
+        return l10n.addManualColorYellow;
+      case 'Pink':
+        return l10n.addManualColorPink;
+      case 'Blue':
+        return l10n.addManualColorBlue;
+      case 'Orange':
+        return l10n.addManualColorOrange;
+      case 'Peach':
+        return l10n.addManualColorPeach;
+      case 'Green':
+        return l10n.addManualColorGreen;
+      default:
+        return _colorOptions[index].$2;
+    }
+  }
+
   /// Existing medicine image assets ko consistent rakhne ke liye
   /// selected medication form ko matching image asset se map karta hai.
   ///
@@ -288,10 +312,12 @@ class _AddManualScreenState extends State<AddManualScreen> {
     // Firebase phase mein drafts ke liye dedicated draft document/state
     // use karna hai; active medication document nahi.
 
+    final l10n = AppLocalizations.of(context);
+
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(content: Text('Draft saved — baad mein complete!')),
+        SnackBar(content: Text(l10n.addManualDraftSaved)),
       );
 
     Navigator.of(context).pop();
@@ -368,6 +394,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   // ============================================================
 
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       color: AppColors.headerDark,
@@ -394,10 +421,10 @@ class _AddManualScreenState extends State<AddManualScreen> {
 
                 const SizedBox(width: 8),
 
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Add Medication',
-                    style: TextStyle(
+                    l10n.addMedTitle,
+                    style: const TextStyle(
                       color: AppColors.surface,
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
@@ -412,17 +439,17 @@ class _AddManualScreenState extends State<AddManualScreen> {
                     color: AppColors.formAccent,
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.check_rounded,
                         color: AppColors.surface,
                         size: 14,
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(
-                        'RX VERIFIED',
-                        style: TextStyle(
+                        l10n.addManualRxVerified,
+                        style: const TextStyle(
                           color: AppColors.surface,
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
@@ -458,12 +485,13 @@ class _AddManualScreenState extends State<AddManualScreen> {
   // ============================================================
 
   Widget _buildForm() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'MEDICATION DETAILS',
-          style: TextStyle(
+        Text(
+          l10n.medsMedicationDetails,
+          style: const TextStyle(
             color: AppColors.headerDark,
             fontSize: 13,
             fontWeight: FontWeight.w800,
@@ -473,7 +501,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
 
         const SizedBox(height: 15),
 
-        _buildLabel('Medication Name', required: true),
+        _buildLabel(l10n.medsFieldName, required: true),
 
         const SizedBox(height: 7),
 
@@ -481,7 +509,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
 
         const SizedBox(height: 17),
 
-        _buildLabel('Strength', required: true),
+        _buildLabel(l10n.medsFieldStrength, required: true),
 
         const SizedBox(height: 7),
 
@@ -512,12 +540,12 @@ class _AddManualScreenState extends State<AddManualScreen> {
 
         const SizedBox(height: 18),
 
-        const Row(
+        Row(
           children: [
             Expanded(
               child: Text(
-                'Medication Form',
-                style: TextStyle(
+                l10n.medsFieldForm,
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -526,8 +554,11 @@ class _AddManualScreenState extends State<AddManualScreen> {
             ),
 
             Text(
-              'Select form',
-              style: TextStyle(color: AppColors.formAccent, fontSize: 11),
+              l10n.addManualSelectForm,
+              style: const TextStyle(
+                color: AppColors.formAccent,
+                fontSize: 11,
+              ),
             ),
           ],
         ),
@@ -567,10 +598,10 @@ class _AddManualScreenState extends State<AddManualScreen> {
 
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
-                'Color (optional)',
-                style: TextStyle(
+                l10n.addManualColorOptional,
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -579,7 +610,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
             ),
 
             Text(
-              _selectedColorName,
+              _colorLabel(l10n, _selectedColor),
               style: const TextStyle(
                 color: AppColors.headerDark,
                 fontSize: 12,
@@ -602,12 +633,12 @@ class _AddManualScreenState extends State<AddManualScreen> {
 
         const SizedBox(height: 19),
 
-        const Row(
+        Row(
           children: [
             Expanded(
               child: Text(
-                'Special Instructions',
-                style: TextStyle(
+                l10n.medsFieldInstructions,
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -616,8 +647,11 @@ class _AddManualScreenState extends State<AddManualScreen> {
             ),
 
             Text(
-              'Optional',
-              style: TextStyle(color: AppColors.headerDark, fontSize: 11),
+              l10n.addManualOptional,
+              style: const TextStyle(
+                color: AppColors.headerDark,
+                fontSize: 11,
+              ),
             ),
           ],
         ),
@@ -631,8 +665,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
           textCapitalization: TextCapitalization.sentences,
           style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
           decoration: _inputDecoration(
-            hintText:
-                'e.g. Take with food after breakfast, avoid grapefruit...',
+            hintText: l10n.addManualInstructionsHint,
           ).copyWith(contentPadding: const EdgeInsets.fromLTRB(13, 13, 13, 13)),
         ),
 
@@ -656,9 +689,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
-              'Continue to Schedule  →',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            child: Text(
+              l10n.addManualContinueToSchedule,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
             ),
           ),
         ),
@@ -674,9 +707,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
               minimumSize: const Size(0, 34),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text(
-              'Save as Draft',
-              style: TextStyle(
+            child: Text(
+              l10n.addManualSaveDraft,
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 decoration: TextDecoration.underline,
@@ -695,6 +728,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   // ============================================================
 
   Widget _nameField() {
+    final l10n = AppLocalizations.of(context);
     final hasText = _nameController.text.trim().isNotEmpty;
 
     return Column(
@@ -712,7 +746,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
             });
           },
           decoration: _inputDecoration(
-            hintText: 'Enter medication name',
+            hintText: l10n.addManualNameHint,
             error: _nameError,
             suffixIcon: const Icon(
               Icons.search_rounded,
@@ -725,16 +759,20 @@ class _AddManualScreenState extends State<AddManualScreen> {
         if (hasText) ...[
           const SizedBox(height: 6),
 
-          const Row(
+          Row(
             children: [
-              Icon(Icons.check_rounded, size: 15, color: AppColors.success),
+              const Icon(
+                Icons.check_rounded,
+                size: 15,
+                color: AppColors.success,
+              ),
 
-              SizedBox(width: 5),
+              const SizedBox(width: 5),
 
               Expanded(
                 child: Text(
-                  'Matches clinical index',
-                  style: TextStyle(
+                  l10n.addManualMatchesIndex,
+                  style: const TextStyle(
                     color: AppColors.success,
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
@@ -753,6 +791,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   // ============================================================
 
   Widget _strengthField() {
+    final l10n = AppLocalizations.of(context);
     return TextField(
       controller: _strengthController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -766,7 +805,10 @@ class _AddManualScreenState extends State<AddManualScreen> {
           });
         }
       },
-      decoration: _inputDecoration(hintText: 'e.g. 500', error: _strengthError),
+      decoration: _inputDecoration(
+        hintText: l10n.addManualStrengthHint,
+        error: _strengthError,
+      ),
     );
   }
 
@@ -922,6 +964,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   Widget _buildFormCard(
     ({String title, String asset, IconData fallbackIcon}) option,
   ) {
+    final l10n = AppLocalizations.of(context);
     final selected = _selectedForm == option.title;
 
     return InkWell(
@@ -991,7 +1034,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
                   const SizedBox(height: 6),
 
                   Text(
-                    option.title,
+                    medFormLabel(l10n, option.title),
                     style: TextStyle(
                       color: selected
                           ? AppColors.formAccent
@@ -1014,6 +1057,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   // ============================================================
 
   Widget _buildOtherFormCard() {
+    final l10n = AppLocalizations.of(context);
     final selected = _isOtherForm;
 
     return InkWell(
@@ -1051,25 +1095,25 @@ class _AddManualScreenState extends State<AddManualScreen> {
 
             const SizedBox(width: 12),
 
-            const Expanded(
+            Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Other',
-                    style: TextStyle(
+                    l10n.addManualFormOther,
+                    style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
 
-                  SizedBox(height: 3),
+                  const SizedBox(height: 3),
 
                   Text(
-                    'Enter another medication form',
-                    style: TextStyle(
+                    l10n.addManualFormOtherSubtitle,
+                    style: const TextStyle(
                       color: AppColors.formSubtitle,
                       fontSize: 11,
                     ),
@@ -1095,10 +1139,11 @@ class _AddManualScreenState extends State<AddManualScreen> {
   // ============================================================
 
   Widget _buildCustomFormField() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildLabel('Custom Medication Form', required: true),
+        _buildLabel(l10n.addManualCustomForm, required: true),
 
         const SizedBox(height: 7),
 
@@ -1115,7 +1160,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
             }
           },
           decoration: _inputDecoration(
-            hintText: 'e.g. Cream, Inhaler, Patch, Spray...',
+            hintText: l10n.addManualCustomFormHint,
             error: _customFormError,
             suffixIcon: const Icon(
               Icons.edit_outlined,
@@ -1128,9 +1173,9 @@ class _AddManualScreenState extends State<AddManualScreen> {
         if (_customFormError) ...[
           const SizedBox(height: 6),
 
-          const Text(
-            'Please enter the medication form',
-            style: TextStyle(
+          Text(
+            l10n.addManualCustomFormRequired,
+            style: const TextStyle(
               color: AppColors.error,
               fontSize: 11,
               fontWeight: FontWeight.w500,
@@ -1185,6 +1230,7 @@ class _AddManualScreenState extends State<AddManualScreen> {
   // ============================================================
 
   Widget _buildInteractionCard() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
@@ -1195,36 +1241,35 @@ class _AddManualScreenState extends State<AddManualScreen> {
           left: BorderSide(color: AppColors.formAccent, width: 4),
         ),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
+          const Icon(
             Icons.health_and_safety_rounded,
             color: AppColors.formAccent,
             size: 20,
           ),
 
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
 
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Automatic Interaction Checks',
-                  style: TextStyle(
+                  l10n.addManualInteractionTitle,
+                  style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
 
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
 
                 Text(
-                  "We'll cross-reference this dosage against your "
-                  'existing logged medications in the next step.',
-                  style: TextStyle(
+                  l10n.addManualInteractionBody,
+                  style: const TextStyle(
                     color: AppColors.formSubtitle,
                     fontSize: 11,
                     height: 1.4,

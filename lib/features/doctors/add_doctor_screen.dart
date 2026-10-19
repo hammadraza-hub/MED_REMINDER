@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
@@ -118,7 +119,7 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
     final name = _nameController.text.trim();
 
     if (name.isEmpty) {
-      _showMessage('Please enter the doctor\'s full name.');
+      _showMessage(AppLocalizations.of(context).doctorsNameRequired);
       return;
     }
 
@@ -216,10 +217,10 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
 
               const SizedBox(width: 2),
 
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Add Doctor',
-                  style: TextStyle(
+                  AppLocalizations.of(context).doctorsAdd,
+                  style: const TextStyle(
                     color: AppColors.surface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -244,12 +245,13 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
   // ============================================================
 
   Widget _buildForm() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'DOCTOR DETAILS',
-          style: TextStyle(
+        Text(
+          l10n.doctorsDetailsSection,
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -259,37 +261,37 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
 
         const SizedBox(height: 14),
 
-        _buildFieldLabel('Full Name *'),
+        _buildFieldLabel(l10n.doctorsFieldFullName),
 
         const SizedBox(height: 6),
 
         _buildTextField(
           controller: _nameController,
-          hintText: 'Enter full name',
+          hintText: l10n.doctorsHintFullName,
           textInputAction: TextInputAction.next,
         ),
 
         const SizedBox(height: 14),
 
-        _buildFieldLabel('Specialty'),
+        _buildFieldLabel(l10n.doctorsFieldSpecialty),
 
         const SizedBox(height: 6),
 
         _buildTextField(
           controller: _specialtyController,
-          hintText: 'Enter specialty',
+          hintText: l10n.doctorsHintSpecialty,
           textInputAction: TextInputAction.next,
         ),
 
         const SizedBox(height: 14),
 
-        _buildFieldLabel('Phone Number'),
+        _buildFieldLabel(l10n.doctorsFieldPhone),
 
         const SizedBox(height: 6),
 
         _buildTextField(
           controller: _phoneController,
-          hintText: 'Enter phone number',
+          hintText: l10n.doctorsHintPhone,
           keyboardType: TextInputType.phone,
           textInputAction: TextInputAction.next,
           suffixIcon: const Icon(
@@ -304,13 +306,13 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
 
         const SizedBox(height: 14),
 
-        _buildFieldLabel('Clinic / Address (optional)'),
+        _buildFieldLabel(l10n.doctorsFieldClinic),
 
         const SizedBox(height: 6),
 
         _buildTextField(
           controller: _clinicController,
-          hintText: 'Enter clinic or address',
+          hintText: l10n.doctorsHintClinic,
           keyboardType: TextInputType.streetAddress,
           textInputAction: TextInputAction.done,
           maxLines: 2,
@@ -322,9 +324,9 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
         // ======================================================
         // LINK MEDICATIONS
         // ======================================================
-        const Text(
-          'LINK TO MEDICATIONS',
-          style: TextStyle(
+        Text(
+          l10n.doctorsLinkMedications,
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -334,9 +336,9 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
 
         const SizedBox(height: 6),
 
-        const Text(
-          'Which medications does this doctor prescribe?',
-          style: TextStyle(
+        Text(
+          l10n.doctorsLinkPrompt,
+          style: const TextStyle(
             color: AppColors.textTeal,
             fontSize: 11,
             fontWeight: FontWeight.w400,
@@ -377,9 +379,12 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
                       color: AppColors.surface,
                     ),
                   )
-                : const Text(
-                    'Save Doctor',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                : Text(
+                    l10n.doctorsSave,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
           ),
         ),
@@ -396,9 +401,9 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
                 : () {
                     Navigator.of(context).pop();
                   },
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
+            child: Text(
+              l10n.cancel,
+              style: const TextStyle(
                 color: AppColors.textTeal,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -529,6 +534,7 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
     final key = _medKey(med.name, med.dose);
 
     final selected = _linkedMeds[key] ?? false;
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
@@ -572,7 +578,7 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
                 const SizedBox(height: 3),
 
                 Text(
-                  '${med.form} · ${med.freq}',
+                  '${med.form == 'Liquid' ? l10n.doseFormLiquid : l10n.doseFormTablet} · ${l10n.doseScheduleDaily}',
                   style: const TextStyle(
                     color: AppColors.textTeal,
                     fontSize: 10,

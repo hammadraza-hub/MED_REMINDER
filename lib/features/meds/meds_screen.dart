@@ -9,6 +9,7 @@ import '../../core/medications/local_medication_schedule_repository.dart';
 import '../../core/medications/medication_repository.dart';
 import '../../core/medications/medication_schedule_repository.dart';
 import '../../core/profile/profile_controller.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/app_avatar.dart';
 import 'add_medication_screen.dart';
 import 'allergies_data.dart';
@@ -340,15 +341,20 @@ class _MedsScreenState extends State<MedsScreen> {
   // UI MEDICINE MAPPING
   // ============================================================
 
-  List<_MedicationListItem> get _activeItems {
-    return _activeProfiles.map(_toListItem).toList();
+  List<_MedicationListItem> _activeItems(AppLocalizations l10n) {
+    return _activeProfiles.map((profile) => _toListItem(profile, l10n)).toList();
   }
 
-  List<_MedicationListItem> get _archivedItems {
-    return _archivedProfiles.map(_toListItem).toList();
+  List<_MedicationListItem> _archivedItems(AppLocalizations l10n) {
+    return _archivedProfiles
+        .map((profile) => _toListItem(profile, l10n))
+        .toList();
   }
 
-  _MedicationListItem _toListItem(MedicationProfile profile) {
+  _MedicationListItem _toListItem(
+    MedicationProfile profile,
+    AppLocalizations l10n,
+  ) {
     final legacy = _findLegacyPresentation(profile);
 
     final schedules =
@@ -363,11 +369,11 @@ class _MedsScreenState extends State<MedsScreen> {
 
     // 🆕 MODULE 1: Schedule fallback remove — sirf persisted SQLite schedules.
     final frequency = hasPersistedSchedule
-        ? _scheduleFrequency(enabledSchedules)
-        : 'Schedule not set';
+        ? _scheduleFrequency(enabledSchedules, l10n)
+        : l10n.medsScheduleNotSet;
 
     final nextDose = hasPersistedSchedule
-        ? _nextDoseLabel(enabledSchedules)
+        ? _nextDoseLabel(enabledSchedules, l10n)
         : '—';
 
     return _MedicationListItem(
@@ -453,39 +459,39 @@ class _MedsScreenState extends State<MedsScreen> {
   // SCHEDULE PRESENTATION
   // ============================================================
 
-  String _scheduleFrequency(List<MedicationScheduleProfile> schedules) {
+  String _scheduleFrequency(
+    List<MedicationScheduleProfile> schedules,
+    AppLocalizations l10n,
+  ) {
     if (schedules.isEmpty) {
-      return 'Schedule not set';
+      return l10n.medsScheduleNotSet;
     }
 
     final scheduleType = schedules.first.scheduleType.trim().toLowerCase();
 
     switch (scheduleType) {
       case 'prn':
-        return 'As needed';
+        return l10n.medsFrequencyAsNeeded;
 
       case 'specific_days':
-        return schedules.length == 1
-            ? '1x on selected days'
-            : '${schedules.length}x on selected days';
+        return l10n.medsFrequencySelectedDays(schedules.length);
 
       case 'cyclical':
-        return schedules.length == 1
-            ? '1x cyclical'
-            : '${schedules.length}x cyclical';
+        return l10n.medsFrequencyCyclical(schedules.length);
 
       case 'tapering':
-        return 'Tapering schedule';
+        return l10n.medsFrequencyTapering;
 
       case 'daily':
       default:
-        return schedules.length == 1
-            ? '1x daily'
-            : '${schedules.length}x daily';
+        return l10n.medsFrequencyDaily(schedules.length);
     }
   }
 
-  String _nextDoseLabel(List<MedicationScheduleProfile> schedules) {
+  String _nextDoseLabel(
+    List<MedicationScheduleProfile> schedules,
+    AppLocalizations l10n,
+  ) {
     if (schedules.isEmpty) {
       return '—';
     }
@@ -510,10 +516,10 @@ class _MedsScreenState extends State<MedsScreen> {
     }
 
     if (difference == 1) {
-      return 'Tomorrow $time';
+      return l10n.medsNextDoseTomorrow(time);
     }
 
-    return '${_shortWeekday(next.weekday)} $time';
+    return l10n.medsNextDoseWeekday(_shortWeekday(next.weekday, l10n), time);
   }
 
   DateTime? _findNextScheduleOccurrence(
@@ -662,23 +668,23 @@ class _MedsScreenState extends State<MedsScreen> {
     return '$twelveHour:$minuteText $period';
   }
 
-  String _shortWeekday(int weekday) {
+  String _shortWeekday(int weekday, AppLocalizations l10n) {
     switch (weekday) {
       case DateTime.monday:
-        return 'Mon';
+        return l10n.medsWeekdayMon;
       case DateTime.tuesday:
-        return 'Tue';
+        return l10n.medsWeekdayTue;
       case DateTime.wednesday:
-        return 'Wed';
+        return l10n.medsWeekdayWed;
       case DateTime.thursday:
-        return 'Thu';
+        return l10n.medsWeekdayThu;
       case DateTime.friday:
-        return 'Fri';
+        return l10n.medsWeekdayFri;
       case DateTime.saturday:
-        return 'Sat';
+        return l10n.medsWeekdaySat;
       case DateTime.sunday:
       default:
-        return 'Sun';
+        return l10n.medsWeekdaySun;
     }
   }
 
@@ -686,8 +692,8 @@ class _MedsScreenState extends State<MedsScreen> {
   // FILTERED — search + tab
   // ============================================================
 
-  List<_MedicationListItem> get _filteredMeds {
-    final source = _showArchived ? _archivedItems : _activeItems;
+  List<_MedicationListItem> _filteredMeds(AppLocalizations l10n) {
+    final source = _showArchived ? _archivedItems(l10n) : _activeItems(l10n);
     final query = _searchController.text.trim().toLowerCase();
 
     if (query.isEmpty) {
@@ -786,10 +792,11 @@ class _MedsScreenState extends State<MedsScreen> {
   /// SQLite update sirf successful confirmation ke baad.
   /// ============================================================
   Future<void> _discontinueMedicine(_MedicationListItem item) async {
+    final l10n = AppLocalizations.of(context);
     final reason = await showGeneralDialog<String?>(
       context: context,
       barrierDismissible: true,
-      barrierLabel: 'Close discontinue medication',
+      barrierLabel: l10n.medsDiscontinueBarrierLabel,
       barrierColor: AppColors.headerDark.withValues(alpha: 0.55),
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (context, animation, secondaryAnimation) {
@@ -829,7 +836,7 @@ class _MedsScreenState extends State<MedsScreen> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${item.profile.name} moved to Archived')),
+        SnackBar(content: Text(l10n.medsMovedToArchived(item.profile.name))),
       );
       // Existing DoseEvents/history delete nahi karni.
       //
@@ -845,9 +852,7 @@ class _MedsScreenState extends State<MedsScreen> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not discontinue medication. Please try again.'),
-        ),
+        SnackBar(content: Text(l10n.medsDiscontinueError)),
       );
     }
   }
@@ -896,6 +901,9 @@ class _MedsScreenState extends State<MedsScreen> {
   // ============================================================
 
   Widget _buildContent() {
+    final l10n = AppLocalizations.of(context);
+    final items = _filteredMeds(l10n);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 95),
       child: Column(
@@ -905,12 +913,12 @@ class _MedsScreenState extends State<MedsScreen> {
 
           const SizedBox(height: 12),
 
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'MANAGE',
-                style: TextStyle(
+                l10n.medsManageHeader,
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 10,
                   letterSpacing: 1.5,
@@ -918,8 +926,8 @@ class _MedsScreenState extends State<MedsScreen> {
                 ),
               ),
               Text(
-                'Quick Tools',
-                style: TextStyle(
+                l10n.medsQuickTools,
+                style: const TextStyle(
                   color: AppColors.formAccent,
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
@@ -935,8 +943,10 @@ class _MedsScreenState extends State<MedsScreen> {
               Expanded(
                 child: _ManageTile(
                   icon: Icons.inventory_2_outlined,
-                  label: 'Inventory',
-                  badge: _lowStockCount > 0 ? '$_lowStockCount LOW' : null,
+                  label: l10n.medsInventory,
+                  badge: _lowStockCount > 0
+                      ? l10n.medsLowBadge(_lowStockCount)
+                      : null,
                   onTap: _openInventory,
                 ),
               ),
@@ -946,7 +956,7 @@ class _MedsScreenState extends State<MedsScreen> {
               Expanded(
                 child: _ManageTile(
                   icon: Icons.shield_outlined,
-                  label: 'Allergies',
+                  label: l10n.medsAllergies,
                   count: '${AllergiesData.countFor(ProfileController.instance.memberId)}',
                   onTap: _openAllergies,
                 ),
@@ -957,7 +967,7 @@ class _MedsScreenState extends State<MedsScreen> {
               Expanded(
                 child: _ManageTile(
                   icon: Icons.assignment_outlined,
-                  label: 'Side Effects',
+                  label: l10n.medsSideEffects,
                   onTap: _openSideEffects,
                 ),
               ),
@@ -967,9 +977,9 @@ class _MedsScreenState extends State<MedsScreen> {
               Expanded(
                 child: _ManageTile(
                   icon: Icons.local_pharmacy_outlined,
-                  label: 'Pharmacy',
+                  label: l10n.medsPharmacy,
                   onTap: () {
-                    _showMessage('Pharmacy — coming soon');
+                    _showMessage(l10n.comingSoon(l10n.medsPharmacy));
                   },
                 ),
               ),
@@ -984,10 +994,10 @@ class _MedsScreenState extends State<MedsScreen> {
 
           if (_medicationsLoading)
             _buildLoadingState()
-          else if (_filteredMeds.isEmpty)
+          else if (items.isEmpty)
             _buildEmptyState()
           else
-            ..._filteredMeds.map(
+            ...items.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _showArchived
@@ -1021,13 +1031,14 @@ class _MedsScreenState extends State<MedsScreen> {
 
   Future<void> _openMedicine(_MedicationListItem item) async {
     final medicine = item.medicine;
+    final l10n = AppLocalizations.of(context);
 
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => EditMedicationScreen(
           medicineName: medicine.name,
           medicineStrength: medicine.dose,
-          medicineForm: medicine.typeLabel,
+          medicineForm: medicineTypeLabel(l10n, medicine.type),
           dosesPerDay: item.schedules.isNotEmpty
               ? item.schedules.length
               : _dosesPerDayFromFrequency(medicine.frequency),
@@ -1063,6 +1074,7 @@ class _MedsScreenState extends State<MedsScreen> {
   // ============================================================
 
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       color: AppColors.headerDark,
@@ -1075,10 +1087,10 @@ class _MedsScreenState extends State<MedsScreen> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Medications',
-                      style: TextStyle(
+                      l10n.medsTitle,
+                      style: const TextStyle(
                         color: AppColors.surface,
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -1124,7 +1136,9 @@ class _MedsScreenState extends State<MedsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${ProfileController.instance.displayName}\'s Medications',
+                          l10n.medsMemberMedications(
+                            ProfileController.instance.displayName,
+                          ),
                           style: const TextStyle(
                             color: AppColors.surface,
                             fontSize: 15,
@@ -1135,7 +1149,7 @@ class _MedsScreenState extends State<MedsScreen> {
                         const SizedBox(height: 3),
 
                         Text(
-                          '${_activeProfiles.length} active medications',
+                          l10n.medsActiveCount(_activeProfiles.length),
                           style: const TextStyle(
                             color: AppColors.headerSubtext,
                             fontSize: 11,
@@ -1175,6 +1189,7 @@ class _MedsScreenState extends State<MedsScreen> {
   // ============================================================
 
   Widget _buildSearch() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 52,
       decoration: BoxDecoration(
@@ -1200,9 +1215,12 @@ class _MedsScreenState extends State<MedsScreen> {
               onChanged: (_) {
                 setState(() {});
               },
-              decoration: const InputDecoration(
-                hintText: 'Search medications...',
-                hintStyle: TextStyle(color: AppColors.searchHint, fontSize: 13),
+              decoration: InputDecoration(
+                hintText: l10n.medsSearchHint,
+                hintStyle: const TextStyle(
+                  color: AppColors.searchHint,
+                  fontSize: 13,
+                ),
                 border: InputBorder.none,
                 isDense: true,
               ),
@@ -1242,10 +1260,11 @@ class _MedsScreenState extends State<MedsScreen> {
   // ============================================================
 
   Widget _buildTabs() {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         _TabButton(
-          label: 'Active (${_activeProfiles.length})',
+          label: l10n.medsTabActive(_activeProfiles.length),
           selected: !_showArchived,
           onTap: () {
             setState(() {
@@ -1257,7 +1276,7 @@ class _MedsScreenState extends State<MedsScreen> {
         const SizedBox(width: 8),
 
         _TabButton(
-          label: 'Archived (${_archivedProfiles.length})',
+          label: l10n.medsTabArchived(_archivedProfiles.length),
           selected: _showArchived,
           onTap: () {
             setState(() {
@@ -1287,6 +1306,7 @@ class _MedsScreenState extends State<MedsScreen> {
   // ============================================================
 
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 200,
       alignment: Alignment.center,
@@ -1302,7 +1322,7 @@ class _MedsScreenState extends State<MedsScreen> {
           const SizedBox(height: 10),
 
           Text(
-            _showArchived ? 'No archived medicines' : 'No medicines found',
+            _showArchived ? l10n.medsEmptyArchived : l10n.medsEmpty,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 15,
@@ -1587,6 +1607,7 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(15),
       child: Stack(
@@ -1600,18 +1621,18 @@ class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
                   color: AppColors.error,
                   child: InkWell(
                     onTap: _handleDiscontinueTap,
-                    child: const Column(
+                    child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.archive_outlined,
                           color: AppColors.surface,
                           size: 23,
                         ),
-                        SizedBox(height: 5),
+                        const SizedBox(height: 5),
                         Text(
-                          'Discontinue',
-                          style: TextStyle(
+                          l10n.medsDiscontinue,
+                          style: const TextStyle(
                             color: AppColors.surface,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -1697,6 +1718,8 @@ class _MedicineCardContent extends StatelessWidget {
 
     final effectiveImagePath = imagePath ?? medicine.typeImageAsset;
 
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 15, 14, 14),
       decoration: BoxDecoration(
@@ -1770,13 +1793,13 @@ class _MedicineCardContent extends StatelessWidget {
 
                     if (isLow)
                       _MedicineBadge(
-                        text: 'LOW STOCK',
+                        text: l10n.medsLowStock,
                         background: AppColors.lowBadgeBackground,
                         foreground: AppColors.lowBadgeText,
                       )
                     else if (isCourse)
-                      const _MedicineBadge(
-                        text: 'ACTIVE',
+                      _MedicineBadge(
+                        text: l10n.medsBadgeActive,
                         background: AppColors.successBackground,
                         foreground: AppColors.success,
                       ),
@@ -1786,7 +1809,7 @@ class _MedicineCardContent extends StatelessWidget {
                 const SizedBox(height: 4),
 
                 Text(
-                  '${medicine.typeLabel} · ${medicine.frequency}',
+                  '${medicineTypeLabel(l10n, medicine.type)} · ${medicine.frequency}',
                   style: const TextStyle(
                     color: AppColors.formSubtitle,
                     fontSize: 10,
@@ -1812,8 +1835,8 @@ class _MedicineCardContent extends StatelessWidget {
                     Expanded(
                       child: Text(
                         isCourse
-                            ? 'Ends ${medicine.endsOnLabel}'
-                            : 'Next: ${medicine.nextDose}',
+                            ? l10n.medsEnds(medicine.endsOnLabel)
+                            : l10n.medsNext(medicine.nextDose),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1853,7 +1876,7 @@ class _MedicineCardContent extends StatelessWidget {
                           const SizedBox(height: 4),
 
                           Text(
-                            medicine.supplyLabel,
+                            medicine.supplyLabel(l10n),
                             style: TextStyle(
                               color: isLow
                                   ? AppColors.lowBadgeText

@@ -842,4 +842,805 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get paymentUnlockNote =>
       'Interaction checks, refill alerts & reports are now active';
+
+  @override
+  String get doctorsTitle => 'Doctors';
+
+  @override
+  String get doctorsAdd => 'Add Doctor';
+
+  @override
+  String get doctorsAdded => 'Doctor added successfully';
+
+  @override
+  String doctorsCountOnFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count doctors on file',
+      one: '1 doctor on file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get doctorsEmptyTitle => 'No doctors on file';
+
+  @override
+  String get doctorsEmptySubtitle => 'Add a doctor to link prescriptions';
+
+  @override
+  String get doctorsUpcomingVisits => 'Upcoming Visits';
+
+  @override
+  String doctorsAppointmentsScheduled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count appointments scheduled',
+      one: '1 appointment scheduled',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get doctorsView => 'View →';
+
+  @override
+  String get doctorsHint => 'Tap a doctor to view details or edit';
+
+  @override
+  String doctorsMedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count meds',
+      one: '1 med',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get doctorsDetailsSection => 'DOCTOR DETAILS';
+
+  @override
+  String get doctorsFieldFullName => 'Full Name *';
+
+  @override
+  String get doctorsHintFullName => 'Enter full name';
+
+  @override
+  String get doctorsFieldSpecialty => 'Specialty';
+
+  @override
+  String get doctorsHintSpecialty => 'Enter specialty';
+
+  @override
+  String get doctorsFieldPhone => 'Phone Number';
+
+  @override
+  String get doctorsHintPhone => 'Enter phone number';
+
+  @override
+  String get doctorsFieldClinic => 'Clinic / Address (optional)';
+
+  @override
+  String get doctorsHintClinic => 'Enter clinic or address';
+
+  @override
+  String get doctorsLinkMedications => 'LINK TO MEDICATIONS';
+
+  @override
+  String get doctorsLinkPrompt =>
+      'Which medications does this doctor prescribe?';
+
+  @override
+  String get doctorsSave => 'Save Doctor';
+
+  @override
+  String get doctorsNameRequired => 'Please enter the doctor\'s full name.';
+
+  @override
+  String get medsTitle => 'Medications';
+
+  @override
+  String medsMemberMedications(String name) {
+    return '$name\'s Medications';
+  }
+
+  @override
+  String medsActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active medications',
+      one: '1 active medication',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get medsManageHeader => 'MANAGE';
+
+  @override
+  String get medsQuickTools => 'Quick Tools';
+
+  @override
+  String get medsInventory => 'Inventory';
+
+  @override
+  String medsLowBadge(int count) {
+    return '$count LOW';
+  }
+
+  @override
+  String get medsAllergies => 'Allergies';
+
+  @override
+  String get medsSideEffects => 'Side Effects';
+
+  @override
+  String get medsPharmacy => 'Pharmacy';
+
+  @override
+  String get medsSearchHint => 'Search medications...';
+
+  @override
+  String medsTabActive(int count) {
+    return 'Active ($count)';
+  }
+
+  @override
+  String medsTabArchived(int count) {
+    return 'Archived ($count)';
+  }
+
+  @override
+  String get medsEmptyArchived => 'No archived medicines';
+
+  @override
+  String get medsEmpty => 'No medicines found';
+
+  @override
+  String medsMovedToArchived(String name) {
+    return '$name moved to Archived';
+  }
+
+  @override
+  String get medsDiscontinueError =>
+      'Could not discontinue medication. Please try again.';
+
+  @override
+  String get medsDiscontinueBarrierLabel => 'Close discontinue medication';
+
+  @override
+  String get medsDiscontinue => 'Discontinue';
+
+  @override
+  String get medsLowStock => 'LOW STOCK';
+
+  @override
+  String get medsBadgeActive => 'ACTIVE';
+
+  @override
+  String get medsScheduleNotSet => 'Schedule not set';
+
+  @override
+  String get medsFrequencyAsNeeded => 'As needed';
+
+  @override
+  String medsFrequencySelectedDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${count}x on selected days',
+      one: '1x on selected days',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsFrequencyCyclical(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${count}x cyclical',
+      one: '1x cyclical',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get medsFrequencyTapering => 'Tapering schedule';
+
+  @override
+  String medsFrequencyDaily(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${count}x daily',
+      one: '1x daily',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsNextDoseTomorrow(String time) {
+    return 'Tomorrow $time';
+  }
+
+  @override
+  String medsNextDoseWeekday(String day, String time) {
+    return '$day $time';
+  }
+
+  @override
+  String medsEnds(String date) {
+    return 'Ends $date';
+  }
+
+  @override
+  String medsNext(String time) {
+    return 'Next: $time';
+  }
+
+  @override
+  String get medsWeekdayMon => 'Mon';
+
+  @override
+  String get medsWeekdayTue => 'Tue';
+
+  @override
+  String get medsWeekdayWed => 'Wed';
+
+  @override
+  String get medsWeekdayThu => 'Thu';
+
+  @override
+  String get medsWeekdayFri => 'Fri';
+
+  @override
+  String get medsWeekdaySat => 'Sat';
+
+  @override
+  String get medsWeekdaySun => 'Sun';
+
+  @override
+  String get medsFormCapsule => 'Capsule';
+
+  @override
+  String get medsFormDrops => 'Drops';
+
+  @override
+  String get medsFormInjection => 'Injection';
+
+  @override
+  String medsDayOf(int day, int total) {
+    return 'Day $day of $total';
+  }
+
+  @override
+  String medsDaysLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days left',
+      one: '1 day left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitTablet(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'tablets',
+      one: 'tablet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitCapsule(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'capsules',
+      one: 'capsule',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitBottle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'bottles',
+      one: 'bottle',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitDose(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'doses',
+      one: 'dose',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inventoryTitle => 'Inventory';
+
+  @override
+  String inventoryMedicationsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Medications',
+      one: '1 Medication',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inventoryTrackedSupply => 'Tracked supply';
+
+  @override
+  String inventoryLowStockCount(int count) {
+    return '$count LOW STOCK';
+  }
+
+  @override
+  String get inventoryFilterAll => 'All';
+
+  @override
+  String get inventoryFilterLow => 'Low Stock';
+
+  @override
+  String get inventoryFilterOk => 'OK';
+
+  @override
+  String get inventoryEmptyFilter => 'No medications in this filter';
+
+  @override
+  String get inventoryStatusLow => 'LOW';
+
+  @override
+  String get inventoryStatusOk => 'OK';
+
+  @override
+  String get inventoryRunningLow => 'Running low — order refill';
+
+  @override
+  String get inventoryRefill => 'Refill →';
+
+  @override
+  String get inventoryAdjustCount => 'Adjust Count';
+
+  @override
+  String get inventorySufficient => 'Sufficient supply';
+
+  @override
+  String get inventorySufficientNext => 'Sufficient through next refill';
+
+  @override
+  String get inventoryEdit => 'Edit';
+
+  @override
+  String get inventoryAutoSyncTitle => 'Auto-Sync Pharmacy';
+
+  @override
+  String get inventoryAutoSyncSubtitle =>
+      'Connect your pharmacy for automatic refill updates';
+
+  @override
+  String get inventoryAutoSyncPending =>
+      'Pharmacy auto-sync integration pending';
+
+  @override
+  String inventoryCountUpdated(String name, int count) {
+    return '$name count updated to $count';
+  }
+
+  @override
+  String inventorySupplyDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '~$count days',
+      one: '~1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inventoryAdjustReasonLabel => 'Adjustment Reason (Optional)';
+
+  @override
+  String get inventoryAdjustReasonHint => 'Reason for adjustment (optional)...';
+
+  @override
+  String get inventoryAdjustSave => 'Save Count';
+
+  @override
+  String inventoryCurrentOnHand(int quantity, String unit) {
+    return 'Current on hand: $quantity $unit';
+  }
+
+  @override
+  String inventoryAfterRefill(int quantity) {
+    return 'After refill: $quantity';
+  }
+
+  @override
+  String inventoryFullBottle(int quantity) {
+    return 'Full bottle: $quantity';
+  }
+
+  @override
+  String inventoryHalfPack(int quantity) {
+    return 'Half pack: $quantity';
+  }
+
+  @override
+  String get medFormExtendedRelease => 'Extended Release';
+
+  @override
+  String get medRouteOral => 'Oral';
+
+  @override
+  String get medRouteSubcutaneous => 'Subcutaneous';
+
+  @override
+  String get medConditionDiabetes => 'Diabetes';
+
+  @override
+  String get medConditionType2Diabetes => 'Type 2 Diabetes';
+
+  @override
+  String get medConditionHighBloodPressure => 'High Blood Pressure';
+
+  @override
+  String get medConditionHypertension => 'Hypertension';
+
+  @override
+  String get medConditionHeartHealth => 'Heart Health';
+
+  @override
+  String get medConditionHighCholesterol => 'High Cholesterol';
+
+  @override
+  String get medConditionBacterialInfection => 'Bacterial Infection';
+
+  @override
+  String get medConditionPainInflammation => 'Pain & Inflammation';
+
+  @override
+  String get medConditionBoneHealth => 'Bone Health';
+
+  @override
+  String get medConditionAcidReflux => 'Acid Reflux';
+
+  @override
+  String get addMedDailyDose => 'Daily Dose';
+
+  @override
+  String addMedCommonFor(String condition) {
+    return 'Common for: $condition';
+  }
+
+  @override
+  String get addManualColorWhite => 'White';
+
+  @override
+  String get addManualColorYellow => 'Yellow';
+
+  @override
+  String get addManualColorPink => 'Pink';
+
+  @override
+  String get addManualColorBlue => 'Blue';
+
+  @override
+  String get addManualColorOrange => 'Orange';
+
+  @override
+  String get addManualColorPeach => 'Peach';
+
+  @override
+  String get addManualColorGreen => 'Green';
+
+  @override
+  String get addManualDraftSaved => 'Draft saved — complete it later!';
+
+  @override
+  String get addMedTitle => 'Add Medication';
+
+  @override
+  String get addManualRxVerified => 'RX VERIFIED';
+
+  @override
+  String get medsMedicationDetails => 'MEDICATION DETAILS';
+
+  @override
+  String get medsFieldName => 'Medication Name';
+
+  @override
+  String get medsFieldStrength => 'Strength';
+
+  @override
+  String get medsFieldForm => 'Medication Form';
+
+  @override
+  String get addManualSelectForm => 'Select form';
+
+  @override
+  String get addManualColorOptional => 'Color (optional)';
+
+  @override
+  String get medsFieldInstructions => 'Special Instructions';
+
+  @override
+  String get addManualOptional => 'Optional';
+
+  @override
+  String get addManualInstructionsHint =>
+      'e.g. Take with food after breakfast, avoid grapefruit...';
+
+  @override
+  String get addManualContinueToSchedule => 'Continue to Schedule →';
+
+  @override
+  String get addManualSaveDraft => 'Save as Draft';
+
+  @override
+  String get addManualNameHint => 'Enter medication name';
+
+  @override
+  String get addManualMatchesIndex => 'Matches clinical index';
+
+  @override
+  String get addManualStrengthHint => 'e.g. 500';
+
+  @override
+  String get addManualFormOther => 'Other';
+
+  @override
+  String get addManualFormOtherSubtitle => 'Enter another medication form';
+
+  @override
+  String get addManualCustomForm => 'Custom Medication Form';
+
+  @override
+  String get addManualCustomFormHint => 'e.g. Cream, Inhaler, Patch, Spray...';
+
+  @override
+  String get addManualCustomFormRequired => 'Please enter the medication form';
+
+  @override
+  String get addManualInteractionTitle => 'Automatic Interaction Checks';
+
+  @override
+  String get addManualInteractionBody =>
+      'We\'ll cross-reference this dosage against your existing logged medications in the next step.';
+
+  @override
+  String addMedSelected(String name, String strength) {
+    return '$name $strength selected — details next!';
+  }
+
+  @override
+  String get addMedPrivateNote => 'Private and encrypted on this device';
+
+  @override
+  String get addMedScanLabel => 'Scan Label';
+
+  @override
+  String get addMedSearch => 'Search';
+
+  @override
+  String get addMedManualEntry => 'Manual Entry';
+
+  @override
+  String addMedMatchingCount(int count) {
+    return 'Matching Medications ($count)';
+  }
+
+  @override
+  String get addMedFdaApproved => 'FDA Approved';
+
+  @override
+  String get addMedTipTitle => 'Tip: Look for the imprint';
+
+  @override
+  String get addMedTipBody =>
+      'Most Metformin tablets have numbers like \'500\' or \'M\' pressed on the front to guarantee the exact dosage match.';
+
+  @override
+  String get addMedCantFind => 'Can\'t find your medication?';
+
+  @override
+  String get addMedAddManually => 'Add Manually';
+
+  @override
+  String get addMedEmptyTitle => 'Search for a medication';
+
+  @override
+  String get addMedEmptySubtitle =>
+      'Enter a medicine name above or scan its label';
+
+  @override
+  String get addMedNoResultsTitle => 'No medications found';
+
+  @override
+  String addMedNoResultsFor(String query) {
+    return 'No results for \"$query\"';
+  }
+
+  @override
+  String get addMedSelectAction => 'Select ›';
+
+  @override
+  String get reviewScanNameRequired => 'Please enter the medication name.';
+
+  @override
+  String get reviewScanStrengthRequired =>
+      'Please enter the medication strength.';
+
+  @override
+  String get reviewScanTitle => 'Review Scan';
+
+  @override
+  String get scanCaptureFailed => 'Capture failed — try again.';
+
+  @override
+  String get scanCaptureError => 'Could not capture image. Try again.';
+
+  @override
+  String get scanGalleryError => 'Could not open image. Try again.';
+
+  @override
+  String scanDetectedOne(String name) {
+    return '✓ Detected: $name';
+  }
+
+  @override
+  String scanDetectedCount(int count) {
+    return '✓ $count medicines detected';
+  }
+
+  @override
+  String get scanTextNoMedicine =>
+      'Text was detected, but medicine details could not be identified.';
+
+  @override
+  String get scanNoText =>
+      'No text detected. Keep the document clear, flat and well lit.';
+
+  @override
+  String get scanReadError => 'Could not read the image. Try again.';
+
+  @override
+  String get scanRescanAgain => 'Please scan the medicine again.';
+
+  @override
+  String get scanFitFrameHint =>
+      'Fit the medicine label or full prescription inside the frame';
+
+  @override
+  String get scanEnterManually => 'Enter medication manually';
+
+  @override
+  String get scanRetakePhoto => 'Retake Photo';
+
+  @override
+  String get scanReadingPrescription => 'Reading prescription...';
+
+  @override
+  String get scanStatusReading => 'READING';
+
+  @override
+  String get scanStatusFound => 'FOUND';
+
+  @override
+  String get scanStatusInFrame => 'IN FRAME';
+
+  @override
+  String get scanStatusReady => 'READY';
+
+  @override
+  String get scanCameraUnavailable => 'Camera unavailable';
+
+  @override
+  String get scanStartingCamera => 'Starting camera...';
+
+  @override
+  String get scanCapturingDocument => 'Capturing document...';
+
+  @override
+  String get scanReadingMedicineText => 'Reading medicine text...';
+
+  @override
+  String get scanMedicineDetected => 'Medicine detected';
+
+  @override
+  String scanMedicinesDetected(int count) {
+    return '$count medicines detected';
+  }
+
+  @override
+  String get scanImageCaptured => 'Image captured';
+
+  @override
+  String get scanMedicineOrRxDetected => 'Medicine or prescription detected';
+
+  @override
+  String get scanPointCameraHint => 'Point camera at medicine or prescription';
+
+  @override
+  String get scanFlash => 'Flash';
+
+  @override
+  String get scanShutter => 'Scan';
+
+  @override
+  String get scanGallery => 'Gallery';
+
+  @override
+  String get scanTryAgain => 'Try Again';
+
+  @override
+  String scanMedicineBadgeNumber(int index) {
+    return 'MEDICINE $index DETECTED';
+  }
+
+  @override
+  String get scanMedicineBadgeSingular => 'MEDICINE DETECTED';
+
+  @override
+  String get scanFieldStrength => 'Strength';
+
+  @override
+  String get scanFieldForm => 'Form';
+
+  @override
+  String get scanFieldFrequency => 'Frequency';
+
+  @override
+  String get medsFieldInstructionsShort => 'Instructions';
+
+  @override
+  String get scanReviewAdd => 'Review & Add Medication';
+
+  @override
+  String get stepSchedule => 'Schedule';
+
+  @override
+  String get reviewScanScanned => 'SCANNED';
+
+  @override
+  String get reviewScanReadSuccess =>
+      'We\'ve read these details from your label — check and correct if needed!';
+
+  @override
+  String get reviewScanInstructionsHint => 'Enter medication instructions';
+
+  @override
+  String get reviewScanStrengthUnclear =>
+      'Strength field was unclear in the photo — please verify manually.';
+
+  @override
+  String get reviewScanRequired => 'REQUIRED';
+
+  @override
+  String get reviewScanStrengthHint => 'Enter strength e.g. 500mg';
+
+  @override
+  String get reviewScanConfirmContinue => 'Confirm & Continue →';
 }

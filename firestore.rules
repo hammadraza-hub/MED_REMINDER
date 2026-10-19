@@ -1,0 +1,319 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================
+    // AUTHENTICATION
+    // =====================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // =====================================
+    // PROFILE HELPERS
+    // =====================================
+
+    function profile(profileId) {
+      return get(
+        /databases/$(database)/documents/profiles/$(profileId)
+      ).data;
+    }
+
+    function isOwner(profileId) {
+      return signedIn()
+        && profile(profileId).ownerUid == request.auth.uid;
+    }
+
+    function isMember(profileId) {
+      return signedIn()
+        && request.auth.uid in profile(profileId).memberUids;
+    }
+
+    // =====================================
+    // PROFILE CREATION
+    // =====================================
+
+    function validProfileCreation() {
+      let data = request.resource.data;
+
+      return signedIn()
+
+        && data.keys().hasAll([
+          'ownerUid',
+          'kind',
+          'name',
+          'timezone',
+          'roles',
+          'memberUids',
+          'healthUids',
+          'permissions'
+        ])
+
+        && data.keys().hasOnly([
+          'ownerUid',
+          'kind',
+          'name',
+          'timezone',
+          'roles',
+          'memberUids',
+          'healthUids',
+          'permissions',
+          'createdAt',
+          'updatedAt'
+        ])
+
+        && data.ownerUid == request.auth.uid
+
+        && data.kind in ['self', 'dependent']
+
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 200
+
+        && data.timezone is string
+        && data.timezone.size() > 0
+        && data.timezone.size() <= 100
+
+        && data.roles is map
+        && data.roles.keys().size() == 1
+        && data.roles.get(request.auth.uid, '') == 'owner'
+
+        && data.memberUids is list
+        && data.memberUids == [request.auth.uid]
+
+        && data.healthUids is list
+        && data.healthUids == [request.auth.uid]
+
+        && data.permissions is map
+        && data.permissions.size() == 0
+
+        && (!('createdAt' in data)
+            || data.createdAt == request.time)
+
+        && (!('updatedAt' in data)
+            || data.updatedAt == request.time);
+    }
+
+    // =====================================
+    // PERMISSION CONSISTENCY
+    // =====================================
+
+    function validPermissionConsistency(data) {
+      return data.roles is map
+        && data.memberUids is list
+        && data.healthUids is list
+        && data.permissions is map
+
+        && data.roles.get(data.ownerUid, '') == 'owner'
+
+        && data.ownerUid in data.memberUids
+        && data.ownerUid in data.healthUids
+
+        && data.memberUids.size() <= 20
+        && data.healthUids.size() <= 20
+        && data.roles.keys().size() <= 20
+        && data.permissions.keys().size() <= 20;
+    }
+
+    // =====================================
+    // PROFILE UPDATE SECURITY
+    // =====================================
+
+    function validProfileUpdate() {
+      let data = request.resource.data;
+
+      return signedIn()
+
+        // Immutable ownership
+        && data.ownerUid == resource.data.ownerUid
+
+        // Only non-security profile fields
+        // may be changed by the client
+        && data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'name',
+            'timezone',
+            'updatedAt'
+          ])
+
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 200
+
+        && data.timezone is string
+        && data.timezone.size() > 0
+        && data.timezone.size() <= 100
+
+        && validPermissionConsistency(data)
+
+        && data.roles.get(request.auth.uid, '') == 'owner'
+
+        && (!('updatedAt' in data)
+            || data.updatedAt == request.time);
+    }
+
+    // =====================================
+    // MEDICATION PERMISSIONS
+    // =====================================
+
+    function canEditMedications(profileId) {
+      return isOwner(profileId)
+        || (
+          isMember(profileId)
+
+          && profile(profileId).roles
+            .get(request.auth.uid, '') == 'caregiver'
+
+          && profile(profileId).permissions
+            .get(request.auth.uid, {})
+            .get('editMedications', false) == true
+        );
+    }
+
+    // =====================================
+    // DOSE PERMISSIONS
+    // =====================================
+
+    function canLogDoses(profileId) {
+      return isOwner(profileId)
+        || (
+          isMember(profileId)
+
+          && profile(profileId).roles
+            .get(request.auth.uid, '') == 'caregiver'
+
+          && profile(profileId).permissions
+            .get(request.auth.uid, {})
+            .get('logDoses', false) == true
+        );
+    }
+
+    // =====================================
+    // HEALTH ACCESS
+    // =====================================
+
+    function canViewHealth(profileId) {
+      return isOwner(profileId)
+        || (
+          isMember(profileId)
+
+          && request.auth.uid
+            in profile(profileId).healthUids
+        );
+    }
+
+    // =====================================
+    // USERS
+    // =====================================
+
+    match /users/{uid} {
+
+      allow read, create, update: if signedIn()
+        && request.auth.uid == uid;
+
+      allow delete: if false;
+
+      match /devices/{deviceId} {
+
+        allow read, write: if signedIn()
+          && request.auth.uid == uid;
+      }
+    }
+
+    // =====================================
+    // PATIENT PROFILES
+    // =====================================
+
+    match /profiles/{profileId} {
+
+      allow create: if validProfileCreation();
+
+      allow read: if isMember(profileId);
+
+      allow update: if isOwner(profileId)
+        && validProfileUpdate();
+
+      allow delete: if false;
+
+      // =====================================
+      // MEDICATIONS
+      // =====================================
+
+      match /medications/{medId} {
+
+        allow read: if isMember(profileId);
+
+        allow create, update, delete:
+          if canEditMedications(profileId);
+
+        match /inventoryEvents/{eventId} {
+
+          allow read: if isMember(profileId);
+
+          allow create:
+            if canEditMedications(profileId);
+
+          allow update, delete: if false;
+        }
+      }
+
+      // =====================================
+      // DOSES
+      // =====================================
+
+      match /doses/{doseId} {
+
+        allow read: if isMember(profileId);
+
+        allow create, update:
+          if canLogDoses(profileId);
+
+        allow delete: if false;
+      }
+
+      // =====================================
+      // DAILY SUMMARIES
+      // =====================================
+
+      match /dailySummaries/{date} {
+
+        allow read: if isMember(profileId);
+
+        allow write: if false;
+      }
+
+      // =====================================
+      // SENSITIVE HEALTH RECORDS
+      // =====================================
+
+      match /{collection}/{docId} {
+
+        allow read: if canViewHealth(profileId)
+          && collection in [
+            'allergies',
+            'safetyWarnings',
+            'vitals',
+            'vitalsDaily',
+            'symptoms',
+            'prescribers',
+            'appointments',
+            'doctorNotes'
+          ];
+
+        allow write: if false;
+      }
+    }
+
+    // =====================================
+    // DEFAULT DENY
+    // =====================================
+
+    match /{document=**} {
+
+      allow read, write: if false;
+    }
+  }
+}

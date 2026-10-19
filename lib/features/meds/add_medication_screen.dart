@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_avatar.dart';
@@ -69,6 +70,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= ACTIONS =================
   Future<void> _selectMedicine(MedSearchResult med) async {
+    final l10n = AppLocalizations.of(context);
     // TODO Backend:
     // Interaction engine / rules se check karna hai ke selected
     // medication user ki current medications se interact karti hai
@@ -89,7 +91,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       // karke current user/family member ke liye save karna hai.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${med.name} ${med.strength} selected — details next!'),
+          content: Text(l10n.addMedSelected(med.name, med.strength)),
         ),
       );
     }
@@ -157,6 +159,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= BODY =================
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -207,20 +210,20 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                       const SizedBox(height: 16),
 
                       // ---- Privacy line ----
-                      const Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.lock_rounded,
                             size: 15,
                             color: AppColors.formAccent,
                           ),
-                          SizedBox(width: 7),
+                          const SizedBox(width: 7),
                           Flexible(
                             child: Text(
-                              'Private and encrypted on this device',
+                              l10n.addMedPrivateNote,
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppColors.formAccent,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -244,6 +247,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= DARK HEADER =================
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       color: AppColors.headerDark,
@@ -269,10 +273,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 ),
                 const SizedBox(width: 16),
 
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Add Medication',
-                    style: TextStyle(
+                    l10n.addMedTitle,
+                    style: const TextStyle(
                       color: AppColors.surface,
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -298,6 +302,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= SEARCH BAR (+ Scan inside) =================
   Widget _buildSearchBar() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 58,
       decoration: BoxDecoration(
@@ -328,9 +333,12 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               textInputAction: TextInputAction.search,
               onSubmitted: (_) => _search(),
               autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Search medications...',
-                hintStyle: TextStyle(color: AppColors.searchHint, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: l10n.medsSearchHint,
+                hintStyle: const TextStyle(
+                  color: AppColors.searchHint,
+                  fontSize: 14,
+                ),
                 border: InputBorder.none,
                 isDense: true,
               ),
@@ -382,17 +390,17 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 color: AppColors.formAccent,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.document_scanner_outlined,
                     color: AppColors.surface,
                     size: 17,
                   ),
-                  SizedBox(width: 5),
+                  const SizedBox(width: 5),
                   Text(
-                    'Scan Label',
-                    style: TextStyle(
+                    l10n.addMedScanLabel,
+                    style: const TextStyle(
                       color: AppColors.surface,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -409,11 +417,12 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= 3 ACTION BUTTONS =================
   Widget _buildActionButtons() {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
           child: _TopActionButton(
-            label: 'Search',
+            label: l10n.addMedSearch,
             icon: Icons.search_rounded,
             selected: true,
             onTap: _search,
@@ -422,7 +431,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
         const SizedBox(width: 8),
         Expanded(
           child: _TopActionButton(
-            label: 'Scan Label',
+            label: l10n.addMedScanLabel,
             icon: Icons.document_scanner_outlined,
             onTap: _scanLabel,
           ),
@@ -430,7 +439,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
         const SizedBox(width: 8),
         Expanded(
           child: _TopActionButton(
-            label: 'Manual Entry',
+            label: l10n.addMedManualEntry,
             icon: Icons.edit_note_rounded,
             onTap: _addManually,
           ),
@@ -441,11 +450,12 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= RESULTS HEADER =================
   Widget _buildResultsHeader() {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
           child: Text(
-            'Matching Medications (${_results.length})',
+            l10n.addMedMatchingCount(_results.length),
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 14,
@@ -461,18 +471,18 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
             color: AppColors.successBackground,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              const Icon(
                 Icons.verified_user_rounded,
                 color: AppColors.success,
                 size: 15,
               ),
-              SizedBox(width: 5),
+              const SizedBox(width: 5),
               Text(
-                'FDA Approved',
-                style: TextStyle(
+                l10n.addMedFdaApproved,
+                style: const TextStyle(
                   color: AppColors.success,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -487,6 +497,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= TIP CARD =================
   Widget _buildTipCard() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
       decoration: const BoxDecoration(
@@ -497,21 +508,21 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
         ),
         border: Border(left: BorderSide(color: AppColors.formIcon, width: 3)),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.lightbulb_outline_rounded,
                 color: AppColors.textPrimary,
                 size: 19,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Tip: Look for the imprint',
-                  style: TextStyle(
+                  l10n.addMedTipTitle,
+                  style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -520,11 +531,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            "Most Metformin tablets have numbers like '500' or 'M' "
-            'pressed on the front to guarantee the exact dosage match.',
-            style: TextStyle(
+            l10n.addMedTipBody,
+            style: const TextStyle(
               color: AppColors.formSubtitle,
               fontSize: 13,
               height: 1.45,
@@ -537,20 +547,21 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= MANUAL LINK =================
   Widget _buildManualLink() {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
         alignment: WrapAlignment.center,
         children: [
-          const Text(
-            "Can't find your medication? ",
-            style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+          Text(
+            '${l10n.addMedCantFind} ',
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
           ),
           GestureDetector(
             onTap: _addManually,
-            child: const Text(
-              'Add Manually',
-              style: TextStyle(
+            child: Text(
+              l10n.addMedAddManually,
+              style: const TextStyle(
                 color: AppColors.formAccent,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -566,6 +577,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= INITIAL STATE =================
   Widget _buildInitialState() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -583,21 +595,21 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           ),
         ),
         const SizedBox(height: 18),
-        const Text(
-          'Search for a medication',
-          style: TextStyle(
+        Text(
+          l10n.addMedEmptyTitle,
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'Enter a medicine name above or scan its label',
+            l10n.addMedEmptySubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.formSubtitle,
               fontSize: 13,
               height: 1.4,
@@ -610,6 +622,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= NO RESULTS =================
   Widget _buildNoResults() {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 38),
       child: Column(
@@ -620,9 +633,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
             color: AppColors.fieldHint,
           ),
           const SizedBox(height: 14),
-          const Text(
-            'No medications found',
-            style: TextStyle(
+          Text(
+            l10n.addMedNoResultsTitle,
+            style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -630,7 +643,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'No results for "${_searchController.text}"',
+            l10n.addMedNoResultsFor(_searchController.text),
             textAlign: TextAlign.center,
             style: const TextStyle(color: AppColors.formSubtitle, fontSize: 13),
           ),
@@ -709,6 +722,7 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
       decoration: BoxDecoration(
@@ -765,7 +779,9 @@ class _ResultCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '${result.strength} · ${result.form} · ${result.route}',
+                  '${result.strength} · '
+                  '${medSearchFormLabel(l10n, result.form)} · '
+                  '${medSearchRouteLabel(l10n, result.route)}',
                   style: const TextStyle(
                     color: AppColors.formSubtitle,
                     fontSize: 12,
@@ -784,7 +800,7 @@ class _ResultCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: Text(
-                    AddMedicationData.badgeFor(result),
+                    AddMedicationData.badgeFor(l10n, result),
                     style: const TextStyle(
                       color: AppColors.formAccent,
                       fontSize: 12,
@@ -810,9 +826,9 @@ class _ResultCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(9),
                 border: Border.all(color: AppColors.formAccent),
               ),
-              child: const Text(
-                'Select ›',
-                style: TextStyle(
+              child: Text(
+                l10n.addMedSelectAction,
+                style: const TextStyle(
                   color: AppColors.formAccent,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,

@@ -1,4 +1,5 @@
 import 'meds_data.dart';
+import '../../l10n/app_localizations.dart';
 
 /// ============================================================
 /// INVENTORY DATA
@@ -35,6 +36,26 @@ import 'meds_data.dart';
 /// ============================================================
 
 enum InventoryStatus { low, ok }
+
+/// Unit id (e.g. 'tablet') ko localized count label mein convert karta hai.
+String inventoryUnitLabel(AppLocalizations l10n, int count, String unitId) {
+  switch (unitId.toLowerCase()) {
+    case 'tablet':
+      return l10n.medsUnitTablet(count);
+
+    case 'capsule':
+      return l10n.medsUnitCapsule(count);
+
+    case 'bottle':
+      return l10n.medsUnitBottle(count);
+
+    case 'dose':
+      return l10n.medsUnitDose(count);
+
+    default:
+      return count == 1 ? unitId : '${unitId}s';
+  }
+}
 
 class InventoryItem {
   InventoryItem({
@@ -115,6 +136,14 @@ class InventoryItem {
 
     return '$remainingQuantity $unit · '
         '~$estimatedDaysRemaining days';
+  }
+
+  /// Localized supply label — "{qty} {unit} · ~{days} days".
+  String supplyLabelFor(AppLocalizations l10n) {
+    final unit = inventoryUnitLabel(l10n, remainingQuantity, unitLabel);
+
+    return '$remainingQuantity $unit · '
+        '${l10n.inventorySupplyDays(estimatedDaysRemaining)}';
   }
 
   /// Same medicine image mapping jo Meds feature use karta hai.

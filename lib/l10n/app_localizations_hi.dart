@@ -840,4 +840,805 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get paymentUnlockNote =>
       'इंटरैक्शन जाँच, रीफ़िल अलर्ट और रिपोर्ट अब सक्रिय हैं';
+
+  @override
+  String get doctorsTitle => 'डॉक्टर';
+
+  @override
+  String get doctorsAdd => 'डॉक्टर जोड़ें';
+
+  @override
+  String get doctorsAdded => 'डॉक्टर सफलतापूर्वक जोड़ा गया';
+
+  @override
+  String doctorsCountOnFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count डॉक्टर फ़ाइल में',
+      one: '1 डॉक्टर फ़ाइल में',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get doctorsEmptyTitle => 'कोई डॉक्टर फ़ाइल में नहीं';
+
+  @override
+  String get doctorsEmptySubtitle =>
+      'प्रिस्क्रिप्शन लिंक करने के लिए डॉक्टर जोड़ें';
+
+  @override
+  String get doctorsUpcomingVisits => 'आगामी मुलाक़ातें';
+
+  @override
+  String doctorsAppointmentsScheduled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count अपॉइंटमेंट निर्धारित',
+      one: '1 अपॉइंटमेंट निर्धारित',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get doctorsView => 'देखें →';
+
+  @override
+  String get doctorsHint =>
+      'विवरण देखने या संपादित करने के लिए डॉक्टर पर टैप करें';
+
+  @override
+  String doctorsMedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count दवाएँ',
+      one: '1 दवा',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get doctorsDetailsSection => 'डॉक्टर विवरण';
+
+  @override
+  String get doctorsFieldFullName => 'पूरा नाम *';
+
+  @override
+  String get doctorsHintFullName => 'पूरा नाम दर्ज करें';
+
+  @override
+  String get doctorsFieldSpecialty => 'विशेषज्ञता';
+
+  @override
+  String get doctorsHintSpecialty => 'विशेषज्ञता दर्ज करें';
+
+  @override
+  String get doctorsFieldPhone => 'फ़ोन नंबर';
+
+  @override
+  String get doctorsHintPhone => 'फ़ोन नंबर दर्ज करें';
+
+  @override
+  String get doctorsFieldClinic => 'क्लिनिक / पता (वैकल्पिक)';
+
+  @override
+  String get doctorsHintClinic => 'क्लिनिक या पता दर्ज करें';
+
+  @override
+  String get doctorsLinkMedications => 'दवाओं से लिंक करें';
+
+  @override
+  String get doctorsLinkPrompt => 'यह डॉक्टर कौन-सी दवाएँ लिखता है?';
+
+  @override
+  String get doctorsSave => 'डॉक्टर सहेजें';
+
+  @override
+  String get doctorsNameRequired => 'कृपया डॉक्टर का पूरा नाम दर्ज करें।';
+
+  @override
+  String get medsTitle => 'दवाइयाँ';
+
+  @override
+  String medsMemberMedications(String name) {
+    return '$name की दवाइयाँ';
+  }
+
+  @override
+  String medsActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count सक्रिय दवाएँ',
+      one: '1 सक्रिय दवा',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get medsManageHeader => 'प्रबंधित करें';
+
+  @override
+  String get medsQuickTools => 'त्वरित उपकरण';
+
+  @override
+  String get medsInventory => 'इन्वेंटरी';
+
+  @override
+  String medsLowBadge(int count) {
+    return '$count कम';
+  }
+
+  @override
+  String get medsAllergies => 'एलर्जी';
+
+  @override
+  String get medsSideEffects => 'दुष्प्रभाव';
+
+  @override
+  String get medsPharmacy => 'फ़ार्मेसी';
+
+  @override
+  String get medsSearchHint => 'दवाएँ खोजें...';
+
+  @override
+  String medsTabActive(int count) {
+    return 'सक्रिय ($count)';
+  }
+
+  @override
+  String medsTabArchived(int count) {
+    return 'संग्रहीत ($count)';
+  }
+
+  @override
+  String get medsEmptyArchived => 'कोई संग्रहीत दवा नहीं';
+
+  @override
+  String get medsEmpty => 'कोई दवा नहीं मिली';
+
+  @override
+  String medsMovedToArchived(String name) {
+    return '$name को संग्रह में ले जाया गया';
+  }
+
+  @override
+  String get medsDiscontinueError =>
+      'दवा बंद नहीं की जा सकी। कृपया पुनः प्रयास करें।';
+
+  @override
+  String get medsDiscontinueBarrierLabel => 'दवा बंद करना ब्रंद करें';
+
+  @override
+  String get medsDiscontinue => 'बंद करें';
+
+  @override
+  String get medsLowStock => 'कम स्टॉक';
+
+  @override
+  String get medsBadgeActive => 'सक्रिय';
+
+  @override
+  String get medsScheduleNotSet => 'शेड्यूल सेट नहीं है';
+
+  @override
+  String get medsFrequencyAsNeeded => 'आवश्यकतानुसार';
+
+  @override
+  String medsFrequencySelectedDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'चयनित दिनों में ${count}x',
+      one: 'चयनित दिनों में 1x',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsFrequencyCyclical(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${count}x चक्रीय',
+      one: '1x चक्रीय',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get medsFrequencyTapering => 'घटता शेड्यूल';
+
+  @override
+  String medsFrequencyDaily(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'रोज़ ${count}x',
+      one: 'रोज़ 1x',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsNextDoseTomorrow(String time) {
+    return 'कल $time';
+  }
+
+  @override
+  String medsNextDoseWeekday(String day, String time) {
+    return '$day $time';
+  }
+
+  @override
+  String medsEnds(String date) {
+    return '$date को समाप्त';
+  }
+
+  @override
+  String medsNext(String time) {
+    return 'अगली: $time';
+  }
+
+  @override
+  String get medsWeekdayMon => 'सोम';
+
+  @override
+  String get medsWeekdayTue => 'मंगल';
+
+  @override
+  String get medsWeekdayWed => 'बुध';
+
+  @override
+  String get medsWeekdayThu => 'गुरु';
+
+  @override
+  String get medsWeekdayFri => 'शुक्र';
+
+  @override
+  String get medsWeekdaySat => 'शनि';
+
+  @override
+  String get medsWeekdaySun => 'रवि';
+
+  @override
+  String get medsFormCapsule => 'कैप्सूल';
+
+  @override
+  String get medsFormDrops => 'बूँदें';
+
+  @override
+  String get medsFormInjection => 'इंजेक्शन';
+
+  @override
+  String medsDayOf(int day, int total) {
+    return 'दिन $day / $total';
+  }
+
+  @override
+  String medsDaysLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count दिन शेष',
+      one: '1 दिन शेष',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitTablet(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'गोलियाँ',
+      one: 'गोली',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitCapsule(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'कैप्सूल',
+      one: 'कैप्सूल',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitBottle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'बोतलें',
+      one: 'बोतल',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medsUnitDose(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'खुराकें',
+      one: 'खुराक',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inventoryTitle => 'इन्वेंटरी';
+
+  @override
+  String inventoryMedicationsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count दवाएँ',
+      one: '1 दवा',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inventoryTrackedSupply => 'ट्रैक किया गया स्टॉक';
+
+  @override
+  String inventoryLowStockCount(int count) {
+    return '$count कम स्टॉक';
+  }
+
+  @override
+  String get inventoryFilterAll => 'सभी';
+
+  @override
+  String get inventoryFilterLow => 'कम स्टॉक';
+
+  @override
+  String get inventoryFilterOk => 'ठीक';
+
+  @override
+  String get inventoryEmptyFilter => 'इस फ़िल्टर में कोई दवा नहीं';
+
+  @override
+  String get inventoryStatusLow => 'कम';
+
+  @override
+  String get inventoryStatusOk => 'ठीक';
+
+  @override
+  String get inventoryRunningLow => 'खत्म होने वाला — रीफ़िल ऑर्डर करें';
+
+  @override
+  String get inventoryRefill => 'रीफ़िल →';
+
+  @override
+  String get inventoryAdjustCount => 'गिनती समायोजित करें';
+
+  @override
+  String get inventorySufficient => 'पर्याप्त स्टॉक';
+
+  @override
+  String get inventorySufficientNext => 'अगली रीफ़िल तक पर्याप्त';
+
+  @override
+  String get inventoryEdit => 'संपादित करें';
+
+  @override
+  String get inventoryAutoSyncTitle => 'ऑटो-सिंक फ़ार्मेसी';
+
+  @override
+  String get inventoryAutoSyncSubtitle =>
+      'स्वचालित रीफ़िल अपडेट के लिए अपनी फ़ार्मेसी कनेक्ट करें';
+
+  @override
+  String get inventoryAutoSyncPending => 'फ़ार्मेसी ऑटो-सिंक एकीकरण लंबित है';
+
+  @override
+  String inventoryCountUpdated(String name, int count) {
+    return '$name को $count पर अपडेट किया गया';
+  }
+
+  @override
+  String inventorySupplyDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '~$count दिन',
+      one: '~1 दिन',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inventoryAdjustReasonLabel => 'समायोजन का कारण (वैकल्पिक)';
+
+  @override
+  String get inventoryAdjustReasonHint => 'समायोजन का कारण (वैकल्पिक)...';
+
+  @override
+  String get inventoryAdjustSave => 'गिनती सहेजें';
+
+  @override
+  String inventoryCurrentOnHand(int quantity, String unit) {
+    return 'वर्तमान में उपलब्ध: $quantity $unit';
+  }
+
+  @override
+  String inventoryAfterRefill(int quantity) {
+    return 'रीफ़िल के बाद: $quantity';
+  }
+
+  @override
+  String inventoryFullBottle(int quantity) {
+    return 'पूरी बोतल: $quantity';
+  }
+
+  @override
+  String inventoryHalfPack(int quantity) {
+    return 'आधा पैक: $quantity';
+  }
+
+  @override
+  String get medFormExtendedRelease => 'एक्सटेंडेड रिलीज़';
+
+  @override
+  String get medRouteOral => 'मौखिक';
+
+  @override
+  String get medRouteSubcutaneous => 'चमड़े के नीचे';
+
+  @override
+  String get medConditionDiabetes => 'मधुमेह';
+
+  @override
+  String get medConditionType2Diabetes => 'टाइप 2 मधुमेह';
+
+  @override
+  String get medConditionHighBloodPressure => 'उच्च रक्तचाप';
+
+  @override
+  String get medConditionHypertension => 'उच्च रक्तचाप';
+
+  @override
+  String get medConditionHeartHealth => 'हृदय स्वास्थ्य';
+
+  @override
+  String get medConditionHighCholesterol => 'उच्च कोलेस्ट्रॉल';
+
+  @override
+  String get medConditionBacterialInfection => 'बैक्टीरियल संक्रमण';
+
+  @override
+  String get medConditionPainInflammation => 'दर्द और सूजन';
+
+  @override
+  String get medConditionBoneHealth => 'हड्डी स्वास्थ्य';
+
+  @override
+  String get medConditionAcidReflux => 'एसिड रिफ्लक्स';
+
+  @override
+  String get addMedDailyDose => 'दैनिक खुराक';
+
+  @override
+  String addMedCommonFor(String condition) {
+    return '$condition के लिए सामान्य';
+  }
+
+  @override
+  String get addManualColorWhite => 'सफ़ेद';
+
+  @override
+  String get addManualColorYellow => 'पीला';
+
+  @override
+  String get addManualColorPink => 'गुलाबी';
+
+  @override
+  String get addManualColorBlue => 'नीला';
+
+  @override
+  String get addManualColorOrange => 'नारंगी';
+
+  @override
+  String get addManualColorPeach => 'आड़ू';
+
+  @override
+  String get addManualColorGreen => 'हरा';
+
+  @override
+  String get addManualDraftSaved =>
+      'ड्राफ़्ट सहेजा गया — इसे बाद में पूरा करें!';
+
+  @override
+  String get addMedTitle => 'दवा जोड़ें';
+
+  @override
+  String get addManualRxVerified => 'Rx सत्यापित';
+
+  @override
+  String get medsMedicationDetails => 'दवा विवरण';
+
+  @override
+  String get medsFieldName => 'दवा का नाम';
+
+  @override
+  String get medsFieldStrength => 'मात्रा';
+
+  @override
+  String get medsFieldForm => 'दवा का रूप';
+
+  @override
+  String get addManualSelectForm => 'रूप चुनें';
+
+  @override
+  String get addManualColorOptional => 'रंग (वैकल्पिक)';
+
+  @override
+  String get medsFieldInstructions => 'विशेष निर्देश';
+
+  @override
+  String get addManualOptional => 'वैकल्पिक';
+
+  @override
+  String get addManualInstructionsHint =>
+      'उदा. नाश्ते के बाद भोजन के साथ लें, अंगूर से बचें...';
+
+  @override
+  String get addManualContinueToSchedule => 'शेड्यूल पर जारी रखें →';
+
+  @override
+  String get addManualSaveDraft => 'ड्राफ़्ट के रूप में सहेजें';
+
+  @override
+  String get addManualNameHint => 'दवा का नाम दर्ज करें';
+
+  @override
+  String get addManualMatchesIndex => 'नैदानिक सूचकांक से मेल खाता है';
+
+  @override
+  String get addManualStrengthHint => 'उदा. 500';
+
+  @override
+  String get addManualFormOther => 'अन्य';
+
+  @override
+  String get addManualFormOtherSubtitle => 'एक और दवा रूप दर्ज करें';
+
+  @override
+  String get addManualCustomForm => 'कस्टम दवा रूप';
+
+  @override
+  String get addManualCustomFormHint => 'उदा. क्रीम, इनहेलर, पैच, स्प्रे...';
+
+  @override
+  String get addManualCustomFormRequired => 'कृपया दवा का रूप दर्ज करें';
+
+  @override
+  String get addManualInteractionTitle => 'स्वचालित इंटरैक्शन जाँच';
+
+  @override
+  String get addManualInteractionBody =>
+      'अगले चरण में हम इस खुराक की तुलना आपकी पहले से दर्ज दवाओं से करेंगे।';
+
+  @override
+  String addMedSelected(String name, String strength) {
+    return '$name $strength चुना गया — आगे विवरण!';
+  }
+
+  @override
+  String get addMedPrivateNote => 'इस डिवाइस पर निजी और एन्क्रिप्टेड';
+
+  @override
+  String get addMedScanLabel => 'लेबल स्कैन करें';
+
+  @override
+  String get addMedSearch => 'खोजें';
+
+  @override
+  String get addMedManualEntry => 'मैनुअल एंट्री';
+
+  @override
+  String addMedMatchingCount(int count) {
+    return 'मेल खाती दवाएँ ($count)';
+  }
+
+  @override
+  String get addMedFdaApproved => 'FDA अनुमोदित';
+
+  @override
+  String get addMedTipTitle => 'सुझाव: निशान देखें';
+
+  @override
+  String get addMedTipBody =>
+      'अधिकांश मेटफॉर्मिन गोलियों पर \'500\' या \'M\' जैसे अंक सामने छपे होते हैं ताकि सटीक खुराक मेल सुनिश्चित हो।';
+
+  @override
+  String get addMedCantFind => 'अपनी दवा नहीं मिल रही?';
+
+  @override
+  String get addMedAddManually => 'मैन्युअल रूप से जोड़ें';
+
+  @override
+  String get addMedEmptyTitle => 'दवा खोजें';
+
+  @override
+  String get addMedEmptySubtitle =>
+      'ऊपर दवा का नाम दर्ज करें या उसका लेबल स्कैन करें';
+
+  @override
+  String get addMedNoResultsTitle => 'कोई दवा नहीं मिली';
+
+  @override
+  String addMedNoResultsFor(String query) {
+    return '\"$query\" के लिए कोई परिणाम नहीं';
+  }
+
+  @override
+  String get addMedSelectAction => 'चुनें ›';
+
+  @override
+  String get reviewScanNameRequired => 'कृपया दवा का नाम दर्ज करें।';
+
+  @override
+  String get reviewScanStrengthRequired => 'कृपया दवा की मात्रा दर्ज करें।';
+
+  @override
+  String get reviewScanTitle => 'स्कैन की समीक्षा करें';
+
+  @override
+  String get scanCaptureFailed => 'कैप्चर विफल — पुनः प्रयास करें।';
+
+  @override
+  String get scanCaptureError => 'छवि कैप्चर नहीं हो सकी। पुनः प्रयास करें।';
+
+  @override
+  String get scanGalleryError => 'छवि नहीं खुल सकी। पुनः प्रयास करें।';
+
+  @override
+  String scanDetectedOne(String name) {
+    return '✓ पता चला: $name';
+  }
+
+  @override
+  String scanDetectedCount(int count) {
+    return '✓ $count दवाएँ पता चलीं';
+  }
+
+  @override
+  String get scanTextNoMedicine =>
+      'पाठ पता चला, लेकिन दवा विवरण की पहचान नहीं हो सकी।';
+
+  @override
+  String get scanNoText =>
+      'कोई पाठ नहीं मिला। दस्तावेज़ को स्पष्ट, सपाट और अच्छी रोशनी में रखें।';
+
+  @override
+  String get scanReadError => 'छवि पढ़ी नहीं जा सकी। पुनः प्रयास करें।';
+
+  @override
+  String get scanRescanAgain => 'कृपया दवा को फिर से स्कैन करें।';
+
+  @override
+  String get scanFitFrameHint =>
+      'दवा का लेबल या पूरा नुस्खा फ्रेम के अंदर रखें';
+
+  @override
+  String get scanEnterManually => 'दवा मैन्युअल रूप से दर्ज करें';
+
+  @override
+  String get scanRetakePhoto => 'फ़ोटो दोबारा लें';
+
+  @override
+  String get scanReadingPrescription => 'नुस्खा पढ़ा जा रहा है...';
+
+  @override
+  String get scanStatusReading => 'पढ़ा जा रहा है';
+
+  @override
+  String get scanStatusFound => 'मिला';
+
+  @override
+  String get scanStatusInFrame => 'फ्रेम में';
+
+  @override
+  String get scanStatusReady => 'तैयार';
+
+  @override
+  String get scanCameraUnavailable => 'कैमरा उपलब्ध नहीं';
+
+  @override
+  String get scanStartingCamera => 'कैमरा शुरू हो रहा है...';
+
+  @override
+  String get scanCapturingDocument => 'दस्तावेज़ कैप्चर हो रहा है...';
+
+  @override
+  String get scanReadingMedicineText => 'दवा का पाठ पढ़ा जा रहा है...';
+
+  @override
+  String get scanMedicineDetected => 'दवा पता चली';
+
+  @override
+  String scanMedicinesDetected(int count) {
+    return '$count दवाएँ पता चलीं';
+  }
+
+  @override
+  String get scanImageCaptured => 'छवि कैप्चर की गई';
+
+  @override
+  String get scanMedicineOrRxDetected => 'दवा या नुस्खा पता चला';
+
+  @override
+  String get scanPointCameraHint => 'कैमरा दवा या नुस्खे की ओर करें';
+
+  @override
+  String get scanFlash => 'फ्लैश';
+
+  @override
+  String get scanShutter => 'स्कैन';
+
+  @override
+  String get scanGallery => 'गैलरी';
+
+  @override
+  String get scanTryAgain => 'पुनः प्रयास करें';
+
+  @override
+  String scanMedicineBadgeNumber(int index) {
+    return 'दवा $index पता चली';
+  }
+
+  @override
+  String get scanMedicineBadgeSingular => 'दवा पता चली';
+
+  @override
+  String get scanFieldStrength => 'मात्रा';
+
+  @override
+  String get scanFieldForm => 'रूप';
+
+  @override
+  String get scanFieldFrequency => 'आवृत्ति';
+
+  @override
+  String get medsFieldInstructionsShort => 'निर्देश';
+
+  @override
+  String get scanReviewAdd => 'समीक्षा करें और दवा जोड़ें';
+
+  @override
+  String get stepSchedule => 'शेड्यूल';
+
+  @override
+  String get reviewScanScanned => 'स्कैन किया गया';
+
+  @override
+  String get reviewScanReadSuccess =>
+      'हमने ये विवरण आपके लेबल से पढ़े हैं — जाँचें और ज़रूरत हो तो ठीक करें!';
+
+  @override
+  String get reviewScanInstructionsHint => 'दवा के निर्देश दर्ज करें';
+
+  @override
+  String get reviewScanStrengthUnclear =>
+      'फ़ोटो में मात्रा फ़ील्ड स्पष्ट नहीं थी — कृपया मैन्युअल रूप से जाँचें।';
+
+  @override
+  String get reviewScanRequired => 'आवश्यक';
+
+  @override
+  String get reviewScanStrengthHint => 'मात्रा दर्ज करें, उदा. 500mg';
+
+  @override
+  String get reviewScanConfirmContinue => 'पुष्टि करें और जारी रखें →';
 }

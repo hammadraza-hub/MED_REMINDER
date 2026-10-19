@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
@@ -104,8 +105,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ..showSnackBar(
         SnackBar(
           content: Text(
-            '${item.medicineName} count updated to '
-            '${result.remainingQuantity}',
+            AppLocalizations.of(context).inventoryCountUpdated(
+              item.medicineName,
+              result.remainingQuantity,
+            ),
           ),
         ),
       );
@@ -233,10 +236,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
               const SizedBox(width: 11),
 
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Inventory',
-                  style: TextStyle(
+                  AppLocalizations.of(context).inventoryTitle,
+                  style: const TextStyle(
                     color: AppColors.surface,
                     fontSize: 19,
                     fontWeight: FontWeight.w600,
@@ -264,6 +267,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // ============================================================
 
   Widget _buildSummary() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
@@ -285,7 +289,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${_items.length} Medications',
+                  l10n.inventoryMedicationsCount(_items.length),
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 16,
@@ -296,9 +300,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
                 const SizedBox(height: 5),
 
-                const Text(
-                  'Tracked supply',
-                  style: TextStyle(
+                Text(
+                  l10n.inventoryTrackedSupply,
+                  style: const TextStyle(
                     color: AppColors.formAccent,
                     fontSize: 12,
                     height: 1.2,
@@ -331,7 +335,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   const SizedBox(width: 5),
 
                   Text(
-                    '$_lowStockCount LOW STOCK',
+                    l10n.inventoryLowStockCount(_lowStockCount),
                     style: const TextStyle(
                       color: AppColors.inventoryLow,
                       fontSize: 11,
@@ -351,17 +355,21 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // ============================================================
 
   Widget _buildFilters() {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
-        _filterButton(title: 'All', filter: _InventoryFilter.all),
+        _filterButton(title: l10n.inventoryFilterAll, filter: _InventoryFilter.all),
 
         const SizedBox(width: 8),
 
-        _filterButton(title: 'Low Stock', filter: _InventoryFilter.lowStock),
+        _filterButton(
+          title: l10n.inventoryFilterLow,
+          filter: _InventoryFilter.lowStock,
+        ),
 
         const SizedBox(width: 8),
 
-        _filterButton(title: 'OK', filter: _InventoryFilter.ok),
+        _filterButton(title: l10n.inventoryFilterOk, filter: _InventoryFilter.ok),
       ],
     );
   }
@@ -411,6 +419,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // ============================================================
 
   Widget _buildInventoryList() {
+    final l10n = AppLocalizations.of(context);
     final items = _visibleItems;
 
     if (items.isEmpty) {
@@ -418,9 +427,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 30),
         alignment: Alignment.center,
-        child: const Text(
-          'No medications in this filter',
-          style: TextStyle(color: AppColors.formSubtitle, fontSize: 13),
+        child: Text(
+          l10n.inventoryEmptyFilter,
+          style: const TextStyle(
+            color: AppColors.formSubtitle,
+            fontSize: 13,
+          ),
         ),
       );
     }
@@ -439,6 +451,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
     final low = item.isLowStock;
 
     final statusColor = low ? AppColors.inventoryLow : AppColors.inventoryOk;
+
+    final l10n = AppLocalizations.of(context);
 
     return InkWell(
       onTap: () {
@@ -487,7 +501,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       const SizedBox(height: 5),
 
                       Text(
-                        item.supplyLabel,
+                        item.supplyLabelFor(l10n),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -515,7 +529,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    low ? 'LOW' : 'OK',
+                    low ? l10n.inventoryStatusLow : l10n.inventoryStatusOk,
                     style: TextStyle(
                       color: statusColor,
                       fontSize: 11,
@@ -553,22 +567,23 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // ============================================================
 
   Widget _lowStockActions(InventoryItem item) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(
+            const Icon(
               Icons.warning_amber_rounded,
               color: AppColors.inventoryLow,
               size: 17,
             ),
 
-            SizedBox(width: 6),
+            const SizedBox(width: 6),
 
             Expanded(
               child: Text(
-                'Running low — order refill',
-                style: TextStyle(
+                l10n.inventoryRunningLow,
+                style: const TextStyle(
                   color: AppColors.inventoryLow,
                   fontSize: 12,
                   height: 1.2,
@@ -599,9 +614,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       borderRadius: BorderRadius.circular(9),
                     ),
                   ),
-                  child: const Text(
-                    'Refill →',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  child: Text(
+                    l10n.inventoryRefill,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -625,9 +643,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       borderRadius: BorderRadius.circular(9),
                     ),
                   ),
-                  child: const Text(
-                    'Adjust Count',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                  child: Text(
+                    l10n.inventoryAdjustCount,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
@@ -643,6 +664,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // ============================================================
 
   Widget _okStockActions(InventoryItem item) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       height: 32,
       child: Row(
@@ -658,8 +680,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
           Expanded(
             child: Text(
               item.estimatedDaysRemaining >= 25
-                  ? 'Sufficient supply'
-                  : 'Sufficient through next refill',
+                  ? l10n.inventorySufficient
+                  : l10n.inventorySufficientNext,
               style: const TextStyle(
                 color: AppColors.inventoryOk,
                 fontSize: 12,
@@ -677,9 +699,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 5),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text(
-              'Edit',
-              style: TextStyle(
+            child: Text(
+              l10n.inventoryEdit,
+              style: const TextStyle(
                 color: AppColors.formAccent,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -749,6 +771,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // ============================================================
 
   Widget _buildAutoSyncCard() {
+    final l10n = AppLocalizations.of(context);
     return InkWell(
       onTap: () {
         // TODO Backend / Integration:
@@ -759,8 +782,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
-            const SnackBar(
-              content: Text('Pharmacy auto-sync integration pending'),
+            SnackBar(
+              content: Text(l10n.inventoryAutoSyncPending),
             ),
           );
       },
@@ -791,27 +814,27 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
             const SizedBox(width: 11),
 
-            const Expanded(
+            Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Auto-Sync Pharmacy',
-                    style: TextStyle(
+                    l10n.inventoryAutoSyncTitle,
+                    style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
 
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
                   Text(
-                    'Connect your pharmacy for automatic refill updates',
+                    l10n.inventoryAutoSyncSubtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.formSubtitle,
                       fontSize: 11,
                       height: 1.3,

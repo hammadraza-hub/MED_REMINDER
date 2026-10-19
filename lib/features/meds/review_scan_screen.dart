@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/medications/medication_draft.dart';
 import '../../core/services/ocr_service.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'schedule_screen.dart';
@@ -145,6 +146,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
   Future<void> _confirmAndContinue() async {
     if (_isContinuing) return;
 
+    final l10n = AppLocalizations.of(context);
     final medicineName = _medicineController.text.trim();
     final rawStrength = _strengthController.text.trim();
     final instructions = _instructionsController.text.trim();
@@ -152,13 +154,13 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
     // Validation — focus jump ke sath!
     if (medicineName.isEmpty) {
       _medicineFocus.requestFocus();
-      _showMessage('Please enter the medication name.');
+      _showMessage(l10n.reviewScanNameRequired);
       return;
     }
 
     if (rawStrength.isEmpty) {
       _strengthFocus.requestFocus();
-      _showMessage('Please enter the medication strength.');
+      _showMessage(l10n.reviewScanStrengthRequired);
       return;
     }
 
@@ -258,6 +260,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
   // ================= HEADER =================
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       color: AppColors.headerDark,
@@ -282,9 +285,9 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
-                  'Review Scan',
-                  style: TextStyle(
+                Text(
+                  l10n.reviewScanTitle,
+                  style: const TextStyle(
                     color: AppColors.surface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -300,6 +303,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
   // ================= STEP INDICATOR =================
   Widget _buildStepIndicator() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 56,
       color: AppColors.surface,
@@ -327,9 +331,9 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
           const SizedBox(width: 8),
 
-          const Text(
-            'Review Scan',
-            style: TextStyle(
+          Text(
+            l10n.reviewScanTitle,
+            style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -375,9 +379,9 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
           const SizedBox(width: 7),
 
-          const Text(
-            'Schedule',
-            style: TextStyle(
+          Text(
+            l10n.stepSchedule,
+            style: const TextStyle(
               color: AppColors.stepInactiveText,
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -429,6 +433,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
   // ================= SCANNED IMAGE =================
   Widget _buildImageCard() {
+    final l10n = AppLocalizations.of(context);
     final file = File(widget.imagePath);
 
     return Container(
@@ -476,20 +481,20 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
                   color: AppColors.success,
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'SCANNED',
-                      style: TextStyle(
+                      l10n.reviewScanScanned,
+                      style: const TextStyle(
                         color: AppColors.surface,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    SizedBox(width: 4),
-                    Icon(
+                    const SizedBox(width: 4),
+                    const Icon(
                       Icons.check_rounded,
                       size: 13,
                       color: AppColors.surface,
@@ -506,12 +511,13 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
   // ================= READ SUCCESS =================
   Widget _buildReadSuccess() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 5),
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
+          const Padding(
             padding: EdgeInsets.only(top: 1),
             child: Icon(
               Icons.auto_awesome_rounded,
@@ -519,12 +525,11 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
               size: 18,
             ),
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              "We've read these details from your label — "
-              'check and correct if needed!',
-              style: TextStyle(
+              l10n.reviewScanReadSuccess,
+              style: const TextStyle(
                 color: AppColors.formAccent,
                 fontSize: 13,
                 height: 1.4,
@@ -539,6 +544,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
   // ================= DETAILS CARD =================
   Widget _buildMainDetailsCard() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 15),
@@ -550,7 +556,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _fieldLabel('Medication Name'),
+          _fieldLabel(l10n.medsFieldName),
           const SizedBox(height: 7),
 
           _EditableField(
@@ -560,13 +566,13 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
           const SizedBox(height: 15),
 
-          _fieldLabel('Instructions'),
+          _fieldLabel(l10n.medsFieldInstructionsShort),
           const SizedBox(height: 7),
 
           _EditableField(
             controller: _instructionsController,
             focusNode: _instructionsFocus,
-            hintText: 'Enter medication instructions',
+            hintText: l10n.reviewScanInstructionsHint,
             minLines: 2,
             maxLines: 3,
           ),
@@ -588,6 +594,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
   // ================= DYNAMIC WARNING =================
   Widget _buildWarningCard() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 54),
@@ -617,13 +624,12 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
           const SizedBox(width: 9),
 
-          const Expanded(
+          Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 11),
+              padding: const EdgeInsets.symmetric(vertical: 11),
               child: Text(
-                'Strength field was unclear in the photo — '
-                'please verify manually.',
-                style: TextStyle(
+                l10n.reviewScanStrengthUnclear,
+                style: const TextStyle(
                   color: AppColors.formSubtitle,
                   fontSize: 12,
                   height: 1.4,
@@ -640,6 +646,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
   // ================= STRENGTH =================
   Widget _buildStrengthCard(bool showWarning) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
@@ -653,7 +660,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
         children: [
           Row(
             children: [
-              _fieldLabel('Strength'),
+              _fieldLabel(l10n.medsFieldStrength),
 
               const SizedBox(width: 3),
 
@@ -668,9 +675,9 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
               const Spacer(),
 
-              const Text(
-                'REQUIRED',
-                style: TextStyle(
+              Text(
+                l10n.reviewScanRequired,
+                style: const TextStyle(
                   color: AppColors.hintAccent,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -693,7 +700,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
               fontWeight: FontWeight.w600,
             ),
             decoration: InputDecoration(
-              hintText: 'Enter strength e.g. 500mg',
+              hintText: l10n.reviewScanStrengthHint,
               hintStyle: const TextStyle(
                 color: AppColors.fieldHintLight,
                 fontSize: 13,
@@ -739,6 +746,7 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
   // ================= CONTINUE =================
   Widget _buildContinueButton() {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity,
       height: 54,
@@ -761,9 +769,12 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
                   strokeWidth: 2,
                 ),
               )
-            : const Text(
-                'Confirm & Continue →',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            : Text(
+                l10n.reviewScanConfirmContinue,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
       ),
     );
@@ -771,24 +782,25 @@ class _ReviewScanScreenState extends State<ReviewScanScreen> {
 
   // ================= RETAKE =================
   Widget _buildRetakeButton() {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: GestureDetector(
         onTap: _retakePhoto,
         behavior: HitTestBehavior.opaque,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              const Icon(
                 Icons.photo_camera_outlined,
                 size: 17,
                 color: AppColors.formSubtitle,
               ),
-              SizedBox(width: 6),
+              const SizedBox(width: 6),
               Text(
-                'Retake Photo',
-                style: TextStyle(
+                l10n.scanRetakePhoto,
+                style: const TextStyle(
                   color: AppColors.formSubtitle,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,

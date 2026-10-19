@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "staging": "medapp-staging",
+    "prod": "med-reminder-38e5c",
+    "default": "medapp-staging"
+  },
+  "targets": {},
+  "etags": {}
+}
