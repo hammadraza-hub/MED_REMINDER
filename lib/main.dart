@@ -5,6 +5,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'features/onboarding/splash_screen.dart';
+
 // ──────────────────────────────────────────────────────────────
 // FIREBASE IMPORTS (M0 + M1)
 // ──────────────────────────────────────────────────────────────
@@ -172,7 +174,7 @@ class MyApp extends StatelessWidget {
               },
             );
           },
-          home: const MedRemindShell(),
+          home: const SplashScreen(),
         );
       },
     );

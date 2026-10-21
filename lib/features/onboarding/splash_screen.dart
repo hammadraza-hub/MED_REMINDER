@@ -2,11 +2,26 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import '../../core/constants/app_colors.dart';
+import '../../repositories/auth_repository.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../main_shell.dart';
 import 'onboarding_screen.dart';
 
+/// ============================================================
+/// SPLASH SCREEN (M2 — Auth-based routing)
+///
+/// Listens to Firebase Auth state changes:
+///   - No user → OnboardingScreen (Welcome Carousel)
+///   - Signed-in user → MedRemindShell (Dashboard)
+///
+/// M2 Plan: "Splash listens to authStateChanges(): no user goes
+/// to Welcome Carousel / Log In, a signed-in user goes to the
+/// Dashboard. Don't store tokens yourself, because the Firebase
+/// SDK persists and refreshes them securely."
+/// ============================================================
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -15,17 +30,82 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  StreamSubscription<User?>? _authSubscription;
+  bool _hasNavigated = false;
+
+  // Branding delay — let users see the splash for at least 2 seconds
+  // before routing, regardless of how fast auth state resolves.
+  static const Duration _brandingDelay = Duration(seconds: 2);
+
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-        );
+    _listenToAuthState();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  // ───────────────────────────────────────────────────────────
+  // Auth State Listener
+  // ───────────────────────────────────────────────────────────
+
+  void _listenToAuthState() {
+    _authSubscription = AuthRepository.instance.authStateChanges.listen(
+      _onAuthStateChanged,
+      onError: (Object error) {
+        // On error, default to onboarding (logged-out state)
+        debugPrint('⚠️ Auth state stream error: $error');
+        _navigateToOnboarding();
+      },
+    );
+  }
+
+  void _onAuthStateChanged(User? user) {
+    if (_hasNavigated) return;
+
+    // Wait for branding duration, then route based on auth state
+    Timer(_brandingDelay, () {
+      if (!mounted || _hasNavigated) return;
+
+      if (user != null) {
+        debugPrint('🔥 Auth state: user signed in → ${user.uid}');
+        _navigateToDashboard();
+      } else {
+        debugPrint('🔥 Auth state: no user → onboarding');
+        _navigateToOnboarding();
       }
     });
   }
+
+  // ───────────────────────────────────────────────────────────
+  // Navigation helpers
+  // ───────────────────────────────────────────────────────────
+
+  void _navigateToDashboard() {
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const MedRemindShell()),
+    );
+  }
+
+  void _navigateToOnboarding() {
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────
+  // UI (unchanged)
+  // ───────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {

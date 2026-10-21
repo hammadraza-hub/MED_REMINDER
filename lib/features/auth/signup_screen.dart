@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../core/constants/app_colors.dart';
+import '../../core/app_exception.dart';
+import '../../core/profile/profile_repository.dart';
+import '../../repositories/auth_repository.dart';
+import '../../repositories/firebase_profile_repository.dart';
+import '../../main_shell.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/social_icons.dart';
@@ -27,6 +34,9 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _termsError = false;
   // Guard: precacheImage sirf EK baar chale
   bool _precacheDone = false;
+
+  // M2: Loading state during async signup
+  bool _isLoading = false;
 
   @override
   void didChangeDependencies() {
@@ -100,22 +110,171 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   // ============================================================
-  // CREATE ACCOUNT
+  // CREATE ACCOUNT (M2 — Firebase Auth + Firestore)
   // ============================================================
-  void _createAccount() {
+  /// M2 Plan: "Real email + password" auth via Firebase AuthRepository.
+  /// After signup, creates users/{uid} doc + "self" profile (client-side
+  /// fallback for Cloud Function onUserCreated which needs Blaze Plan).
+  /// Records terms/privacy acceptance in users/{uid}.legal field.
+  Future<void> _createAccount() async {
+    // ─────────────────────────────────────────────────────────
+    // 1. Validate form fields
+    // ─────────────────────────────────────────────────────────
     setState(() {
       _nameError = _nameController.text.trim().isEmpty;
       _emailError = _emailController.text.trim().isEmpty;
       final password = _passwordController.text;
       _passwordError = password.length < 8 || password.length > 16;
-
       _termsError = !_agreeToTerms;
     });
 
     if (_nameError || _emailError || _passwordError || _termsError) return;
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Account created!')));
+    // ─────────────────────────────────────────────────────────
+    // 2. Start loading + capture form values
+    // ─────────────────────────────────────────────────────────
+    setState(() => _isLoading = true);
+
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    try {
+      // ───────────────────────────────────────────────────────
+      // 3. Firebase Auth signup
+      // ───────────────────────────────────────────────────────
+      final user = await AuthRepository.instance.signUpWithEmailPassword(
+        email: email,
+        password: password,
+      );
+
+      // Update display name in Firebase Auth
+      await AuthRepository.instance.updateDisplayName(displayName: name);
+
+      // ───────────────────────────────────────────────────────
+      // 4. Create users/{uid} document (M0 schema)
+      //    Includes legal field for terms/privacy acceptance (M2)
+      // ───────────────────────────────────────────────────────
+      await _createUserDocument(uid: user.uid, email: email, displayName: name);
+
+      // ───────────────────────────────────────────────────────
+      // 5. Create "self" profile in profiles/{profileId}
+      //    (Client-side fallback for Cloud Function onUserCreated)
+      // ───────────────────────────────────────────────────────
+      final profileId = await _createSelfProfile(
+        uid: user.uid,
+        displayName: name,
+      );
+
+      // ───────────────────────────────────────────────────────
+      // 6. Save selected profile locally for fast app launch
+      // ───────────────────────────────────────────────────────
+      await FirebaseProfileRepository.instance.saveSelectedProfile(
+        StoredProfile(memberId: profileId, displayName: name),
+      );
+
+      // ───────────────────────────────────────────────────────
+      // 7. Success! Navigate to dashboard
+      // ───────────────────────────────────────────────────────
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created! Welcome to MedRemind.'),
+          ),
+        );
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MedRemindShell()),
+        );
+      }
+    } on AppException catch (e) {
+      // Firebase errors mapped to user-friendly messages
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      // Unknown errors
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Signup failed: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // ============================================================
+  // HELPER: Create users/{uid} document in Firestore
+  // ============================================================
+  /// Client-side fallback for Cloud Function onUserCreated.
+  /// Creates the user document with M0 schema fields + M2 legal
+  /// field for terms/privacy acceptance.
+  Future<void> _createUserDocument({
+    required String uid,
+    required String email,
+    required String displayName,
+  }) async {
+    // Get device timezone (e.g., 'PKT', 'EST')
+    final timezone = DateTime.now().timeZoneName ?? 'UTC';
+
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'email': email,
+      'displayName': displayName,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+      'timezone': timezone,
+      'settings': {}, // Default empty settings map
+      'legalVersions': {'terms': '1.0', 'privacy': '1.0'},
+      'aiConsentAt': null,
+      'deletionRequestedAt': null,
+      // M2: Legal acceptance (terms + privacy checkbox)
+      'legal': {
+        'termsVersion': '1.0',
+        'privacyVersion': '1.0',
+        'acceptedAt': FieldValue.serverTimestamp(),
+      },
+    });
+  }
+
+  // ============================================================
+  // HELPER: Create "self" profile in profiles/{profileId}
+  // ============================================================
+  /// Client-side fallback for Cloud Function onUserCreated.
+  /// Creates the user's primary "self" profile with M0 schema fields.
+  /// Returns the new profileId.
+  Future<String> _createSelfProfile({
+    required String uid,
+    required String displayName,
+  }) async {
+    final timezone = DateTime.now().timeZoneName ?? 'UTC';
+
+    // Add new profile document (Firestore auto-generates ID)
+    final profileRef = await FirebaseFirestore.instance
+        .collection('profiles')
+        .add({
+          'ownerUid': uid,
+          'kind': 'self', // First profile is always "self"
+          'name': displayName,
+          'timezone': timezone,
+          'roles': {uid: 'owner'}, // Owner is the only role
+          'memberUids': [uid], // Owner is the only member
+          'healthUids': [uid], // Owner has health access
+          'permissions': {}, // No additional permissions
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+    // Link profile back to user doc (for fast lookup)
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'selectedMemberId': profileRef.id,
+      'selectedDisplayName': displayName,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    return profileRef.id;
   }
 
   @override
@@ -136,7 +295,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
                   // ================= BACK =================
                   InkWell(
-                    onTap: () => Navigator.of(context).maybePop(),
+                    onTap: _isLoading
+                        ? null
+                        : () => Navigator.of(context).maybePop(),
                     borderRadius: BorderRadius.circular(30),
                     child: const SizedBox(
                       width: 40,
@@ -268,9 +429,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     isPassword: true,
                     textInputAction: TextInputAction.done,
                     hasError: _passwordError,
-
                     inputFormatters: [LengthLimitingTextInputFormatter(16)],
-
                     onChanged: (_) {
                       setState(() {
                         _passwordError = false;
@@ -390,12 +549,14 @@ class _SignupScreenState extends State<SignupScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          onChanged: (value) {
-                            setState(() {
-                              _agreeToTerms = value ?? false;
-                              _termsError = false;
-                            });
-                          },
+                          onChanged: _isLoading
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    _agreeToTerms = value ?? false;
+                                    _termsError = false;
+                                  });
+                                },
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -431,9 +592,14 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(height: 19),
 
                   // ================= CREATE BUTTON =================
+                  // M2: Show loading state when _isLoading
                   CustomButton.classic(
-                    label: 'Create Account',
-                    onPressed: _agreeToTerms ? _createAccount : null,
+                    label: _isLoading
+                        ? 'Creating Account...'
+                        : 'Create Account',
+                    onPressed: (_agreeToTerms && !_isLoading)
+                        ? _createAccount
+                        : null,
                   ),
                   const SizedBox(height: 20),
 
@@ -450,13 +616,15 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const LoginScreen(),
-                              ),
-                            );
-                          },
+                          onTap: _isLoading
+                              ? null
+                              : () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const LoginScreen(),
+                                    ),
+                                  );
+                                },
                           child: const Text(
                             'Log In',
                             style: TextStyle(
