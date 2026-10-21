@@ -84,10 +84,10 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      - name: Deploy Firestore rules + indexes to staging
+         - name: Deploy Firestore rules + indexes to staging
         uses: w9jds/firebase-action@v2.0.0
         with:
-          args: deploy --only firestore:rules,firestore:indexes,storage --project staging
+          args: deploy --only firestore:rules,firestore:indexes --project staging
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN_STAGING }}
           
@@ -114,10 +114,10 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      - name: Deploy Firestore rules + indexes to production
+        - name: Deploy Firestore rules + indexes to production
         uses: w9jds/firebase-action@v2.0.0
         with:
-          args: deploy --only firestore:rules,firestore:indexes,storage --project prod
+          args: deploy --only firestore:rules,firestore:indexes --project prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN_PRODUCTION }}
           
