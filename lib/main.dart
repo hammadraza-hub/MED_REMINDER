@@ -30,7 +30,8 @@ import 'core/accessibility/accessibility_controller.dart';
 import 'core/locale/locale_controller.dart';
 import 'core/profile/profile_controller.dart';
 import 'l10n/app_localizations.dart';
-import 'main_shell.dart';
+
+// import 'main_shell.dart';
 
 /// ============================================================
 /// APP ENTRY POINT

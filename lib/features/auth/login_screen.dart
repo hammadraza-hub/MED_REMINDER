@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../core/constants/app_colors.dart';
+import '../../core/app_exception.dart';
+import '../../core/profile/profile_repository.dart';
+import '../../repositories/auth_repository.dart';
+import '../../repositories/firebase_profile_repository.dart';
+import '../../main_shell.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/social_icons.dart';
@@ -21,6 +28,9 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _emailError = false;
   bool _passwordError = false;
 
+  // M2: Loading state during async login
+  bool _isLoading = false;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -28,7 +38,16 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
+  // ============================================================
+  // LOGIN (M2 — Firebase Auth)
+  // ============================================================
+  /// M2 Plan: "Real email + password" auth via Firebase AuthRepository.
+  /// After login, loads user's selected profile from Firestore
+  /// (users/{uid}.selectedMemberId) so dashboard can show correct data.
+  Future<void> _login() async {
+    // ─────────────────────────────────────────────────────────
+    // 1. Validate form fields
+    // ─────────────────────────────────────────────────────────
     setState(() {
       _emailError = _emailController.text.trim().isEmpty;
       _passwordError = _passwordController.text.isEmpty;
@@ -36,12 +55,91 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (_emailError || _passwordError) return;
 
-    // TODO: Auth backend agle phase mein
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Login successful! Home screen agle step mein banayenge'),
-      ),
-    );
+    // ─────────────────────────────────────────────────────────
+    // 2. Start loading + capture form values
+    // ─────────────────────────────────────────────────────────
+    setState(() => _isLoading = true);
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    try {
+      // ───────────────────────────────────────────────────────
+      // 3. Firebase Auth sign in
+      // ───────────────────────────────────────────────────────
+      final user = await AuthRepository.instance.signInWithEmailPassword(
+        email: email,
+        password: password,
+      );
+
+      // ───────────────────────────────────────────────────────
+      // 4. Load user's selected profile from Firestore
+      //    (so dashboard shows correct member/profile data)
+      // ───────────────────────────────────────────────────────
+      await _loadSelectedProfileFromFirestore(user.uid);
+
+      // ───────────────────────────────────────────────────────
+      // 5. Success! Navigate to dashboard
+      // ───────────────────────────────────────────────────────
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Welcome back!')));
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MedRemindShell()),
+        );
+      }
+    } on AppException catch (e) {
+      // Firebase errors mapped to user-friendly messages
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      // Unknown errors
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Login failed: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // ============================================================
+  // HELPER: Load selected profile from Firestore users/{uid}
+  // ============================================================
+  /// After successful login, fetches the user's document from
+  /// Firestore to get their selectedMemberId and displayName.
+  /// Saves to SharedPreferences for fast app launch next time.
+  Future<void> _loadSelectedProfileFromFirestore(String uid) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      if (!doc.exists) return;
+
+      final data = doc.data()!;
+      final selectedMemberId = data['selectedMemberId'] as String?;
+      final selectedDisplayName = data['selectedDisplayName'] as String?;
+
+      if (selectedMemberId != null && selectedDisplayName != null) {
+        // Save to SharedPreferences via FirebaseProfileRepository
+        await FirebaseProfileRepository.instance.saveSelectedProfile(
+          StoredProfile(
+            memberId: selectedMemberId,
+            displayName: selectedDisplayName,
+          ),
+        );
+      }
+    } catch (e) {
+      // Non-fatal — log and continue
+      debugPrint('⚠️ Failed to load selected profile: $e');
+    }
   }
 
   @override
@@ -64,7 +162,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: _isLoading
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       icon: const Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 20,
@@ -130,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // ===== FIELDS (reusable widgets se!) =====
+                  // ===== EMAIL FIELD =====
                   CustomTextField(
                     controller: _emailController,
                     icon: Icons.mail_outline_rounded,
@@ -142,6 +242,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
+
+                  // ===== PASSWORD FIELD =====
                   CustomTextField(
                     controller: _passwordController,
                     icon: Icons.lock_outline_rounded,
@@ -156,17 +258,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // ===== FORGOT =====
+                  // ===== FORGOT PASSWORD =====
                   Align(
                     alignment: Alignment.centerRight,
                     child: GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const ResetPasswordScreen(),
-                          ),
-                        );
-                      },
+                      onTap: _isLoading
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ResetPasswordScreen(),
+                                ),
+                              );
+                            },
                       child: const Text(
                         'Forgot Password?',
                         style: TextStyle(
@@ -179,8 +284,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // ===== LOGIN BUTTON (CustomButton!) =====
-                  CustomButton(label: 'Log In', onPressed: _login),
+                  // ===== LOGIN BUTTON =====
+                  // M2: Show loading state when _isLoading
+                  CustomButton(
+                    label: _isLoading ? 'Logging in...' : 'Log In',
+                    onPressed: _isLoading ? null : _login,
+                  ),
                   const SizedBox(height: 32),
 
                   // ===== DIVIDER =====
@@ -202,7 +311,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // ===== SOCIAL (SocialButton!) =====
+                  // ===== SOCIAL =====
+                  // TODO M2-Phase 2: Implement Google sign-in
+                  // (requires Google provider in Firebase Console + SHA keys)
+                  // TODO M2-Phase 4: Implement Apple sign-in
+                  // (requires Apple Developer account $99/year)
                   SocialButton(label: 'Apple', icon: const AppleLogo(size: 22)),
                   const SizedBox(height: 14),
                   SocialButton(
@@ -224,7 +337,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
+                          onTap: _isLoading
+                              ? null
+                              : () => Navigator.of(context).pop(),
                           child: const Text(
                             'Sign Up',
                             style: TextStyle(
