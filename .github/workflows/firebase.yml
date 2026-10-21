@@ -57,15 +57,11 @@ jobs:
         run: npm install
 
       - name: Run Firestore Security Rules tests on emulator
-        run: |
-          firebase emulators:exec --only firestore \
-            "npx jest tests/firestore.rules.test.js --runInBand" \
-            --project medapp-staging
+        run: firebase emulators:exec --only firestore "npx jest tests/firestore.rules.test.js --runInBand"
 
   # ============================================================
   # JOB 2: Deploy to Staging (on merge to main)
-  # Depends on: test-rules passing
-  # Deploys: Firestore rules + indexes only (Functions need Blaze)
+  # Deploys: Firestore rules + indexes only (Storage needs Blaze)
   # ============================================================
   deploy-staging:
     name: Deploy to Staging
@@ -84,17 +80,15 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-         - name: Deploy Firestore rules + indexes to staging
+      - name: Deploy Firestore rules + indexes to staging
         uses: w9jds/firebase-action@v2.0.0
         with:
           args: deploy --only firestore:rules,firestore:indexes --project staging
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN_STAGING }}
-          
 
   # ============================================================
   # JOB 3: Deploy to Production (on release tag)
-  # Manual approval recommended — add environment protection
   # ============================================================
   deploy-production:
     name: Deploy to Production
@@ -114,10 +108,9 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-        - name: Deploy Firestore rules + indexes to production
+      - name: Deploy Firestore rules + indexes to production
         uses: w9jds/firebase-action@v2.0.0
         with:
           args: deploy --only firestore:rules,firestore:indexes --project prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN_PRODUCTION }}
-          
