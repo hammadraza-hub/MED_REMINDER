@@ -90,7 +90,7 @@ jobs:
           args: deploy --only firestore:rules,firestore:indexes,storage --project staging
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN_STAGING }}
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}
+          
 
   # ============================================================
   # JOB 3: Deploy to Production (on release tag)
@@ -120,4 +120,4 @@ jobs:
           args: deploy --only firestore:rules,firestore:indexes,storage --project prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN_PRODUCTION }}
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PRODUCTION }}
+          
