@@ -206,13 +206,74 @@ service cloud.firestore {
     }
 
     // =====================================
+    // USER UPDATE SECURITY (M2)
+    // =====================================
+
+    // M2: User can create their own document but NOT set
+    // sensitive fields (plan, role, deletionRequestedAt).
+    // hasOnly() already blocks these — they're not in the list.
+    function validUserCreate() {
+      let data = request.resource.data;
+
+      return data.keys().hasOnly([
+        'email',
+        'displayName',
+        'timezone',
+        'settings',
+        'legalVersions',
+        'aiConsentAt',
+        'legal',
+        'selectedMemberId',
+        'selectedDisplayName',
+        'selectedProfileImageUrl',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    // M2: User can update their own document but ONLY
+    // non-sensitive fields. hasOnly() already blocks
+    // plan, role, deletionRequestedAt — they're not in the list.
+    function validUserUpdate() {
+      let data = request.resource.data;
+
+      return data.diff(resource.data)
+        .affectedKeys()
+        .hasOnly([
+          'email',
+          'displayName',
+          'timezone',
+          'settings',
+          'legalVersions',
+          'aiConsentAt',
+          'legal',
+          'selectedMemberId',
+          'selectedDisplayName',
+          'selectedProfileImageUrl',
+          'updatedAt'
+        ]);
+    }
+
+    // =====================================
     // USERS
     // =====================================
 
     match /users/{uid} {
 
-      allow read, create, update: if signedIn()
+      // M2: User can read their own document
+      allow read: if signedIn()
         && request.auth.uid == uid;
+
+      // M2: User can create their own document (with validation)
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && validUserCreate();
+
+      // M2: User can update their own document (with validation)
+      // Sensitive fields (plan, role, deletionRequestedAt) are blocked
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && validUserUpdate();
 
       allow delete: if false;
 
