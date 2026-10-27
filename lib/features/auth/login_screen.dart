@@ -12,6 +12,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/social_icons.dart';
 import 'reset_password_screen.dart';
+import '../../core/profile/profile_controller.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -135,6 +136,9 @@ class _LoginScreenState extends State<LoginScreen> {
             displayName: selectedDisplayName,
           ),
         );
+
+        // M2 Fix: Refresh ProfileController with new data from SharedPreferences
+        await ProfileController.instance.initialize();
       }
     } catch (e) {
       // Non-fatal — log and continue

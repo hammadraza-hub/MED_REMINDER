@@ -13,6 +13,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/social_icons.dart';
 import 'login_screen.dart';
+import '../../core/profile/profile_controller.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -170,8 +171,14 @@ class _SignupScreenState extends State<SignupScreen> {
       // 6. Save selected profile locally for fast app launch
       // ───────────────────────────────────────────────────────
       await FirebaseProfileRepository.instance.saveSelectedProfile(
-        StoredProfile(memberId: profileId, displayName: name),
+        StoredProfile(
+          memberId: profileId,
+          displayName: name,
+        ),
       );
+
+      // M2 Fix: Refresh ProfileController with new data from SharedPreferences
+      await ProfileController.instance.initialize();
 
       // ───────────────────────────────────────────────────────
       // 7. Success! Navigate to dashboard

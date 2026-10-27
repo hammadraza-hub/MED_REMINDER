@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
+import '../../repositories/auth_repository.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_photo_picker.dart';
 import '../../widgets/social_icons.dart';
+import '../onboarding/splash_screen.dart';
 import 'account_data.dart';
 
 /// ============================================================
@@ -18,12 +23,12 @@ import 'account_data.dart';
 /// Settings screen ke profile card se push hoti hai (secondary
 /// screen) — isliye dark header + back button, koi bottom nav nahi.
 ///
-/// ACTIONS:
+/// ACTIONS (M2 — Firebase Auth integrated):
 /// • Change Photo     → showProfilePhotoPicker (real)
-/// • Save Changes     → ProfileController.updateDisplayName (real)
-/// • Change Password  → reset link dialog
-/// • Apple "Link"     → in-memory LINKED
-/// • Delete Account   → confirm sheet (backend pending)
+/// • Save Changes     → ProfileController.updateDisplayName + Firebase Auth + Firestore
+/// • Change Password  → sends password reset email via Firebase Auth
+/// • Sign Out (NEW)   → Firebase Auth signOut + navigate to splash
+/// • Delete Account   → Firebase Auth deleteAccount + navigate to splash
 ///
 /// COLORS:
 /// Sirf AppColors — koi hardcoded hex nahi.
@@ -39,6 +44,11 @@ class AccountScreen extends StatefulWidget {
 class _AccountScreenState extends State<AccountScreen> {
   late final TextEditingController _nameController;
   late List<LinkedAccount> _accounts;
+
+  // M2: Loading states for async operations
+  bool _isSaving = false;
+  bool _isDeleting = false;
+  bool _isSigningOut = false;
 
   @override
   void initState() {
@@ -60,9 +70,9 @@ class _AccountScreenState extends State<AccountScreen> {
   // HELPERS
   // ============================================================
 
+  /// M2: Real email from Firebase Auth (was fake before)
   String get _email {
-    final name = ProfileController.instance.displayName;
-    return '${name.toLowerCase().replaceAll(RegExp(r'\s+'), '.')}@email.com';
+    return AuthRepository.instance.currentEmail ?? '(no email on file)';
   }
 
   void _showMessage(String message) {
@@ -100,17 +110,51 @@ class _AccountScreenState extends State<AccountScreen> {
     await showProfilePhotoPicker(context);
   }
 
+  /// M2: Save changes — updates ProfileController + Firebase Auth + Firestore
   Future<void> _save() async {
-    await ProfileController.instance.updateDisplayName(_nameController.text);
+    if (_isSaving) return;
 
-    if (!mounted) return;
+    setState(() => _isSaving = true);
 
-    FocusScope.of(context).unfocus();
-    _showMessage('Changes saved successfully');
+    try {
+      final name = _nameController.text.trim();
+
+      // 1. Update local ProfileController
+      await ProfileController.instance.updateDisplayName(name);
+
+      // 2. Update Firebase Auth display name
+      await AuthRepository.instance.updateDisplayName(displayName: name);
+
+      // 3. Update Firestore users/{uid}.displayName
+      final user = AuthRepository.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'displayName': name,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+
+      if (!mounted) return;
+      FocusScope.of(context).unfocus();
+      _showMessage('Changes saved successfully');
+    } on AppException catch (e) {
+      if (mounted) _showMessage(e.message);
+    } catch (e) {
+      if (mounted) _showMessage('Failed to save: $e');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
-  void _changePassword() {
-    showDialog<void>(
+  /// M2: Send password reset email via Firebase Auth
+  Future<void> _changePassword() async {
+    final email = AuthRepository.instance.currentEmail;
+    if (email == null) {
+      _showMessage('No email on file');
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
@@ -123,14 +167,24 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           content: Text(
-            'A password reset link will be sent to $_email.',
+            'A password reset link will be sent to $email.',
             style: const TextStyle(color: AppColors.permissionsSecondary),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
               child: const Text(
-                'OK',
+                'Cancel',
+                style: TextStyle(
+                  color: AppColors.permissionsSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text(
+                'Send Link',
                 style: TextStyle(
                   color: AppColors.formAccent,
                   fontWeight: FontWeight.w700,
@@ -141,6 +195,17 @@ class _AccountScreenState extends State<AccountScreen> {
         );
       },
     );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await AuthRepository.instance.sendPasswordResetEmail(email: email);
+      if (mounted) _showMessage('Password reset link sent to $email');
+    } on AppException catch (e) {
+      if (mounted) _showMessage(e.message);
+    } catch (e) {
+      if (mounted) _showMessage('Failed to send reset email: $e');
+    }
   }
 
   void _linkApple() {
@@ -158,7 +223,10 @@ class _AccountScreenState extends State<AccountScreen> {
     _showMessage('Preparing your medical archive — coming soon');
   }
 
+  /// M2: Delete account via Firebase Auth + navigate to splash
   Future<void> _openDeleteSheet() async {
+    if (_isDeleting) return;
+
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -173,8 +241,93 @@ class _AccountScreenState extends State<AccountScreen> {
       },
     );
 
-    if (confirmed == true && mounted) {
-      _showMessage('Account deletion scheduled — coming soon');
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isDeleting = true);
+
+    try {
+      await AuthRepository.instance.deleteAccount();
+
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SplashScreen()),
+          (route) => false,
+        );
+      }
+    } on AppException catch (e) {
+      if (mounted) _showMessage(e.message);
+    } catch (e) {
+      if (mounted) _showMessage('Failed to delete account: $e');
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
+    }
+  }
+
+  /// M2: Sign out via Firebase Auth + navigate to splash
+  Future<void> _signOut() async {
+    if (_isSigningOut) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: const Text(
+            'Sign Out',
+            style: TextStyle(
+              color: AppColors.permissionsHeader,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: const Text(
+            'Are you sure you want to sign out?',
+            style: TextStyle(color: AppColors.permissionsSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: AppColors.permissionsSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text(
+                'Sign Out',
+                style: TextStyle(
+                  color: AppColors.formAccent,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isSigningOut = true);
+
+    try {
+      await AuthRepository.instance.signOut();
+
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SplashScreen()),
+          (route) => false,
+        );
+      }
+    } on AppException catch (e) {
+      if (mounted) _showMessage(e.message);
+    } catch (e) {
+      if (mounted) _showMessage('Failed to sign out: $e');
+    } finally {
+      if (mounted) setState(() => _isSigningOut = false);
     }
   }
 
@@ -207,6 +360,8 @@ class _AccountScreenState extends State<AccountScreen> {
                         _buildSecuritySection(),
                         const SizedBox(height: 12),
                         _buildSaveButton(),
+                        const SizedBox(height: 12),
+                        _buildSignOutButton(),
                         const SizedBox(height: 12),
                         _buildDangerZone(),
                       ],
@@ -320,82 +475,84 @@ class _AccountScreenState extends State<AccountScreen> {
                 listenable: ProfileController.instance,
                 builder: (context, child) {
                   return Column(
-                  children: [
-                    GestureDetector(
-                      onTap: _changePhoto,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const AppAvatar(size: 72),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: const BoxDecoration(
-                                color: AppColors.permissionsHeader,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.photo_camera_rounded,
-                                color: AppColors.surface,
-                                size: 13,
+                    children: [
+                      GestureDetector(
+                        onTap: _changePhoto,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const AppAvatar(size: 72),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.permissionsHeader,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.photo_camera_rounded,
+                                  color: AppColors.surface,
+                                  size: 13,
+                                ),
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            ProfileController.instance.displayName,
+                            style: const TextStyle(
+                              color: AppColors.permissionsHeader,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.verified_rounded,
+                            color: AppColors.permissionsGreenDark,
+                            size: 18,
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          ProfileController.instance.displayName,
-                          style: const TextStyle(
-                            color: AppColors.permissionsHeader,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _email,
+                        style: const TextStyle(
+                          color: AppColors.permissionsSecondary,
+                          fontSize: 13,
                         ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.verified_rounded,
-                          color: AppColors.permissionsGreenDark,
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _email,
-                      style: const TextStyle(
-                        color: AppColors.permissionsSecondary,
-                        fontSize: 13,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _changePhoto,
-                      borderRadius: BorderRadius.circular(8),
-                      child: const Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        child: Text(
-                          'Change Photo',
-                          style: TextStyle(
-                            color: AppColors.permissionsGreenDark,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: _changePhoto,
+                        borderRadius: BorderRadius.circular(8),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: Text(
+                            'Change Photo',
+                            style: TextStyle(
+                              color: AppColors.permissionsGreenDark,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -692,7 +849,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   // ============================================================
-  // SAVE BUTTON
+  // SAVE BUTTON (M2 — loading state)
   // ============================================================
 
   Widget _buildSaveButton() {
@@ -712,17 +869,31 @@ class _AccountScreenState extends State<AccountScreen> {
         borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: _save,
-          child: const SizedBox(
+          onTap: _isSaving ? null : _save,
+          child: SizedBox(
             height: 52,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.save_rounded, size: 20, color: AppColors.surface),
-                SizedBox(width: 8),
+                if (_isSaving)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: AppColors.surface,
+                      strokeWidth: 2,
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.save_rounded,
+                    size: 20,
+                    color: AppColors.surface,
+                  ),
+                const SizedBox(width: 8),
                 Text(
-                  'Save Changes',
-                  style: TextStyle(
+                  _isSaving ? 'Saving...' : 'Save Changes',
+                  style: const TextStyle(
                     color: AppColors.surface,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -737,7 +908,67 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   // ============================================================
-  // DANGER ZONE
+  // SIGN OUT BUTTON (M2 — NEW)
+  // ============================================================
+
+  Widget _buildSignOutButton() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shareButtonShadow,
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: _isSigningOut ? null : _signOut,
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            height: 52,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_isSigningOut)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: AppColors.permissionsHeader,
+                      strokeWidth: 2,
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.logout_rounded,
+                    size: 20,
+                    color: AppColors.permissionsHeader,
+                  ),
+                const SizedBox(width: 8),
+                Text(
+                  _isSigningOut ? 'Signing Out...' : 'Sign Out',
+                  style: const TextStyle(
+                    color: AppColors.permissionsHeader,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // DANGER ZONE (M2 — loading state on Delete Account)
   // ============================================================
 
   Widget _buildDangerZone() {
@@ -799,22 +1030,32 @@ class _AccountScreenState extends State<AccountScreen> {
               color: AppColors.transparent,
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
-                onTap: _openDeleteSheet,
+                onTap: _isDeleting ? null : _openDeleteSheet,
                 borderRadius: BorderRadius.circular(12),
-                child: const SizedBox(
+                child: SizedBox(
                   height: 52,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.delete_forever_rounded,
-                        size: 20,
-                        color: AppColors.permissionsErrorIcon,
-                      ),
-                      SizedBox(width: 8),
+                      if (_isDeleting)
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: AppColors.permissionsErrorIcon,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      else
+                        const Icon(
+                          Icons.delete_forever_rounded,
+                          size: 20,
+                          color: AppColors.permissionsErrorIcon,
+                        ),
+                      const SizedBox(width: 8),
                       Text(
-                        'Delete Account',
-                        style: TextStyle(
+                        _isDeleting ? 'Deleting...' : 'Delete Account',
+                        style: const TextStyle(
                           color: AppColors.permissionsErrorIcon,
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -848,11 +1089,7 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget _divider() {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 12),
-      child: Divider(
-        height: 1,
-        thickness: 1,
-        color: AppColors.reportChipHigh,
-      ),
+      child: Divider(height: 1, thickness: 1, color: AppColors.reportChipHigh),
     );
   }
 
@@ -865,12 +1102,9 @@ class _AccountScreenState extends State<AccountScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Center(
-        child: child ??
-            Icon(
-              icon,
-              size: 20,
-              color: AppColors.permissionsSecondary,
-            ),
+        child:
+            child ??
+            Icon(icon, size: 20, color: AppColors.permissionsSecondary),
       ),
     );
   }
@@ -949,165 +1183,165 @@ class _DeleteAccountSheet extends StatelessWidget {
       child: SingleChildScrollView(
         child: Container(
           margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.permissionsHeaderShadow,
-              blurRadius: 32,
-              offset: Offset(0, -8),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: AppColors.permissionsErrorContainer,
-                shape: BoxShape.circle,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.permissionsHeaderShadow,
+                blurRadius: 32,
+                offset: Offset(0, -8),
               ),
-              child: const Icon(
-                Icons.report_rounded,
-                color: AppColors.permissionsErrorIcon,
-                size: 28,
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: AppColors.permissionsErrorContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.report_rounded,
+                  color: AppColors.permissionsErrorIcon,
+                  size: 28,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Delete Account?',
-              style: TextStyle(
-                color: AppColors.permissionsHeader,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+              const SizedBox(height: 16),
+              const Text(
+                'Delete Account?',
+                style: TextStyle(
+                  color: AppColors.permissionsHeader,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'All schedule logs, caregiver links, and pill inventory '
-              'tracking will be permanently removed.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.permissionsSecondary,
-                fontSize: 14,
+              const SizedBox(height: 6),
+              const Text(
+                'All schedule logs, caregiver links, and pill inventory '
+                'tracking will be permanently removed.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.permissionsSecondary,
+                  fontSize: 14,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.permissionsChipFill,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.history_edu_rounded,
-                    color: AppColors.permissionsSecondary,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Backup Medical Logs',
-                          style: TextStyle(
-                            color: AppColors.permissionsHeader,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Download PDF report before deleting.',
-                          style: TextStyle(
-                            color: AppColors.permissionsSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.permissionsChipFill,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.history_edu_rounded,
+                      color: AppColors.permissionsSecondary,
+                      size: 22,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Material(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    child: InkWell(
-                      onTap: onExport,
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Backup Medical Logs',
+                            style: TextStyle(
+                              color: AppColors.permissionsHeader,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Download PDF report before deleting.',
+                            style: TextStyle(
+                              color: AppColors.permissionsSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Material(
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(8),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        child: Text(
-                          'Export',
-                          style: TextStyle(
-                            color: AppColors.permissionsSecondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                      child: InkWell(
+                        onTap: onExport,
+                        borderRadius: BorderRadius.circular(8),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          child: Text(
+                            'Export',
+                            style: TextStyle(
+                              color: AppColors.permissionsSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: Material(
-                color: AppColors.permissionsErrorIcon,
-                borderRadius: BorderRadius.circular(12),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: onDelete,
-                  child: const Center(
-                    child: Text(
-                      'Permanently Delete',
-                      style: TextStyle(
-                        color: AppColors.surface,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: Material(
+                  color: AppColors.permissionsErrorIcon,
+                  borderRadius: BorderRadius.circular(12),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: onDelete,
+                    child: const Center(
+                      child: Text(
+                        'Permanently Delete',
+                        style: TextStyle(
+                          color: AppColors.surface,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: Material(
-                color: AppColors.permissionsChipFill,
-                borderRadius: BorderRadius.circular(12),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: onKeep,
-                  child: const Center(
-                    child: Text(
-                      'Keep Account',
-                      style: TextStyle(
-                        color: AppColors.permissionsHeader,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: Material(
+                  color: AppColors.permissionsChipFill,
+                  borderRadius: BorderRadius.circular(12),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: onKeep,
+                    child: const Center(
+                      child: Text(
+                        'Keep Account',
+                        style: TextStyle(
+                          color: AppColors.permissionsHeader,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );

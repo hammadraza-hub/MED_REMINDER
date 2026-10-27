@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../l10n/app_localizations.dart';
+import '../../repositories/auth_repository.dart';
+import '../onboarding/splash_screen.dart';
 import '../../widgets/app_avatar.dart';
 import 'about_screen.dart';
 import 'accessibility_screen.dart';
@@ -86,6 +89,7 @@ class SettingsScreen extends StatelessWidget {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /// M2: Firebase Auth signOut + navigate to splash
   Future<void> _confirmLogout(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
 
@@ -128,9 +132,23 @@ class SettingsScreen extends StatelessWidget {
       },
     );
 
-    if (confirmed == true && context.mounted) {
-      // TODO Auth backend: session clear karke LoginScreen par bhejo.
-      _showMessage(context, l10n.settingsLogoutComingSoon);
+    if (confirmed != true || !context.mounted) return;
+
+    // M2: Firebase Auth signOut
+    try {
+      await AuthRepository.instance.signOut();
+
+      if (context.mounted) {
+        // Navigate to SplashScreen (will route to onboarding since no user)
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SplashScreen()),
+          (route) => false,
+        );
+      }
+    } on AppException catch (e) {
+      if (context.mounted) _showMessage(context, e.message);
+    } catch (e) {
+      if (context.mounted) _showMessage(context, 'Failed to sign out: $e');
     }
   }
 
@@ -166,9 +184,7 @@ class SettingsScreen extends StatelessWidget {
                         const SizedBox(height: 24),
                         ..._buildGroups(context),
                         const SizedBox(height: 8),
-                        _LogOutButton(
-                          onTap: () => _confirmLogout(context),
-                        ),
+                        _LogOutButton(onTap: () => _confirmLogout(context)),
                         const SizedBox(height: 16),
                         const _AppFooter(),
                       ],
@@ -250,31 +266,32 @@ class SettingsScreen extends StatelessWidget {
         widgets.add(const SizedBox(height: 24));
       }
 
-      widgets.add(_SettingsGroupCard(
-        group: SettingsData.groups[i],
-        onItemTap: (item) {
-          final Widget? screen = switch (item.id) {
-            'notifications' => const NotificationsScreen(),
-            'language' => const LanguageScreen(),
-            'subscription' => const SubscriptionScreen(),
-            'privacySecurity' => const PrivacySecurityScreen(),
-            'accessibility' => const AccessibilityScreen(),
-            'dataExport' => const DataExportScreen(),
-            'helpSupport' => const HelpSupportScreen(),
-            'about' => const AboutScreen(),
-            _ => null,
-          };
+      widgets.add(
+        _SettingsGroupCard(
+          group: SettingsData.groups[i],
+          onItemTap: (item) {
+            final Widget? screen = switch (item.id) {
+              'notifications' => const NotificationsScreen(),
+              'language' => const LanguageScreen(),
+              'subscription' => const SubscriptionScreen(),
+              'privacySecurity' => const PrivacySecurityScreen(),
+              'accessibility' => const AccessibilityScreen(),
+              'dataExport' => const DataExportScreen(),
+              'helpSupport' => const HelpSupportScreen(),
+              'about' => const AboutScreen(),
+              _ => null,
+            };
 
-          if (screen != null) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => screen),
-            );
-            return;
-          }
+            if (screen != null) {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => screen));
+              return;
+            }
 
-          _showMessage(context, l10n.comingSoon(_itemTitle(l10n, item.id)));
-        },
-      ));
+            _showMessage(context, l10n.comingSoon(_itemTitle(l10n, item.id)));
+          },
+        ),
+      );
     }
 
     return widgets;
@@ -299,6 +316,7 @@ class _ProfileSummaryCard extends StatelessWidget {
         builder: (context, child) {
           final name = ProfileController.instance.displayName;
           final email =
+              AuthRepository.instance.currentEmail ??
               '${name.toLowerCase().replaceAll(RegExp(r'\s+'), '.')}@email.com';
 
           return Row(
@@ -692,10 +710,7 @@ class _Card extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: child,
-          ),
+          child: Padding(padding: const EdgeInsets.all(16), child: child),
         ),
       ),
     );
