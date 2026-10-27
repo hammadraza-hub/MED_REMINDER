@@ -342,7 +342,9 @@ class _MedsScreenState extends State<MedsScreen> {
   // ============================================================
 
   List<_MedicationListItem> _activeItems(AppLocalizations l10n) {
-    return _activeProfiles.map((profile) => _toListItem(profile, l10n)).toList();
+    return _activeProfiles
+        .map((profile) => _toListItem(profile, l10n))
+        .toList();
   }
 
   List<_MedicationListItem> _archivedItems(AppLocalizations l10n) {
@@ -851,9 +853,8 @@ class _MedsScreenState extends State<MedsScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.medsDiscontinueError)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.medsDiscontinueError)));
     }
   }
 
@@ -885,6 +886,7 @@ class _MedsScreenState extends State<MedsScreen> {
               : 0,
         ),
         child: FloatingActionButton(
+          heroTag: null,
           onPressed: _addMedicine,
           backgroundColor: AppColors.formAccent,
           foregroundColor: AppColors.surface,
@@ -957,7 +959,8 @@ class _MedsScreenState extends State<MedsScreen> {
                 child: _ManageTile(
                   icon: Icons.shield_outlined,
                   label: l10n.medsAllergies,
-                  count: '${AllergiesData.countFor(ProfileController.instance.memberId)}',
+                  count:
+                      '${AllergiesData.countFor(ProfileController.instance.memberId)}',
                   onTap: _openAllergies,
                 ),
               ),

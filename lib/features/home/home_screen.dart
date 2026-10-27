@@ -349,9 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          AppLocalizations.of(context).homeMarkedTaken(dose.name),
-        ),
+        content: Text(AppLocalizations.of(context).homeMarkedTaken(dose.name)),
       ),
     );
   }
@@ -562,9 +560,8 @@ class _HomeScreenState extends State<HomeScreen> {
     };
 
     // MaterialLocalizations current locale ke hisab se date deta hai.
-    final dateLabel = MaterialLocalizations.of(
-      context,
-    ).formatFullDate(DateTime.now());
+    final dateLabel = MaterialLocalizations.of(context)
+        .formatFullDate(DateTime.now());
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -604,6 +601,7 @@ class _HomeScreenState extends State<HomeScreen> {
               : 0,
         ),
         child: FloatingActionButton(
+          heroTag: null,
           onPressed: () {
             Navigator.of(context)
                 .push(MaterialPageRoute(builder: (_) => const MedsScreen()));
@@ -1225,10 +1223,7 @@ class _QuickAccessSection extends StatelessWidget {
             ),
             Text(
               l10n.homeShortcuts,
-              style: const TextStyle(
-                color: AppColors.formAccent,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: AppColors.formAccent, fontSize: 13),
             ),
           ],
         ),
