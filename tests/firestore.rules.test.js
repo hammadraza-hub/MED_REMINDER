@@ -343,10 +343,23 @@ describe("Role Escalation & Health Access — M0", () => {
     );
   });
 
-  test("Viewer without health access cannot read health records", async () => {
+    test("Viewer without health access cannot read health records", async () => {
     const db = testEnv.authenticatedContext("viewer123").firestore();
 
+    // M3: Allergies are now readable by all members (canRead)
+    // Use vitals instead — still requires health access (canViewHealth)
     await assertFails(
+      getDoc(
+        doc(db, "profiles", "profile1", "vitals", "vital1")
+      )
+    );
+  });
+
+  // M3: Any member can read allergies (new behavior)
+  test("Viewer can read allergies (M3 — any member can read)", async () => {
+    const db = testEnv.authenticatedContext("viewer123").firestore();
+
+    await assertSucceeds(
       getDoc(
         doc(db, "profiles", "profile1", "allergies", "allergy1")
       )

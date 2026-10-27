@@ -51,7 +51,7 @@ service cloud.firestore {
           'permissions'
         ])
 
-        && data.keys().hasOnly([
+                && data.keys().hasOnly([
           'ownerUid',
           'kind',
           'name',
@@ -60,13 +60,20 @@ service cloud.firestore {
           'memberUids',
           'healthUids',
           'permissions',
+          'dob',
+          'relationship',
+          'color',
+          'avatarPath',
+          'missedAfterMin',
+          'conditions',
+          'archivedAt',
           'createdAt',
           'updatedAt'
         ])
 
         && data.ownerUid == request.auth.uid
 
-        && data.kind in ['self', 'dependent']
+        && data.kind in ['self', 'dependent', 'adult']
 
         && data.name is string
         && data.name.size() > 0
@@ -131,12 +138,19 @@ service cloud.firestore {
 
         // Only non-security profile fields
         // may be changed by the client
-        && data.diff(resource.data)
+                && data.diff(resource.data)
           .affectedKeys()
           .hasOnly([
             'name',
             'timezone',
-            'updatedAt'
+            'updatedAt',
+            'dob',
+            'relationship',
+            'color',
+            'avatarPath',
+            'missedAfterMin',
+            'conditions',
+            'archivedAt'
           ])
 
         && data.name is string
@@ -363,6 +377,22 @@ service cloud.firestore {
         allow read: if isMember(profileId);
 
         allow write: if false;
+      }
+      
+      // =====================================
+      // ALLERGIES (M3)
+      // =====================================
+
+      match /allergies/{allergyId} {
+
+        // M3: Any member can read allergies
+        allow read: if canRead(profileId);
+
+        // M3: Owner or caregiver can create/update allergies
+        allow create, update: if canWrite(profileId);
+
+        // M3: Only owner can delete allergies
+        allow delete: if isOwner(profileId);
       }
 
       // =====================================
