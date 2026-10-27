@@ -2,7 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
+import '../../repositories/auth_repository.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -19,6 +21,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _emailError = false;
   bool _linkSent = false;
 
+  // M2: Loading state during async reset email send
+  bool _isLoading = false;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -26,10 +31,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   // ============================================================
-  // SEND RESET LINK
+  // SEND RESET LINK (M2 — Firebase Auth)
   // ============================================================
-
-  void _sendResetLink() {
+  /// M2 Plan: "Forgot Password calls sendPasswordResetEmail with
+  /// ActionCodeSettings pointing at your Firebase Hosting domain or
+  /// your own domain with App Links / Universal Links."
+  ///
+  /// For M2 (Spark plan, no Firebase Hosting yet), we skip
+  /// ActionCodeSettings — Firebase will send the default email
+  /// with a browser-based reset link. User clicks link in email,
+  /// resets password in browser, then comes back to app.
+  /// ActionCodeSettings integration deferred to a later phase.
+  Future<void> _sendResetLink() async {
     FocusScope.of(context).unfocus();
 
     final email = _emailController.text.trim();
@@ -40,13 +53,45 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     setState(() {
       _emailError = !isValid;
-      _linkSent = isValid;
     });
 
     if (!isValid) return;
 
-    // TODO: Backend reset email integration.
-    debugPrint('Reset link sent to: $email');
+    // ─────────────────────────────────────────────────────────
+    // Start loading
+    // ─────────────────────────────────────────────────────────
+    setState(() => _isLoading = true);
+
+    try {
+      // ───────────────────────────────────────────────────────
+      // Send password reset email via Firebase Auth
+      // ───────────────────────────────────────────────────────
+      await AuthRepository.instance.sendPasswordResetEmail(email: email);
+
+      // ───────────────────────────────────────────────────────
+      // Success — show success banner
+      // ───────────────────────────────────────────────────────
+      if (mounted) {
+        setState(() => _linkSent = true);
+      }
+    } on AppException catch (e) {
+      // Firebase errors mapped to user-friendly messages
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      // Unknown errors
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send reset email: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   // ============================================================
@@ -136,8 +181,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
               // ================================================
               // CONTENT WIDTH
-              //
-              // This is the important Login-like tablet fix.
               // ================================================
 
               final double contentWidth;
@@ -209,9 +252,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: IconButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
+                            onPressed: _isLoading
+                                ? null
+                                : () {
+                                    Navigator.of(context).pop();
+                                  },
                             padding: EdgeInsets.zero,
                             alignment: Alignment.centerLeft,
                             constraints: const BoxConstraints(
@@ -363,10 +408,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         // ======================================
                         // SEND RESET BUTTON
                         // ======================================
+                        // M2: Show loading state when _isLoading
                         CustomButton.classic(
-                          label: 'Send Reset Link',
+                          label: _isLoading ? 'Sending...' : 'Send Reset Link',
 
-                          onPressed: _sendResetLink,
+                          onPressed: _isLoading ? null : _sendResetLink,
 
                           radius: 12,
 
@@ -477,9 +523,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                         Center(
                           child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
+                            onPressed: _isLoading
+                                ? null
+                                : () {
+                                    Navigator.of(context).pop();
+                                  },
 
                             style: TextButton.styleFrom(
                               foregroundColor: AppColors.formAccent,
