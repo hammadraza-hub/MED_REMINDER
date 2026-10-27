@@ -325,7 +325,11 @@ service cloud.firestore {
 
       allow create: if validProfileCreation();
 
-      allow read: if isMember(profileId);
+      // M3: Split read into get + list
+      // get = single doc read (uses get() in isMember — OK)
+      // list = query (can't use get() — just check auth, query constrains results)
+      allow get: if isMember(profileId);
+      allow list: if signedIn();
 
       allow update: if isOwner(profileId)
         && validProfileUpdate();

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../main_shell.dart';
+import '../../models/profile.dart';
+import '../../repositories/auth_repository.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'profiles_data.dart';
@@ -13,35 +17,9 @@ import 'member_permissions_screen.dart';
 /// ============================================================
 /// PROFILES — switch between managed family members
 ///
-/// PURPOSE:
-/// Switch between the profiles a user manages
-/// (self + linked family members).
-///
-/// KEY ELEMENTS:
-/// • List of profiles with avatar/name
-/// • Quick adherence-status indicator per profile
-/// • Active profile highlight (green check ring)
-///
-/// USER ACTIONS:
-/// • Tap to switch active profile → ProfileController.selectProfile
-///   (saari member-isolated screens auto-reload — listener pattern)
-/// • Permissions button → MemberPermissionsScreen (per-member:
-///   Viewer/Co-manager + visibility toggles + revoke access)
-/// • Tap + to add/invite another (family setup / invite phase)
-///
-/// DATA:
-/// UI → ProfilesData.managedProfiles() (demo stats)
-///
-/// AVATAR ISOLATION:
-/// AppAvatar useSelectedProfileImage: false — Sarah ki selected
-/// image Mom/Jake ke avatar par leak nahi hogi.
-///
-/// BOTTOM BAR:
-/// Shared AppBottomNavigation (baaki detail screens jaisi).
-///
-/// TODO Backend:
-/// Adherence stats DoseEvents se derive hongi.
-/// Invite flow — family_setup_screen / invite member.
+/// M3: Replaced mock data (ProfilesData.managedProfiles()) with
+/// Firestore stream query — profiles where memberUids array-contains
+/// current user UID. Real-time updates via StreamBuilder.
 /// ============================================================
 class ProfilesScreen extends StatefulWidget {
   const ProfilesScreen({super.key});
@@ -51,34 +29,49 @@ class ProfilesScreen extends StatefulWidget {
 }
 
 class _ProfilesScreenState extends State<ProfilesScreen> {
-  // ============================================================
-  // DATA
-  // ============================================================
-
-  List<ManagedProfile> _profiles = [];
+  // M3: Firestore stream for real-time profile list
+  Stream<List<ManagedProfile>>? _profilesStream;
 
   @override
   void initState() {
     super.initState();
+    _profilesStream = _createProfilesStream();
+  }
 
-    _profiles = ProfilesData.managedProfiles();
+  /// M3: Query profiles where memberUids array-contains current user UID
+  Stream<List<ManagedProfile>> _createProfilesStream() {
+    final uid = AuthRepository.instance.currentUid;
+    if (uid == null) return Stream.value([]);
+
+    return FirebaseFirestore.instance
+        .collection('profiles')
+        .where('memberUids', arrayContains: uid)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            final profile = Profile.fromFirestore(doc);
+            return ManagedProfile(
+              memberId: profile.id,
+              displayName: profile.name,
+              relationship:
+                  profile.relationship ??
+                  (profile.kind == ProfileKind.self ? 'Self' : 'Member'),
+              medicationCount: 0,
+              adherencePercent: 0,
+              adherenceLabel: '30d Score',
+              imagePath: profile.avatarPath,
+            );
+          }).toList();
+        });
   }
 
   String? get _activeMemberId => ProfileController.instance.memberId;
-
-  // ============================================================
-  // MESSAGE
-  // ============================================================
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
   }
-
-  // ============================================================
-  // BOTTOM NAVIGATION
-  // ============================================================
 
   void _onBottomNavigationTap(int index) {
     Navigator.of(context).pushAndRemoveUntil(
@@ -87,18 +80,10 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
     );
   }
 
-  // ============================================================
-  // SWITCH PROFILE
-  //
-  // ProfileController.selectProfile persist + notify karta hai —
-  // Meds/Home jaisi screens ke listeners auto-reload karte hain.
-  // ============================================================
-
   void _switchProfile(ManagedProfile profile) {
     final isActive = _activeMemberId == profile.memberId;
 
     if (isActive) {
-      // Already active — wapas dashboard.
       Navigator.of(context).maybePop();
       return;
     }
@@ -109,21 +94,12 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
       profileImagePath: profile.imagePath,
     );
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     _showMessage('Switched to ${profile.displayName}');
 
     Navigator.of(context).maybePop();
   }
-
-  // ============================================================
-  // BUILD
-  //
-  // AnnotatedRegion:
-  // Status bar style sirf ISI screen par scoped hai.
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +114,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
         body: Column(
           children: [
             _buildHeader(),
-
             Expanded(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -155,7 +130,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
             ),
           ],
         ),
-
         bottomNavigationBar: AppBottomNavigation(
           currentIndex: 0,
           onTap: _onBottomNavigationTap,
@@ -163,10 +137,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
       ),
     );
   }
-
-  // ============================================================
-  // HEADER
-  // ============================================================
 
   Widget _buildHeader() {
     return Container(
@@ -179,18 +149,14 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
           child: Row(
             children: [
               IconButton(
-                onPressed: () {
-                  Navigator.of(context).maybePop();
-                },
+                onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(
                   Icons.arrow_back_rounded,
                   color: AppColors.surface,
                   size: 24,
                 ),
               ),
-
               const SizedBox(width: 2),
-
               const Expanded(
                 child: Text(
                   'Profiles',
@@ -201,7 +167,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                   ),
                 ),
               ),
-
               const AppAvatar(
                 size: 35,
                 ringColor: AppColors.surface,
@@ -214,28 +179,17 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
     );
   }
 
-  // ============================================================
-  // CONTENT
-  // ============================================================
-
   Widget _buildContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ======================================================
-        // SECTION HEADER
-        // ======================================================
-
         Row(
           children: [
             Expanded(child: _managedTitle()),
-
             _buildCaregiverSyncChip(),
           ],
         ),
-
         const SizedBox(height: 4),
-
         const Align(
           alignment: Alignment.centerLeft,
           child: Text(
@@ -243,51 +197,96 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
             style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
           ),
         ),
-
         const SizedBox(height: 14),
 
-        // ======================================================
-        // PROFILE CARDS
-        // ======================================================
-        for (final profile in _profiles) ...[
-          _buildProfileCard(profile),
-          const SizedBox(height: 12),
-        ],
+        // M3: Firestore StreamBuilder for profile cards
+        StreamBuilder<List<ManagedProfile>>(
+          stream: _profilesStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.formAccent),
+                ),
+              );
+            }
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Error loading profiles: ${snapshot.error}',
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+              );
+            }
+            final profiles = snapshot.data ?? [];
+            if (profiles.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.person_off_rounded,
+                      size: 48,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No profiles yet',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Your profiles will appear here',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return Column(
+              children: [
+                for (final profile in profiles) ...[
+                  _buildProfileCard(profile),
+                  const SizedBox(height: 12),
+                ],
+              ],
+            );
+          },
+        ),
 
-        // ======================================================
-        // ADD / INVITE
-        // ======================================================
         _buildAddInviteCard(),
-
         const SizedBox(height: 14),
-
-        // ======================================================
-        // CAREGIVER INFO BANNER
-        // ======================================================
         _buildCaregiverBanner(),
       ],
     );
   }
 
-  // ============================================================
-  // MANAGED TITLE — count ke saath
-  // ============================================================
-
   Widget _managedTitle() {
-    return Text(
-      'MANAGED PROFILES (${_profiles.length})',
-      style: const TextStyle(
-        color: AppColors.textPrimary,
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.1,
-      ),
+    return StreamBuilder<List<ManagedProfile>>(
+      stream: _profilesStream,
+      builder: (context, snapshot) {
+        final count = snapshot.data?.length ?? 0;
+        return Text(
+          'MANAGED PROFILES ($count)',
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
+          ),
+        );
+      },
     );
   }
-
-  // ============================================================
-  // CAREGIVER SYNC CHIP
-  // ============================================================
 
   Widget _buildCaregiverSyncChip() {
     return Container(
@@ -300,11 +299,9 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.sync_rounded, size: 11, color: AppColors.textTeal),
-
           SizedBox(width: 4),
-
           Text(
-            '3 Caregiver Sync',
+            'Caregiver Sync',
             style: TextStyle(
               color: AppColors.textTeal,
               fontSize: 9,
@@ -316,17 +313,11 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
     );
   }
 
-  // ============================================================
-  // PROFILE CARD
-  // ============================================================
-
   Widget _buildProfileCard(ManagedProfile profile) {
     final isActive = _activeMemberId == profile.memberId;
 
     return GestureDetector(
-      onTap: () {
-        _switchProfile(profile);
-      },
+      onTap: () => _switchProfile(profile),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -340,17 +331,12 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Avatar — active par green check ring
             _buildProfileAvatar(profile, isActive),
-
             const SizedBox(width: 12),
-
-            // Name + relationship + today status
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Name + ACTIVE badge
                   Row(
                     children: [
                       Flexible(
@@ -365,30 +351,21 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                           ),
                         ),
                       ),
-
                       if (isActive) ...[
                         const SizedBox(width: 7),
                         _buildActiveBadge(),
                       ],
                     ],
                   ),
-
                   const SizedBox(height: 3),
-
-                  // Relationship + meds count
                   Text(
-                    '${profile.relationship} · '
-                    '${profile.medicationCount} '
-                    '${profile.medicationCount == 1 ? 'medication' : 'medications'}',
+                    '${profile.relationship} · ${profile.medicationCount} ${profile.medicationCount == 1 ? 'medication' : 'medications'}',
                     style: const TextStyle(
                       color: AppColors.textTeal,
                       fontSize: 11,
                     ),
                   ),
-
                   const SizedBox(height: 7),
-
-                  // Today status / overdue warning
                   if (profile.todayLabel != null)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,9 +379,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                               ? AppColors.success
                               : AppColors.missedReasonWarning,
                         ),
-
                         const SizedBox(width: 5),
-
                         Expanded(
                           child: Text(
                             profile.todayLabel!,
@@ -419,7 +394,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                         ),
                       ],
                     ),
-
                   if (profile.overdueLabel != null) ...[
                     const SizedBox(height: 5),
                     Row(
@@ -430,9 +404,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                           size: 13,
                           color: AppColors.missedReasonWarning,
                         ),
-
                         const SizedBox(width: 5),
-
                         Expanded(
                           child: Text(
                             profile.overdueLabel!,
@@ -449,10 +421,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                 ],
               ),
             ),
-
             const SizedBox(width: 8),
-
-            // Adherence % + label + status chip
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -469,7 +438,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-
                     if (!isActive) ...[
                       const SizedBox(width: 2),
                       const Icon(
@@ -480,9 +448,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                     ],
                   ],
                 ),
-
                 const SizedBox(height: 2),
-
                 Text(
                   profile.adherenceLabel,
                   style: const TextStyle(
@@ -490,17 +456,13 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                     fontSize: 9,
                   ),
                 ),
-
                 if (profile.statusChip != null) ...[
                   const SizedBox(height: 6),
                   _buildStatusChip(profile),
                 ],
               ],
             ),
-
             const SizedBox(width: 6),
-
-            // Permissions → MemberPermissionsScreen (per-member)
             _buildPermissionsButton(profile),
           ],
         ),
@@ -508,20 +470,11 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
     );
   }
 
-  // ============================================================
-  // PERMISSIONS BUTTON — per-member configure karo
-  //
-  // Linked-Profile Dashboard yahan se MemberPermissionsScreen
-  // kholti hai — back karne par wapas isi dashboard par aata hai.
-  // ============================================================
-
   Widget _buildPermissionsButton(ManagedProfile profile) {
     return Tooltip(
       message: 'Permissions — ${profile.displayName}',
       child: GestureDetector(
-        onTap: () {
-          _openMemberPermissions(profile);
-        },
+        onTap: () => _openMemberPermissions(profile),
         child: Container(
           width: 34,
           height: 34,
@@ -553,12 +506,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
     );
   }
 
-  // ============================================================
-  // PROFILE AVATAR — active par green check
-  //
-  // useSelectedProfileImage: false — member isolation!
-  // ============================================================
-
   Widget _buildProfileAvatar(ManagedProfile profile, bool isActive) {
     return Stack(
       clipBehavior: Clip.none,
@@ -570,7 +517,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
           ringColor: isActive ? AppColors.formAccent : null,
           ringWidth: isActive ? 2 : 0,
         ),
-
         if (isActive)
           Positioned(
             right: -2,
@@ -594,10 +540,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
     );
   }
 
-  // ============================================================
-  // ACTIVE BADGE
-  // ============================================================
-
   Widget _buildActiveBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -609,9 +551,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.circle, size: 5, color: AppColors.avatarSelected),
-
           SizedBox(width: 4),
-
           Text(
             'ACTIVE',
             style: TextStyle(
@@ -625,10 +565,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
       ),
     );
   }
-
-  // ============================================================
-  // STATUS CHIP — "Needs Check-in"
-  // ============================================================
 
   Widget _buildStatusChip(ManagedProfile profile) {
     return Container(
@@ -658,10 +594,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
     );
   }
 
-  // ============================================================
-  // ADD / INVITE CARD
-  // ============================================================
-
   Widget _buildAddInviteCard() {
     return GestureDetector(
       onTap: _openAddInvite,
@@ -687,9 +619,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                 color: AppColors.textTeal,
               ),
             ),
-
             const SizedBox(width: 12),
-
             const Expanded(
               child: Text(
                 'Add / Invite Family Member',
@@ -700,7 +630,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                 ),
               ),
             ),
-
             const Icon(
               Icons.chevron_right_rounded,
               size: 19,
@@ -711,10 +640,6 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
       ),
     );
   }
-
-  // ============================================================
-  // CAREGIVER INFO BANNER
-  // ============================================================
 
   Widget _buildCaregiverBanner() {
     return Container(
@@ -732,9 +657,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
             size: 16,
             color: AppColors.textTeal,
           ),
-
           SizedBox(width: 10),
-
           Expanded(
             child: Text(
               'Caregiver controls allow you to log doses, receive refill '
@@ -752,15 +675,10 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
     );
   }
 
-  // ============================================================
-  // ADD / INVITE
-  // ============================================================
-
   Future<void> _openAddInvite() async {
     final result = await Navigator.of(
       context,
     ).push<bool>(MaterialPageRoute(builder: (_) => const InviteMemberScreen()));
-
     if (result == true && mounted) {
       _showMessage('Invite sent / profile created');
     }
