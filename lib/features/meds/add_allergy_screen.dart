@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'allergies_data.dart';
+import '../../repositories/auth_repository.dart';
 
 /// ============================================================
 /// ADD ALLERGY — record a new allergy
@@ -61,6 +65,9 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
 
   int _notesLength = 0;
 
+  // M3: Loading state for async save
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -90,7 +97,9 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
     }
 
     final primary = _suggestions
-        .where((item) => !item.related && item.name.toLowerCase().contains(query))
+        .where(
+          (item) => !item.related && item.name.toLowerCase().contains(query),
+        )
         .toList();
 
     final related = _suggestions.where((item) => item.related).toList();
@@ -118,9 +127,7 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
   void _selectSuggestion(String name) {
     setState(() {
       _nameController.text = name;
-      _nameController.selection = TextSelection.collapsed(
-        offset: name.length,
-      );
+      _nameController.selection = TextSelection.collapsed(offset: name.length);
     });
   }
 
@@ -145,7 +152,11 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _save() {
+  /// M3: Save allergy to Firestore
+  /// Queries Firestore for real profile ID (bypasses ProfileController mock data)
+  Future<void> _save() async {
+    if (_isLoading) return;
+
     final name = _nameController.text.trim();
 
     if (name.isEmpty) {
@@ -153,19 +164,56 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
       return;
     }
 
-    // TODO Backend:
-    // Firestore allergies/{id} create with serverTimestamp().
-    AllergiesData.addRecord(
-      memberId: ProfileController.instance.memberId,
-      name: name,
-      category: AllergyCategory.medication,
-      severity: _severity,
-      symptoms: _notesController.text.trim(),
-    );
+    setState(() => _isLoading = true);
 
-    _showMessage('$name saved to your allergy list');
+    try {
+      final uid = AuthRepository.instance.currentUid;
 
-    Navigator.of(context).pop(true);
+      if (uid == null || uid.isEmpty) {
+        _showMessage('Not signed in.');
+        return;
+      }
+
+      // M3: Query Firestore for the user's real profile ID
+      // (ProfileController may have old mock data like "local_sarah")
+      final profileSnapshot = await FirebaseFirestore.instance
+          .collection('profiles')
+          .where('memberUids', arrayContains: uid)
+          .limit(1)
+          .get();
+
+      if (profileSnapshot.docs.isEmpty) {
+        _showMessage('No profile found. Please create a profile first.');
+        return;
+      }
+
+      final profileId = profileSnapshot.docs.first.id;
+
+      // M3: Create allergy in Firestore
+      // Path: profiles/{profileId}/allergies/{allergyId}
+      await FirebaseFirestore.instance
+          .collection('profiles')
+          .doc(profileId)
+          .collection('allergies')
+          .add({
+            'name': name,
+            'category': AllergyCategory.medication.name,
+            'severity': _severity.name,
+            'symptoms': _notesController.text.trim(),
+            'addedAt': FieldValue.serverTimestamp(),
+          });
+
+      if (mounted) {
+        _showMessage('$name saved to your allergy list');
+        Navigator.of(context).pop(true);
+      }
+    } on AppException catch (e) {
+      if (mounted) _showMessage(e.message);
+    } catch (e) {
+      if (mounted) _showMessage('Failed to save allergy: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   // ============================================================
@@ -464,9 +512,7 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border(
             left: BorderSide(
-              color: isPrimary
-                  ? AppColors.formAccent
-                  : AppColors.transparent,
+              color: isPrimary ? AppColors.formAccent : AppColors.transparent,
               width: 4,
             ),
           ),
@@ -700,9 +746,7 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
 
         Row(
           children: [
-            Expanded(
-              child: _buildSeverityChip(AllergySeverity.high, 'High'),
-            ),
+            Expanded(child: _buildSeverityChip(AllergySeverity.high, 'High')),
 
             const SizedBox(width: 8),
 
@@ -712,9 +756,7 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
 
             const SizedBox(width: 8),
 
-            Expanded(
-              child: _buildSeverityChip(AllergySeverity.mild, 'Mild'),
-            ),
+            Expanded(child: _buildSeverityChip(AllergySeverity.mild, 'Mild')),
           ],
         ),
       ],
@@ -753,11 +795,7 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (severity == AllergySeverity.high)
-              Icon(
-                Icons.warning_amber_rounded,
-                size: 16,
-                color: indicatorColor,
-              )
+              Icon(Icons.warning_amber_rounded, size: 16, color: indicatorColor)
             else
               Container(
                 width: 8,

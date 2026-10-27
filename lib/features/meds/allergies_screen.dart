@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
+import '../../repositories/auth_repository.dart';
 import '../../widgets/app_avatar.dart';
 import 'add_allergy_screen.dart';
 import 'allergies_data.dart';
@@ -35,25 +38,89 @@ class AllergiesScreen extends StatefulWidget {
 }
 
 class _AllergiesScreenState extends State<AllergiesScreen> {
-  List<AllergyRecord> _records = [];
+  // M3: Firestore stream for real-time allergies
+  Stream<List<AllergyRecord>>? _allergiesStream;
 
   @override
   void initState() {
     super.initState();
-
-    _loadRecords();
+    _initStream();
   }
 
   // ============================================================
-  // DATA
+  // M3: Initialize Firestore Stream
   // ============================================================
 
-  void _loadRecords() {
-    final memberId = ProfileController.instance.memberId;
+  /// M3: Query Firestore for real profile ID, then stream allergies.
+  /// Bypasses ProfileController (which may have old mock data like "local_sarah")
+  Future<void> _initStream() async {
+    final uid = AuthRepository.instance.currentUid;
+    if (uid == null) return;
 
-    setState(() {
-      _records = AllergiesData.recordsFor(memberId);
-    });
+    // Get real profileId from Firestore
+    final profileSnapshot = await FirebaseFirestore.instance
+        .collection('profiles')
+        .where('memberUids', arrayContains: uid)
+        .limit(1)
+        .get();
+
+    if (profileSnapshot.docs.isEmpty) return;
+
+    final profileId = profileSnapshot.docs.first.id;
+
+    // Create allergies stream
+    final stream = FirebaseFirestore.instance
+        .collection('profiles')
+        .doc(profileId)
+        .collection('allergies')
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            return AllergyRecord(
+              id: doc.id,
+              name: data['name'] as String? ?? '',
+              category: _categoryFromString(data['category'] as String?),
+              severity: _severityFromString(data['severity'] as String?),
+              symptoms: data['symptoms'] as String? ?? '',
+              addedAt:
+                  (data['addedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+            );
+          }).toList();
+        });
+
+    if (mounted) {
+      setState(() {
+        _allergiesStream = stream;
+      });
+    }
+  }
+
+  // M3: Firestore string → enum helpers
+  AllergySeverity _severityFromString(String? value) {
+    switch (value) {
+      case 'high':
+        return AllergySeverity.high;
+      case 'mild':
+        return AllergySeverity.mild;
+      case 'moderate':
+      default:
+        return AllergySeverity.moderate;
+    }
+  }
+
+  AllergyCategory _categoryFromString(String? value) {
+    switch (value) {
+      case 'food':
+        return AllergyCategory.food;
+      case 'environmental':
+        return AllergyCategory.environmental;
+      case 'other':
+        return AllergyCategory.other;
+      case 'medication':
+      default:
+        return AllergyCategory.medication;
+    }
   }
 
   // ============================================================
@@ -74,23 +141,16 @@ class _AllergiesScreenState extends State<AllergiesScreen> {
       },
     );
 
-    // Save/remove ke baad list refresh.
-    if (saved == true && mounted) {
-      _loadRecords();
-    }
+    // M3: No need to call _loadRecords() — StreamBuilder auto-updates!
   }
 
   /// Add Allergy — dedicated full screen (design: Add Allergy page).
   Future<void> _addAllergy() async {
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const AddAllergyScreen()),
-    );
-
-    if (saved == true && mounted) {
-      _loadRecords();
-    }
+    await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const AddAllergyScreen()));
+    // M3: No need to call _loadRecords() — StreamBuilder auto-updates!
   }
-
   // ============================================================
   // SEVERITY / CATEGORY PRESENTATION
   // ============================================================
@@ -223,15 +283,51 @@ class _AllergiesScreenState extends State<AllergiesScreen> {
 
           const SizedBox(height: 14),
 
-          if (_records.isEmpty)
-            _buildEmptyState()
-          else
-            ..._records.map(
-              (record) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildAllergyCard(record),
-              ),
-            ),
+          // M3: Firestore StreamBuilder for real-time allergies
+          StreamBuilder<List<AllergyRecord>>(
+            stream: _allergiesStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.formAccent,
+                    ),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Error: ${snapshot.error}',
+                    style: const TextStyle(
+                      color: AppColors.permissionsSecondary,
+                    ),
+                  ),
+                );
+              }
+
+              final records = snapshot.data ?? [];
+
+              if (records.isEmpty) {
+                return _buildEmptyState();
+              }
+
+              return Column(
+                children: records
+                    .map(
+                      (record) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildAllergyCard(record),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
 
           const SizedBox(height: 4),
 
@@ -254,63 +350,36 @@ class _AllergiesScreenState extends State<AllergiesScreen> {
   // ============================================================
 
   Widget _buildCountRow() {
-    final count = _records.length;
+    return StreamBuilder<List<AllergyRecord>>(
+      stream: _allergiesStream,
+      builder: (context, snapshot) {
+        final count = snapshot.data?.length ?? 0;
 
-    return Row(
-      children: [
-        Container(
-          width: 6,
-          height: 6,
-          decoration: const BoxDecoration(
-            color: AppColors.permissionsSecondary,
-            shape: BoxShape.circle,
-          ),
-        ),
-
-        const SizedBox(width: 7),
-
-        Expanded(
-          child: Text(
-            '$count ${count == 1 ? 'allergy' : 'allergies'} on file',
-            style: const TextStyle(
-              color: AppColors.permissionsSecondary,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
+        return Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: AppColors.permissionsSecondary,
+                shape: BoxShape.circle,
+              ),
             ),
-          ),
-        ),
-
-        GestureDetector(
-          onTap: () {
-            _addAllergy();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.formAccent,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add, size: 16, color: AppColors.surface),
-                SizedBox(width: 4),
-                Text(
-                  'Add',
-                  style: TextStyle(
-                    color: AppColors.surface,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
+            const SizedBox(width: 7),
+            Expanded(
+              child: Text(
+                '$count ${count == 1 ? 'allergy' : 'allergies'} on file',
+                style: const TextStyle(
+                  color: AppColors.permissionsSecondary,
+                  fontSize: 12.5,
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
-
   // ============================================================
   // SAFETY STRIP
   // ============================================================
@@ -677,11 +746,7 @@ class _AllergiesScreenState extends State<AllergiesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: const [
-          Icon(
-            Icons.shield_outlined,
-            color: AppColors.fieldHint,
-            size: 44,
-          ),
+          Icon(Icons.shield_outlined, color: AppColors.fieldHint, size: 44),
 
           SizedBox(height: 10),
 
@@ -834,9 +899,7 @@ class _AllergyFormSheetState extends State<_AllergyFormSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
         decoration: const BoxDecoration(
           color: AppColors.surface,
@@ -923,10 +986,7 @@ class _AllergyFormSheetState extends State<_AllergyFormSheet> {
 
               const Text(
                 'New medications will be checked against this entry.',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
             ],
           ),
