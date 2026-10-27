@@ -190,6 +190,25 @@ service cloud.firestore {
             .get('logDoses', false) == true
         );
     }
+       // =====================================
+    // M3: GENERAL ACCESS HELPERS
+    // =====================================
+
+    // M3: Any member can read (owner, caregiver, viewer)
+    function canRead(profileId) {
+      return isMember(profileId);
+    }
+
+    // M3: Owner or caregiver can write (general write, not just meds)
+    function canWrite(profileId) {
+      return isOwner(profileId)
+        || (
+          isMember(profileId)
+
+          && profile(profileId).roles
+            .get(request.auth.uid, '') == 'caregiver'
+        );
+    }
 
     // =====================================
     // HEALTH ACCESS
