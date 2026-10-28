@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -34,11 +34,10 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _emailError = false;
   bool _passwordError = false;
   bool _termsError = false;
-  // Guard: precacheImage sirf EK baar chale
   bool _precacheDone = false;
 
-  // M2: Loading state during async signup
   bool _isLoading = false;
+  bool _googleLoading = false;
 
   @override
   void didChangeDependencies() {
@@ -47,7 +46,6 @@ class _SignupScreenState extends State<SignupScreen> {
     if (_precacheDone) return;
     _precacheDone = true;
 
-    // Pills pehle se decode — screen khulte hi ready
     for (final asset in [
       'assets/images/signup_pill1.jpg',
       'assets/images/pill.png',
@@ -66,25 +64,22 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   // ============================================================
-  // PASSWORD STRENGTH — user ke password ke hisaab se LIVE
-  // 0 = khali | 1 = Weak | 2 = Good | 3 = Strong
+  // PASSWORD STRENGTH
   // ============================================================
   int get _passwordStrength {
     final p = _passwordController.text;
     if (p.isEmpty) return 0;
-
-    // 6 se chhota password kabhi Strong nahi ban sakta
     if (p.length < 6) return 1;
 
     int score = 0;
-    if (p.length >= 8) score++; // lamba
-    if (RegExp(r'[A-Z]').hasMatch(p)) score++; // capital letter
-    if (RegExp(r'[0-9]').hasMatch(p)) score++; // number
+    if (p.length >= 8) score++;
+    if (RegExp(r'[A-Z]').hasMatch(p)) score++;
+    if (RegExp(r'[0-9]').hasMatch(p)) score++;
     if (RegExp(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]]').hasMatch(p)) score++;
 
-    if (score <= 1) return 1; // Weak
-    if (score <= 3) return 2; // Good
-    return 3; // Strong
+    if (score <= 1) return 1;
+    if (score <= 3) return 2;
+    return 3;
   }
 
   String get _strengthLabel {
@@ -102,26 +97,19 @@ class _SignupScreenState extends State<SignupScreen> {
   Color get _strengthColor {
     switch (_passwordStrength) {
       case 1:
-        return AppColors.error; // Weak → red
+        return AppColors.error;
       case 2:
-        return AppColors.accentOrange; // Good → orange
+        return AppColors.accentOrange;
       case 3:
-        return AppColors.formAccent; // Strong → green
+        return AppColors.formAccent;
     }
     return AppColors.barEmpty;
   }
 
   // ============================================================
-  // CREATE ACCOUNT (M2 — Firebase Auth + Firestore)
+  // CREATE ACCOUNT (M2 - Firebase Auth + Firestore)
   // ============================================================
-  /// M2 Plan: "Real email + password" auth via Firebase AuthRepository.
-  /// After signup, creates users/{uid} doc + "self" profile (client-side
-  /// fallback for Cloud Function onUserCreated which needs Blaze Plan).
-  /// Records terms/privacy acceptance in users/{uid}.legal field.
   Future<void> _createAccount() async {
-    // ─────────────────────────────────────────────────────────
-    // 1. Validate form fields
-    // ─────────────────────────────────────────────────────────
     setState(() {
       _nameError = _nameController.text.trim().isEmpty;
       _emailError = _emailController.text.trim().isEmpty;
@@ -132,9 +120,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (_nameError || _emailError || _passwordError || _termsError) return;
 
-    // ─────────────────────────────────────────────────────────
-    // 2. Start loading + capture form values
-    // ─────────────────────────────────────────────────────────
     setState(() => _isLoading = true);
 
     final name = _nameController.text.trim();
@@ -142,46 +127,26 @@ class _SignupScreenState extends State<SignupScreen> {
     final password = _passwordController.text;
 
     try {
-      // ───────────────────────────────────────────────────────
-      // 3. Firebase Auth signup
-      // ───────────────────────────────────────────────────────
       final user = await AuthRepository.instance.signUpWithEmailPassword(
         email: email,
         password: password,
       );
 
-      // Update display name in Firebase Auth
       await AuthRepository.instance.updateDisplayName(displayName: name);
 
-      // ───────────────────────────────────────────────────────
-      // 4. Create users/{uid} document (M0 schema)
-      //    Includes legal field for terms/privacy acceptance (M2)
-      // ───────────────────────────────────────────────────────
       await _createUserDocument(uid: user.uid, email: email, displayName: name);
 
-      // ───────────────────────────────────────────────────────
-      // 5. Create "self" profile in profiles/{profileId}
-      //    (Client-side fallback for Cloud Function onUserCreated)
-      // ───────────────────────────────────────────────────────
       final profileId = await _createSelfProfile(
         uid: user.uid,
         displayName: name,
       );
 
-      // ───────────────────────────────────────────────────────
-      // 6. Save selected profile locally for fast app launch
-      // ───────────────────────────────────────────────────────
       await FirebaseProfileRepository.instance.saveSelectedProfile(
         StoredProfile(memberId: profileId, displayName: name),
       );
 
-      // M2 Fix: Refresh ProfileController with new data from SharedPreferences
       await ProfileController.instance.initialize();
 
-      // ───────────────────────────────────────────────────────
-      // 7. Success! Navigate to dashboard
-      // ───────────────────────────────────────────────────────
-      // 7. Success! Navigate to Health Profile Setup (M3)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -194,13 +159,11 @@ class _SignupScreenState extends State<SignupScreen> {
         );
       }
     } on AppException catch (e) {
-      // Firebase errors mapped to user-friendly messages
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (e) {
-      // Unknown errors
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Signup failed: $e')));
@@ -215,15 +178,11 @@ class _SignupScreenState extends State<SignupScreen> {
   // ============================================================
   // HELPER: Create users/{uid} document in Firestore
   // ============================================================
-  /// Client-side fallback for Cloud Function onUserCreated.
-  /// Creates the user document with M0 schema fields + M2 legal
-  /// field for terms/privacy acceptance.
   Future<void> _createUserDocument({
     required String uid,
     required String email,
     required String displayName,
   }) async {
-    // Get device timezone (e.g., 'PKT', 'EST')
     final timezone = DateTime.now().timeZoneName ?? 'UTC';
 
     await FirebaseFirestore.instance.collection('users').doc(uid).set({
@@ -246,32 +205,27 @@ class _SignupScreenState extends State<SignupScreen> {
   // ============================================================
   // HELPER: Create "self" profile in profiles/{profileId}
   // ============================================================
-  /// Client-side fallback for Cloud Function onUserCreated.
-  /// Creates the user's primary "self" profile with M0 schema fields.
-  /// Returns the new profileId.
   Future<String> _createSelfProfile({
     required String uid,
     required String displayName,
   }) async {
     final timezone = DateTime.now().timeZoneName ?? 'UTC';
 
-    // Add new profile document (Firestore auto-generates ID)
     final profileRef = await FirebaseFirestore.instance
         .collection('profiles')
         .add({
           'ownerUid': uid,
-          'kind': 'self', // First profile is always "self"
+          'kind': 'self',
           'name': displayName,
           'timezone': timezone,
-          'roles': {uid: 'owner'}, // Owner is the only role
-          'memberUids': [uid], // Owner is the only member
-          'healthUids': [uid], // Owner has health access
-          'permissions': {}, // No additional permissions
+          'roles': {uid: 'owner'},
+          'memberUids': [uid],
+          'healthUids': [uid],
+          'permissions': {},
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-    // Link profile back to user doc (for fast lookup)
     await FirebaseFirestore.instance.collection('users').doc(uid).set({
       'selectedMemberId': profileRef.id,
       'selectedDisplayName': displayName,
@@ -279,6 +233,111 @@ class _SignupScreenState extends State<SignupScreen> {
     }, SetOptions(merge: true));
 
     return profileRef.id;
+  }
+
+  // ============================================================
+  // GOOGLE SIGN-UP (NEW - Google provider)
+  // Loads ACTUAL profileId from Firestore users/{uid}.selectedMemberId
+  // instead of using user.uid (which was a bug)
+  // ============================================================
+  Future<void> _handleGoogleSignUp() async {
+    setState(() => _googleLoading = true);
+    try {
+      debugPrint(
+        'ðŸ” GOOGLE SIGN-UP: Calling AuthRepository.instance.signInWithGoogle()',
+      );
+      final result = await AuthRepository.instance.signInWithGoogle();
+      debugPrint(
+        'ðŸ” GOOGLE SIGN-UP: signInWithGoogle returned. uid=${result.user.uid}, isNewUser=${result.isNewUser}',
+      );
+      if (!mounted) {
+        debugPrint(
+          'ðŸ” GOOGLE SIGN-UP: Widget not mounted after signInWithGoogle â€” ABORTING',
+        );
+        return;
+      }
+
+      debugPrint(
+        'ðŸ” GOOGLE SIGN-UP: Querying Firestore for users/{uid} doc...',
+      );
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(result.user.uid)
+          .get();
+
+      String? memberId;
+      String? memberDisplayName;
+
+      if (userDoc.exists) {
+        final data = userDoc.data()!;
+        memberId = data['selectedMemberId'] as String?;
+        memberDisplayName = data['selectedDisplayName'] as String?;
+        debugPrint(
+          'ðŸ” GOOGLE SIGN-UP: Firestore user doc found. memberId=$memberId, displayName=$memberDisplayName',
+        );
+      } else {
+        debugPrint(
+          'ðŸ” GOOGLE SIGN-UP: âŒ Firestore user doc NOT FOUND â€” using fallback',
+        );
+      }
+
+      memberId ??= result.user.uid;
+      memberDisplayName ??= result.user.displayName ?? 'Me';
+
+      await FirebaseProfileRepository.instance.saveSelectedProfile(
+        StoredProfile(memberId: memberId, displayName: memberDisplayName),
+      );
+
+      debugPrint(
+        'ðŸ” GOOGLE SIGN-UP: Calling ProfileController.instance.initialize()...',
+      );
+      await ProfileController.instance.initialize();
+
+      if (!mounted) {
+        debugPrint(
+          'ðŸ” GOOGLE SIGN-UP: Widget not mounted before navigation â€” ABORTING',
+        );
+        return;
+      }
+
+      if (result.isNewUser) {
+        debugPrint(
+          'ðŸ” GOOGLE SIGN-UP: Navigating to HealthProfileScreen (new user)',
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google account connected! Welcome to MedRemind.'),
+          ),
+        );
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HealthProfileScreen()),
+        );
+      } else {
+        debugPrint(
+          'ðŸ” GOOGLE SIGN-UP: Navigating to MedRemindShell (existing user)',
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account already exists. Logging you in...'),
+          ),
+        );
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MedRemindShell()),
+        );
+      }
+    } on AppException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e, stackTrace) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Google sign-up failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
   }
 
   @override
@@ -427,7 +486,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   CustomTextField(
                     controller: _passwordController,
                     label: 'Password',
-                    hint: '8–16 characters',
+                    hint: '8-16 characters',
                     icon: Icons.lock_outline_rounded,
                     variant: FieldVariant.bordered,
                     isPassword: true,
@@ -470,7 +529,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(width: 16),
                       SizedBox(
-                        width: 44, // label ki jagah fix — layout na hile
+                        width: 44,
                         child: Text(
                           _strengthLabel,
                           style: TextStyle(
@@ -507,7 +566,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   const SizedBox(height: 19),
 
-                  // ================= SOCIAL (dono white) =================
+                  // ================= SOCIAL (Apple + Google) =================
                   Row(
                     children: [
                       Expanded(
@@ -522,9 +581,20 @@ class _SignupScreenState extends State<SignupScreen> {
                       Expanded(
                         child: SocialButton(
                           label: 'Google',
-                          icon: const GoogleLogo(size: 20),
+                          icon: _googleLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const GoogleLogo(size: 20),
                           variant: SocialVariant.outlined,
                           height: 50,
+                          onPressed: _googleLoading
+                              ? null
+                              : _handleGoogleSignUp,
                         ),
                       ),
                     ],
@@ -596,7 +666,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(height: 19),
 
                   // ================= CREATE BUTTON =================
-                  // M2: Show loading state when _isLoading
                   CustomButton.classic(
                     label: _isLoading
                         ? 'Creating Account...'
@@ -707,7 +776,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 }
 
-/// Strength bar segment — color smooth transition ke sath
+/// Strength bar segment with smooth color transition
 class _StrengthBar extends StatelessWidget {
   const _StrengthBar({required this.color});
 

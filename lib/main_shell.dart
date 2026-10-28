@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import 'core/constants/app_colors.dart';
 import 'features/home/home_screen.dart';
@@ -14,25 +14,25 @@ import 'widgets/app_bottom_navigation.dart';
 /// App ke 5 main tabs ko manage karta hai.
 ///
 /// TABS:
-/// 0 → Home
-/// 1 → Meds
-/// 2 → Calendar
-/// 3 → Reports
-/// 4 → Settings
+/// 0 â†’ Home
+/// 1 â†’ Meds
+/// 2 â†’ Calendar
+/// 3 â†’ Reports
+/// 4 â†’ Settings
 ///
 /// ARCHITECTURE:
-/// • Main tab switching yahan hoti hai.
-/// • Shared bottom bar AppBottomNavigation se aati hai.
-/// • IndexedStack tab state preserve karta hai.
-/// • Detail screens initialIndex ke through kisi specific
+/// â€¢ Main tab switching yahan hoti hai.
+/// â€¢ Shared bottom bar AppBottomNavigation se aati hai.
+/// â€¢ IndexedStack tab state preserve karta hai.
+/// â€¢ Detail screens initialIndex ke through kisi specific
 ///   main tab par wapas aa sakti hain.
 ///
 /// IMPORTANT:
 /// Main tab screens apni duplicate bottom navigation NAHI rakhen.
 ///
 /// Example:
-/// const MedRemindShell(initialIndex: 1) → Meds
-/// const MedRemindShell(initialIndex: 2) → Calendar
+/// const MedRemindShell(initialIndex: 1) â†’ Meds
+/// const MedRemindShell(initialIndex: 2) â†’ Calendar
 ///
 /// TODO Navigation:
 /// Future mein go_router / Navigator 2.0 use karne par shell
@@ -61,9 +61,9 @@ class _MedRemindShellState extends State<MedRemindShell> {
   @override
   void initState() {
     super.initState();
-
-    // Safety:
-    // Agar galti se invalid index pass ho jaye to app crash na kare.
+    debugPrint(
+      'ðŸ  MedRemindShell initState â€” initialIndex: ${widget.initialIndex}',
+    );
     _currentIndex = widget.initialIndex.clamp(0, _tabs.length - 1);
   }
 
@@ -110,7 +110,7 @@ class _PlaceholderTab extends StatelessWidget {
           Icon(icon, size: 64, color: AppColors.fieldHint),
           const SizedBox(height: 16),
           Text(
-            '$title — coming soon',
+            '$title â€” coming soon',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,

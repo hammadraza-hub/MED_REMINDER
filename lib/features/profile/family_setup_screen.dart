@@ -4,7 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/onboarding_header.dart';
-import '../home/home_screen.dart';
+import '../../main_shell.dart';
 
 /// Family Setup — Step 3 of 3
 /// Invite a Caregiver / Add Family Member + send invite
@@ -57,9 +57,9 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
   }
 
   void _skipForNow() {
-    // Setup complete — ab HOME! Poora stack saaf.
+    // Onboarding complete — open the full app shell with bottom navigation.
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      MaterialPageRoute(builder: (_) => const MedRemindShell()),
       (route) => false,
     );
   }
