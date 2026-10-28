@@ -91,10 +91,25 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } on AppException catch (e) {
-      // Firebase errors mapped to user-friendly messages
+      // Check if it's "email not verified" error
+      final isNotVerifiedError = e.message.toLowerCase().contains(
+        'not verified',
+      );
+
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            duration: const Duration(seconds: 5),
+            action: isNotVerifiedError
+                ? SnackBarAction(
+                    label: 'Resend Email',
+                    textColor: Colors.white,
+                    onPressed: () => _showResendVerificationDialog(email),
+                  )
+                : null,
+          ),
+        );
       }
     } catch (e) {
       // Unknown errors
@@ -143,6 +158,75 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       // Non-fatal — log and continue
       debugPrint('⚠️ Failed to load selected profile: $e');
+    }
+  }
+
+  // ============================================================
+  // RESEND VERIFICATION EMAIL DIALOG
+  // ============================================================
+  Future<void> _showResendVerificationDialog(String email) async {
+    final passwordController = TextEditingController();
+
+    final shouldResend = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Resend Verification Email'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('We will resend the verification link to:'),
+            const SizedBox(height: 4),
+            Text(email, style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 16),
+            Text('Enter your password to confirm:'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                hintText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Resend'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldResend != true) return;
+
+    try {
+      await AuthRepository.instance.resendEmailVerification(
+        email: email,
+        password: passwordController.text,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verification email sent! Please check your inbox.'),
+          ),
+        );
+      }
+    } on AppException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to resend: $e')));
+      }
     }
   }
 

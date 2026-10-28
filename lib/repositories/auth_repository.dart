@@ -46,29 +46,49 @@ class AuthRepository {
         email: email.trim(),
         password: password,
       );
-      final user = cred.user!;
+
+      final user = cred.user;
+      if (user == null) {
+        throw AppException.unknown('Firebase account could not be created.');
+      }
+
       final name = displayName?.trim() ?? '';
+
       if (name.isNotEmpty) {
         await user.updateDisplayName(name);
       }
+
+      // Verification email pehle send karo.
+      await user.sendEmailVerification();
+      print('Verification email requested for ${user.email}');
+
+      // Firestore profile creation.
       await _createUserDocument(
         uid: user.uid,
-        email: user.email!,
+        email: user.email ?? email.trim(),
         displayName: name,
         photoURL: '',
         authProvider: 'password',
       );
+
       final profileId = await _createSelfProfile(
         uid: user.uid,
         displayName: name,
-        email: user.email!,
+        email: user.email ?? email.trim(),
       );
+
       await _initProfileController(uid: user.uid, profileId: profileId);
+
+      // Verification se pehle authenticated session end karo.
+      await _auth.signOut();
+
       return user;
     } on FirebaseAuthException catch (e) {
       throw _mapAuthException(e);
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
+    } on AppException {
+      rethrow;
     } catch (e) {
       throw AppException.unknown('Signup failed: $e');
     }
@@ -84,6 +104,19 @@ class AuthRepository {
         password: password,
       );
       final user = cred.user!;
+
+      // Reload user to get latest emailVerified status
+      await user.reload();
+
+      // Check if email is verified
+      if (!user.emailVerified) {
+        // Sign out — user should not stay logged in
+        await _auth.signOut();
+        throw AppException.validation(
+          'Email not verified. Please check your inbox and click the verification link.',
+        );
+      }
+
       final profileId = await _loadSelectedProfileId(uid: user.uid);
       await _initProfileController(uid: user.uid, profileId: profileId);
       return user;
@@ -91,6 +124,8 @@ class AuthRepository {
       throw _mapAuthException(e);
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
+    } on AppException {
+      rethrow;
     } catch (e) {
       throw AppException.unknown('Sign-in failed: $e');
     }
@@ -166,6 +201,51 @@ class AuthRepository {
       throw _mapAuthException(e);
     } catch (e) {
       throw AppException.unknown('Password reset failed: $e');
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  //  RESEND EMAIL VERIFICATION
+  //  User ne sign up kiya but verification email nahi mila →
+  //  ye method dobara email bhejti hai.
+  //  Note: User ko pehle sign in karna padega taaki hum currentUser
+  //  access kar sakein (Firebase Auth requirement).
+  // ──────────────────────────────────────────────────────────────
+  Future<void> resendEmailVerification({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      // Sign in (temporarily) to access currentUser
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      final user = cred.user!;
+
+      // Check if already verified
+      await user.reload();
+      if (user.emailVerified) {
+        // Already verified — sign out and inform
+        await _auth.signOut();
+        throw AppException.validation(
+          'Email is already verified. You can log in.',
+        );
+      }
+
+      // Send verification email
+      await user.sendEmailVerification();
+
+      // Sign out — user should not stay logged in
+      await _auth.signOut();
+    } on FirebaseAuthException catch (e) {
+      throw _mapAuthException(e);
+    } on FirebaseException catch (e) {
+      throw AppException.fromFirebaseException(e);
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw AppException.unknown('Failed to resend verification: $e');
     }
   }
 

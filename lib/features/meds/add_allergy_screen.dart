@@ -4,12 +4,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/profile/profile_controller.dart';
+
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'allergies_data.dart';
 import '../../repositories/auth_repository.dart';
+
+import 'dart:async';
+
+import '../../repositories/drug_repository.dart';
 
 /// ============================================================
 /// ADD ALLERGY — record a new allergy
@@ -44,18 +48,10 @@ class AddAllergyScreen extends StatefulWidget {
 }
 
 class _AddAllergyScreenState extends State<AddAllergyScreen> {
-  // Design mock ki common allergen suggestions.
-  static const List<_AllergySuggestion> _suggestions = [
-    _AllergySuggestion(
-      name: 'Penicillin',
-      subtitle: 'Beta-lactam antibiotic class',
-    ),
-    _AllergySuggestion(
-      name: 'Amoxicillin',
-      subtitle: 'Penicillin derivative / Cross-reactive',
-      related: true,
-    ),
-  ];
+  // M4: Dynamic suggestions — fetched from DrugRepository (drugs.json)
+  List<_AllergySuggestion> _suggestions = [];
+  Timer? _suggestionDebounce;
+  bool _isLoadingSuggestions = false;
 
   late final TextEditingController _nameController;
   late final TextEditingController _notesController;
@@ -78,9 +74,9 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
 
   @override
   void dispose() {
+    _suggestionDebounce?.cancel();
     _nameController.dispose();
     _notesController.dispose();
-
     super.dispose();
   }
 
@@ -88,25 +84,13 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
   // AUTOCOMPLETE HELPERS
   // ============================================================
 
-  /// Query match hone par primary suggestion + hamesha related.
+  /// M4: _suggestions already filtered by DrugRepository in _loadSuggestions().
+  /// Sort: class-level matches (related: false) first as "Primary Match",
+  /// then specific drugs (related: true).
   List<_AllergySuggestion> get _visibleSuggestions {
-    final query = _nameController.text.trim().toLowerCase();
-
-    if (query.isEmpty) {
-      return _suggestions;
-    }
-
-    final primary = _suggestions
-        .where(
-          (item) => !item.related && item.name.toLowerCase().contains(query),
-        )
-        .toList();
-
-    final related = _suggestions.where((item) => item.related).toList();
-
-    final result = [...primary, ...related];
-
-    return result.isEmpty ? _suggestions : result;
+    final classMatches = _suggestions.where((item) => !item.related).toList();
+    final drugMatches = _suggestions.where((item) => item.related).toList();
+    return [...classMatches, ...drugMatches];
   }
 
   /// "Primary Match" badge wala suggestion index.
@@ -128,6 +112,116 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
     setState(() {
       _nameController.text = name;
       _nameController.selection = TextSelection.collapsed(offset: name.length);
+    });
+  }
+
+  // ============================================================
+  // M4: LOAD SUGGESTIONS FROM DRUG REPOSITORY
+  // ============================================================
+  /// Searches both drug names AND drug classes (e.g., "Penicillins").
+  /// Debounced — 300ms wait after user stops typing.
+  Future<void> _loadSuggestions(String query) async {
+    final trimmed = query.trim().toLowerCase();
+
+    // Cancel any pending debounce timer
+    _suggestionDebounce?.cancel();
+
+    if (trimmed.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _suggestions = [];
+          _isLoadingSuggestions = false;
+        });
+      }
+      return;
+    }
+
+    // Debounce — wait 300ms after user stops typing
+    _suggestionDebounce = Timer(const Duration(milliseconds: 300), () async {
+      if (mounted) setState(() => _isLoadingSuggestions = true);
+
+      try {
+        final results = <_AllergySuggestion>[];
+
+        // 1. Search drugs by prefix (matches name + synonyms)
+        final drugs = await DrugRepository.instance.searchDrugs(
+          trimmed,
+          limit: 8,
+        );
+        for (final drug in drugs) {
+          final isIngredientLevel = drug.termType == 'IN';
+          String subtitle;
+
+          if (drug.isPakistani) {
+            // Pakistani brand → show generic name as subtitle
+            final generic = drug.synonyms.isNotEmpty
+                ? drug.synonyms.first
+                : drug.name;
+            subtitle = 'Brand • Generic: $generic';
+          } else if (isIngredientLevel) {
+            // Active ingredient → show first class
+            subtitle = drug.classIds.isNotEmpty
+                ? 'Active ingredient • ${drug.classIds.first}'
+                : 'Active ingredient';
+          } else {
+            // Specific drug (SCD) → show strength + dose form
+            final parts = <String>[
+              if (drug.hasStrength) drug.strength!,
+              if (drug.hasDoseForm) drug.doseForm!,
+            ];
+            subtitle = parts.isNotEmpty ? parts.join(' • ') : 'Medication';
+          }
+
+          results.add(
+            _AllergySuggestion(
+              name: drug.name,
+              subtitle: subtitle,
+              related: true,
+            ),
+          );
+        }
+
+        // 2. Search by drug class (e.g., "penicil" → "Penicillins")
+        final allDrugs = await DrugRepository.instance.getAllDrugs();
+        final matchingClasses = <String>{};
+        for (final drug in allDrugs) {
+          for (final classId in drug.classIds) {
+            if (classId.toLowerCase().contains(trimmed)) {
+              matchingClasses.add(classId);
+            }
+          }
+        }
+
+        // Add class suggestions (skip if already in results by name)
+        for (final className in matchingClasses.take(5)) {
+          if (results.any(
+            (r) => r.name.toLowerCase() == className.toLowerCase(),
+          )) {
+            continue;
+          }
+          results.add(
+            _AllergySuggestion(
+              name: className,
+              subtitle: 'Drug class — flags all related medications',
+              related: false,
+            ),
+          );
+        }
+
+        if (mounted) {
+          setState(() {
+            _suggestions = results.take(8).toList();
+            _isLoadingSuggestions = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoadingSuggestions = false;
+            _suggestions = [];
+          });
+        }
+      }
     });
   }
 
@@ -449,8 +543,9 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
       ),
       child: TextField(
         controller: _nameController,
-        onChanged: (_) {
+        onChanged: (value) {
           setState(() {});
+          _loadSuggestions(value); // M4: Fetch from DrugRepository
         },
         style: const TextStyle(
           color: AppColors.reportPrimary,
@@ -478,6 +573,21 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
   }
 
   List<Widget> _buildSuggestionTiles() {
+    // M4: Show loading indicator while fetching from DrugRepository
+    if (_isLoadingSuggestions) {
+      return [
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      ];
+    }
     final items = _visibleSuggestions;
     final primaryIndex = _primaryIndexFor(items);
 

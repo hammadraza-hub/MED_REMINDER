@@ -109,16 +109,20 @@ class _SignupScreenState extends State<SignupScreen> {
   // ============================================================
   // CREATE ACCOUNT (M2 - Firebase Auth + Firestore)
   // ============================================================
+
   Future<void> _createAccount() async {
     setState(() {
       _nameError = _nameController.text.trim().isEmpty;
       _emailError = _emailController.text.trim().isEmpty;
+
       final password = _passwordController.text;
       _passwordError = password.length < 8 || password.length > 16;
       _termsError = !_agreeToTerms;
     });
 
-    if (_nameError || _emailError || _passwordError || _termsError) return;
+    if (_nameError || _emailError || _passwordError || _termsError) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -127,43 +131,38 @@ class _SignupScreenState extends State<SignupScreen> {
     final password = _passwordController.text;
 
     try {
-      final user = await AuthRepository.instance.signUpWithEmailPassword(
+      // Account, display name, verification email aur profile
+      // repository mein ek hi martaba create honge.
+      await AuthRepository.instance.signUpWithEmailPassword(
         email: email,
         password: password,
-      );
-
-      await AuthRepository.instance.updateDisplayName(displayName: name);
-
-      await _createUserDocument(uid: user.uid, email: email, displayName: name);
-
-      final profileId = await _createSelfProfile(
-        uid: user.uid,
         displayName: name,
       );
 
-      await FirebaseProfileRepository.instance.saveSelectedProfile(
-        StoredProfile(memberId: profileId, displayName: name),
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Account created. Check your inbox and verify your email before signing in.',
+          ),
+          duration: Duration(seconds: 5),
+        ),
       );
 
-      await ProfileController.instance.initialize();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created! Welcome to MedRemind.'),
-          ),
-        );
-
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HealthProfileScreen()),
-        );
-      }
+      // Named route par depend na karo; LoginScreen ko direct open karo.
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
     } on AppException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.message)));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Signup error: $e\n$stackTrace');
+
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Signup failed: $e')));
