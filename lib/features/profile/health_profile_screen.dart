@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
+import '../../repositories/auth_repository.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/onboarding_header.dart';
@@ -17,9 +21,14 @@ class HealthProfileScreen extends StatefulWidget {
 
 class _HealthProfileScreenState extends State<HealthProfileScreen> {
   // ================= STATE =================
-  final Set<String> _selectedConditions = {'Asthma'};
-  final List<String> _allergies = ['Penicillin'];
+  final Set<String> _selectedConditions = {};
+  final List<String> _allergies = [];
   final _allergyController = TextEditingController();
+
+  // M3: Firestore integration
+  bool _isLoading = false;
+  String? _profileId;
+  bool _dataLoaded = false;
 
   // Mutable — runtime par custom conditions add hote hain
   List<_Condition> _conditions = [
@@ -56,9 +65,65 @@ class _HealthProfileScreenState extends State<HealthProfileScreen> {
   ];
 
   @override
-  void dispose() {
-    _allergyController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _loadFromFirestore();
+  }
+
+  /// M3: Load existing conditions + allergies from Firestore
+  Future<void> _loadFromFirestore() async {
+    final uid = AuthRepository.instance.currentUid;
+    if (uid == null) return;
+
+    try {
+      // Get real profileId from Firestore (bypass ProfileController mock)
+      final profileSnapshot = await FirebaseFirestore.instance
+          .collection('profiles')
+          .where('memberUids', arrayContains: uid)
+          .limit(1)
+          .get();
+
+      if (profileSnapshot.docs.isEmpty) return;
+
+      final profileDoc = profileSnapshot.docs.first;
+      _profileId = profileDoc.id;
+
+      final data = profileDoc.data();
+
+      if (mounted) {
+        setState(() {
+          // Load existing conditions
+          final existingConditions = List<String>.from(
+            data['conditions'] ?? [],
+          );
+          _selectedConditions.clear();
+          _selectedConditions.addAll(existingConditions);
+
+          _dataLoaded = true;
+        });
+      }
+
+      // Load existing allergies from subcollection
+      final allergiesSnapshot = await FirebaseFirestore.instance
+          .collection('profiles')
+          .doc(_profileId)
+          .collection('allergies')
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _allergies.clear();
+          for (final doc in allergiesSnapshot.docs) {
+            final name = doc.data()['name'] as String?;
+            if (name != null && name.isNotEmpty) {
+              _allergies.add(name);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to load health profile: $e');
+    }
   }
 
   // ================= ACTIONS =================
@@ -183,11 +248,92 @@ class _HealthProfileScreenState extends State<HealthProfileScreen> {
     });
   }
 
-  void _continue() {
-    // Step 2 (Current Medications) abhi nahi bana — seedha Notification (Step 3)
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const NotificationSetupScreen()));
+  /// M3: Save conditions + allergies to Firestore, then navigate
+  Future<void> _continue() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Get real profileId if not already loaded
+      if (_profileId == null) {
+        final uid = AuthRepository.instance.currentUid;
+        if (uid == null) {
+          if (mounted) _showMessage('Not signed in');
+          return;
+        }
+
+        final profileSnapshot = await FirebaseFirestore.instance
+            .collection('profiles')
+            .where('memberUids', arrayContains: uid)
+            .limit(1)
+            .get();
+
+        if (profileSnapshot.docs.isEmpty) {
+          if (mounted) _showMessage('No profile found');
+          return;
+        }
+
+        _profileId = profileSnapshot.docs.first.id;
+      }
+
+      // 1. Save conditions to Firestore profile
+      await FirebaseFirestore.instance
+          .collection('profiles')
+          .doc(_profileId)
+          .set({
+            'conditions': _selectedConditions.toList(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+
+      // 2. Save new allergies to Firestore subcollection
+      // (check which allergies don't exist yet)
+      final existingAllergiesSnapshot = await FirebaseFirestore.instance
+          .collection('profiles')
+          .doc(_profileId)
+          .collection('allergies')
+          .get();
+
+      final existingAllergyNames = existingAllergiesSnapshot.docs
+          .map((doc) => doc.data()['name'] as String?)
+          .where((name) => name != null)
+          .toSet();
+
+      for (final allergy in _allergies) {
+        if (!existingAllergyNames.contains(allergy)) {
+          await FirebaseFirestore.instance
+              .collection('profiles')
+              .doc(_profileId)
+              .collection('allergies')
+              .add({
+                'name': allergy,
+                'category': 'medication',
+                'severity': 'moderate',
+                'symptoms': '',
+                'addedAt': FieldValue.serverTimestamp(),
+              });
+        }
+      }
+
+      if (mounted) {
+        // Navigate to next screen
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const NotificationSetupScreen()),
+        );
+      }
+    } on AppException catch (e) {
+      if (mounted) _showMessage(e.message);
+    } catch (e) {
+      if (mounted) _showMessage('Failed to save: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _skip() {
@@ -347,11 +493,11 @@ class _HealthProfileScreenState extends State<HealthProfileScreen> {
 
                   // ================= CONTINUE =================
                   CustomButton.classic(
-                    label: 'Continue',
+                    label: _isLoading ? 'Saving...' : 'Continue',
                     trailingIcon: Icons.arrow_forward,
                     radius: 16,
                     elevation: 0,
-                    onPressed: _continue,
+                    onPressed: _isLoading ? null : _continue,
                   ),
                   const SizedBox(height: 10),
                 ],

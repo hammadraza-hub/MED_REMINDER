@@ -14,6 +14,7 @@ import '../../widgets/custom_text_field.dart';
 import '../../widgets/social_icons.dart';
 import 'login_screen.dart';
 import '../../core/profile/profile_controller.dart';
+import '../profile/health_profile_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -171,10 +172,7 @@ class _SignupScreenState extends State<SignupScreen> {
       // 6. Save selected profile locally for fast app launch
       // ───────────────────────────────────────────────────────
       await FirebaseProfileRepository.instance.saveSelectedProfile(
-        StoredProfile(
-          memberId: profileId,
-          displayName: name,
-        ),
+        StoredProfile(memberId: profileId, displayName: name),
       );
 
       // M2 Fix: Refresh ProfileController with new data from SharedPreferences
@@ -183,6 +181,7 @@ class _SignupScreenState extends State<SignupScreen> {
       // ───────────────────────────────────────────────────────
       // 7. Success! Navigate to dashboard
       // ───────────────────────────────────────────────────────
+      // 7. Success! Navigate to Health Profile Setup (M3)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -191,7 +190,7 @@ class _SignupScreenState extends State<SignupScreen> {
         );
 
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MedRemindShell()),
+          MaterialPageRoute(builder: (context) => const HealthProfileScreen()),
         );
       }
     } on AppException catch (e) {
@@ -233,11 +232,9 @@ class _SignupScreenState extends State<SignupScreen> {
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
       'timezone': timezone,
-      'settings': {}, // Default empty settings map
+      'settings': {},
       'legalVersions': {'terms': '1.0', 'privacy': '1.0'},
       'aiConsentAt': null,
-      'deletionRequestedAt': null,
-      // M2: Legal acceptance (terms + privacy checkbox)
       'legal': {
         'termsVersion': '1.0',
         'privacyVersion': '1.0',
