@@ -1,11 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 
 import 'core/constants/app_colors.dart';
-import 'features/home/home_screen.dart';
 import 'features/meds/meds_screen.dart';
 import 'features/calendar/calendar_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'widgets/app_bottom_navigation.dart';
+import 'features/home/dashboard_screen.dart';
 
 /// ============================================================
 /// MED REMIND MAIN SHELL
@@ -51,7 +51,7 @@ class _MedRemindShellState extends State<MedRemindShell> {
   late int _currentIndex;
 
   static const List<Widget> _tabs = [
-    HomeScreen(),
+    DashboardScreen(),
     MedsScreen(),
     CalendarScreen(),
     _PlaceholderTab(title: 'Reports', icon: Icons.bar_chart_rounded),

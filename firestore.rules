@@ -314,6 +314,53 @@ service cloud.firestore {
     }
 
     // =====================================
+    // DOSE VALIDATION (M7)
+    // =====================================
+
+    // M7: Validate dose document on update.
+    // Per plan: "Rules allow only canWrite(pid), only these fields,
+    //            and only valid transitions."
+    function validDoseUpdate() {
+      let data = request.resource.data;
+      let diff = data.diff(resource.data).affectedKeys();
+
+      // Only these fields can be changed by client
+      return diff.hasOnly([
+              'status',
+              'loggedAt',
+              'loggedBy',
+              'reasonCode',
+              'reasonText',
+              'snoozedUntil',
+              'missDeadline'
+            ])
+
+        // Validate status transition (if status is changing)
+        && validDoseTransition();
+    }
+
+    // M7: Validate status transitions.
+    // Per plan: "pending/missed → taken/skipped,
+    //            plus taken/skipped → pending within 24 h for undo."
+    // NOTE: CEL does NOT support `if` statements — use logical operators instead.
+        function validDoseTransition() {
+      let before = resource.data;
+      let after = request.resource.data;
+      let oldStatus = before.status;
+      let newStatus = after.status;
+
+      return !('status' in after.diff(before).affectedKeys())
+        || (
+          (oldStatus == 'pending' && newStatus == 'taken')
+          || (oldStatus == 'pending' && newStatus == 'skipped')
+          || (oldStatus == 'missed' && newStatus == 'taken')
+          || (oldStatus == 'missed' && newStatus == 'skipped')
+          || (oldStatus == 'taken' && newStatus == 'pending')
+          || (oldStatus == 'skipped' && newStatus == 'pending')
+        );
+    }
+
+    // =====================================
     // M3: GENERAL ACCESS HELPERS
     // =====================================
 
@@ -483,17 +530,29 @@ service cloud.firestore {
       }
 
       // =====================================
-      // DOSES
+      // DOSES (M7)
       // =====================================
 
       match /doses/{doseId} {
 
-        allow read: if isMember(profileId);
+        // M7: Split read into get + list (same pattern as profiles/medications)
+        allow get: if isMember(profileId);
+        allow list: if signedIn();
 
-        allow create, update:
-          if canLogDoses(profileId);
+        // M7: Create — dose generation (canEditMedications) OR PRN logging (canLogDoses)
+        allow create: if canEditMedications(profileId)
+          || canLogDoses(profileId);
 
-        allow delete: if false;
+        // M7: Update — logging (canLogDoses) OR regeneration (canEditMedications)
+        // + validDoseUpdate() enforces field restrictions + valid transitions
+        allow update: if (canEditMedications(profileId)
+          || canLogDoses(profileId))
+          && validDoseUpdate();
+
+        // M7: Delete — only canEditMedications, and only for pending doses
+        // (logged history stays — never delete taken/skipped/missed)
+        allow delete: if canEditMedications(profileId)
+          && resource.data.status == 'pending';
       }
 
       // =====================================

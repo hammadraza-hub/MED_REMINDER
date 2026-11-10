@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/app_exception.dart';
 import '../models/medication.dart';
+import '../core/dose_engine.dart';
+import '../models/schedule.dart';
 
 /// Medication Repository — Firestore CRUD operations for medications.
 ///
@@ -62,8 +64,14 @@ class MedicationRepository {
     required Medication medication,
   }) async {
     try {
+      // 1. Create the medication document
       final docRef = await _medicationsRef(profileId)
           .add(medication.toJsonForCreate());
+
+      // 2. Generate 14-day doses (M6 client-side dose generation)
+      final medicationWithId = medication.copyWith(id: docRef.id);
+      await _generateAndWriteDoses(profileId, medicationWithId);
+
       return docRef.id;
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
@@ -164,9 +172,25 @@ class MedicationRepository {
     required Medication medication,
   }) async {
     try {
+      // 1. Get old medication to check if schedule changed
+      final oldDoc = await _medicationsRef(profileId).doc(medication.id).get();
+      if (!oldDoc.exists) {
+        throw AppException.notFound('Medication not found');
+      }
+      final oldMedication = Medication.fromJson(oldDoc.data()!, id: oldDoc.id);
+
+      // 2. Update the medication document
       await _medicationsRef(profileId)
           .doc(medication.id)
           .update(medication.toJsonForUpdate());
+
+      // 3. If schedule changed, regenerate future doses
+      if (_scheduleChanged(oldMedication.schedule, medication.schedule)) {
+        await _deleteFuturePendingDoses(profileId, medication.id);
+        await _generateAndWriteDoses(profileId, medication);
+      }
+    } on AppException {
+      rethrow;
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
     } catch (e) {
@@ -194,12 +218,16 @@ class MedicationRepository {
     required String archivedBy,
   }) async {
     try {
+      // 1. Archive the medication
       await _medicationsRef(profileId).doc(medicationId).update({
         'status': 'archived',
         'archivedReason': reason,
         'updatedAt': DateTime.now(),
         'updatedBy': archivedBy,
       });
+
+      // 2. Delete future pending doses (logged history stays)
+      await _deleteFuturePendingDoses(profileId, medicationId);
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
     } catch (e) {
@@ -301,6 +329,102 @@ class MedicationRepository {
       // Non-fatal — return 0 on error
       return 0;
     }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // M6: CLIENT-SIDE DOSE GENERATION HELPERS
+  // ──────────────────────────────────────────────────────────────
+
+  /// Fetches the profile's missedAfterMin (default 30 if not set).
+  Future<int> _getProfileMissedAfterMin(String profileId) async {
+    try {
+      final doc = await _db.collection('profiles').doc(profileId).get();
+      if (!doc.exists) return 30;
+      final data = doc.data()!;
+      return (data['missedAfterMin'] as num?)?.toInt() ?? 30;
+    } catch (_) {
+      return 30; // Default on error
+    }
+  }
+
+  /// Generates 14-day doses for a medication and writes them to Firestore.
+  /// Uses batch write with deterministic IDs (set, not add) to prevent duplicates.
+  Future<void> _generateAndWriteDoses(
+    String profileId,
+    Medication medication,
+  ) async {
+    final missedAfterMin = await _getProfileMissedAfterMin(profileId);
+
+    final doses = DoseEngine.generate14DayDoses(
+      medication: medication,
+      profileId: profileId,
+      missedAfterMin: missedAfterMin,
+    );
+
+    if (doses.isEmpty) return;
+
+    // Batch write — use set() with deterministic IDs
+    final batch = _db.batch();
+    final dosesRef = _db
+        .collection('profiles')
+        .doc(profileId)
+        .collection('doses');
+
+    for (final dose in doses) {
+      batch.set(dosesRef.doc(dose.id), dose.toJson());
+    }
+
+    await batch.commit();
+  }
+
+  /// Deletes future pending doses for a medication.
+  /// Used when schedule changes (regenerate) or medication is archived.
+  /// Logged history (taken/skipped/missed) is preserved.
+  Future<void> _deleteFuturePendingDoses(
+    String profileId,
+    String medicationId,
+  ) async {
+    final now = Timestamp.now();
+
+    final snapshot = await _db
+        .collection('profiles')
+        .doc(profileId)
+        .collection('doses')
+        .where('medicationId', isEqualTo: medicationId)
+        .where('status', isEqualTo: 'pending')
+        .where('scheduledAt', isGreaterThanOrEqualTo: now)
+        .get();
+
+    if (snapshot.docs.isEmpty) return;
+
+    final batch = _db.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+  }
+
+  /// Checks if the schedule has changed between old and new versions.
+  /// Returns true if any schedule field that affects dose generation changed.
+  bool _scheduleChanged(Schedule old, Schedule current) {
+    if (old.type != current.type) return true;
+    if (!_listEquals(old.times, current.times)) return true;
+    if (!_listEquals(old.weekdays, current.weekdays)) return true;
+    if (old.cycleOn != current.cycleOn) return true;
+    if (old.cycleOff != current.cycleOff) return true;
+    if (old.taperSteps.length != current.taperSteps.length) return true;
+    if (old.startDate != current.startDate) return true;
+    if (old.endDate != current.endDate) return true;
+    return false;
+  }
+
+  /// Helper: compare two lists for equality.
+  bool _listEquals<T>(List<T> a, List<T> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }
 
