@@ -1,62 +1,27 @@
-import 'dart:async';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/medications/local_medication_repository.dart';
-import '../../core/medications/local_medication_schedule_repository.dart';
-import '../../core/medications/medication_repository.dart';
-import '../../core/medications/medication_schedule_repository.dart';
-import '../../core/profile/profile_controller.dart';
-import '../../l10n/app_localizations.dart';
-import '../../widgets/app_avatar.dart';
-import 'add_medication_screen.dart';
-import 'allergies_data.dart';
-import 'allergies_screen.dart';
-import 'discontinue_medication_screen.dart';
-import 'edit_medication_screen.dart';
-import 'inventory_data.dart';
-import 'inventory_screen.dart';
-import 'meds_data.dart';
-import 'side_effects_screen.dart';
 
-/// ============================================================
-/// MEDS — saari medications
+import '../../core/profile/profile_controller.dart';
+import '../../models/medication.dart';
+
+import '../../repositories/medication_repository.dart';
+import 'add_medication_manual_screen.dart';
+import 'add_medication_scan_screen.dart';
+import 'add_medication_search_screen.dart';
+import 'medication_detail_screen.dart';
+
+/// Meds Screen (M5 — Firestore-based)
 ///
-/// CURRENT DATA ARCHITECTURE:
+/// Shows a real-time list of active medications for the current profile.
+/// Uses MedicationRepository.watchActiveMedications() stream.
 ///
-/// Medications:
-/// UI → MedicationRepository → LocalMedicationRepository → SQLite
+/// FAB (+) opens a bottom sheet with 3 options:
+///   1. Search Drug Catalog (M4) → AddMedicationSearchScreen → Manual
+///   2. Scan Label (M4) → AddMedicationScanScreen → Manual
+///   3. Manual Entry → AddMedicationManualScreen (empty)
 ///
-/// Schedules:
-/// UI → MedicationScheduleRepository
-///    → LocalMedicationScheduleRepository
-///    → SQLite
-///
-/// Selected family member:
-/// ProfileController.memberId
-///
-/// Inventory:
-/// Existing InventoryData temporarily preserved.
-/// InventoryRecords migration next phase mein hogi.
-///
-/// Active medicine:
-/// Left swipe → Discontinue → confirmation → SQLite archive.
-///
-/// IMPORTANT:
-/// Swipe sirf action reveal karta hai.
-/// Medicine confirmation ke baad hi discontinue/archive hoti hai.
-///
-/// Seeded Sarah medicines ke schedule rows abhi SQLite mein nahi hain,
-/// isliye unke liye legacy schedule presentation fallback temporarily
-/// preserve hai. Newly-added medicines SQLite schedules use karti hain.
-///
-/// TODO Backend:
-/// FirebaseMedicationRepository aur
-/// FirebaseMedicationScheduleRepository same contracts implement karengi.
-/// Screen ko Firestore-specific code ki zarurat nahi hogi.
-/// ============================================================
+/// Tap a medication card → MedicationDetailScreen (Step 8)
 class MedsScreen extends StatefulWidget {
   const MedsScreen({super.key});
 
@@ -65,797 +30,193 @@ class MedsScreen extends StatefulWidget {
 }
 
 class _MedsScreenState extends State<MedsScreen> {
-  final _searchController = TextEditingController();
-
-  final MedicationRepository _medicationRepository =
-      LocalMedicationRepository();
-
-  final MedicationScheduleRepository _scheduleRepository =
-      LocalMedicationScheduleRepository();
-
-  StreamSubscription<List<MedicationProfile>>? _activeSubscription;
-  StreamSubscription<List<MedicationProfile>>? _archivedSubscription;
-
-  /// Har medication ka apna schedule stream hai.
-  final Map<String, StreamSubscription<List<MedicationScheduleProfile>>>
-  _scheduleSubscriptions = {};
-
-  /// medicationId → persisted schedules
-  final Map<String, List<MedicationScheduleProfile>> _schedulesByMedication =
-      {};
-
-  bool _showArchived = false;
-  bool _medicationsLoading = true;
-
-  String? _listeningMemberId;
-
-  List<MedicationProfile> _activeProfiles = [];
-  List<MedicationProfile> _archivedProfiles = [];
-
-  /// Existing presentation data ab sirf:
-  /// - seeded medicines ke schedule fallback
-  /// - inventory/course presentation
-  ///
-  /// ke liye temporarily use hota hai.
-  late final List<Medicine> _legacyPresentationData = [
-    ...MedsData.medicines(),
-    ...MedsData.archived(),
-  ];
-
   @override
   void initState() {
     super.initState();
-
-    ProfileController.instance.addListener(_handleSelectedMemberChanged);
-
-    _loadSelectedMemberMedications();
-  }
-
-  @override
-  void dispose() {
-    ProfileController.instance.removeListener(_handleSelectedMemberChanged);
-
-    _activeSubscription?.cancel();
-    _archivedSubscription?.cancel();
-
-    for (final subscription in _scheduleSubscriptions.values) {
-      subscription.cancel();
-    }
-
-    _scheduleSubscriptions.clear();
-    _schedulesByMedication.clear();
-
-    _searchController.dispose();
-
-    super.dispose();
-  }
-
-  // ============================================================
-  // SELECTED MEMBER
-  // ============================================================
-
-  void _handleSelectedMemberChanged() {
-    final memberId = ProfileController.instance.memberId;
-
-    if (memberId == null ||
-        memberId.isEmpty ||
-        memberId == _listeningMemberId) {
-      return;
-    }
-
-    _loadSelectedMemberMedications();
-  }
-
-  Future<void> _loadSelectedMemberMedications() async {
-    final memberId = ProfileController.instance.memberId;
-
-    if (memberId == null || memberId.isEmpty) {
-      await _cancelScheduleSubscriptions();
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _listeningMemberId = null;
-        _activeProfiles = [];
-        _archivedProfiles = [];
-        _schedulesByMedication.clear();
-        _medicationsLoading = false;
-      });
-
-      return;
-    }
-
-    if (_listeningMemberId == memberId &&
-        (_activeSubscription != null || _archivedSubscription != null)) {
-      return;
-    }
-
-    await _activeSubscription?.cancel();
-    await _archivedSubscription?.cancel();
-    await _cancelScheduleSubscriptions();
-
-    _activeSubscription = null;
-    _archivedSubscription = null;
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _listeningMemberId = memberId;
-      _activeProfiles = [];
-      _archivedProfiles = [];
-      _schedulesByMedication.clear();
-      _medicationsLoading = true;
+    // Ensure ProfileController is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ProfileController.instance.initialize();
     });
-
-    try {
-      await _medicationRepository.seedInitialMedicationsIfNeeded(memberId);
-
-      if (!mounted || _listeningMemberId != memberId) {
-        return;
-      }
-
-      _activeSubscription = _medicationRepository
-          .watchActiveMedications(memberId)
-          .listen(
-            (medications) {
-              if (!mounted || _listeningMemberId != memberId) {
-                return;
-              }
-
-              setState(() {
-                _activeProfiles = medications;
-                _medicationsLoading = false;
-              });
-
-              _syncScheduleSubscriptions();
-            },
-            onError: (Object error, StackTrace stackTrace) {
-              debugPrint('Active medications stream failed: $error');
-              debugPrintStack(stackTrace: stackTrace);
-
-              if (!mounted || _listeningMemberId != memberId) {
-                return;
-              }
-
-              setState(() {
-                _medicationsLoading = false;
-              });
-            },
-          );
-
-      _archivedSubscription = _medicationRepository
-          .watchArchivedMedications(memberId)
-          .listen(
-            (medications) {
-              if (!mounted || _listeningMemberId != memberId) {
-                return;
-              }
-
-              setState(() {
-                _archivedProfiles = medications;
-                _medicationsLoading = false;
-              });
-
-              _syncScheduleSubscriptions();
-            },
-            onError: (Object error, StackTrace stackTrace) {
-              debugPrint('Archived medications stream failed: $error');
-              debugPrintStack(stackTrace: stackTrace);
-
-              if (!mounted || _listeningMemberId != memberId) {
-                return;
-              }
-
-              setState(() {
-                _medicationsLoading = false;
-              });
-            },
-          );
-    } catch (error, stackTrace) {
-      debugPrint('Medication initialization failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-
-      if (!mounted || _listeningMemberId != memberId) {
-        return;
-      }
-
-      setState(() {
-        _medicationsLoading = false;
-      });
-    }
   }
 
   // ============================================================
-  // SCHEDULE STREAMS
+  // ADD MEDICATION — Bottom Sheet with 3 options
   // ============================================================
 
-  Future<void> _cancelScheduleSubscriptions() async {
-    final subscriptions = _scheduleSubscriptions.values.toList();
-
-    _scheduleSubscriptions.clear();
-
-    for (final subscription in subscriptions) {
-      await subscription.cancel();
-    }
-  }
-
-  void _syncScheduleSubscriptions() {
-    final currentMemberId = _listeningMemberId;
-
-    if (currentMemberId == null) {
-      return;
-    }
-
-    final medicationIds = <String>{
-      ..._activeProfiles.map((profile) => profile.id),
-      ..._archivedProfiles.map((profile) => profile.id),
-    };
-
-    final staleIds = _scheduleSubscriptions.keys
-        .where((id) => !medicationIds.contains(id))
-        .toList();
-
-    for (final id in staleIds) {
-      _scheduleSubscriptions.remove(id)?.cancel();
-      _schedulesByMedication.remove(id);
-    }
-
-    for (final medicationId in medicationIds) {
-      if (_scheduleSubscriptions.containsKey(medicationId)) {
-        continue;
-      }
-
-      _scheduleSubscriptions[medicationId] = _scheduleRepository
-          .watchSchedulesForMedication(medicationId)
-          .listen(
-            (schedules) {
-              if (!mounted || _listeningMemberId != currentMemberId) {
-                return;
-              }
-
-              final validSchedules =
-                  schedules
-                      .where((schedule) => schedule.memberId == currentMemberId)
-                      .toList()
-                    ..sort((a, b) => a.timeOfDay.compareTo(b.timeOfDay));
-
-              setState(() {
-                _schedulesByMedication[medicationId] = validSchedules;
-              });
-            },
-            onError: (Object error, StackTrace stackTrace) {
-              debugPrint(
-                'Medication schedule stream failed for $medicationId: $error',
-              );
-              debugPrintStack(stackTrace: stackTrace);
-            },
-          );
-    }
-  }
-
-  // ============================================================
-  // UI MEDICINE MAPPING
-  // ============================================================
-
-  List<_MedicationListItem> _activeItems(AppLocalizations l10n) {
-    return _activeProfiles
-        .map((profile) => _toListItem(profile, l10n))
-        .toList();
-  }
-
-  List<_MedicationListItem> _archivedItems(AppLocalizations l10n) {
-    return _archivedProfiles
-        .map((profile) => _toListItem(profile, l10n))
-        .toList();
-  }
-
-  _MedicationListItem _toListItem(
-    MedicationProfile profile,
-    AppLocalizations l10n,
-  ) {
-    final legacy = _findLegacyPresentation(profile);
-
-    final schedules =
-        _schedulesByMedication[profile.id] ??
-        const <MedicationScheduleProfile>[];
-
-    final enabledSchedules = schedules
-        .where((schedule) => schedule.isEnabled)
-        .toList();
-
-    final hasPersistedSchedule = enabledSchedules.isNotEmpty;
-
-    // 🆕 MODULE 1: Schedule fallback remove — sirf persisted SQLite schedules.
-    final frequency = hasPersistedSchedule
-        ? _scheduleFrequency(enabledSchedules, l10n)
-        : l10n.medsScheduleNotSet;
-
-    final nextDose = hasPersistedSchedule
-        ? _nextDoseLabel(enabledSchedules, l10n)
-        : '—';
-
-    return _MedicationListItem(
-      profile: profile,
-      schedules: enabledSchedules,
-      medicine: Medicine(
-        name: profile.name,
-        dose: profile.displayStrength,
-        type: _medicineTypeFromProfile(profile),
-        frequency: frequency,
-        nextDose: nextDose,
-
-        // InventoryRecords migration abhi pending hai.
-        supplyDaysLeft: legacy?.supplyDaysLeft ?? 0,
-        isLowStock: legacy?.isLowStock ?? false,
-
-        // 🆕 MODULE 2: Course ab SQLite medications se aa raha hai.
-        courseDay: profile.courseDay,
-        courseTotalDays: profile.courseTotalDays,
-
-        isArchived: !profile.isActive,
-      ),
-      imagePath: profile.imagePath,
-    );
-  }
-
-  /// 🆕 MODULE 1:
-  /// Legacy presentation ab sirf SEEDED medication IDs par apply hoti
-  /// hai — name matching remove kar diya. Is se user-added medicines
-  /// par Sarah ka legacy inventory/course data ghalat na lage.
-  ///
-  /// NOTE: supplyDaysLeft / isLowStock / course abhi bhi legacy se
-  /// aa rahe hain — Module 2 (course fields) aur Module 4
-  /// (InventoryRecords) mein migrate honge.
-  Medicine? _findLegacyPresentation(MedicationProfile profile) {
-    switch (profile.id) {
-      case 'local_sarah_metformin':
-        return _findLegacyMedicineByName('Metformin');
-      case 'local_sarah_amlodipine':
-        return _findLegacyMedicineByName('Amlodipine');
-      case 'local_sarah_vitamin_d3_drops':
-        return _findLegacyMedicineByName('Vitamin D3 Drops');
-      case 'local_sarah_amoxicillin':
-        return _findLegacyMedicineByName('Amoxicillin');
-      default:
-        return null;
-    }
-  }
-
-  Medicine? _findLegacyMedicineByName(String name) {
-    final normalizedName = name.trim().toLowerCase();
-
-    for (final medicine in _legacyPresentationData) {
-      if (medicine.name.trim().toLowerCase() == normalizedName) {
-        return medicine;
-      }
-    }
-
-    return null;
-  }
-
-  MedicineType _medicineTypeFromProfile(MedicationProfile profile) {
-    switch (profile.medicineForm?.trim().toLowerCase()) {
-      case 'capsule':
-        return MedicineType.capsule;
-
-      case 'liquid':
-        return MedicineType.liquid;
-
-      case 'drops':
-        return MedicineType.drops;
-
-      case 'injection':
-        return MedicineType.injection;
-
-      case 'tablet':
-      default:
-        return MedicineType.tablet;
-    }
-  }
-
-  // ============================================================
-  // SCHEDULE PRESENTATION
-  // ============================================================
-
-  String _scheduleFrequency(
-    List<MedicationScheduleProfile> schedules,
-    AppLocalizations l10n,
-  ) {
-    if (schedules.isEmpty) {
-      return l10n.medsScheduleNotSet;
-    }
-
-    final scheduleType = schedules.first.scheduleType.trim().toLowerCase();
-
-    switch (scheduleType) {
-      case 'prn':
-        return l10n.medsFrequencyAsNeeded;
-
-      case 'specific_days':
-        return l10n.medsFrequencySelectedDays(schedules.length);
-
-      case 'cyclical':
-        return l10n.medsFrequencyCyclical(schedules.length);
-
-      case 'tapering':
-        return l10n.medsFrequencyTapering;
-
-      case 'daily':
-      default:
-        return l10n.medsFrequencyDaily(schedules.length);
-    }
-  }
-
-  String _nextDoseLabel(
-    List<MedicationScheduleProfile> schedules,
-    AppLocalizations l10n,
-  ) {
-    if (schedules.isEmpty) {
-      return '—';
-    }
-
-    final next = _findNextScheduleOccurrence(schedules);
-
-    if (next == null) {
-      return '—';
-    }
-
-    final now = DateTime.now();
-
-    final today = DateTime(now.year, now.month, now.day);
-    final nextDay = DateTime(next.year, next.month, next.day);
-
-    final difference = nextDay.difference(today).inDays;
-
-    final time = _formatTime(next);
-
-    if (difference == 0) {
-      return time;
-    }
-
-    if (difference == 1) {
-      return l10n.medsNextDoseTomorrow(time);
-    }
-
-    return l10n.medsNextDoseWeekday(_shortWeekday(next.weekday, l10n), time);
-  }
-
-  DateTime? _findNextScheduleOccurrence(
-    List<MedicationScheduleProfile> schedules,
-  ) {
-    final now = DateTime.now();
-
-    DateTime? closest;
-
-    for (final schedule in schedules) {
-      if (!schedule.isEnabled) {
-        continue;
-      }
-
-      final time = _parseStoredTime(schedule.timeOfDay);
-
-      if (time == null) {
-        continue;
-      }
-
-      for (var dayOffset = 0; dayOffset <= 7; dayOffset++) {
-        final date = now.add(Duration(days: dayOffset));
-
-        final candidate = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          time.hour,
-          time.minute,
-        );
-
-        if (!candidate.isAfter(now)) {
-          continue;
-        }
-
-        if (!_scheduleAppliesOnDate(schedule, candidate)) {
-          continue;
-        }
-
-        if (closest == null || candidate.isBefore(closest)) {
-          closest = candidate;
-        }
-
-        break;
-      }
-    }
-
-    return closest;
-  }
-
-  bool _scheduleAppliesOnDate(
-    MedicationScheduleProfile schedule,
-    DateTime date,
-  ) {
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    final start = DateTime(
-      schedule.startDate.year,
-      schedule.startDate.month,
-      schedule.startDate.day,
-    );
-
-    if (dateOnly.isBefore(start)) {
-      return false;
-    }
-
-    if (schedule.endDate != null) {
-      final end = DateTime(
-        schedule.endDate!.year,
-        schedule.endDate!.month,
-        schedule.endDate!.day,
-      );
-
-      if (dateOnly.isAfter(end)) {
-        return false;
-      }
-    }
-
-    final type = schedule.scheduleType.trim().toLowerCase();
-
-    if (type == 'prn') {
-      // PRN ka fixed "next dose" technically due nahi hota.
-      // Current UI expects a time, so configured reminder time use hota hai.
-      // DoseEvents migration ke baad PRN presentation improve hogi.
-      return true;
-    }
-
-    final weekdays = _parseWeekdays(schedule.daysOfWeek);
-
-    if (weekdays.isEmpty) {
-      return true;
-    }
-
-    return weekdays.contains(date.weekday);
-  }
-
-  Set<int> _parseWeekdays(String? storedDays) {
-    if (storedDays == null || storedDays.trim().isEmpty) {
-      return <int>{};
-    }
-
-    return storedDays
-        .split(',')
-        .map((value) => int.tryParse(value.trim()))
-        .whereType<int>()
-        .where((day) => day >= DateTime.monday && day <= DateTime.sunday)
-        .toSet();
-  }
-
-  TimeOfDay? _parseStoredTime(String storedTime) {
-    final parts = storedTime.split(':');
-
-    if (parts.length != 2) {
-      return null;
-    }
-
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-
-    if (hour == null ||
-        minute == null ||
-        hour < 0 ||
-        hour > 23 ||
-        minute < 0 ||
-        minute > 59) {
-      return null;
-    }
-
-    return TimeOfDay(hour: hour, minute: minute);
-  }
-
-  String _formatTime(DateTime dateTime) {
-    final hour = dateTime.hour;
-    final minute = dateTime.minute;
-
-    final period = hour >= 12 ? 'PM' : 'AM';
-
-    final twelveHour = hour == 0
-        ? 12
-        : hour > 12
-        ? hour - 12
-        : hour;
-
-    final minuteText = minute.toString().padLeft(2, '0');
-
-    return '$twelveHour:$minuteText $period';
-  }
-
-  String _shortWeekday(int weekday, AppLocalizations l10n) {
-    switch (weekday) {
-      case DateTime.monday:
-        return l10n.medsWeekdayMon;
-      case DateTime.tuesday:
-        return l10n.medsWeekdayTue;
-      case DateTime.wednesday:
-        return l10n.medsWeekdayWed;
-      case DateTime.thursday:
-        return l10n.medsWeekdayThu;
-      case DateTime.friday:
-        return l10n.medsWeekdayFri;
-      case DateTime.saturday:
-        return l10n.medsWeekdaySat;
-      case DateTime.sunday:
-      default:
-        return l10n.medsWeekdaySun;
-    }
-  }
-
-  // ============================================================
-  // FILTERED — search + tab
-  // ============================================================
-
-  List<_MedicationListItem> _filteredMeds(AppLocalizations l10n) {
-    final source = _showArchived ? _archivedItems(l10n) : _activeItems(l10n);
-    final query = _searchController.text.trim().toLowerCase();
-
-    if (query.isEmpty) {
-      return source;
-    }
-
-    return source.where((item) {
-      return item.profile.name.toLowerCase().contains(query) ||
-          item.profile.displayStrength.toLowerCase().contains(query);
-    }).toList();
-  }
-
-  // ============================================================
-  // INVENTORY LOW STOCK COUNT
-  //
-  // Inventory migration abhi pending hai.
-  // Existing InventoryData calculated source preserve kiya gaya hai.
-  // ============================================================
-
-  int get _lowStockCount {
-    final inventoryItems = InventoryData.inventory();
-
-    return InventoryData.lowStockCount(inventoryItems);
-  }
-
-  // ============================================================
-  // ACTIONS
-  // ============================================================
-
-  Future<void> _addMedicine() async {
-    await Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const AddMedicationScreen()));
-
-    // Medication repository stream new medication automatically show karegi.
-    //
-    // TODO Backend:
-    // Firebase implementation mein same repository contract use hoga.
-  }
-
-  // ================= INVENTORY =================
-
-  Future<void> _openInventory() async {
-    await Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const InventoryScreen()));
-
-    if (!mounted) {
-      return;
-    }
-
-    // Existing InventoryData in-memory adjustment ke liye rebuild.
-    //
-    // TODO Local Storage:
-    // InventoryRecords repository stream migration ke baad manual
-    // setState ki zarurat nahi hogi.
-    setState(() {});
-  }
-  // ================= SIDE EFFECTS =================
-
-  Future<void> _openSideEffects() async {
-    await Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const SideEffectsScreen()));
-  }
-
-  // ================= ALLERGIES =================
-
-  Future<void> _openAllergies() async {
-    await Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const AllergiesScreen()));
-
-    if (!mounted) {
-      return;
-    }
-
-    // Existing AllergiesData in-memory updates ke liye rebuild.
-    //
-    // TODO Local Storage:
-    // Allergies repository stream migration ke baad manual
-    // setState ki zarurat nahi hogi.
-    setState(() {});
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  /// ============================================================
-  /// DISCONTINUE MEDICINE
-  ///
-  /// Confirmation modal open hoti hai.
-  ///
-  /// null   → Keep Active / Back / outside tap
-  /// String → Archive confirm
-  ///
-  /// IMPORTANT:
-  /// SQLite update sirf successful confirmation ke baad.
-  /// ============================================================
-  Future<void> _discontinueMedicine(_MedicationListItem item) async {
-    final l10n = AppLocalizations.of(context);
-    final reason = await showGeneralDialog<String?>(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: l10n.medsDiscontinueBarrierLabel,
-      barrierColor: AppColors.headerDark.withValues(alpha: 0.55),
-      transitionDuration: const Duration(milliseconds: 220),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return DiscontinueMedicationScreen(medicine: item.medicine);
-      },
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        final curvedAnimation = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-          reverseCurve: Curves.easeInCubic,
-        );
-
-        return FadeTransition(
-          opacity: curvedAnimation,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.96, end: 1).animate(curvedAnimation),
-            child: child,
-          ),
-        );
-      },
-    );
-
-    if (reason == null || !mounted) {
-      return;
-    }
-
-    try {
-      // 🆕 MODULE 2: Modal ka reason SQLite mein persist hota hai.
-      await _medicationRepository.discontinueMedication(
-        medicationId: item.profile.id,
-        discontinuedAt: DateTime.now(),
-        reason: reason,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
+  void _showAddOptions() {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.medsMovedToArchived(item.profile.name))),
+        const SnackBar(
+          content: Text('No profile selected. Please select a profile first.'),
+          backgroundColor: AppColors.error,
+        ),
       );
-      // Existing DoseEvents/history delete nahi karni.
-      //
-      // TODO Backend:
-      // Firebase repository isActive/discontinuedAt/reason save karegi
-      // aur historical dose data preserve karegi.
-    } catch (error, stackTrace) {
-      debugPrint('Discontinue medication failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.medsDiscontinueError)));
+      return;
     }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.outline,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Add Medication',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildAddOption(
+                icon: Icons.search,
+                title: 'Search Drug Catalog',
+                subtitle: 'Find from 55+ common drugs',
+                onTap: () => _navigateToSearch(memberId),
+              ),
+              _buildAddOption(
+                icon: Icons.document_scanner,
+                title: 'Scan Label',
+                subtitle: 'Take photo of prescription label',
+                onTap: () => _navigateToScan(memberId),
+              ),
+              _buildAddOption(
+                icon: Icons.edit,
+                title: 'Manual Entry',
+                subtitle: 'Type drug details yourself',
+                onTap: () => _navigateToManual(memberId),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: AppColors.formAccent.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: AppColors.formAccent),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+      ),
+      trailing: const Icon(Icons.chevron_right, color: AppColors.fieldHint),
+      onTap: onTap,
+    );
+  }
+
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
+
+  Future<void> _navigateToSearch(String memberId) async {
+    Navigator.of(context).pop(); // Close bottom sheet
+    final drug = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddMedicationSearchScreen()),
+    );
+
+    if (drug != null && mounted) {
+      // Navigate to Manual screen with pre-selected drug
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddMedicationManualScreen(
+            profileId: memberId,
+            preselectedDrug: drug,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _navigateToScan(String memberId) async {
+    Navigator.of(context).pop(); // Close bottom sheet
+    final scanResult = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddMedicationScanScreen()),
+    );
+
+    if (scanResult != null && mounted) {
+      // Navigate to Manual screen with scan result
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddMedicationManualScreen(
+            profileId: memberId,
+            scanResult: scanResult,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _navigateToManual(String memberId) async {
+    Navigator.of(context).pop(); // Close bottom sheet
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddMedicationManualScreen(profileId: memberId),
+      ),
+    );
+  }
+
+  void _navigateToDetail(Medication medication) {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MedicationDetailScreen(
+          profileId: memberId,
+          medicationId: medication.id,
+        ),
+      ),
+    );
   }
 
   // ============================================================
@@ -864,1144 +225,321 @@ class _MedsScreenState extends State<MedsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final memberId = ProfileController.instance.memberId;
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          _buildHeader(),
-          Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: _buildContent(),
-              ),
-            ),
-          ),
-        ],
+      appBar: AppBar(
+        title: const Text('Medications'),
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        automaticallyImplyLeading: false,
       ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(
-          right: MediaQuery.sizeOf(context).width > 480
-              ? (MediaQuery.sizeOf(context).width - 480) / 2 + 16
-              : 0,
-        ),
-        child: FloatingActionButton(
-          heroTag: null,
-          onPressed: _addMedicine,
-          backgroundColor: AppColors.formAccent,
-          foregroundColor: AppColors.surface,
-          elevation: 7,
-          shape: const CircleBorder(),
-          child: const Icon(Icons.add, size: 28),
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddOptions,
+        backgroundColor: AppColors.formAccent,
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
       ),
+      body: memberId == null || memberId.isEmpty
+          ? _buildNoProfileState()
+          : _buildMedicationsList(memberId),
     );
   }
 
   // ============================================================
-  // CONTENT
+  // STATES
   // ============================================================
 
-  Widget _buildContent() {
-    final l10n = AppLocalizations.of(context);
-    final items = _filteredMeds(l10n);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 95),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildSearch(),
-
-          const SizedBox(height: 12),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                l10n.medsManageHeader,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 10,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                l10n.medsQuickTools,
-                style: const TextStyle(
-                  color: AppColors.formAccent,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 9),
-
-          Row(
-            children: [
-              Expanded(
-                child: _ManageTile(
-                  icon: Icons.inventory_2_outlined,
-                  label: l10n.medsInventory,
-                  badge: _lowStockCount > 0
-                      ? l10n.medsLowBadge(_lowStockCount)
-                      : null,
-                  onTap: _openInventory,
-                ),
-              ),
-
-              const SizedBox(width: 7),
-
-              Expanded(
-                child: _ManageTile(
-                  icon: Icons.shield_outlined,
-                  label: l10n.medsAllergies,
-                  count:
-                      '${AllergiesData.countFor(ProfileController.instance.memberId)}',
-                  onTap: _openAllergies,
-                ),
-              ),
-
-              const SizedBox(width: 7),
-
-              Expanded(
-                child: _ManageTile(
-                  icon: Icons.assignment_outlined,
-                  label: l10n.medsSideEffects,
-                  onTap: _openSideEffects,
-                ),
-              ),
-
-              const SizedBox(width: 7),
-
-              Expanded(
-                child: _ManageTile(
-                  icon: Icons.local_pharmacy_outlined,
-                  label: l10n.medsPharmacy,
-                  onTap: () {
-                    _showMessage(l10n.comingSoon(l10n.medsPharmacy));
-                  },
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          _buildTabs(),
-
-          const SizedBox(height: 16),
-
-          if (_medicationsLoading)
-            _buildLoadingState()
-          else if (items.isEmpty)
-            _buildEmptyState()
-          else
-            ...items.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _showArchived
-                    ? _MedicineCard(
-                        medicine: item.medicine,
-                        imagePath: item.imagePath,
-                        onTap: () {
-                          _openMedicine(item);
-                        },
-                      )
-                    : _SwipeMedicineCard(
-                        medicine: item.medicine,
-                        imagePath: item.imagePath,
-                        onTap: () {
-                          _openMedicine(item);
-                        },
-                        onDiscontinue: () {
-                          _discontinueMedicine(item);
-                        },
-                      ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // OPEN MEDICINE
-  // ============================================================
-
-  Future<void> _openMedicine(_MedicationListItem item) async {
-    final medicine = item.medicine;
-    final l10n = AppLocalizations.of(context);
-
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => EditMedicationScreen(
-          medicineName: medicine.name,
-          medicineStrength: medicine.dose,
-          medicineForm: medicineTypeLabel(l10n, medicine.type),
-          dosesPerDay: item.schedules.isNotEmpty
-              ? item.schedules.length
-              : _dosesPerDayFromFrequency(medicine.frequency),
-          pillsRemaining: medicine.supplyDaysLeft,
-          isLowStock: medicine.isLowStock,
-        ),
-      ),
-    );
-
-    // TODO Local Storage:
-    // EditMedicationScreen ko stable medicationId dena aur medication +
-    // schedule repositories se actual persisted editing karna next step hai.
-    //
-    // TODO Backend:
-    // Same edit controller/repository boundary backend implementation
-    // ke saath reuse hogi.
-  }
-
-  int _dosesPerDayFromFrequency(String frequency) {
-    if (frequency.contains('3x')) {
-      return 3;
-    }
-
-    if (frequency.contains('2x')) {
-      return 2;
-    }
-
-    return 1;
-  }
-
-  // ============================================================
-  // DARK HEADER
-  // ============================================================
-
-  Widget _buildHeader() {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      width: double.infinity,
-      color: AppColors.headerDark,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.medsTitle,
-                      style: const TextStyle(
-                        color: AppColors.surface,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(
-                        Icons.notifications_none_rounded,
-                        color: AppColors.surface,
-                        size: 24,
-                      ),
-                      Positioned(
-                        top: 1,
-                        right: 1,
-                        child: Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: AppColors.notificationDot,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(width: 15),
-
-                  const AppAvatarPlaceholder(),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.medsMemberMedications(
-                            ProfileController.instance.displayName,
-                          ),
-                          style: const TextStyle(
-                            color: AppColors.surface,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-
-                        const SizedBox(height: 3),
-
-                        Text(
-                          l10n.medsActiveCount(_activeProfiles.length),
-                          style: const TextStyle(
-                            color: AppColors.headerSubtext,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  GestureDetector(
-                    onTap: _addMedicine,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        color: AppColors.formAccent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.add,
-                        color: AppColors.surface,
-                        size: 26,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ============================================================
-  // SEARCH
-  // ============================================================
-
-  Widget _buildSearch() {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      height: 52,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.formAccent),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 15),
-
-          const Icon(
-            Icons.search_rounded,
-            color: AppColors.formAccent,
-            size: 23,
-          ),
-
-          const SizedBox(width: 10),
-
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              onChanged: (_) {
-                setState(() {});
-              },
-              decoration: InputDecoration(
-                hintText: l10n.medsSearchHint,
-                hintStyle: const TextStyle(
-                  color: AppColors.searchHint,
-                  fontSize: 13,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-              ),
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 13,
-              ),
-            ),
-          ),
-
-          if (_searchController.text.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                _searchController.clear();
-                setState(() {});
-              },
-              child: const Icon(
-                Icons.close_rounded,
-                color: AppColors.formAccent,
-              ),
-            )
-          else
+  Widget _buildNoProfileState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             const Icon(
-              Icons.tune_rounded,
-              color: AppColors.formAccent,
-              size: 23,
+              Icons.person_outline,
+              size: 80,
+              color: AppColors.fieldHint,
             ),
-
-          const SizedBox(width: 15),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // TABS
-  // ============================================================
-
-  Widget _buildTabs() {
-    final l10n = AppLocalizations.of(context);
-    return Row(
-      children: [
-        _TabButton(
-          label: l10n.medsTabActive(_activeProfiles.length),
-          selected: !_showArchived,
-          onTap: () {
-            setState(() {
-              _showArchived = false;
-            });
-          },
-        ),
-
-        const SizedBox(width: 8),
-
-        _TabButton(
-          label: l10n.medsTabArchived(_archivedProfiles.length),
-          selected: _showArchived,
-          onTap: () {
-            setState(() {
-              _showArchived = true;
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  // ============================================================
-  // LOADING
-  // ============================================================
-
-  Widget _buildLoadingState() {
-    return const SizedBox(
-      height: 200,
-      child: Center(
-        child: CircularProgressIndicator(color: AppColors.formAccent),
-      ),
-    );
-  }
-
-  // ============================================================
-  // EMPTY
-  // ============================================================
-
-  Widget _buildEmptyState() {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      height: 200,
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.medication_outlined,
-            color: AppColors.fieldHint,
-            size: 45,
-          ),
-
-          const SizedBox(height: 10),
-
-          Text(
-            _showArchived ? l10n.medsEmptyArchived : l10n.medsEmpty,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
+            const SizedBox(height: 16),
+            const Text(
+              'No Profile Selected',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
-// MEDICATION LIST ITEM
-// ============================================================
-
-class _MedicationListItem {
-  const _MedicationListItem({
-    required this.profile,
-    required this.medicine,
-    required this.schedules,
-    this.imagePath,
-  });
-
-  final MedicationProfile profile;
-  final Medicine medicine;
-  final List<MedicationScheduleProfile> schedules;
-  final String? imagePath;
-}
-
-// ============================================================
-// HEADER AVATAR
-// ============================================================
-
-class AppAvatarPlaceholder extends StatelessWidget {
-  const AppAvatarPlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const AppAvatar(
-      size: 35,
-      ringColor: AppColors.surface,
-      ringWidth: 2,
-    );
-  }
-}
-
-// ============================================================
-// TAB BUTTON
-// ============================================================
-
-class _TabButton extends StatelessWidget {
-  const _TabButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? AppColors.formAccent : AppColors.surface,
-          borderRadius: BorderRadius.circular(9),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: 0.03),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+            const SizedBox(height: 8),
+            const Text(
+              'Please select a profile from the Home screen to view medications.',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? AppColors.surface : AppColors.formAccent,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
+      ),
+    );
+  }
+
+  Widget _buildMedicationsList(String memberId) {
+    return StreamBuilder<List<Medication>>(
+      stream: MedicationRepository.instance.watchActiveMedications(memberId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return _buildErrorState(snapshot.error.toString());
+        }
+
+        final medications = snapshot.data ?? [];
+
+        if (medications.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+          itemCount: medications.length,
+          itemBuilder: (context, index) {
+            return _buildMedicationCard(medications[index]);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.medication_outlined,
+              size: 80,
+              color: AppColors.fieldHint,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No Medications Yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tap the + button below to add your first medication.',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _showAddOptions,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Medication'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.formAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
 
-// ============================================================
-// MANAGE TILE
-// ============================================================
-
-class _ManageTile extends StatelessWidget {
-  const _ManageTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.badge,
-    this.count,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  final String? badge;
-  final String? count;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: double.infinity,
-            height: 66,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(9),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.textPrimary.withValues(alpha: 0.035),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 31,
-                  height: 31,
-                  decoration: BoxDecoration(
-                    color: AppColors.manageIconFill,
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Icon(icon, size: 17, color: AppColors.formAccent),
-                ),
-
-                const SizedBox(height: 5),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        color: AppColors.formAccent,
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          if (badge != null)
-            Positioned(
-              top: -6,
-              right: 5,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.lowBadgeBackground,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: AppColors.lowBadgeBorder,
-                    width: 0.8,
-                  ),
-                ),
-                child: Text(
-                  badge!,
-                  style: const TextStyle(
-                    color: AppColors.lowBadgeText,
-                    fontSize: 7,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 80, color: AppColors.error),
+            const SizedBox(height: 16),
+            const Text(
+              'Failed to Load',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
             ),
-
-          if (count != null)
-            Positioned(
-              top: -6,
-              right: 5,
-              child: Container(
-                width: 18,
-                height: 18,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.formAccent,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  count!,
-                  style: const TextStyle(
-                    color: AppColors.surface,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
               ),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
-        ],
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {}); // Trigger rebuild
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.formAccent,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }
-}
 
-// ============================================================
-// SWIPE MEDICINE CARD
-// ============================================================
+  // ============================================================
+  // MEDICATION CARD
+  // ============================================================
 
-class _SwipeMedicineCard extends StatefulWidget {
-  const _SwipeMedicineCard({
-    required this.medicine,
-    required this.onTap,
-    required this.onDiscontinue,
-    this.imagePath,
-  });
+  Widget _buildMedicationCard(Medication medication) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.outline, width: 1),
+      ),
+      child: InkWell(
+        onTap: () => _navigateToDetail(medication),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Drug icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.formAccent.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.medication_rounded,
+                  color: AppColors.formAccent,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
 
-  final Medicine medicine;
-  final String? imagePath;
-  final VoidCallback onTap;
-  final VoidCallback onDiscontinue;
-
-  @override
-  State<_SwipeMedicineCard> createState() => _SwipeMedicineCardState();
-}
-
-class _SwipeMedicineCardState extends State<_SwipeMedicineCard> {
-  static const double _actionWidth = 100;
-
-  double _dragOffset = 0;
-
-  void _handleDragUpdate(DragUpdateDetails details) {
-    setState(() {
-      _dragOffset += details.delta.dx;
-      _dragOffset = _dragOffset.clamp(-_actionWidth, 0.0);
-    });
-  }
-
-  void _handleDragEnd(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
-
-    setState(() {
-      if (velocity < -300 || _dragOffset < -(_actionWidth / 2)) {
-        _dragOffset = -_actionWidth;
-      } else {
-        _dragOffset = 0;
-      }
-    });
-  }
-
-  void _closeAction() {
-    if (_dragOffset == 0) {
-      return;
-    }
-
-    setState(() {
-      _dragOffset = 0;
-    });
-  }
-
-  void _handleDiscontinueTap() {
-    _closeAction();
-    widget.onDiscontinue();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(15),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(
-                width: _actionWidth,
-                child: Material(
-                  color: AppColors.error,
-                  child: InkWell(
-                    onTap: _handleDiscontinueTap,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.archive_outlined,
-                          color: AppColors.surface,
-                          size: 23,
+              // Drug info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      medication.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (medication.strength != null ||
+                        medication.form != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                          if (medication.strength != null) medication.strength!,
+                          if (medication.form != null) medication.form!,
+                        ].join(' • '),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
                         ),
-                        const SizedBox(height: 5),
-                        Text(
-                          l10n.medsDiscontinue,
-                          style: const TextStyle(
-                            color: AppColors.surface,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 14,
+                          color: AppColors.fieldHint,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            medication.schedule.description,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.fieldHint,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
               ),
-            ),
-          ),
 
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            transform: Matrix4.translationValues(_dragOffset, 0, 0),
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onHorizontalDragUpdate: _handleDragUpdate,
-              onHorizontalDragEnd: _handleDragEnd,
-              onTap: () {
-                if (_dragOffset != 0) {
-                  _closeAction();
-                  return;
-                }
-
-                widget.onTap();
-              },
-              child: _MedicineCardContent(
-                medicine: widget.medicine,
-                imagePath: widget.imagePath,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
-// MEDICINE CARD
-// ============================================================
-
-class _MedicineCard extends StatelessWidget {
-  const _MedicineCard({
-    required this.medicine,
-    required this.onTap,
-    this.imagePath,
-  });
-
-  final Medicine medicine;
-  final String? imagePath;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: _MedicineCardContent(medicine: medicine, imagePath: imagePath),
-    );
-  }
-}
-
-// ============================================================
-// MEDICINE CARD CONTENT
-// ============================================================
-
-class _MedicineCardContent extends StatelessWidget {
-  const _MedicineCardContent({required this.medicine, this.imagePath});
-
-  final Medicine medicine;
-  final String? imagePath;
-
-  @override
-  Widget build(BuildContext context) {
-    final isLow =
-        medicine.isLowStock ||
-        (medicine.isCourse && medicine.supplyDaysLeft <= 5);
-
-    final isCourse = medicine.isCourse;
-
-    final effectiveImagePath = imagePath ?? medicine.typeImageAsset;
-
-    final l10n = AppLocalizations.of(context);
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 15, 14, 14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.cardFill,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.textPrimary.withValues(alpha: 0.08),
-                  blurRadius: 5,
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: effectiveImagePath != null
-                  ? _MedicationImage(
-                      path: effectiveImagePath,
-                      fallbackIcon: medicine.typeIcon,
-                      fallbackColor: isLow
-                          ? AppColors.lowBadgeText
-                          : AppColors.formAccent,
-                    )
-                  : Center(
-                      child: Icon(
-                        medicine.typeIcon,
-                        color: isLow
-                            ? AppColors.lowBadgeText
-                            : AppColors.formAccent,
-                        size: 25,
+              // Status + flags
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Source badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: AppColors.outline, width: 0.5),
+                    ),
+                    child: Text(
+                      medication.source.label.substring(0, 3).toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
                       ),
                     ),
-            ),
-          ),
-
-          const SizedBox(width: 13),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${medicine.name} ${medicine.dose}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-
-                    if (isLow)
-                      _MedicineBadge(
-                        text: l10n.medsLowStock,
-                        background: AppColors.lowBadgeBackground,
-                        foreground: AppColors.lowBadgeText,
-                      )
-                    else if (isCourse)
-                      _MedicineBadge(
-                        text: l10n.medsBadgeActive,
-                        background: AppColors.successBackground,
-                        foreground: AppColors.success,
-                      ),
-                  ],
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  '${medicineTypeLabel(l10n, medicine.type)} · ${medicine.frequency}',
-                  style: const TextStyle(
-                    color: AppColors.formSubtitle,
-                    fontSize: 10,
                   ),
-                ),
-
-                const SizedBox(height: 5),
-
-                Row(
-                  children: [
-                    Icon(
-                      isCourse
-                          ? Icons.error_outline_rounded
-                          : Icons.access_time_rounded,
-                      size: 12,
-                      color: isCourse
-                          ? AppColors.lowBadgeText
-                          : AppColors.formSubtitle,
-                    ),
-
-                    const SizedBox(width: 4),
-
-                    Expanded(
-                      child: Text(
-                        isCourse
-                            ? l10n.medsEnds(medicine.endsOnLabel)
-                            : l10n.medsNext(medicine.nextDose),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isCourse
-                              ? AppColors.lowBadgeText
-                              : AppColors.formSubtitle,
-                          fontSize: 10,
-                        ),
-                      ),
+                  if (medication.hasInteractionFlag) ...[
+                    const SizedBox(height: 4),
+                    const Icon(
+                      Icons.warning_rounded,
+                      size: 16,
+                      color: Colors.orange,
                     ),
                   ],
-                ),
-
-                const SizedBox(height: 9),
-
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: LinearProgressIndicator(
-                              value: medicine.progressValue,
-                              minHeight: 6,
-                              backgroundColor: AppColors.progressTrackLight,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isLow
-                                    ? AppColors.lowBadgeText
-                                    : AppColors.formAccent,
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 4),
-
-                          Text(
-                            medicine.supplyLabel(l10n),
-                            style: TextStyle(
-                              color: isLow
-                                  ? AppColors.lowBadgeText
-                                  : AppColors.formSubtitle,
-                              fontSize: 9,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 13),
-
-                    const Padding(
-                      padding: EdgeInsets.only(top: 0),
-                      child: Icon(
-                        Icons.arrow_forward_rounded,
-                        color: AppColors.formSubtitle,
-                        size: 19,
-                      ),
+                  if (medication.hasLowStockFlag) ...[
+                    const SizedBox(height: 4),
+                    const Icon(
+                      Icons.inventory_2_outlined,
+                      size: 16,
+                      color: AppColors.error,
                     ),
                   ],
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
-// MEDICATION IMAGE
-//
-// Supports:
-// - bundled asset
-// - local file path
-//
-// TODO Backend:
-// Firebase Storage / remote URL image support can be added through
-// repository/domain image references without changing medication data flow.
-// ============================================================
-
-class _MedicationImage extends StatelessWidget {
-  const _MedicationImage({
-    required this.path,
-    required this.fallbackIcon,
-    required this.fallbackColor,
-  });
-
-  final String path;
-  final IconData fallbackIcon;
-  final Color fallbackColor;
-
-  @override
-  Widget build(BuildContext context) {
-    Widget fallback() {
-      return Center(child: Icon(fallbackIcon, color: fallbackColor, size: 25));
-    }
-
-    if (path.startsWith('assets/')) {
-      return Image.asset(
-        path,
-        width: 50,
-        height: 50,
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.high,
-        errorBuilder: (context, error, stackTrace) {
-          return fallback();
-        },
-      );
-    }
-
-    final file = File(path);
-
-    if (!file.existsSync()) {
-      return fallback();
-    }
-
-    return Image.file(
-      file,
-      width: 50,
-      height: 50,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.high,
-      errorBuilder: (context, error, stackTrace) {
-        return fallback();
-      },
-    );
-  }
-}
-
-// ============================================================
-// MEDICINE BADGE
-// ============================================================
-
-class _MedicineBadge extends StatelessWidget {
-  const _MedicineBadge({
-    required this.text,
-    required this.background,
-    required this.foreground,
-  });
-
-  final String text;
-  final Color background;
-  final Color foreground;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: foreground,
-          fontSize: 8,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );

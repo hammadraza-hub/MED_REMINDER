@@ -1,173 +1,67 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../main_shell.dart';
-import '../../widgets/app_bottom_navigation.dart';
+import '../../core/app_exception.dart';
+import '../../models/medication.dart';
+import '../../models/schedule.dart';
+import '../../repositories/auth_repository.dart';
+import '../../repositories/medication_repository.dart';
+import 'schedule_picker_screen.dart';
 
-/// ============================================================
-/// EDIT MEDICATION — existing medicine editing!
+/// Edit Medication Screen (M5)
 ///
-/// Meds list → card tap → YE SCREEN
+/// Edits an existing medication. Pre-populates fields from the medication
+/// document and calls MedicationRepository.updateMedication() on save.
 ///
-/// Genius helpers:
-/// - _parseStrength — "500mg" → ("500", "mg") auto-split!
-/// - _normalizeForm — koi bhi text → standard form!
-/// - Smart inventory units — capsules/ml/doses!
+/// Per M5 rules, these fields are IMMUTABLE (cannot be changed via update):
+///   • rxcui (switch drug = archive old + create new)
+///   • source (set at creation)
+///   • profileId, createdBy, createdAt
+///   • status, archivedReason (use archive flow instead)
+///   • quantityOnHand, daysOfSupply, flags (server-maintained)
 ///
-/// System: AppColors + shared bottom bar + tablet cap
-///
-/// TODO Backend:
-/// - Current user/family member medication Firestore document load
-/// - Medication changes update
-/// - Inventory document update by medicationId
-/// - Schedule persistence
-/// - Medication photo upload/storage
-/// - Discontinue/archive persistence
-/// ============================================================
+/// Editable fields:
+///   • name, strength, form, doseAmount, doseUnit, instructions
+///   • schedule (type, times, weekdays, cyclical, taper, meal relation, dates)
 class EditMedicationScreen extends StatefulWidget {
+  final String profileId;
+  final String medicationId;
+
+  /// Optional: pass the already-loaded Medication to skip a Firestore read.
+  final Medication? medication;
+
   const EditMedicationScreen({
     super.key,
-    required this.medicineName,
-    required this.medicineStrength,
-    required this.medicineForm,
-    required this.dosesPerDay,
-    required this.pillsRemaining,
-    required this.isLowStock,
+    required this.profileId,
+    required this.medicationId,
+    this.medication,
   });
-
-  final String medicineName;
-  final String medicineStrength;
-  final String medicineForm;
-  final int dosesPerDay;
-  final int pillsRemaining;
-  final bool isLowStock;
 
   @override
   State<EditMedicationScreen> createState() => _EditMedicationScreenState();
 }
 
 class _EditMedicationScreenState extends State<EditMedicationScreen> {
-  // ================= CONTROLLERS =================
-  late final TextEditingController _nameController;
-  late final TextEditingController _strengthController;
-  late final TextEditingController _instructionsController;
-  late final TextEditingController _notesController;
+  final _nameController = TextEditingController();
+  final _strengthController = TextEditingController();
+  final _formController = TextEditingController();
+  final _doseAmountController = TextEditingController();
+  final _doseUnitController = TextEditingController();
+  final _instructionsController = TextEditingController();
 
-  // ================= STATE =================
-  late String _selectedForm;
-  String _selectedUnit = 'mg';
-  late int _currentCount;
+  Schedule? _schedule;
+  bool _isLoading = false;
   bool _isSaving = false;
+  Medication? _medication;
 
   @override
   void initState() {
     super.initState();
-
-    // "500mg" → ("500", "mg")
-    final parsedStrength = _parseStrength(widget.medicineStrength);
-
-    // Existing data → PRE-FILL
-    _nameController = TextEditingController(text: widget.medicineName);
-    _strengthController = TextEditingController(text: parsedStrength.$1);
-    _selectedUnit = parsedStrength.$2;
-
-    _instructionsController = TextEditingController(
-      text: 'Take with food after breakfast, avoid grapefruit',
-    );
-
-    _notesController = TextEditingController();
-    _selectedForm = _normalizeForm(widget.medicineForm);
-    _currentCount = widget.pillsRemaining;
-  }
-
-  // =========================================================
-  // HELPERS
-  // =========================================================
-
-  /// "500mg" / "500 mg" / "500" → ("500", "mg")
-  (String, String) _parseStrength(String value) {
-    final text = value.trim();
-
-    final match = RegExp(
-      r'^([\d.]+)\s*(mg|mcg|ml|iu|%)?$',
-      caseSensitive: false,
-    ).firstMatch(text);
-
-    if (match != null) {
-      final number = match.group(1) ?? text;
-      final unit = match.group(2);
-
-      if (unit != null) {
-        if (unit.toLowerCase() == 'iu') {
-          return (number, 'IU');
-        }
-
-        return (number, unit.toLowerCase());
-      }
-
-      return (number, 'mg');
-    }
-
-    final numberOnly = text.replaceAll(RegExp(r'[^\d.]'), '');
-
-    return (numberOnly.isEmpty ? text : numberOnly, 'mg');
-  }
-
-  /// Koi bhi text → standard form ("TABLETS BP" → "Tablet")
-  String _normalizeForm(String value) {
-    final lower = value.toLowerCase();
-
-    if (lower.contains('capsule')) {
-      return 'Capsule';
-    }
-
-    if (lower.contains('liquid') ||
-        lower.contains('syrup') ||
-        lower.contains('solution') ||
-        lower.contains('suspension')) {
-      return 'Liquid';
-    }
-
-    if (lower.contains('inject')) {
-      return 'Injection';
-    }
-
-    return 'Tablet';
-  }
-
-  /// Form ka image asset (fallback icon ke sath!)
-  String _formAsset(String form) {
-    final value = form.toLowerCase();
-
-    if (value.contains('capsule')) {
-      return 'assets/images/capsule.jpg';
-    }
-
-    if (value.contains('liquid') ||
-        value.contains('syrup') ||
-        value.contains('solution') ||
-        value.contains('suspension')) {
-      return 'assets/images/liquid.jpg';
-    }
-
-    if (value.contains('inject')) {
-      return 'assets/images/injection.jpg';
-    }
-
-    return 'assets/images/tablet.jpg';
-  }
-
-  /// Inventory unit — form ke hisaab se
-  String _inventoryUnit() {
-    switch (_selectedForm) {
-      case 'Capsule':
-        return 'capsules';
-      case 'Liquid':
-        return 'ml';
-      case 'Injection':
-        return 'doses';
-      default:
-        return 'tablets';
+    if (widget.medication != null) {
+      _medication = widget.medication;
+      _initializeFields();
+    } else {
+      _loadMedication();
     }
   }
 
@@ -175,49 +69,168 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
   void dispose() {
     _nameController.dispose();
     _strengthController.dispose();
+    _formController.dispose();
+    _doseAmountController.dispose();
+    _doseUnitController.dispose();
     _instructionsController.dispose();
-    _notesController.dispose();
-
     super.dispose();
   }
 
-  // ================= ACTIONS =================
-  Future<void> _saveMedication() async {
-    if (_nameController.text.trim().isEmpty ||
-        _strengthController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Medication name and strength are required.'),
-        ),
+  // ============================================================
+  // LOAD MEDICATION (if not passed)
+  // ============================================================
+
+  Future<void> _loadMedication() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final med = await MedicationRepository.instance.getMedication(
+        profileId: widget.profileId,
+        medicationId: widget.medicationId,
       );
 
+      if (med == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Medication not found.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+          Navigator.of(context).pop();
+        }
+        return;
+      }
+
+      setState(() {
+        _medication = med;
+        _isLoading = false;
+      });
+      _initializeFields();
+    } on AppException catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.error),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _initializeFields() {
+    final med = _medication;
+    if (med == null) return;
+
+    _nameController.text = med.name;
+    _strengthController.text = med.strength ?? '';
+    _formController.text = med.form ?? '';
+    _doseAmountController.text = med.doseAmount != null
+        ? med.doseAmount.toString()
+        : '';
+    _doseUnitController.text = med.doseUnit ?? '';
+    _instructionsController.text = med.instructions ?? '';
+    _schedule = med.schedule;
+  }
+
+  // ============================================================
+  // SCHEDULE PICKER
+  // ============================================================
+
+  Future<void> _pickSchedule() async {
+    final result = await Navigator.push<Schedule>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SchedulePickerScreen(initialSchedule: _schedule),
+      ),
+    );
+
+    if (result != null) {
+      setState(() => _schedule = result);
+    }
+  }
+
+  // ============================================================
+  // SAVE CHANGES
+  // ============================================================
+
+  Future<void> _saveChanges() async {
+    if (_medication == null) return;
+
+    // Validate
+    if (_nameController.text.trim().isEmpty) {
+      _showError('Drug name is required');
+      return;
+    }
+
+    if (_schedule == null) {
+      _showError('Schedule is required');
       return;
     }
 
     setState(() => _isSaving = true);
 
     try {
-      // TODO Backend:
-      // Update existing medication document for current user/family member.
-      //
-      // Inventory must update the EXISTING inventory document using
-      // medicationId instead of creating a duplicate inventory document.
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+      final userId = AuthRepository.instance.currentUid ?? 'unknown';
+      final now = DateTime.now();
 
-      if (!mounted) return;
+      // Parse doseAmount
+      final doseAmountStr = _doseAmountController.text.trim();
+      final doseAmount = double.tryParse(doseAmountStr);
 
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              '✓ ${_nameController.text.trim()} updated!\n'
-              'Count: $_currentCount ${_inventoryUnit()}',
-            ),
-          ),
+      // Create updated medication (keeping immutable fields from original)
+      final updated = _medication!.copyWith(
+        name: _nameController.text.trim(),
+        strength: _strengthController.text.trim().isEmpty
+            ? null
+            : _strengthController.text.trim(),
+        form: _formController.text.trim().isEmpty
+            ? null
+            : _formController.text.trim(),
+        doseAmount: doseAmount,
+        doseUnit: _doseUnitController.text.trim().isEmpty
+            ? null
+            : _doseUnitController.text.trim(),
+        instructions: _instructionsController.text.trim().isEmpty
+            ? null
+            : _instructionsController.text.trim(),
+        schedule: _schedule!,
+        updatedAt: now,
+        updatedBy: userId,
+      );
+
+      // updateMedication uses toJsonForUpdate() which:
+      //   - Removes server-maintained fields (quantityOnHand, daysOfSupply, flags)
+      //   - Removes lifecycle fields (status, archivedReason)
+      //   - Removes immutable fields (profileId, createdBy, createdAt, source, rxcui)
+      await MedicationRepository.instance.updateMedication(
+        profileId: widget.profileId,
+        medication: updated,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Medication updated successfully!')),
         );
-
-      Navigator.pop(context);
+        Navigator.of(context).pop();
+      }
+    } on AppException catch (e) {
+      if (mounted) {
+        _showError(e.message);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showError('Failed to update: $e');
+      }
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -225,300 +238,303 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     }
   }
 
-  void _changeSchedule() {
-    // TODO Backend:
-    // Reuse ScheduleScreen and persist schedule against medicationId.
+  void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Schedule editor — Schedule screen se hoga!'),
+      SnackBar(content: Text(message), backgroundColor: AppColors.error),
+    );
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Edit Medication'),
+          backgroundColor: AppColors.surface,
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Edit Medication'),
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        actions: [
+          if (_isSaving)
+            const Padding(
+              padding: EdgeInsets.all(14),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            TextButton(
+              onPressed: _saveChanges,
+              child: const Text(
+                'Save',
+                style: TextStyle(
+                  color: AppColors.formAccent,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildImmutableWarning(),
+            const SizedBox(height: 16),
+            _buildDrugSection(),
+            const SizedBox(height: 20),
+            _buildDoseSection(),
+            const SizedBox(height: 20),
+            _buildInstructionsSection(),
+            const SizedBox(height: 20),
+            _buildScheduleSection(),
+            const SizedBox(height: 32),
+          ],
+        ),
       ),
     );
   }
 
-  // ================= SHARED BOTTOM NAVIGATION =================
-  void _onBottomNavigationTap(int index) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
-      (route) => false,
-    );
-  }
+  // ============================================================
+  // IMMUTABLE WARNING
+  // ============================================================
 
-  // ================= BUILD =================
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
+  Widget _buildImmutableWarning() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+      ),
+      child: Row(
         children: [
-          _buildHeader(),
+          const Icon(Icons.info_outline, color: Colors.orange, size: 18),
+          const SizedBox(width: 8),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 480),
-                  child: _buildContent(),
-                ),
+            child: Text(
+              'To change the drug (RxNorm ID), archive this medication and add a new one.',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.orange,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
         ],
       ),
-
-      // Edit Medication belongs to Meds.
-      bottomNavigationBar: AppBottomNavigation(
-        currentIndex: 1,
-        onTap: _onBottomNavigationTap,
-      ),
     );
   }
 
-  // ================= CONTENT =================
-  Widget _buildContent() {
+  // ============================================================
+  // DRUG SECTION
+  // ============================================================
+
+  Widget _buildDrugSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ---- Photo ----
-        _buildPhoto(),
-        const SizedBox(height: 22),
-
-        // ---- Details ----
-        _sectionTitle('MEDICATION DETAILS'),
-        const SizedBox(height: 15),
-
-        _fieldLabel('Medication Name', required: true),
-        const SizedBox(height: 7),
-        _buildNameField(),
-        const SizedBox(height: 16),
-
-        _fieldLabel('Strength'),
-        const SizedBox(height: 7),
-        _buildStrengthRow(),
-        const SizedBox(height: 18),
-
-        _fieldLabel('Medication Form'),
-        const SizedBox(height: 9),
-        _buildFormGrid(),
-        const SizedBox(height: 18),
-
-        _fieldLabel('Special Instructions'),
-        const SizedBox(height: 7),
-        _buildInstructions(),
-        const SizedBox(height: 26),
-
-        // ---- Schedule ----
-        _sectionTitle('SCHEDULE'),
-        const SizedBox(height: 11),
-        _buildScheduleCard(),
-        const SizedBox(height: 26),
-
-        // ---- Inventory ----
-        _sectionTitle('INVENTORY'),
-        const SizedBox(height: 11),
-        _buildInventoryCard(),
-        const SizedBox(height: 18),
-
-        // ---- Notes ----
-        _fieldLabel('Notes (optional)'),
-        const SizedBox(height: 7),
-        _buildNotes(),
-        const SizedBox(height: 26),
-
-        // ---- Save ----
-        _buildSaveButton(),
-        const SizedBox(height: 16),
-
-        // ---- Discontinue ----
-        TextButton(
-          onPressed: _showDiscontinueDialog,
-          child: const Text(
-            'Discontinue this medication',
-            style: TextStyle(
-              color: AppColors.error,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+        const Text(
+          'Drug',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
           ),
+        ),
+        const SizedBox(height: 8),
+        _buildTextField(
+          controller: _nameController,
+          label: 'Drug Name *',
+          hint: 'e.g., Metformin 500 MG',
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildTextField(
+                controller: _strengthController,
+                label: 'Strength',
+                hint: 'e.g., 500 MG',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildTextField(
+                controller: _formController,
+                label: 'Form',
+                hint: 'e.g., Tablet',
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  // ================= HEADER =================
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      color: AppColors.headerDark,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 15),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 42,
-                      minHeight: 42,
-                    ),
-                    icon: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: AppColors.surface,
-                      size: 25,
-                    ),
-                  ),
-                  const SizedBox(width: 3),
+  // ============================================================
+  // DOSE SECTION
+  // ============================================================
 
-                  const Expanded(
-                    child: Text(
-                      'Edit Medication',
-                      style: TextStyle(
-                        color: AppColors.surface,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-
-                  // Cancel
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: AppColors.surface,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 3),
-
-                  // Save (header se bhi!)
-                  SizedBox(
-                    height: 40,
-                    child: ElevatedButton(
-                      onPressed: _isSaving ? null : _saveMedication,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.formAccent,
-                        foregroundColor: AppColors.surface,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 17),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+  Widget _buildDoseSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Dose',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: _buildTextField(
+                controller: _doseAmountController,
+                label: 'Amount',
+                hint: 'e.g., 1',
+                keyboardType: TextInputType.number,
               ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 3,
+              child: _buildTextField(
+                controller: _doseUnitController,
+                label: 'Unit',
+                hint: 'e.g., tablet',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
-              // Editing info
-              Padding(
-                padding: const EdgeInsets.only(left: 45, top: 3),
-                child: Align(
-                  alignment: Alignment.centerLeft,
+  // ============================================================
+  // INSTRUCTIONS SECTION
+  // ============================================================
+
+  Widget _buildInstructionsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Instructions',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildTextField(
+          controller: _instructionsController,
+          label: 'Directions',
+          hint: 'e.g., Take with food, twice daily',
+          maxLines: 3,
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // SCHEDULE SECTION
+  // ============================================================
+
+  Widget _buildScheduleSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Schedule',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: _pickSchedule,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _schedule != null
+                    ? AppColors.formAccent
+                    : AppColors.outline,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _schedule != null ? Icons.event_available : Icons.schedule,
+                  color: _schedule != null
+                      ? AppColors.formAccent
+                      : AppColors.fieldHint,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Editing: ${widget.medicineName} '
-                        '${widget.medicineStrength}',
-                        style: const TextStyle(
-                          color: AppColors.headerSubtext,
-                          fontSize: 12,
+                      if (_schedule != null) ...[
+                        Text(
+                          _schedule!.type.label,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      const Text(
-                        'Changes are saved when you tap Save',
-                        style: TextStyle(
-                          color: AppColors.headerSubtext,
-                          fontSize: 12,
+                        const SizedBox(height: 2),
+                        Text(
+                          _schedule!.description,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
+                      ] else
+                        const Text(
+                          'Tap to set schedule',
+                          style: TextStyle(color: AppColors.fieldHint),
+                        ),
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ================= PHOTO =================
-  Widget _buildPhoto() {
-    return Column(
-      children: [
-        Container(
-          width: 90,
-          height: 90,
-          padding: const EdgeInsets.all(7),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.surface,
-            border: Border.all(color: AppColors.formAccent, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(7),
-            decoration: const BoxDecoration(
-              color: AppColors.primaryLight,
-              shape: BoxShape.circle,
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                _formAsset(_selectedForm),
-                fit: BoxFit.contain,
-                width: 60,
-                height: 60,
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.image_not_supported_outlined,
-                  color: AppColors.formAccent,
-                  size: 34,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 9),
-
-        GestureDetector(
-          onTap: () {
-            // TODO Backend:
-            // Use image_picker + Firebase Storage and save image URL
-            // against this medication document.
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Photo picker coming soon.')),
-            );
-          },
-          child: const Text(
-            'Change Photo',
-            style: TextStyle(
-              color: AppColors.formAccent,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              decoration: TextDecoration.underline,
-              decorationColor: AppColors.formAccent,
+                const Icon(Icons.chevron_right, color: AppColors.fieldHint),
+              ],
             ),
           ),
         ),
@@ -526,609 +542,60 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     );
   }
 
-  // ================= NAME =================
-  Widget _buildNameField() {
-    return Container(
-      height: 52,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.formIcon),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: TextField(
-        controller: _nameController,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.fromLTRB(13, 15, 44, 13),
-          suffixIcon: Icon(
-            Icons.search_rounded,
-            color: AppColors.formAccent,
-            size: 22,
-          ),
-        ),
-      ),
-    );
-  }
+  // ============================================================
+  // REUSABLE TEXT FIELD
+  // ============================================================
 
-  // ================= STRENGTH + UNIT =================
-  Widget _buildStrengthRow() {
-    return Row(
-      children: [
-        // Number input
-        Expanded(
-          child: Container(
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              border: Border.all(color: AppColors.formIcon),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: TextField(
-              controller: _strengthController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 13,
-                  vertical: 15,
-                ),
-              ),
-            ),
-          ),
-        ),
-
-        const SizedBox(width: 9),
-
-        // Unit dropdown
-        Container(
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 13),
-          decoration: BoxDecoration(
-            color: AppColors.formAccent,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedUnit,
-              dropdownColor: AppColors.formAccent,
-              iconEnabledColor: AppColors.surface,
-              style: const TextStyle(
-                color: AppColors.surface,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              items: const [
-                DropdownMenuItem(value: 'mg', child: Text('mg')),
-                DropdownMenuItem(value: 'mcg', child: Text('mcg')),
-                DropdownMenuItem(value: 'ml', child: Text('ml')),
-                DropdownMenuItem(value: 'IU', child: Text('IU')),
-                DropdownMenuItem(value: '%', child: Text('%')),
-              ],
-              onChanged: (value) {
-                if (value == null) return;
-
-                setState(() {
-                  _selectedUnit = value;
-                });
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ================= FORM GRID =================
-  Widget _buildFormGrid() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: _formButton('Tablet')),
-            const SizedBox(width: 9),
-            Expanded(child: _formButton('Capsule')),
-          ],
-        ),
-        const SizedBox(height: 9),
-        Row(
-          children: [
-            Expanded(child: _formButton('Liquid')),
-            const SizedBox(width: 9),
-            Expanded(child: _formButton('Injection')),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _formButton(String form) {
-    final selected = _selectedForm == form;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedForm = form;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        height: 68,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.formAccent : AppColors.surface,
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(
-            color: AppColors.formAccent,
-            width: selected ? 1.6 : 1.1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Form image
-            Container(
-              width: 46,
-              height: 46,
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: selected ? AppColors.surface : AppColors.primaryLight,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: selected
-                      ? AppColors.surface
-                      : AppColors.formAccent.withValues(alpha: 0.20),
-                ),
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  _formAsset(form),
-                  fit: BoxFit.contain,
-                  width: 36,
-                  height: 36,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.image_not_supported_outlined,
-                    color: AppColors.formAccent,
-                    size: 23,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 9),
-
-            Flexible(
-              child: Text(
-                form,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected ? AppColors.surface : AppColors.formAccent,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ================= INSTRUCTIONS =================
-  Widget _buildInstructions() {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 90),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.formIcon),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: TextField(
-        controller: _instructionsController,
-        maxLines: 3,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 14,
-          height: 1.45,
-        ),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.all(13),
-          hintText: 'Enter special instructions...',
-          hintStyle: TextStyle(color: AppColors.fieldHintLight, fontSize: 13),
-        ),
-      ),
-    );
-  }
-
-  // ================= SCHEDULE =================
-  Widget _buildScheduleCard() {
-    final frequency = widget.dosesPerDay <= 1
-        ? 'Once Daily'
-        : '${widget.dosesPerDay}x Daily';
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(15, 16, 13, 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(11),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$frequency · 8:30 AM + 8:00 PM',
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'After meals · Mon–Sun',
-                  style: TextStyle(color: AppColors.formSubtitle, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-
-          TextButton(
-            onPressed: _changeSchedule,
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.formAccent,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Change',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                SizedBox(width: 4),
-                Icon(Icons.arrow_forward_ios_rounded, size: 12),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ================= INVENTORY =================
-  Widget _buildInventoryCard() {
-    final isLow = _currentCount <= 10;
-
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(11),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.045),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Form image
-          Container(
-            width: 54,
-            height: 54,
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.formAccent.withValues(alpha: 0.15),
-              ),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                _formAsset(_selectedForm),
-                fit: BoxFit.contain,
-                width: 42,
-                height: 42,
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.image_not_supported_outlined,
-                  color: AppColors.formAccent,
-                  size: 25,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Count info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Current Count',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  isLow
-                      ? '$_currentCount ${_inventoryUnit()} remaining ⚠️'
-                      : '$_currentCount ${_inventoryUnit()} remaining',
-                  style: TextStyle(
-                    color: isLow
-                        ? AppColors.hintAccent
-                        : AppColors.formSubtitle,
-                    fontSize: 12,
-                    fontWeight: isLow ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Minus
-          _counterButton(
-            icon: Icons.remove,
-            onTap: _currentCount > 0
-                ? () {
-                    setState(() {
-                      _currentCount--;
-                    });
-                  }
-                : null,
-          ),
-
-          // Count
-          SizedBox(
-            width: 40,
-            child: Text(
-              '$_currentCount',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-
-          // Plus
-          _counterButton(
-            icon: Icons.add,
-            filled: true,
-            onTap: () {
-              setState(() {
-                _currentCount++;
-              });
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _counterButton({
-    required IconData icon,
-    required VoidCallback? onTap,
-    bool filled = false,
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    String? hint,
+    int maxLines = 1,
+    TextInputType? keyboardType,
   }) {
-    final disabled = onTap == null;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: filled ? AppColors.formAccent : AppColors.surface,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: disabled
-                ? AppColors.outline
-                : filled
-                ? AppColors.formAccent
-                : AppColors.outline,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
           ),
         ),
-        child: Icon(
-          icon,
-          size: 19,
-          color: disabled
-              ? AppColors.fieldHint
-              : filled
-              ? AppColors.surface
-              : AppColors.formAccent,
-        ),
-      ),
-    );
-  }
-
-  // ================= NOTES =================
-  Widget _buildNotes() {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 78),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: AppColors.outline),
-      ),
-      child: TextField(
-        controller: _notesController,
-        maxLines: 3,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 14,
-          height: 1.4,
-        ),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.all(13),
-          hintText: 'Add any personal notes about this medication...',
-          hintStyle: TextStyle(color: AppColors.fieldHintLight, fontSize: 13),
-        ),
-      ),
-    );
-  }
-
-  // ================= SAVE =================
-  Widget _buildSaveButton() {
-    return SizedBox(
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _isSaving ? null : _saveMedication,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.formAccent,
-          disabledBackgroundColor: AppColors.formAccent.withValues(alpha: 0.6),
-          foregroundColor: AppColors.surface,
-          elevation: 3,
-          shadowColor: AppColors.formAccent.withValues(alpha: 0.25),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        child: _isSaving
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.surface,
-                ),
-              )
-            : const Text(
-                'Save Changes',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-      ),
-    );
-  }
-
-  // ================= COMMON =================
-  Widget _sectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: AppColors.headerDark,
-        fontSize: 13,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 1.1,
-      ),
-    );
-  }
-
-  Widget _fieldLabel(String label, {bool required = false}) {
-    return RichText(
-      text: TextSpan(
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
-        children: [
-          TextSpan(text: label),
-          if (required)
-            const TextSpan(
-              text: ' *',
-              style: TextStyle(
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: AppColors.fieldHint),
+            filled: true,
+            fillColor: AppColors.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.outline),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.outline),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(
                 color: AppColors.formAccent,
-                fontWeight: FontWeight.w700,
+                width: 1.5,
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  // ================= DISCONTINUE =================
-  void _showDiscontinueDialog() {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            'Discontinue medication?',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
             ),
           ),
-          content: Text(
-            '${_nameController.text.trim()} will be moved '
-            'out of your active medications.',
-            style: const TextStyle(
-              color: AppColors.formSubtitle,
-              fontSize: 14,
-              height: 1.45,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Cancel', style: TextStyle(fontSize: 14)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-
-                // TODO Backend:
-                // Set this medication to archived/discontinued for the
-                // current user/family member. Do not delete history.
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Medication discontinued.')),
-                );
-
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Discontinue',
-                style: TextStyle(
-                  color: AppColors.error,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+        ),
+      ],
     );
   }
 }

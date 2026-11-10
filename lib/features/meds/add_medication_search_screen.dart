@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -6,17 +6,24 @@ import '../../core/constants/app_colors.dart';
 import '../../models/drug.dart';
 import '../../repositories/drug_repository.dart';
 
-/// Add Medication â€“ Search Screen (M4)
+/// Add Medication – Search Screen (M4)
 ///
 /// Lets the user search for a medication by name with live autocomplete.
 /// On tap, the selected Drug is returned via Navigator.pop(context, drug).
 ///
 /// Data source (Spark / Phase A):
-///   â€¢ assets/data/drugs.json loaded via DrugRepository
-///   â€¢ Prefix search on name + synonyms
+///   • assets/data/drugs.json loaded via DrugRepository
+///   • Prefix search on name + synonyms
 ///
 /// Usage from MedsScreen:
-///     // proceed to "Add Medication â€“ Details" screen
+///   final selected = await Navigator.push<Drug>(
+///     context,
+///     MaterialPageRoute(
+///       builder: (_) => const AddMedicationSearchScreen(),
+///     ),
+///   );
+///   if (selected != null) {
+///     // proceed to "Add Medication – Details" screen
 ///   }
 class AddMedicationSearchScreen extends StatefulWidget {
   /// Optional callback fired when the user picks a drug.
@@ -52,9 +59,9 @@ class _AddMedicationSearchScreenState extends State<AddMedicationSearchScreen> {
     super.dispose();
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // SEARCH (with debounce â€” 300ms after user stops typing)
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────────────────────────────────────────────────────
+  // SEARCH (with debounce — 300ms after user stops typing)
+  // ──────────────────────────────────────────────────────────────
   void _onSearchChanged() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
@@ -114,9 +121,9 @@ class _AddMedicationSearchScreenState extends State<AddMedicationSearchScreen> {
     });
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────────────────────────────────────────────────────
   // BUILD
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -348,7 +355,7 @@ class _AddMedicationSearchScreenState extends State<AddMedicationSearchScreen> {
                         [
                           if (drug.hasStrength) drug.strength!,
                           if (drug.hasDoseForm) drug.doseForm!,
-                        ].join(' â€¢ '),
+                        ].join(' • '),
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,

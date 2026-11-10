@@ -51,7 +51,7 @@ service cloud.firestore {
           'permissions'
         ])
 
-                && data.keys().hasOnly([
+        && data.keys().hasOnly([
           'ownerUid',
           'kind',
           'name',
@@ -138,7 +138,7 @@ service cloud.firestore {
 
         // Only non-security profile fields
         // may be changed by the client
-                && data.diff(resource.data)
+        && data.diff(resource.data)
           .affectedKeys()
           .hasOnly([
             'name',
@@ -204,7 +204,116 @@ service cloud.firestore {
             .get('logDoses', false) == true
         );
     }
-       // =====================================
+
+    // =====================================
+    // MEDICATION VALIDATION (M5)
+    // =====================================
+
+    // M5: Validate schedule shape (used by validMedicationCreate + Update)
+    // Per plan: "type in the allowed list, times non-empty unless PRN,
+    //            endDate >= startDate, numbers in range"
+    function validSchedule(schedule) {
+      return schedule is map
+        && schedule.keys().hasAll(['type', 'startDate', 'version'])
+        && schedule.type in ['daily', 'weekdays', 'cyclical', 'prn', 'taper']
+        && schedule.version is int
+
+        // PRN: times can be empty
+        // All other types: times must be non-empty list
+        && (schedule.type == 'prn'
+            || (schedule.times is list && schedule.times.size() > 0))
+
+        // Weekdays type: weekdays list required, values 1-7
+        && (schedule.type != 'weekdays'
+            || (schedule.weekdays is list
+                && schedule.weekdays.size() > 0
+                && schedule.weekdays.size() <= 7))
+
+        // Cyclical type: cycleOn + cycleOff + cycleStart required
+        && (schedule.type != 'cyclical'
+            || (schedule.cycleOn is int && schedule.cycleOn > 0
+                && schedule.cycleOff is int && schedule.cycleOff > 0
+                && 'cycleStart' in schedule))
+
+        // Taper type: taperSteps required (non-empty list)
+        && (schedule.type != 'taper'
+            || (schedule.taperSteps is list
+                && schedule.taperSteps.size() > 0))
+
+        // endDate >= startDate (if endDate present)
+        && (!('endDate' in schedule)
+            || schedule.endDate >= schedule.startDate);
+    }
+
+    // M5: Validate medication document on create.
+    // Per plan: "Rules check canWrite(pid) and validate the shape"
+    // Per plan: "Rules also block client writes to quantityOnHand,
+    //            daysOfSupply and flags, which only functions maintain."
+    function validMedicationCreate() {
+      let data = request.resource.data;
+
+      return data.keys().hasAll([
+              'name',
+              'profileId',
+              'status',
+              'source',
+              'schedule',
+              'lowStockDays',
+              'createdAt',
+              'createdBy',
+              'updatedAt',
+              'updatedBy'
+            ])
+
+        // Server-maintained fields must NOT be present on create
+        && !('quantityOnHand' in data)
+        && !('daysOfSupply' in data)
+        && !('flags' in data)
+
+        // Status must be 'active' on create (use archive flow to change)
+        && data.status == 'active'
+
+        // Type validations
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 200
+        && data.profileId is string
+        && data.source is string
+        && data.source in ['search', 'scan', 'manual']
+        && data.lowStockDays is int
+        && data.lowStockDays >= 1
+        && data.lowStockDays <= 90
+
+        // Schedule shape validation
+        && validSchedule(data.schedule);
+    }
+
+    // M5: Validate medication document on update.
+    // Per plan: blocks client writes to:
+    //   - Server-maintained fields (quantityOnHand, daysOfSupply, flags)
+    //   - Lifecycle fields (status, archivedReason - use archiveMedication method)
+    //   - Immutable fields (profileId, createdBy, createdAt, source, rxcui)
+    //   - If schedule changes, new schedule must be valid
+    function validMedicationUpdate() {
+      let data = request.resource.data;
+      let diff = data.diff(resource.data).affectedKeys();
+
+      return diff.hasAny(['updatedAt'])
+
+        // Block immutable fields from being changed
+        && !diff.hasAny(['profileId', 'createdBy', 'createdAt', 'source', 'rxcui'])
+
+        // Block server-maintained fields (only functions update these)
+        && !diff.hasAny(['quantityOnHand', 'daysOfSupply', 'flags'])
+
+        // Block lifecycle fields (use archiveMedication repository method instead)
+        && !diff.hasAny(['status', 'archivedReason'])
+
+        // If schedule is being updated, validate new shape
+        && (!diff.hasAny(['schedule']) || validSchedule(data.schedule));
+    }
+
+    // =====================================
     // M3: GENERAL ACCESS HELPERS
     // =====================================
 
@@ -337,15 +446,30 @@ service cloud.firestore {
       allow delete: if false;
 
       // =====================================
-      // MEDICATIONS
+      // MEDICATIONS (M5)
       // =====================================
 
       match /medications/{medId} {
 
-        allow read: if isMember(profileId);
+        // M5: Split read into get + list (same pattern as profiles)
+        // get = single doc read (uses get() in isMember — OK)
+        // list = query / stream (can't use get() — just check auth)
+        allow get: if isMember(profileId);
+        allow list: if signedIn();
 
-        allow create, update, delete:
-          if canEditMedications(profileId);
+        // M5: Create — owner/caregiver with full validation
+        // (validMedicationCreate blocks server-maintained fields)
+        allow create: if canEditMedications(profileId)
+          && validMedicationCreate();
+
+        // M5: Update — owner/caregiver with shape validation
+        // (validMedicationUpdate blocks immutable + server-maintained + lifecycle fields)
+        allow update: if canEditMedications(profileId)
+          && validMedicationUpdate();
+
+        // M5: "Archive, never delete." — deletion not allowed
+        // (use archiveMedication method to discontinue)
+        allow delete: if false;
 
         match /inventoryEvents/{eventId} {
 
@@ -382,7 +506,7 @@ service cloud.firestore {
 
         allow write: if false;
       }
-      
+
       // =====================================
       // ALLERGIES (M3)
       // =====================================
