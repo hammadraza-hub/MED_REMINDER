@@ -70,12 +70,25 @@ beforeEach(async () => {
       },
     });
 
-    await setDoc(
+        await setDoc(
       doc(db, "profiles", "profile1", "medications", "med1"),
       {
         name: "Test Medicine",
         strength: "500mg",
-        active: true,
+        profileId: "profile1",
+        status: "active",
+        source: "manual",
+        schedule: {
+          type: "daily",
+          times: ["08:00"],
+          startDate: new Date(),
+          version: 1,
+        },
+        lowStockDays: 7,
+        createdAt: new Date(),
+        createdBy: "owner123",
+        updatedAt: new Date(),
+        updatedBy: "owner123",
       }
     );
 
@@ -121,7 +134,7 @@ describe("Firestore Security Rules — M0", () => {
     await assertSucceeds(
       updateDoc(
         doc(db, "profiles", "profile1", "medications", "med1"),
-        { name: "Updated Medicine" }
+            { name: "Updated Medicine", updatedAt: new Date() }
       )
     );
   });
