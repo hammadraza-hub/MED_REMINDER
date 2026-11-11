@@ -1,30 +1,41 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
+import '../../models/dose.dart';
+import '../../repositories/auth_repository.dart';
+import '../../repositories/dose_repository.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../meds/meds_data.dart';
 import '../reports/report_preview_screen.dart';
 import 'adherence_data.dart';
 
 /// ============================================================
-/// ADHERENCE DETAIL
+/// ADHERENCE DETAIL  (M7 — Firestore-backed)
 ///
 /// Deeper adherence view for:
-/// • selected date range
-/// • specific medication
+/// • selected date range (7 / 30 / 90 / Custom)
+/// • specific medication filter
 ///
 /// Features:
-/// • Overall percentage
+/// • Overall percentage + goal ring
 /// • Taken / Missed / Skipped breakdown
 /// • Per medication adherence bars
 /// • Medication filter
-/// • Date range filter
+/// • Date range filter (incl. custom range picker)
 /// • Reports export navigation hook
 ///
-/// Backend:
-/// AdherenceData dummy provider abhi.
-/// Future mein Firestore repository.
+/// Backend (M7):
+/// • Firestore doses via DoseRepository.getDosesForDateRange()
+/// • Profile ID from users/{uid}.selectedMemberId (same as Calendar)
+/// • Dose → AdherenceRecord mapping (see _doseToAdherenceRecord)
+/// • All downstream UI computation (overallSummary,
+///   medicationSummaries) still uses AdherenceData utilities —
+///   they operate on `List<AdherenceRecord>`, so swapping the
+///   source of records is enough.
 /// ============================================================
 class AdherenceDetailScreen extends StatefulWidget {
   const AdherenceDetailScreen({super.key, this.initialEndDate});
@@ -44,6 +55,21 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
 
   late DateTime _endDate;
 
+  // ================= FIRESTORE STATE (M7) =================
+
+  /// Real Firestore profile ID (same source as CalendarScreen).
+  String? _profileId;
+
+  /// True while profile ID + doses are being fetched.
+  bool _loading = true;
+
+  /// Error message if fetch failed (null = OK).
+  String? _error;
+
+  /// All Firestore doses within the currently selected range.
+  /// Fetched once per range change, then mapped to AdherenceRecord.
+  List<Dose> _periodDoses = const [];
+
   // ============================================================
   // INIT
   // ============================================================
@@ -55,6 +81,120 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
     final source = widget.initialEndDate ?? DateTime.now();
 
     _endDate = DateTime(source.year, source.month, source.day);
+
+    // M7: fetch profile ID, then doses for the default 7-day range.
+    _fetchProfileAndDoses();
+  }
+
+  // ============================================================
+  // FIRESTORE — PROFILE ID + DOSES
+  // ============================================================
+
+  /// Same pattern as CalendarScreen:
+  /// users/{uid}.selectedMemberId → fallback query → self-heal.
+  Future<void> _fetchProfileAndDoses() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      // If profile already resolved (e.g. range change), skip fetch.
+      if (_profileId == null || _profileId!.isEmpty) {
+        final uid = AuthRepository.instance.currentUid;
+        if (uid == null) {
+          setState(() {
+            _error = 'Not logged in';
+            _loading = false;
+          });
+          return;
+        }
+
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
+
+        String? profileId;
+
+        if (userDoc.exists) {
+          final data = userDoc.data()!;
+          profileId = data['selectedMemberId'] as String?;
+        }
+
+        // Fallback: query profiles where ownerUid == uid + kind == 'self'.
+        if (profileId == null || profileId.isEmpty) {
+          final querySnap = await FirebaseFirestore.instance
+              .collection('profiles')
+              .where('ownerUid', isEqualTo: uid)
+              .where('kind', isEqualTo: 'self')
+              .limit(1)
+              .get();
+
+          if (querySnap.docs.isNotEmpty) {
+            profileId = querySnap.docs.first.id;
+
+            // Self-heal.
+            await FirebaseFirestore.instance.collection('users').doc(uid).set({
+              'selectedMemberId': profileId,
+            }, SetOptions(merge: true));
+          }
+        }
+
+        if (profileId == null || profileId.isEmpty) {
+          setState(() {
+            _error = 'No profile found';
+            _loading = false;
+          });
+          return;
+        }
+
+        _profileId = profileId;
+      }
+
+      await _loadDoses();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load: $e';
+        _loading = false;
+      });
+    }
+  }
+
+  /// Fetch Firestore doses for the currently selected range.
+  /// Called on init and on every range change.
+  Future<void> _loadDoses() async {
+    if (_profileId == null || _profileId!.isEmpty) return;
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final from = _startDate;
+      final to = _effectiveEndDate;
+
+      final doses = await DoseRepository.instance.getDosesForDateRange(
+        _profileId!,
+        from,
+        to,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _periodDoses = doses;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load doses: $e';
+        _loading = false;
+      });
+    }
   }
 
   // ============================================================
@@ -77,14 +217,31 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
     return _endDate;
   }
 
+  /// M7: Now backed by Firestore doses (mapped to AdherenceRecord).
+  /// Only RESOLVED doses are included (taken/missed/skipped + overdue).
+  /// Pending/upcoming/snoozed doses are excluded — they have no
+  /// adherence data yet.
   List<AdherenceRecord> get _allRecords {
-    // TODO Backend:
-    // Firestore se selected range ki complete dose history
-    // ek range query mein fetch karni hai.
-    return AdherenceData.recordsForRange(
-      startDate: _startDate,
-      endDate: _effectiveEndDate,
-    );
+    return _periodDoses
+        .where(_isResolvedDose)
+        .map(_doseToAdherenceRecord)
+        .toList();
+  }
+
+  /// A dose counts toward adherence only if it's resolved:
+  /// taken, skipped, missed, OR pending-but-overdue (→ missed).
+  bool _isResolvedDose(Dose dose) {
+    switch (dose.status) {
+      case DoseStatus.taken:
+      case DoseStatus.skipped:
+      case DoseStatus.missed:
+        return true;
+      case DoseStatus.snoozed:
+        return false;
+      case DoseStatus.pending:
+        // Pending + overdue = effectively missed → counts.
+        return dose.isOverdue;
+    }
   }
 
   List<AdherenceRecord> get _filteredRecords {
@@ -110,6 +267,53 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
   }
 
   // ============================================================
+  // DOSE → ADHERENCE RECORD MAPPING (Firestore → UI model)
+  // ============================================================
+  //
+  // ⚠️ VERIFY against your AdherenceRecord model in adherence_data.dart.
+  // The mapping below assumes AdherenceRecord's constructor matches
+  // the fields used downstream (displayName, status, date, type,
+  // medicineImageAsset, frequency info). If the constructor signature
+  // differs, fix ONLY this method — UI computation stays the same.
+  //
+  // TODO: Confirm AdherenceRecord's exact constructor params and
+  // adjust below. Share adherence_data.dart if unsure.
+  AdherenceRecord _doseToAdherenceRecord(Dose dose) {
+    // === STATUS MAPPING ===
+    // AdherenceDoseStatus has only: taken, missed, skipped.
+    // (No pending/upcoming — those doses are filtered out
+    //  by _isResolvedDose before reaching here.)
+    //
+    // pending+overdue → missed (only pending doses that reach
+    //   here are overdue ones, per _isResolvedDose filter).
+    // snoozed → shouldn't reach here (filtered out), fallback: missed.
+    final AdherenceDoseStatus status;
+    switch (dose.status) {
+      case DoseStatus.taken:
+        status = AdherenceDoseStatus.taken;
+        break;
+      case DoseStatus.skipped:
+        status = AdherenceDoseStatus.skipped;
+        break;
+      case DoseStatus.missed:
+      case DoseStatus.pending: // only overdue ones reach here
+      case DoseStatus.snoozed: // shouldn't reach here, safe fallback
+        status = AdherenceDoseStatus.missed;
+        break;
+    }
+
+    // === BUILD RECORD ===
+    return AdherenceRecord(
+      id: dose.id,
+      medicineName: dose.medName,
+      strength: '',
+      frequencyLabel: dose.doseLabel ?? '',
+      medicineType: MedicineType.tablet,
+      status: status,
+      date: dose.scheduledAt.toLocal(),
+    );
+  }
+  // ============================================================
   // RANGE
   // ============================================================
 
@@ -119,6 +323,9 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
         _selectedRange = range;
         _customRange = null;
       });
+
+      // M7: reload Firestore doses for the new range.
+      _loadDoses();
 
       return;
     }
@@ -154,6 +361,9 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
 
       _endDate = picked.end;
     });
+
+    // M7: reload Firestore doses for the custom range.
+    _loadDoses();
   }
 
   // ============================================================
@@ -166,9 +376,8 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
     // Reports export/save flow mein persist karni hai.
     // Abhi export CONFIG screen khulti hai
     // (options select → generate → PDF preview).
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ReportPreviewScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const ReportPreviewScreen()));
   }
 
   // ============================================================
@@ -197,30 +406,7 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
         children: [
           _buildHeader(),
 
-          Expanded(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 26),
-                  child: Column(
-                    children: [
-                      _buildOverallCard(),
-
-                      const SizedBox(height: 14),
-
-                      _buildMedicationCard(),
-
-                      const SizedBox(height: 14),
-
-                      _buildExportButton(),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+          Expanded(child: _buildBodyContent()),
         ],
       ),
 
@@ -228,6 +414,73 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: 2,
         onTap: _onBottomNavigationTap,
+      ),
+    );
+  }
+
+  /// M7: Body content swaps based on loading/error/ready state.
+  /// Header always shows (so range buttons stay accessible).
+  Widget _buildBodyContent() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 56,
+                color: AppColors.calendarMissed,
+              ),
+
+              const SizedBox(height: 12),
+
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              ElevatedButton(
+                onPressed: _fetchProfileAndDoses,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 26),
+          child: Column(
+            children: [
+              _buildOverallCard(),
+
+              const SizedBox(height: 14),
+
+              _buildMedicationCard(),
+
+              const SizedBox(height: 14),
+
+              _buildExportButton(),
+            ],
+          ),
+        ),
       ),
     );
   }

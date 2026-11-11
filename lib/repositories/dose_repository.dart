@@ -62,6 +62,32 @@ class DoseRepository {
   // ──────────────────────────────────────────────────────────────
   // READ (Future)
   // ──────────────────────────────────────────────────────────────
+  /// Stream of doses for a date range (Calendar view — real-time).
+  /// Per M7: Calendar ek hi query mein saari month/week ki doses
+  /// fetch karta hai, phir har cell ke liye local compute karta hai.
+  Stream<List<Dose>> watchDosesForDateRange(
+    String profileId,
+    DateTime from,
+    DateTime to,
+  ) {
+    final fromUtc = DateTime(from.year, from.month, from.day).toUtc();
+    final toUtc = DateTime(
+      to.year,
+      to.month,
+      to.day,
+    ).add(const Duration(days: 1)).toUtc();
+
+    return _dosesRef(profileId)
+        .where('scheduledAt', isGreaterThanOrEqualTo: fromUtc)
+        .where('scheduledAt', isLessThan: toUtc)
+        .orderBy('scheduledAt')
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Dose.fromJson(doc.data(), id: doc.id))
+              .toList(),
+        );
+  }
 
   /// Get doses for a date range (Calendar view).
   Future<List<Dose>> getDosesForDateRange(

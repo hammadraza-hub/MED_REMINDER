@@ -8,49 +8,27 @@ import '../../core/members/local_member_repository.dart';
 import '../../core/members/member_repository.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/dose.dart' as dose_model;
+import '../../repositories/auth_repository.dart';
+import '../../repositories/dose_repository.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_photo_picker.dart';
 import '../assistant/assistant_chat_screen.dart';
 import '../doctors/doctors_screen.dart';
 import '../meds/meds_screen.dart';
 import '../../features/profile/profiles_screen.dart';
-import 'dose_action_sheet.dart';
 import 'home_data.dart';
 import 'streaks_stats_screen.dart';
 import 'vitals_list_screen.dart';
+import '../meds/missed_dose_reason_sheet.dart';
 
 /// ============================================================
 /// HOME — app ka dil!
 ///
-/// CURRENT DATA ARCHITECTURE:
-///
-/// Family members:
-/// Home
-///   ↓
-/// MemberRepository
-///   ↓
-/// LocalMemberRepository
-///   ↓
-/// Drift / SQLite
-///
-/// Selected profile:
-/// Home
-///   ↓
-/// ProfileController
-///   ↓
-/// LocalProfileRepository
-///
-/// Doses:
-/// Abhi HomeData dummy/in-memory source se.
-/// Next local-storage phase mein DoseRepository par migrate honge.
-///
-/// NAVIGATION:
-/// Quick Access "Family" tile + header "Add" button
-/// → ProfilesScreen (managed profiles switch/invite).
-///
-/// FUTURE BACKEND:
-/// Local repositories ko Firebase/real backend repositories se
-/// replace kiya jayega. UI structure same reh sakta hai.
+/// M7 UPDATE:
+/// Doses ab Firestore se real-time aate hain (DoseRepository).
+/// Logging actions (Take/Skip/Snooze/Undo) DoseRepository ke
+/// through persist hote hain — local setState nahi.
 /// ============================================================
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,56 +38,48 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Internal filter codes — display labels localization se aate hain.
   String _selectedFilter = 'all';
 
   final MemberRepository _memberRepository = LocalMemberRepository();
 
   StreamSubscription<List<MemberProfile>>? _membersSubscription;
+  StreamSubscription<List<dose_model.Dose>>? _dosesSubscription;
 
   List<MemberProfile> _members = [];
-
   String? _selectedMemberId;
-
   bool _membersLoading = true;
-
-  /// Initial persisted member sirf first DB snapshot par resolve hoga.
-  ///
-  /// Uske baad member/photo DB stream update hone par currently selected
-  /// Home member preserve hoga aur Sarah par reset nahi hoga.
   bool _didResolveInitialMember = false;
 
-  // ============ DOSES ============
-  // TODO Local Storage:
-  // DoseRepository + Drift DoseEvents/Schedules migration ke baad
-  // selected memberId aur selected date ke against load karna hai.
-  late final List<Dose> _doses = HomeData.todayDoses();
+  // ============ DOSES (M7 — Firestore stream) ============
+  List<dose_model.Dose> _doses = [];
+  bool _dosesLoading = true;
+  String? _dosesError;
 
-  // ============ COMPUTED — DOSES ============
+  // ============ COMPUTED — DOSES (M7) ============
 
-  int get _takenCount => HomeData.takenCount(_doses);
+  int get _takenCount => _doses
+      .where((d) => !d.isPrn && d.status == dose_model.DoseStatus.taken)
+      .length;
 
-  int get _pendingCount => HomeData.pendingCount(_doses);
+  int get _pendingCount => _doses.where((d) => !d.isPrn && d.isPending).length;
 
-  int get _missedCount => HomeData.missedCount(_doses);
+  int get _missedCount =>
+      _doses.where((d) => !d.isPrn && (d.isMissed || d.isOverdue)).length;
 
-  double get _progress => HomeData.progress(_doses);
+  double get _progress {
+    final total = _takenCount + _pendingCount + _missedCount;
+    if (total == 0) return 0.0;
+    return _takenCount / total;
+  }
 
   // ============ SELECTED MEMBER ============
 
   MemberProfile? get _selectedMember {
     final selectedId = _selectedMemberId;
-
-    if (selectedId == null) {
-      return null;
-    }
-
+    if (selectedId == null) return null;
     for (final member in _members) {
-      if (member.id == selectedId) {
-        return member;
-      }
+      if (member.id == selectedId) return member;
     }
-
     return null;
   }
 
@@ -120,33 +90,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String? get _selectedMemberImagePath {
     final selected = _selectedMember;
-
     if (selected == null) {
       return ProfileController.instance.profileImagePath;
     }
-
-    // Selected member ki latest controller image use kar sakte hain
-    // jab tak Members SQLite stream updated record emit karti hai.
     if (ProfileController.instance.memberId == selected.id) {
       return ProfileController.instance.profileImagePath ??
           selected.profileImagePath;
     }
-
     return selected.profileImagePath;
   }
 
-  // ============ FILTERED DOSES ============
+  // ============ FILTERED DOSES (M7) ============
 
-  List<Dose> get _filteredDoses {
+  List<dose_model.Dose> get _filteredDoses {
+    final nonPrn = _doses.where((d) => !d.isPrn).toList();
     switch (_selectedFilter) {
       case 'pending':
-        return _doses.where((d) => d.status == DoseStatus.pending).toList();
-
+        return nonPrn
+            .where(
+              (d) =>
+                  d.status == dose_model.DoseStatus.pending ||
+                  d.status == dose_model.DoseStatus.snoozed ||
+                  d.status == dose_model.DoseStatus.missed,
+            )
+            .toList();
       case 'taken':
-        return _doses.where((d) => d.status == DoseStatus.taken).toList();
-
+        return nonPrn
+            .where((d) => d.status == dose_model.DoseStatus.taken)
+            .toList();
       default:
-        return _doses;
+        return nonPrn;
     }
   }
 
@@ -157,42 +130,76 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Profiles screen (ya koi bhi jagah) se member switch hone par
-    // Home header/greeting sync rahe — controller listener.
     ProfileController.instance.addListener(_handleProfileChanged);
-
     _initializeMembers();
+    _subscribeDoses();
   }
 
   @override
   void dispose() {
     ProfileController.instance.removeListener(_handleProfileChanged);
-
     _membersSubscription?.cancel();
-
+    _dosesSubscription?.cancel();
     super.dispose();
   }
 
-  /// Profiles screen se switch → controller memberId update karta hai.
-  /// Home ka local selection bhi usi par sync karo — warna Home apni
-  /// purani local state par Sarah dikhta reh jata hai.
   void _handleProfileChanged() {
     final controllerMemberId = ProfileController.instance.memberId;
-
     if (controllerMemberId == null || controllerMemberId == _selectedMemberId) {
       return;
     }
-
     for (final member in _members) {
       if (member.id == controllerMemberId) {
         setState(() {
           _selectedMemberId = member.id;
         });
-
+        _subscribeDoses();
         return;
       }
     }
+  }
+
+  // ============================================================
+  // M7: DOSES STREAM (Firestore)
+  // ============================================================
+
+  void _subscribeDoses() {
+    _dosesSubscription?.cancel();
+
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) {
+      setState(() {
+        _doses = [];
+        _dosesLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _dosesLoading = true;
+      _dosesError = null;
+    });
+
+    _dosesSubscription = DoseRepository.instance
+        .watchTodaysDoses(memberId)
+        .listen(
+          (doses) {
+            if (!mounted) return;
+            setState(() {
+              _doses = doses;
+              _dosesLoading = false;
+              _dosesError = null;
+            });
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            debugPrint('Home dose stream failed: $error');
+            if (!mounted) return;
+            setState(() {
+              _dosesLoading = false;
+              _dosesError = error.toString();
+            });
+          },
+        );
   }
 
   // ============================================================
@@ -202,27 +209,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _initializeMembers() async {
     try {
       await _memberRepository.seedInitialMembersIfNeeded();
-
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       _membersSubscription = _memberRepository.watchActiveMembers().listen(
         (members) {
-          if (!mounted) {
-            return;
-          }
-
+          if (!mounted) return;
           _handleMembersUpdate(members);
         },
         onError: (Object error, StackTrace stackTrace) {
           debugPrint('Home member stream failed: $error');
-          debugPrintStack(stackTrace: stackTrace);
-
-          if (!mounted) {
-            return;
-          }
-
+          if (!mounted) return;
           setState(() {
             _membersLoading = false;
           });
@@ -230,12 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (error, stackTrace) {
       debugPrint('Home member initialization failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       setState(() {
         _membersLoading = false;
       });
@@ -244,19 +235,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handleMembersUpdate(List<MemberProfile> members) {
     final profileController = ProfileController.instance;
-
     MemberProfile? memberToSelect;
 
-    // ============================================================
-    // FIRST DATABASE SNAPSHOT
-    // ============================================================
-    //
-    // ProfileController.initialize() app startup par persisted stable
-    // memberId restore karta hai. First SQLite member snapshot mein
-    // us exact member ko select karna hai.
     if (!_didResolveInitialMember) {
       final persistedMemberId = profileController.memberId;
-
       if (persistedMemberId != null) {
         for (final member in members) {
           if (member.id == persistedMemberId) {
@@ -267,14 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    // ============================================================
-    // CURRENT HOME SELECTION
-    // ============================================================
-    //
-    // Initial resolution ke baad DB stream update — for example profile
-    // photo save — current member selection ko preserve kare.
     final currentSelectedId = _selectedMemberId;
-
     if (memberToSelect == null && currentSelectedId != null) {
       for (final member in members) {
         if (member.id == currentSelectedId) {
@@ -284,12 +259,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    // Fallback priority:
-    // 1. Current controller member (Profiles screen se switch ho sakta hai)
-    // 2. First active member (fresh install/default — Sarah)
     if (memberToSelect == null) {
       final controllerMemberId = profileController.memberId;
-
       if (controllerMemberId != null) {
         for (final member in members) {
           if (member.id == controllerMemberId) {
@@ -314,104 +285,245 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _syncSelectedProfile(MemberProfile member) async {
-    // Safety:
-    // Agar controller already isi member par hai (Profiles screen se
-    // switch hua), to dobara selectProfile() call karne se loop
-    // trigger nahi hoga, lekin phir bhi skip karna cleaner hai.
-    if (ProfileController.instance.memberId == member.id) {
-      return;
-    }
-
+    if (ProfileController.instance.memberId == member.id) return;
     await ProfileController.instance.selectProfile(
       memberId: member.id,
       displayName: member.displayName,
       profileImagePath: member.profileImagePath,
     );
-
-    // TODO Backend:
-    // Firebase phase mein selected member document Firestore stream se
-    // aayega. ProfileController stable memberId ke saath sync hoga.
   }
 
   // ============================================================
-  // DOSE ACTIONS
+  // DOSE ACTIONS (M7 — DoseRepository)
   // ============================================================
 
-  void _markTaken(Dose dose) {
-    setState(() => dose.status = DoseStatus.taken);
+  Future<void> _markTaken(dose_model.Dose dose) async {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null) return;
+    final userId = AuthRepository.instance.currentUid ?? 'unknown';
 
-    // TODO Local Storage:
-    // DoseRepository ke through existing DoseEvent ko status=taken
-    // aur completedAt=current timestamp ke saath update karna hai.
-    //
-    // TODO Backend:
-    // Firebase repository later same domain action persist karegi.
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context).homeMarkedTaken(dose.name)),
-      ),
-    );
-  }
-
-  void _markUntaken(Dose dose) {
-    setState(() => dose.status = DoseStatus.pending);
-
-    // TODO Local Storage:
-    // Existing DoseEvent ko pending revert aur completedAt clear karna.
-    // Adherence/streak raw DoseEvents se recalculate honge.
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context).homeMarkedUntaken(dose.name),
+    try {
+      await DoseRepository.instance.logDose(
+        profileId: memberId,
+        doseId: dose.id,
+        status: dose_model.DoseStatus.taken,
+        loggedBy: userId,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).homeMarkedTaken(dose.medName),
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
   }
 
-  void _skipDose(Dose dose, {String? reason}) {
-    setState(() => dose.status = DoseStatus.skipped);
+  Future<void> _markUntaken(dose_model.Dose dose) async {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null) return;
 
-    // TODO Local Storage:
-    // Existing DoseEvent mein status=skipped, optional reason aur
-    // action timestamp persist karna hai.
-
-    final l10n = AppLocalizations.of(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          reason == null
-              ? l10n.homeSkipped(dose.name)
-              : l10n.homeSkippedReason(dose.name, reason),
+    try {
+      await DoseRepository.instance.undoDose(
+        profileId: memberId,
+        doseId: dose.id,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).homeMarkedUntaken(dose.medName),
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
   }
 
-  void _snoozeDose(Dose dose, int minutes) {
-    // TODO Local Storage / Notifications:
-    // DoseEvent/schedule mein snoozedUntil persist karke local
-    // notification selected duration ke liye reschedule karni hai.
+  Future<void> _confirmSkipFromSheet(dose_model.Dose dose) async {
+    final dt = dose.scheduledAt.toLocal();
+    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final amPm = dt.hour >= 12 ? 'PM' : 'AM';
+    final timeLabel = '$hour:$minute $amPm';
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context).homeSnoozed(dose.name, minutes),
-        ),
-      ),
-    );
-  }
-
-  void _openDoseSheet(Dose dose) {
-    showDoseActionSheet(
+    final reason = await MissedDoseReasonSheet.show(
       context,
-      dose: dose,
-      onTaken: () => _markTaken(dose),
-      onUntaken: () => _markUntaken(dose),
-      onSkip: (reason) => _skipDose(dose, reason: reason),
-      onSnooze: (minutes) => _snoozeDose(dose, minutes),
+      medName: dose.medName,
+      scheduledTimeLabel: timeLabel,
+    );
+    if (!mounted) return;
+    await _skipDose(dose, reason: reason);
+  }
+
+  Future<void> _skipDose(dose_model.Dose dose, {String? reason}) async {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null) return;
+    final userId = AuthRepository.instance.currentUid ?? 'unknown';
+
+    try {
+      await DoseRepository.instance.logDose(
+        profileId: memberId,
+        doseId: dose.id,
+        status: dose_model.DoseStatus.skipped,
+        loggedBy: userId,
+        reasonText: reason,
+      );
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            reason == null
+                ? l10n.homeSkipped(dose.medName)
+                : l10n.homeSkippedReason(dose.medName, reason),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
+  }
+
+  Future<void> _snoozeDose(dose_model.Dose dose, int minutes) async {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null) return;
+
+    try {
+      await DoseRepository.instance.snoozeDose(
+        profileId: memberId,
+        doseId: dose.id,
+        snoozeDuration: Duration(minutes: minutes),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).homeSnoozed(dose.medName, minutes),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
+  }
+
+  void _openDoseSheet(dose_model.Dose dose) {
+    _showInlineDoseActions(dose);
+  }
+
+  void _showInlineDoseActions(dose_model.Dose dose) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  dose.medName,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  dose.doseLabel ?? '',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (dose.isPending || dose.isSnoozed || dose.isMissed) ...[
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _markTaken(dose);
+                    },
+                    icon: const Icon(Icons.check_rounded),
+                    label: const Text('Mark Taken'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.formAccent,
+                      foregroundColor: AppColors.surface,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _confirmSkipFromSheet(dose);
+                    },
+                    icon: const Icon(Icons.skip_next_rounded),
+                    label: const Text('Skip'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.formAccent,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (dose.isPending) ...[
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _snoozeDose(dose, 15);
+                    },
+                    icon: const Icon(Icons.snooze_rounded),
+                    label: const Text('Snooze 15 min'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.formAccent,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (dose.canUndo()) ...[
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _markUntaken(dose);
+                    },
+                    icon: const Icon(Icons.undo_rounded),
+                    label: const Text('Undo'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -436,10 +548,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-
-    // TODO Local Storage:
-    // Vitals screens ko next migration mein userName ki jagah
-    // stable memberId bhi pass/use karna hai.
   }
 
   void _openDoctors() {
@@ -462,31 +570,12 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============================================================
 
   Future<void> _switchMember(MemberProfile member) async {
-    if (member.id == _selectedMemberId) {
-      return;
-    }
-
+    if (member.id == _selectedMemberId) return;
     setState(() {
       _selectedMemberId = member.id;
     });
-
-    // ProfileController:
-    // - app-wide selected member update karega
-    // - SharedPreferences mein selected stable memberId persist karega
-    // - selected profile metadata persist karega
     await _syncSelectedProfile(member);
-
-    if (!mounted) {
-      return;
-    }
-
-    // TODO Local Storage:
-    // Medicines, doses, adherence, inventory aur vitals repositories
-    // ko selected member.id ke against query karna hai.
-    //
-    // TODO Backend:
-    // Firebase phase mein exact same memberId-oriented flow rahega.
-
+    if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -504,34 +593,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _openProfilePhotoPicker() async {
     final selected = _selectedMember;
-
-    if (selected == null) {
-      return;
-    }
-
-    // Picker ProfileController ke CURRENT selected memberId ke liye
-    // permanent local image file create/remove karta hai.
+    if (selected == null) return;
     await showProfilePhotoPicker(context);
-
-    if (!mounted) {
-      return;
-    }
-
+    if (!mounted) return;
     final controller = ProfileController.instance;
-
-    // Safety:
-    // Async picker ke dauran selected member unexpectedly change ho
-    // jaye to doosre member record mein image persist na ho.
-    if (controller.memberId != selected.id) {
-      return;
-    }
-
-    // Image path member-specific SQLite record mein persist hota hai.
-    //
-    // Example:
-    // local_sarah → Sarah image
-    // local_mom   → Mom image
-    // local_jake  → Jake image
+    if (controller.memberId != selected.id) return;
     await _memberRepository.saveMember(
       selected.copyWith(
         profileImagePath: controller.profileImagePath,
@@ -539,10 +605,6 @@ class _HomeScreenState extends State<HomeScreen> {
         updatedAt: DateTime.now(),
       ),
     );
-
-    // TODO Backend / Firebase Storage:
-    // FirebaseMemberRepository phase mein member document ka
-    // profileImageUrl Storage upload result se update hoga.
   }
 
   // ============================================================
@@ -559,13 +621,11 @@ class _HomeScreenState extends State<HomeScreen> {
       _ => l10n.homeGreetingEvening,
     };
 
-    // MaterialLocalizations current locale ke hisab se date deta hai.
     final dateLabel = MaterialLocalizations.of(context)
         .formatFullDate(DateTime.now());
 
     return Scaffold(
       backgroundColor: AppColors.background,
-
       body: Column(
         children: [
           _HomeHeader(
@@ -582,7 +642,6 @@ class _HomeScreenState extends State<HomeScreen> {
             onProfilePhotoTap: _openProfilePhotoPicker,
             onAddMemberTap: _openProfiles,
           ),
-
           Expanded(
             child: Center(
               child: ConstrainedBox(
@@ -593,7 +652,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-
       floatingActionButton: Padding(
         padding: EdgeInsets.only(
           right: MediaQuery.sizeOf(context).width > 480
@@ -642,18 +700,14 @@ class _HomeScreenState extends State<HomeScreen> {
             pending: _pendingCount,
             missed: _missedCount,
           ),
-
           const SizedBox(height: 16),
-
           _QuickAccessSection(
             onVitalsTap: _openVitals,
             onDoctorsTap: _openDoctors,
             onAssistantTap: _openAssistant,
             onProfilesTap: _openProfiles,
           ),
-
           const SizedBox(height: 16),
-
           Row(
             children: [
               Expanded(
@@ -681,20 +735,93 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          for (final dose in _filteredDoses)
+          if (_dosesLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_dosesError != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _DoseCard(
-                dose: dose,
-                onTaken: () => _markTaken(dose),
-                onSkip: (reason) => _skipDose(dose, reason: reason),
-                onSnooze: (minutes) => _snoozeDose(dose, minutes),
-                onCardTap: () => _openDoseSheet(dose),
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: _buildDoseError(_dosesError!),
+            )
+          else if (_filteredDoses.isEmpty)
+            _buildEmptyDoses()
+          else
+            for (final dose in _filteredDoses)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _DoseCard(
+                  dose: dose,
+                  onTaken: () => _markTaken(dose),
+                  onSkip: (reason) => _skipDose(dose, reason: reason),
+                  onSnooze: (minutes) => _snoozeDose(dose, minutes),
+                  onCardTap: () => _openDoseSheet(dose),
+                ),
               ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyDoses() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.event_available,
+            size: 48,
+            color: AppColors.fieldHint,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            AppLocalizations.of(context).homeTodaySchedule,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
             ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'No doses scheduled for today.',
+            style: TextStyle(fontSize: 12, color: AppColors.fieldHint),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoseError(String error) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.hintBackground,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.error, size: 32),
+          const SizedBox(height: 8),
+          const Text(
+            'Failed to load doses',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.error,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            error,
+            style: const TextStyle(fontSize: 11, color: AppColors.fieldHint),
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -724,21 +851,14 @@ class _HomeHeader extends StatelessWidget {
   final String greeting;
   final String dateLabel;
   final int streakDays;
-
   final String? selectedMemberImagePath;
   final String selectedMemberName;
   final String? selectedMemberId;
-
   final List<MemberProfile> members;
-
   final bool membersLoading;
-
   final ValueChanged<MemberProfile> onMemberTap;
-
   final VoidCallback onStreakTap;
-
   final VoidCallback onProfilePhotoTap;
-
   final VoidCallback onAddMemberTap;
 
   @override
@@ -763,7 +883,6 @@ class _HomeHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ============ ROW 1 ============
               Row(
                 children: [
                   GestureDetector(
@@ -771,18 +890,12 @@ class _HomeHeader extends StatelessWidget {
                     child: AppAvatar(
                       size: 34,
                       imagePath: selectedMemberImagePath,
-
-                      // Explicit selected member image use hogi.
-                      // Null hone par global image leak nahi hogi.
                       useSelectedProfileImage: false,
-
                       ringColor: AppColors.surface,
                       ringWidth: 2,
                     ),
                   ),
-
                   const SizedBox(width: 9),
-
                   Expanded(
                     child: Text(
                       l10n.homeGreetingWithName(greeting, selectedMemberName),
@@ -795,7 +908,6 @@ class _HomeHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   Stack(
                     clipBehavior: Clip.none,
                     children: [
@@ -820,10 +932,7 @@ class _HomeHeader extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: 12),
-
-              // ============ ROW 2 ============
               if (membersLoading && members.isEmpty)
                 const SizedBox(
                   height: 60,
@@ -846,24 +955,18 @@ class _HomeHeader extends StatelessWidget {
                     children: [
                       for (var i = 0; i < members.length; i++) ...[
                         if (i != 0) const SizedBox(width: 17),
-
                         _FamilyMemberAvatar(
                           member: members[i],
                           isSelected: members[i].id == selectedMemberId,
                           onTap: () => onMemberTap(members[i]),
                         ),
                       ],
-
                       if (members.isNotEmpty) const SizedBox(width: 17),
-
                       _AddMemberButton(onTap: onAddMemberTap),
                     ],
                   ),
                 ),
-
               const SizedBox(height: 10),
-
-              // ============ ROW 3 ============
               Row(
                 children: [
                   Expanded(
@@ -875,7 +978,6 @@ class _HomeHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   Material(
                     color: AppColors.transparent,
                     child: InkWell(
@@ -896,9 +998,7 @@ class _HomeHeader extends StatelessWidget {
                               color: AppColors.homeStreakFlame,
                               size: 18,
                             ),
-
                             const SizedBox(width: 4),
-
                             Text(
                               l10n.homeDayStreak(streakDays),
                               style: const TextStyle(
@@ -907,9 +1007,7 @@ class _HomeHeader extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-
                             const SizedBox(width: 3),
-
                             const Icon(
                               Icons.chevron_right_rounded,
                               color: AppColors.surface,
@@ -953,24 +1051,14 @@ class _FamilyMemberAvatar extends StatelessWidget {
         children: [
           AppAvatar(
             size: 40,
-
-            // IMPORTANT:
-            // Family row mein sirf isi exact member ka SQLite image path
-            // render hoga.
-            //
-            // Sarah ki selected/global image Mom/Jake par fallback
-            // nahi hogi.
             imagePath: member.profileImagePath,
             useSelectedProfileImage: false,
-
             ringColor: isSelected
                 ? AppColors.avatarSelected
                 : AppColors.surface.withValues(alpha: 0.54),
             ringWidth: isSelected ? 2 : 1,
           ),
-
           const SizedBox(height: 4),
-
           Text(
             member.displayName,
             style: TextStyle(
@@ -988,7 +1076,7 @@ class _FamilyMemberAvatar extends StatelessWidget {
 }
 
 // ============================================================
-// ADD MEMBER → ProfilesScreen (managed profiles + invite)
+// ADD MEMBER
 // ============================================================
 
 class _AddMemberButton extends StatelessWidget {
@@ -1007,9 +1095,7 @@ class _AddMemberButton extends StatelessWidget {
             backgroundColor: AppColors.transparent,
             child: Icon(Icons.add, color: AppColors.surface, size: 22),
           ),
-
           const SizedBox(height: 4),
-
           Text(
             AppLocalizations.of(context).homeAdd,
             style: TextStyle(
@@ -1104,10 +1190,8 @@ class _ProgressCard extends StatelessWidget {
               ],
             ),
           ),
-
           const Spacer(),
           const SizedBox(width: 8),
-
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1186,17 +1270,14 @@ class _QuickAccessSection extends StatelessWidget {
       onVitalsTap();
       return;
     }
-
     if (index == 1) {
       onDoctorsTap();
       return;
     }
-
     if (index == 2) {
       onAssistantTap();
       return;
     }
-
     if (index == 3) {
       onProfilesTap();
       return;
@@ -1227,14 +1308,11 @@ class _QuickAccessSection extends StatelessWidget {
             ),
           ],
         ),
-
         const SizedBox(height: 9),
-
         Row(
           children: [
             for (var i = 0; i < _images.length; i++) ...[
               if (i != 0) const SizedBox(width: 7),
-
               Expanded(
                 child: GestureDetector(
                   onTap: () => _onItemTap(context, i),
@@ -1260,9 +1338,7 @@ class _QuickAccessSection extends StatelessWidget {
                           height: 36,
                           fit: BoxFit.contain,
                         ),
-
                         const SizedBox(height: 5),
-
                         Text(
                           _itemLabel(l10n, i),
                           maxLines: 1,
@@ -1328,7 +1404,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 // ============================================================
-// DOSE CARD
+// DOSE CARD (M7 — dose_model.Dose)
 // ============================================================
 
 class _DoseCard extends StatelessWidget {
@@ -1340,19 +1416,45 @@ class _DoseCard extends StatelessWidget {
     required this.onCardTap,
   });
 
-  final Dose dose;
+  final dose_model.Dose dose;
   final VoidCallback onTaken;
   final void Function(String? reason) onSkip;
   final void Function(int minutes) onSnooze;
   final VoidCallback onCardTap;
 
+  String get _timeLabel {
+    final dt = dose.scheduledAt.toLocal();
+    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final amPm = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $amPm';
+  }
+
+  Future<void> _confirmSkipWithReason(BuildContext context) async {
+    final reason = await MissedDoseReasonSheet.show(
+      context,
+      medName: dose.medName,
+      scheduledTimeLabel: _timeLabel,
+    );
+    onSkip(reason);
+  }
+
+  String get _detailsLabel {
+    if (dose.doseLabel != null && dose.doseLabel!.isNotEmpty) {
+      return dose.doseLabel!;
+    }
+    return dose.medName;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    final isTaken = dose.status == DoseStatus.taken;
-    final isSkipped = dose.status == DoseStatus.skipped;
-    final isPending = dose.status == DoseStatus.pending;
+    final isTaken = dose.status == dose_model.DoseStatus.taken;
+    final isSkipped = dose.status == dose_model.DoseStatus.skipped;
+    final isPending =
+        dose.status == dose_model.DoseStatus.pending ||
+        dose.status == dose_model.DoseStatus.snoozed;
 
     return GestureDetector(
       onTap: (isPending || isTaken) ? onCardTap : null,
@@ -1402,15 +1504,13 @@ class _DoseCard extends StatelessWidget {
                         : AppColors.fieldHint,
                   ),
                 ),
-
                 const SizedBox(width: 11),
-
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${dose.name} ${dose.doseAmount}',
+                        dose.medName,
                         style: TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 15,
@@ -1421,19 +1521,15 @@ class _DoseCard extends StatelessWidget {
                           decorationColor: AppColors.textPrimary,
                         ),
                       ),
-
                       const SizedBox(height: 4),
-
                       Text(
-                        dose.localizedDetails(l10n),
+                        _detailsLabel,
                         style: const TextStyle(
                           color: AppColors.formSubtitle,
                           fontSize: 12,
                         ),
                       ),
-
                       const SizedBox(height: 5),
-
                       Row(
                         children: [
                           Icon(
@@ -1443,11 +1539,9 @@ class _DoseCard extends StatelessWidget {
                                 ? AppColors.success
                                 : AppColors.formSubtitle,
                           ),
-
                           const SizedBox(width: 4),
-
                           Text(
-                            dose.time,
+                            _timeLabel,
                             style: TextStyle(
                               color: isTaken
                                   ? AppColors.success
@@ -1461,14 +1555,11 @@ class _DoseCard extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 _StatusBadge(status: dose.status),
               ],
             ),
-
             if (isPending) ...[
               const SizedBox(height: 14),
-
               Row(
                 children: [
                   Expanded(
@@ -1478,18 +1569,14 @@ class _DoseCard extends StatelessWidget {
                       onTap: onTaken,
                     ),
                   ),
-
                   const SizedBox(width: 7),
-
                   Expanded(
                     child: _actionButton(
                       l10n.homeActionSkip,
-                      onTap: () => onSkip(null),
+                      onTap: () => _confirmSkipWithReason(context),
                     ),
                   ),
-
                   const SizedBox(width: 7),
-
                   Expanded(
                     child: _actionButton(
                       l10n.homeActionSnooze,
@@ -1499,62 +1586,8 @@ class _DoseCard extends StatelessWidget {
                 ],
               ),
             ],
-
-            if (isPending && dose.isRunningLow) ...[
-              const SizedBox(height: 10),
-
-              Container(
-                constraints: const BoxConstraints(minHeight: 36),
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.hintBackground,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.warning_amber_rounded,
-                      color: AppColors.hintAccent,
-                      size: 16,
-                    ),
-
-                    const SizedBox(width: 5),
-
-                    Expanded(
-                      child: Text(
-                        l10n.homeRunningLow(dose.name, dose.daysLeft),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.hintAccent,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-
-                    GestureDetector(
-                      onTap: () {
-                        // TODO Local Storage / Navigation:
-                        // Inventory/refill repository ke through
-                        // selected medication refill flow open karna.
-                      },
-                      child: Text(
-                        l10n.homeRefill,
-                        style: const TextStyle(
-                          color: AppColors.hintAccent,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
             if (isSkipped) ...[
               const SizedBox(height: 8),
-
               Text(
                 l10n.homeSkippedNote,
                 style: const TextStyle(
@@ -1599,41 +1632,44 @@ class _DoseCard extends StatelessWidget {
 }
 
 // ============================================================
-// STATUS BADGE
+// STATUS BADGE (M7 — dose_model.DoseStatus)
 // ============================================================
 
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
 
-  final DoseStatus status;
+  final dose_model.DoseStatus status;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     switch (status) {
-      case DoseStatus.pending:
+      case dose_model.DoseStatus.pending:
         return _badge(
           background: AppColors.pendingBackground,
           foreground: AppColors.statusPendingText,
           text: l10n.homeStatusPending,
         );
-
-      case DoseStatus.taken:
+      case dose_model.DoseStatus.taken:
         return _badge(
           background: AppColors.successBackground,
           foreground: AppColors.success,
           text: '✓ ${l10n.homeStatusTaken}',
         );
-
-      case DoseStatus.upcoming:
+      case dose_model.DoseStatus.snoozed:
         return _badge(
-          background: AppColors.successBackground,
+          background: AppColors.pendingBackground,
           foreground: AppColors.formAccent,
-          text: l10n.homeStatusUpcoming,
+          text: l10n.homeStatusPending,
         );
-
-      case DoseStatus.skipped:
+      case dose_model.DoseStatus.missed:
+        return _badge(
+          background: AppColors.hintBackground,
+          foreground: AppColors.error,
+          text: l10n.homeStatusSkipped,
+        );
+      case dose_model.DoseStatus.skipped:
         return _badge(
           background: AppColors.hintBackground,
           foreground: AppColors.hintAccent,

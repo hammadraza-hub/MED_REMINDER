@@ -1,29 +1,35 @@
 import 'dart:math' as math;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
+import '../../models/dose.dart';
+import '../../repositories/auth_repository.dart';
+import '../../repositories/dose_repository.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'streaks_stats_data.dart';
 
 /// ============================================================
-/// STREAKS & STATS
+/// STREAKS & STATS  (M7 — Firestore-backed)
 ///
 /// Motivational view of medication consistency over time.
 ///
 /// Features:
-/// • Current streak
+/// • Current streak + goal progress
 /// • Best / longest streak
 /// • This month adherence
-/// • 30 / 90 day adherence trend
+/// • 30 / 90 day adherence trend (line chart)
 /// • Recent achievements
 ///
-/// Backend:
-/// Screen direct hardcoded statistics use nahi karti.
-/// StreaksStatsData abhi dummy history provide karta hai.
-/// Future mein Firebase repository same data models/calculations
-/// ko real user's dose history provide karegi.
+/// Backend (M7):
+/// • Firestore doses via DoseRepository.getDosesForDateRange()
+///   — last 90 days fetched once on init.
+/// • Profile ID from users/{uid}.selectedMemberId (same as
+///   Calendar + Adherence Detail).
+/// • Streak + trend + achievements computed locally from doses.
+/// • UI 100% preserved — only data source swapped.
 /// ============================================================
 class StreaksStatsScreen extends StatefulWidget {
   const StreaksStatsScreen({super.key, this.userName = 'Sarah'});
@@ -37,17 +43,447 @@ class StreaksStatsScreen extends StatefulWidget {
 class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
   StreakTrendRange _selectedTrendRange = StreakTrendRange.thirtyDays;
 
+  // ================= FIRESTORE STATE (M7) =================
+
+  /// Real Firestore profile ID (same source as CalendarScreen).
+  String? _profileId;
+
+  /// True while profile ID + doses are being fetched.
+  bool _loading = true;
+
+  /// Error message if fetch failed (null = OK).
+  String? _error;
+
+  /// All Firestore doses for the last 90 days (fetched once on init).
+  /// Used for streak, trend, and achievements computation.
+  List<Dose> _allDoses = const [];
+
   // ============================================================
-  // COMPUTED DATA
+  // INIT
   // ============================================================
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfileAndDoses();
+  }
+
+  // ============================================================
+  // FIRESTORE — PROFILE ID + DOSES
+  // ============================================================
+
+  /// Same pattern as CalendarScreen + AdherenceDetailScreen:
+  /// users/{uid}.selectedMemberId → fallback query → self-heal.
+  Future<void> _fetchProfileAndDoses() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      if (_profileId == null || _profileId!.isEmpty) {
+        final uid = AuthRepository.instance.currentUid;
+        if (uid == null) {
+          setState(() {
+            _error = 'Not logged in';
+            _loading = false;
+          });
+          return;
+        }
+
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
+
+        String? profileId;
+
+        if (userDoc.exists) {
+          final data = userDoc.data()!;
+          profileId = data['selectedMemberId'] as String?;
+        }
+
+        if (profileId == null || profileId.isEmpty) {
+          final querySnap = await FirebaseFirestore.instance
+              .collection('profiles')
+              .where('ownerUid', isEqualTo: uid)
+              .where('kind', isEqualTo: 'self')
+              .limit(1)
+              .get();
+
+          if (querySnap.docs.isNotEmpty) {
+            profileId = querySnap.docs.first.id;
+
+            await FirebaseFirestore.instance.collection('users').doc(uid).set({
+              'selectedMemberId': profileId,
+            }, SetOptions(merge: true));
+          }
+        }
+
+        if (profileId == null || profileId.isEmpty) {
+          setState(() {
+            _error = 'No profile found';
+            _loading = false;
+          });
+          return;
+        }
+
+        _profileId = profileId;
+      }
+
+      await _loadDoses();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load: $e';
+        _loading = false;
+      });
+    }
+  }
+
+  /// Fetch last 90 days of doses — enough for streak + 90D trend.
+  Future<void> _loadDoses() async {
+    if (_profileId == null || _profileId!.isEmpty) return;
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final from = today.subtract(
+        const Duration(days: 89),
+      ); // 90 days incl today
+
+      final doses = await DoseRepository.instance.getDosesForDateRange(
+        _profileId!,
+        from,
+        today,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _allDoses = doses;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load doses: $e';
+        _loading = false;
+      });
+    }
+  }
+
+  // ============================================================
+  // COMPUTED DATA (M7 — real Firestore computation)
+  // ============================================================
+
+  /// Computed streak summary from real Firestore doses.
+  /// Replaces StreaksStatsData.summary() (dummy).
   StreakStatsSummary get _summary {
-    return StreaksStatsData.summary();
+    return _computeSummary();
   }
 
+  /// Computed trend points from real Firestore doses.
+  /// Replaces StreaksStatsData.trend() (dummy).
   List<StreakTrendPoint> get _trendPoints {
-    return StreaksStatsData.trend(range: _selectedTrendRange);
+    return _computeTrendPoints();
   }
+
+  // ============================================================
+  // SUMMARY COMPUTATION
+  // ============================================================
+
+  StreakStatsSummary _computeSummary() {
+    // Bucket doses by day (excluding PRN).
+    final Map<String, _DayBucket> dayBuckets = {};
+
+    for (final dose in _allDoses) {
+      if (dose.isPrn) continue;
+
+      final local = dose.scheduledAt.toLocal();
+      final key = _dayKey(local);
+
+      final bucket = dayBuckets.putIfAbsent(key, () => _DayBucket(date: local));
+
+      switch (dose.status) {
+        case DoseStatus.taken:
+          bucket.taken++;
+          break;
+        case DoseStatus.skipped:
+          bucket.skipped++;
+          break;
+        case DoseStatus.missed:
+          bucket.missed++;
+          break;
+        case DoseStatus.pending:
+          if (dose.isOverdue) bucket.missed++;
+          break;
+        case DoseStatus.snoozed:
+          break;
+      }
+    }
+
+    final sortedBuckets = dayBuckets.values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    final currentStreak = _computeCurrentStreak(sortedBuckets);
+    final longestStreak = _computeLongestStreak(sortedBuckets);
+    final monthAdherence = _computeMonthAdherence(dayBuckets);
+    final totalTaken = sortedBuckets.fold<int>(0, (acc, b) => acc + b.taken);
+    // === GOAL ===
+    // Goal = 30 days (reasonable default; could be user-configurable later).
+    // goalProgress + daysUntilGoal are COMPUTED GETTERS on StreakStatsSummary
+    // (derived from currentStreak + goalDays) — don't pass them here.
+    const goalDays = 30;
+
+    // === ACHIEVEMENTS ===
+    final achievements = _computeAchievements(
+      currentStreak: currentStreak,
+      longestStreak: longestStreak,
+      totalTaken: totalTaken,
+    );
+
+    return StreakStatsSummary(
+      currentStreak: currentStreak,
+      longestStreak: longestStreak,
+      goalDays: goalDays,
+      monthAdherencePercent: monthAdherence,
+      achievements: achievements,
+    );
+  }
+
+  int _computeCurrentStreak(List<_DayBucket> buckets) {
+    if (buckets.isEmpty) return 0;
+
+    final today = _dateOnly(DateTime.now());
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    final lastBucket = buckets.last;
+    final lastDate = _dateOnly(lastBucket.date);
+
+    // Streak must include today or yesterday.
+    if (lastDate != today && lastDate != yesterday) return 0;
+
+    int streak = 0;
+    DateTime cursor = lastDate;
+
+    for (final bucket in buckets.reversed) {
+      final bucketDate = _dateOnly(bucket.date);
+      if (bucketDate != cursor) break;
+
+      // Good day: at least 1 taken AND 0 missed.
+      if (bucket.taken > 0 && bucket.missed == 0) {
+        streak++;
+        cursor = cursor.subtract(const Duration(days: 1));
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  int _computeLongestStreak(List<_DayBucket> buckets) {
+    if (buckets.isEmpty) return 0;
+
+    int longest = 0;
+    int current = 0;
+    DateTime? expectedNext;
+
+    for (final bucket in buckets) {
+      final bucketDate = _dateOnly(bucket.date);
+      final isGood = bucket.taken > 0 && bucket.missed == 0;
+
+      if (isGood) {
+        if (expectedNext == null || bucketDate == expectedNext) {
+          current++;
+          expectedNext = bucketDate.add(const Duration(days: 1));
+        } else {
+          current = 1;
+          expectedNext = bucketDate.add(const Duration(days: 1));
+        }
+        if (current > longest) longest = current;
+      } else {
+        current = 0;
+        expectedNext = null;
+      }
+    }
+
+    return longest;
+  }
+
+  int _computeMonthAdherence(Map<String, _DayBucket> buckets) {
+    final now = DateTime.now();
+    final monthPrefix = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+
+    int taken = 0, missed = 0, skipped = 0;
+
+    buckets.forEach((key, bucket) {
+      if (key.startsWith(monthPrefix)) {
+        taken += bucket.taken;
+        missed += bucket.missed;
+        skipped += bucket.skipped;
+      }
+    });
+
+    final total = taken + missed + skipped;
+    if (total == 0) return 0;
+    return ((taken / total) * 100).round();
+  }
+
+  // ============================================================
+  // ACHIEVEMENTS COMPUTATION
+  // ============================================================
+
+  List<StreakAchievement> _computeAchievements({
+    required int currentStreak,
+    required int longestStreak,
+    required int totalTaken,
+  }) {
+    final list = <StreakAchievement>[];
+
+    // Streak achievement — tiered.
+    if (currentStreak >= 30) {
+      list.add(
+        StreakAchievement(
+          id: 'streak_30',
+          type: StreakAchievementType.streak,
+          title: '30-Day Streak',
+          subtitle: 'A full month of consistency — outstanding! 🔥',
+        ),
+      );
+    } else if (currentStreak >= 14) {
+      list.add(
+        StreakAchievement(
+          id: 'streak_14',
+          type: StreakAchievementType.streak,
+          title: '14-Day Streak',
+          subtitle: 'Two weeks strong — keep it up!',
+        ),
+      );
+    } else if (currentStreak >= 7) {
+      list.add(
+        StreakAchievement(
+          id: 'streak_7',
+          type: StreakAchievementType.streak,
+          title: '7-Day Streak',
+          subtitle: 'A full week of taking meds on time!',
+        ),
+      );
+    } else if (currentStreak >= 3) {
+      list.add(
+        StreakAchievement(
+          id: 'streak_3',
+          type: StreakAchievementType.streak,
+          title: '3-Day Streak',
+          subtitle: 'Building momentum — keep going!',
+        ),
+      );
+    }
+
+    // Perfect Week — any 7-day perfect streak in history.
+    if (longestStreak >= 7) {
+      list.add(
+        StreakAchievement(
+          id: 'perfect_week',
+          type: StreakAchievementType.perfectWeek,
+          title: 'Perfect Week',
+          subtitle: '7 days with zero missed doses 🌟',
+        ),
+      );
+    }
+
+    // First Refill / Consistency — total doses taken milestone.
+    if (totalTaken >= 30) {
+      list.add(
+        StreakAchievement(
+          id: 'consistency_30',
+          type: StreakAchievementType.firstRefill,
+          title: 'Consistency Champion',
+          subtitle: '30 doses taken — you’re building a habit!',
+        ),
+      );
+    } else if (totalTaken >= 1) {
+      list.add(
+        StreakAchievement(
+          id: 'first_steps',
+          type: StreakAchievementType.firstRefill,
+          title: 'First Steps',
+          subtitle: 'Started your medication journey 💊',
+        ),
+      );
+    }
+
+    return list;
+  }
+
+  // ============================================================
+  // TREND COMPUTATION
+  // ============================================================
+
+  List<StreakTrendPoint> _computeTrendPoints() {
+    final rangeDays = _selectedTrendRange == StreakTrendRange.ninetyDays
+        ? 90
+        : 30;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final startDate = today.subtract(Duration(days: rangeDays - 1));
+
+    // Bucket doses by day.
+    final Map<String, _DayBucket> dayMap = {};
+    for (final dose in _allDoses) {
+      if (dose.isPrn) continue;
+      final local = dose.scheduledAt.toLocal();
+      final key = _dayKey(local);
+      dayMap.putIfAbsent(key, () => _DayBucket(date: local));
+      switch (dose.status) {
+        case DoseStatus.taken:
+          dayMap[key]!.taken++;
+          break;
+        case DoseStatus.skipped:
+          dayMap[key]!.skipped++;
+          break;
+        case DoseStatus.missed:
+          dayMap[key]!.missed++;
+          break;
+        case DoseStatus.pending:
+          if (dose.isOverdue) dayMap[key]!.missed++;
+          break;
+        case DoseStatus.snoozed:
+          break;
+      }
+    }
+
+    // Build one trend point per day in the range.
+    final points = <StreakTrendPoint>[];
+    for (int i = 0; i < rangeDays; i++) {
+      final date = startDate.add(Duration(days: i));
+      final key = _dayKey(date);
+      final bucket = dayMap[key];
+
+      final total = bucket?.total ?? 0;
+      final percent = total == 0 ? 0 : ((bucket!.taken / total) * 100).round();
+
+      points.add(StreakTrendPoint(date: date, percent: percent));
+    }
+
+    return points;
+  }
+
+  // ============================================================
+  // DATE HELPERS
+  // ============================================================
+
+  String _dayKey(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
   // ============================================================
   // SHARE
@@ -93,34 +529,7 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
         children: [
           _buildHeader(),
 
-          Expanded(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
-                  child: Column(
-                    children: [
-                      _buildCurrentStreakCard(),
-
-                      const SizedBox(height: 12),
-
-                      _buildMiniStats(),
-
-                      const SizedBox(height: 12),
-
-                      _buildTrendCard(),
-
-                      const SizedBox(height: 12),
-
-                      _buildAchievementsCard(),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+          Expanded(child: _buildBodyContent()),
         ],
       ),
 
@@ -128,6 +537,77 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
       bottomNavigationBar: AppBottomNavigation(
         currentIndex: 0,
         onTap: _onBottomNavigationTap,
+      ),
+    );
+  }
+
+  /// M7: Body content swaps based on loading/error/ready state.
+  /// Header always shows.
+  Widget _buildBodyContent() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 56,
+                color: AppColors.calendarMissed,
+              ),
+
+              const SizedBox(height: 12),
+
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              ElevatedButton(
+                onPressed: _fetchProfileAndDoses,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
+          child: Column(
+            children: [
+              _buildCurrentStreakCard(),
+
+              const SizedBox(height: 12),
+
+              _buildMiniStats(),
+
+              const SizedBox(height: 12),
+
+              _buildTrendCard(),
+
+              const SizedBox(height: 12),
+
+              _buildAchievementsCard(),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -703,10 +1183,25 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
 }
 
 // ============================================================
+// DAY BUCKET (helper for streak + trend computation)
+// ============================================================
+
+class _DayBucket {
+  final DateTime date;
+  int taken = 0;
+  int missed = 0;
+  int skipped = 0;
+
+  _DayBucket({required this.date});
+
+  int get total => taken + missed + skipped;
+}
+
+// ============================================================
 // TREND CHART
 //
 // No external chart package required.
-// Data points StreaksStatsData se aate hain.
+// Data points now come from real Firestore doses (M7).
 // ============================================================
 
 class _TrendChart extends StatelessWidget {

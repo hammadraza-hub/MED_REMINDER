@@ -1,6 +1,12 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../models/dose.dart';
+import '../../repositories/auth_repository.dart';
+import '../../repositories/dose_repository.dart';
 import '../meds/meds_data.dart';
 import 'adherence_detail_screen.dart';
 import 'calendar_data.dart';
@@ -8,20 +14,23 @@ import 'missed_dose_reason_modal.dart';
 import '../../widgets/app_avatar.dart';
 
 /// ============================================================
-/// CALENDAR — DOSE HISTORY
+/// CALENDAR — DOSE HISTORY  (M7 — Firestore-backed)
 ///
 /// Features:
 /// • Month / Week view
 /// • Previous / Next period
 /// • Today shortcut
-/// • Taken / Partial / Missed color-coded days
+/// • Taken / Partial / Missed color-coded days (real Firestore doses)
 /// • Selected-day dose preview
-/// • Missed-dose reason modal
+/// • Missed-dose reason modal → persisted to Firestore
 /// • Adherence Detail navigation
 ///
 /// Backend:
-/// Data CalendarData se aata hai.
-/// Future mein CalendarData Firebase repository se replace hoga.
+/// • Single `Stream<List<Dose>>` per visible month (no per-cell queries)/// • DoseRepository.watchDosesForDateRange()
+/// • Adherence computed locally from the streamed doses
+///
+/// TODO (you): Wire `_resolveProfileId()` to your auth/session service
+/// (the same source HomeScreen uses). Currently returns empty string.
 /// ============================================================
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -35,6 +44,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   late DateTime _visibleMonth;
   late DateTime _selectedDate;
+
+  // ================= FIRESTORE STREAM STATE =================
+
+  /// All doses for the currently visible month (real-time).
+  List<Dose> _monthDoses = const [];
+
+  /// Active stream subscription — cancelled/re-created on month change.
+  StreamSubscription<List<Dose>>? _monthDosesSub;
+
+  // ================= PROFILE ID (Firestore) =================
+
+  /// Real Firestore profile ID (NOT the local SQLite memberId).
+  /// Fetched from users/{uid}.selectedMemberId with fallback.
+  String? _firestoreProfileId;
+
+  /// True while profile ID is being fetched from Firestore.
+  bool _profileLoading = true;
 
   static const List<String> _weekDays = [
     'Mon',
@@ -87,22 +113,210 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _selectedDate = DateTime(now.year, now.month, now.day);
 
     _visibleMonth = DateTime(now.year, now.month);
+
+    // Fetch real Firestore profile ID first, then subscribe to doses.
+    _fetchFirestoreProfileId();
   }
 
-  // ================= DATA =================
+  @override
+  void dispose() {
+    _monthDosesSub?.cancel();
+    super.dispose();
+  }
 
+  // ================= PROFILE ID (Firestore) =================
+
+  /// Fetch the real Firestore profile ID from users/{uid}.selectedMemberId.
+  /// Fallback: query profiles collection where ownerUid == uid + kind == 'self'.
+  /// Self-heals: writes the found ID back to users/{uid}.selectedMemberId.
+  ///
+  /// This is the SAME pattern MedsScreen uses — profile IDs match
+  /// Firestore security rules' isOwner() check.
+  Future<void> _fetchFirestoreProfileId() async {
+    try {
+      final uid = AuthRepository.instance.currentUid;
+      if (uid == null) {
+        if (mounted) setState(() => _profileLoading = false);
+        return;
+      }
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data()!;
+        final profileId = data['selectedMemberId'] as String?;
+        if (profileId != null && profileId.isNotEmpty) {
+          if (!mounted) return;
+          setState(() {
+            _firestoreProfileId = profileId;
+            _profileLoading = false;
+          });
+          _subscribeMonthDoses();
+          return;
+        }
+      }
+
+      // Fallback: query profiles where ownerUid == uid + kind == 'self'.
+      final querySnap = await FirebaseFirestore.instance
+          .collection('profiles')
+          .where('ownerUid', isEqualTo: uid)
+          .where('kind', isEqualTo: 'self')
+          .limit(1)
+          .get();
+
+      if (querySnap.docs.isNotEmpty) {
+        final fallbackId = querySnap.docs.first.id;
+
+        // Self-heal: write back to users/{uid}.selectedMemberId.
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'selectedMemberId': fallbackId,
+        }, SetOptions(merge: true));
+
+        if (!mounted) return;
+        setState(() {
+          _firestoreProfileId = fallbackId;
+          _profileLoading = false;
+        });
+        _subscribeMonthDoses();
+        return;
+      }
+
+      // No profile found at all.
+      if (!mounted) return;
+      setState(() => _profileLoading = false);
+    } catch (e) {
+      debugPrint('CalendarScreen: failed to fetch profile ID — $e');
+      if (!mounted) return;
+      setState(() => _profileLoading = false);
+    }
+  }
+
+  /// Returns the real Firestore profile ID (or empty string if not loaded).
+  String _resolveProfileId() {
+    return _firestoreProfileId ?? '';
+  }
+
+  // ================= FIRESTORE STREAM =================
+
+  void _subscribeMonthDoses() {
+    _monthDosesSub?.cancel();
+
+    final profileId = _resolveProfileId();
+    if (profileId.isEmpty) {
+      // No profile yet — keep empty list, don't subscribe.
+      setState(() => _monthDoses = const []);
+      return;
+    }
+
+    // Fetch the whole visible month in one query.
+    final from = DateTime(_visibleMonth.year, _visibleMonth.month, 1);
+    final to = DateTime(_visibleMonth.year, _visibleMonth.month + 1, 0);
+
+    _monthDosesSub = DoseRepository.instance
+        .watchDosesForDateRange(profileId, from, to)
+        .listen(
+          (doses) {
+            if (!mounted) return;
+            setState(() => _monthDoses = doses);
+          },
+          onError: (error) {
+            if (!mounted) return;
+            // Silent fail — calendar still renders, just empty.
+            debugPrint('Calendar stream error: $error');
+            setState(() => _monthDoses = const []);
+          },
+        );
+  }
+
+  // ================= DATA (computed from _monthDoses) =================
+
+  /// Doses for the currently selected date (mapped to UI model).
   List<DoseHistoryItem> get _selectedDateDoses {
-    // TODO Backend:
-    // Firebase phase mein visible/required date range ki dose history
-    // ek range query mein load karni hai.
-    //
-    // Har calendar cell/day ke liye separate Firestore query
-    // nahi chalani.
-    return CalendarData.dosesForDate(_selectedDate);
+    final dayDoses = _monthDoses
+        .where((d) => _isSameDate(d.scheduledAt.toLocal(), _selectedDate))
+        .toList();
+    return dayDoses.map(_doseToHistoryItem).toList();
   }
 
   int get _daysInVisibleMonth {
     return DateTime(_visibleMonth.year, _visibleMonth.month + 1, 0).day;
+  }
+
+  // ================= DOSE → UI MAPPING =================
+
+  DoseHistoryItem _doseToHistoryItem(Dose dose) {
+    return DoseHistoryItem(
+      id: dose.id,
+      medicineName: dose.medName,
+      strength: '',
+      subtitle: dose.doseLabel ?? '',
+      time: _formatTime(dose.scheduledAt.toLocal()),
+      status: _mapDoseStatus(dose),
+      medicineType: MedicineType.tablet,
+      missedReason: dose.reasonText,
+    );
+  }
+
+  DoseHistoryStatus _mapDoseStatus(Dose dose) {
+    switch (dose.status) {
+      case DoseStatus.taken:
+        return DoseHistoryStatus.taken;
+      case DoseStatus.skipped:
+      case DoseStatus.missed:
+        return DoseHistoryStatus.missed;
+      case DoseStatus.snoozed:
+        return DoseHistoryStatus.pending;
+      case DoseStatus.pending:
+        final now = DateTime.now();
+        final scheduledLocal = dose.scheduledAt.toLocal();
+        if (scheduledLocal.isAfter(now)) {
+          return DoseHistoryStatus.upcoming;
+        }
+        if (dose.isOverdue) {
+          return DoseHistoryStatus.missed;
+        }
+        return DoseHistoryStatus.pending;
+    }
+  }
+
+  String _formatTime(DateTime dt) {
+    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final amPm = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $amPm';
+  }
+
+  // ================= ADHERENCE (real computation) =================
+
+  DayAdherenceStatus _computeAdherence(DateTime date) {
+    final dayDoses = _monthDoses
+        .where((d) => _isSameDate(d.scheduledAt.toLocal(), date))
+        .where((d) => !d.isPrn) // PRN never counts
+        .toList();
+
+    if (dayDoses.isEmpty) return DayAdherenceStatus.none;
+
+    int taken = 0, missed = 0;
+
+    for (final dose in dayDoses) {
+      final uiStatus = _mapDoseStatus(dose);
+      if (uiStatus == DoseHistoryStatus.taken) {
+        taken++;
+      } else if (uiStatus == DoseHistoryStatus.missed) {
+        missed++;
+      }
+      // pending / upcoming don't count toward day status until resolved
+    }
+
+    // Nothing resolved yet — day is "no data" (still upcoming/pending).
+    if (taken == 0 && missed == 0) return DayAdherenceStatus.none;
+
+    if (taken > 0 && missed == 0) return DayAdherenceStatus.taken;
+    if (taken == 0 && missed > 0) return DayAdherenceStatus.missed;
+    return DayAdherenceStatus.partial;
   }
 
   // ================= DATE HELPERS =================
@@ -139,6 +353,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _selectedDate = selected;
       });
 
+      _subscribeMonthDoses();
+
       return;
     }
 
@@ -149,6 +365,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       _visibleMonth = DateTime(selected.year, selected.month);
     });
+
+    _subscribeMonthDoses();
   }
 
   void _nextPeriod() {
@@ -166,6 +384,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
         _selectedDate = selected;
       });
 
+      _subscribeMonthDoses();
+
       return;
     }
 
@@ -176,6 +396,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       _visibleMonth = DateTime(selected.year, selected.month);
     });
+
+    _subscribeMonthDoses();
   }
 
   void _goToToday() {
@@ -188,6 +410,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       _visibleMonth = DateTime(today.year, today.month);
     });
+
+    _subscribeMonthDoses();
   }
 
   void _selectDate(DateTime date) {
@@ -196,6 +420,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       _visibleMonth = DateTime(date.year, date.month);
     });
+
+    // If user navigates to a different month via cell tap, resubscribe.
+    _subscribeMonthDoses();
   }
 
   // ================= VIEW SWITCH =================
@@ -206,12 +433,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       _visibleMonth = DateTime(_selectedDate.year, _selectedDate.month);
     });
+
+    _subscribeMonthDoses();
   }
 
   void _showWeekView() {
     setState(() {
       _monthView = false;
     });
+
+    _subscribeMonthDoses();
   }
 
   // ================= USER ACTIONS =================
@@ -225,7 +456,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   // ============================================================
-  // MISSED DOSE REASON
+  // MISSED DOSE REASON → FIRESTORE PERSISTENCE
   // ============================================================
 
   Future<void> _openMissedDoseReason(DoseHistoryItem dose) async {
@@ -250,30 +481,129 @@ class _CalendarScreenState extends State<CalendarScreen> {
       return;
     }
 
-    // TODO Backend:
-    // Current signed-in user/member ke EXISTING dose-history
-    // document ko dose.id se update karna hai.
+    // ================= PERSIST TO FIRESTORE =================
     //
-    // Suggested fields:
-    // missedReasonType: result.type.name
-    // missedReasonText: result.reasonText
-    // missedReasonNote: result.note
-    // reasonRecordedAt: serverTimestamp
-    // recordedByUserId: currentUser.uid
-    //
-    // Duplicate dose-history record create NAHI karna.
+    // Map modal result.type → Firestore MissedDoseReason enum.
+    // Modal may have more granular types than Firestore's 4-value enum,
+    // so we collapse them: forgot → forgot, side effect → sideEffect,
+    // out of stock / ran out → ranOut, everything else → other.
+    final reasonCode = _mapReasonType(result.type);
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('Reason saved: ${result.reasonText}')),
+    // Combine reasonText + note into a single reasonText field.
+    //
+    // result.reasonText is non-nullable String.
+    // result.note is nullable String?.
+    final reasonText = result.reasonText;
+    final note = result.note;
+
+    final parts = <String>[
+      if (reasonText.isNotEmpty) reasonText,
+      if (note != null && note.isNotEmpty) note,
+    ];
+    final combinedText = parts.isEmpty ? null : parts.join(' — ');
+
+    final profileId = _resolveProfileId();
+    if (profileId.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('No profile — reason not saved')),
+        );
+      return;
+    }
+
+    try {
+      await DoseRepository.instance.updateMissedReason(
+        profileId: profileId,
+        doseId: dose.id,
+        reasonCode: reasonCode,
+        reasonText: combinedText,
       );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('Reason saved: ${result.reasonText}')),
+        );
+      // Stream will auto-refresh _monthDoses → UI updates.
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('Failed to save reason: $e')));
+    }
+  }
+
+  /// Map modal's reason type → Firestore MissedDoseReason enum.
+  /// Uses string matching so it works regardless of the modal's
+  /// exact enum name.
+  MissedDoseReason _mapReasonType(dynamic type) {
+    final name = (type?.name ?? '').toString().toLowerCase();
+
+    if (name.contains('forgot')) return MissedDoseReason.forgot;
+    if (name.contains('side')) return MissedDoseReason.sideEffect;
+    if (name.contains('out') ||
+        name.contains('stock') ||
+        name.contains('ran')) {
+      return MissedDoseReason.ranOut;
+    }
+    return MissedDoseReason.other;
   }
 
   // ================= BUILD =================
 
   @override
   Widget build(BuildContext context) {
+    // Show loading state while profile ID is being fetched.
+    if (_profileLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // No profile found — user needs to login / select profile.
+    if (_firestoreProfileId == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(
+                  Icons.person_outline,
+                  size: 64,
+                  color: AppColors.fieldHint,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'No profile found',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Please login or select a profile to view your calendar.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -675,7 +1005,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     final today = _isSameDate(date, DateTime.now());
 
-    final adherence = CalendarData.adherenceForDate(date);
+    final adherence = _computeAdherence(date);
 
     Color background;
     Color foreground;
@@ -850,7 +1180,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   // ============================================================
   // DOSE TILE
   //
-  // Missed dose tap → Missed Dose Reason modal.
+  // Missed dose tap → Missed Dose Reason modal → Firestore persist.
   // Taken/Pending/Upcoming dose → no reason modal.
   // ============================================================
 

@@ -28,9 +28,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ProfileController.instance.initialize();
+    // Listen to ProfileController changes (profile load/switch)
+    ProfileController.instance.addListener(_onProfileChanged);
+    // Initialize ProfileController (loads from SharedPreferences)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ProfileController.instance.initialize();
     });
+  }
+
+  @override
+  void dispose() {
+    ProfileController.instance.removeListener(_onProfileChanged);
+    super.dispose();
+  }
+
+  void _onProfileChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   // ============================================================

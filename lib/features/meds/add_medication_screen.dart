@@ -4,13 +4,14 @@ import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
+import '../../models/drug.dart';
+import '../../repositories/drug_repository.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_avatar.dart';
-import 'add_medication_data.dart';
+import 'add_medication_manual_screen.dart';
+import 'add_medication_scan_screen.dart';
 import 'interaction_warning_data.dart';
 import 'interaction_warning_screen.dart';
-import 'scan_label_screen.dart';
-import 'add_manual_screen.dart';
 
 /// ============================================================
 /// ADD MEDICATION — search → FDA results → Select
@@ -24,7 +25,9 @@ import 'add_manual_screen.dart';
 /// - Firebase medication persistence later
 /// ============================================================
 class AddMedicationScreen extends StatefulWidget {
-  const AddMedicationScreen({super.key});
+  final String profileId;
+
+  const AddMedicationScreen({super.key, required this.profileId});
 
   @override
   State<AddMedicationScreen> createState() => _AddMedicationScreenState();
@@ -33,8 +36,9 @@ class AddMedicationScreen extends StatefulWidget {
 class _AddMedicationScreenState extends State<AddMedicationScreen> {
   final _searchController = TextEditingController();
 
-  List<MedSearchResult> _results = [];
+  List<Drug> _results = [];
   bool _hasSearched = false;
+  bool _isSearching = false;
 
   @override
   void dispose() {
@@ -42,13 +46,22 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     super.dispose();
   }
 
-  // ================= SEARCH — live! =================
-  void _onSearchChanged(String query) {
+  // ================= SEARCH — live (DrugRepository) =================
+  Future<void> _onSearchChanged(String query) async {
+    final trimmed = query.trim();
     setState(() {
-      // TODO Backend:
-      // Replace local search with async FDA/backend medication search.
-      _results = AddMedicationData.search(query);
-      _hasSearched = query.trim().isNotEmpty;
+      _hasSearched = trimmed.isNotEmpty;
+      _isSearching = trimmed.isNotEmpty;
+    });
+
+    final results = trimmed.isEmpty
+        ? <Drug>[]
+        : await DrugRepository.instance.searchDrugs(trimmed);
+
+    if (!mounted) return;
+    setState(() {
+      _results = results;
+      _isSearching = false;
     });
   }
 
@@ -65,12 +78,12 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       _searchController.clear();
       _results = [];
       _hasSearched = false;
+      _isSearching = false;
     });
   }
 
   // ================= ACTIONS =================
-  Future<void> _selectMedicine(MedSearchResult med) async {
-    final l10n = AppLocalizations.of(context);
+  Future<void> _selectMedicine(Drug drug) async {
     // TODO Backend:
     // Interaction engine / rules se check karna hai ke selected
     // medication user ki current medications se interact karti hai
@@ -86,25 +99,38 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     if (!mounted || action == null) return;
 
     if (action == InteractionWarningAction.proceed) {
-      // TODO Backend:
-      // Selected FDA medication ko medication setup flow mein pass
-      // karke current user/family member ke liye save karna hai.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.addMedSelected(med.name, med.strength)),
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => AddMedicationManualScreen(
+            profileId: widget.profileId,
+            preselectedDrug: drug,
+          ),
         ),
       );
     }
   }
 
-  void _scanLabel() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const ScanLabelScreen()));
+  Future<void> _scanLabel() async {
+    final result = await Navigator.of(context).push<MedicationScanResult>(
+      MaterialPageRoute(builder: (_) => const AddMedicationScanScreen()),
+    );
+    if (!mounted || result == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddMedicationManualScreen(
+          profileId: widget.profileId,
+          scanResult: result,
+        ),
+      ),
+    );
   }
 
   void _addManually() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const AddManualScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddMedicationManualScreen(profileId: widget.profileId),
+      ),
+    );
   }
 
   // ================= SHARED BOTTOM NAVIGATION =================
@@ -185,7 +211,12 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                     _buildResultsHeader(),
                     const SizedBox(height: 14),
 
-                    if (_results.isEmpty)
+                    if (_isSearching)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 38),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_results.isEmpty)
                       _buildNoResults()
                     else
                       ..._results.map(
@@ -198,7 +229,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                         ),
                       ),
 
-                    if (_results.isNotEmpty) ...[
+                    if (!_isSearching && _results.isNotEmpty) ...[
                       const SizedBox(height: 4),
 
                       // ---- Tip card ----
@@ -717,12 +748,19 @@ class _TopActionButton extends StatelessWidget {
 class _ResultCard extends StatelessWidget {
   const _ResultCard({required this.result, required this.onSelect});
 
-  final MedSearchResult result;
+  final Drug result;
   final VoidCallback onSelect;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final details = [
+      if (result.hasStrength) result.strength!,
+      if (result.hasDoseForm) result.doseForm!,
+    ].join(' · ');
+    final badgeText = result.classIds.isNotEmpty
+        ? result.classIds.first
+        : null;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
       decoration: BoxDecoration(
@@ -778,36 +816,35 @@ class _ResultCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 5),
-                Text(
-                  '${result.strength} · '
-                  '${medSearchFormLabel(l10n, result.form)} · '
-                  '${medSearchRouteLabel(l10n, result.route)}',
-                  style: const TextStyle(
-                    color: AppColors.formSubtitle,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 7),
-
-                // "Common for: X" badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.successBackground,
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Text(
-                    AddMedicationData.badgeFor(l10n, result),
+                if (details.isNotEmpty)
+                  Text(
+                    details,
                     style: const TextStyle(
-                      color: AppColors.formAccent,
+                      color: AppColors.formSubtitle,
                       fontSize: 12,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                ),
+                if (badgeText != null) ...[
+                  const SizedBox(height: 7),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.successBackground,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      badgeText,
+                      style: const TextStyle(
+                        color: AppColors.formAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
