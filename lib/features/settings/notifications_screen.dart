@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
+import '../../models/notification_settings.dart';
+import '../../repositories/auth_repository.dart';
+import '../../repositories/settings_repository.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_toggle_switch.dart';
@@ -39,13 +42,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   // STATE
   // ============================================================
 
-  late final Map<String, bool> _enabled;
+  Map<String, bool> _enabled = {
+    for (final option in NotificationsData.alertTypes)
+      option.id: option.defaultEnabled,
+  };
 
-  late int _escalationMinutes;
+  int _escalationMinutes = NotificationsData.defaultEscalationMinutes;
 
-  late bool _quietHoursEnabled;
+  bool _quietHoursEnabled = NotificationsData.defaultQuietHoursEnabled;
 
   bool _justSaved = false;
+
+  bool _isLoading = true;
+
+  String? _error;
+
+  String? _uid;
 
   // ============================================================
   // INIT
@@ -54,15 +66,41 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
+    _uid = AuthRepository.instance.currentUid;
+    _loadSettings();
+  }
 
-    _enabled = {
-      for (final option in NotificationsData.alertTypes)
-        option.id: option.defaultEnabled,
-    };
+  /// Loads persisted preferences from `users/{uid}.settings`; falls back to
+  /// defaults on first launch or Firestore hiccup.
+  Future<void> _loadSettings() async {
+    final uid = _uid;
+    if (uid == null || uid.isEmpty) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
 
-    _escalationMinutes = NotificationsData.defaultEscalationMinutes;
-
-    _quietHoursEnabled = NotificationsData.defaultQuietHoursEnabled;
+    try {
+      final settings = await SettingsRepository.instance.getSettings(uid);
+      if (!mounted) return;
+      setState(() {
+        _enabled = {
+          'dose': settings.doseEnabled,
+          'refill': settings.refillEnabled,
+          'caregiver': settings.caregiverEnabled,
+        };
+        _escalationMinutes = settings.escalationMinutes;
+        _quietHoursEnabled = settings.quietHoursEnabled;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+      });
+    }
   }
 
   // ============================================================
@@ -70,25 +108,51 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   // ============================================================
 
   Future<void> _savePreferences() async {
-    if (_justSaved) return;
+    if (_justSaved || _isLoading) return;
+    if (_uid == null || _uid!.isEmpty) return;
 
     setState(() {
       _justSaved = true;
     });
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(content: Text('Preferences saved')),
-      );
+    final settings = NotificationSettings(
+      doseEnabled: _enabled['dose'] ?? false,
+      refillEnabled: _enabled['refill'] ?? false,
+      caregiverEnabled: _enabled['caregiver'] ?? false,
+      escalationMinutes: _escalationMinutes,
+      quietHoursEnabled: _quietHoursEnabled,
+      quietStartHour: 22,
+      quietStartMinute: 0,
+      quietEndHour: 7,
+      quietEndMinute: 0,
+      hideMedicineNamesOnLockScreen: false,
+    );
 
-    await Future<void>.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-
-    setState(() {
-      _justSaved = false;
-    });
+    try {
+      await SettingsRepository.instance.saveSettings(_uid!, settings);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('Preferences saved')));
+      await Future<void>.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+      setState(() {
+        _justSaved = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _justSaved = false;
+      });
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Save failed: $e'),
+            backgroundColor: AppColors.formAccent.withValues(alpha: 0.9),
+          ),
+        );
+    }
   }
 
   // ============================================================
@@ -108,6 +172,46 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline,
+                    color: AppColors.reportPrimary, size: 48),
+                const SizedBox(height: 12),
+                Text(
+                  'Could not load settings',
+                  style: TextStyle(
+                    color: AppColors.reportPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _error!,
+                  style: TextStyle(
+                    color: AppColors.permissionsSecondary,
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
