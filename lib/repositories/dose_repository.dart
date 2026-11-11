@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/app_exception.dart';
 import '../core/dose_engine.dart';
+import '../core/services/reminder_scheduler.dart';
 import '../models/dose.dart';
 import '../models/medication.dart';
 
@@ -173,6 +176,7 @@ class DoseRepository {
 
     try {
       await _dosesRef(profileId).doc(doseId).update(updateData);
+      unawaited(ReminderScheduler.instance.rescheduleAll());
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
     } catch (e) {
@@ -256,6 +260,7 @@ class DoseRepository {
         'snoozedUntil': snoozedUntil,
         'missDeadline': newMissDeadline,
       });
+      unawaited(ReminderScheduler.instance.rescheduleAll());
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
     } catch (e) {
@@ -293,6 +298,7 @@ class DoseRepository {
         'reasonText': null,
         'snoozedUntil': null,
       });
+      unawaited(ReminderScheduler.instance.rescheduleAll());
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
     } catch (e) {
@@ -303,6 +309,39 @@ class DoseRepository {
   // ──────────────────────────────────────────────────────────────
   // MISSED REASON
   // ──────────────────────────────────────────────────────────────
+
+  // OVERDUE SWEEP (client-side — Spark has no scheduled functions)
+
+  /// Marks pending doses whose `missDeadline` has passed as missed.
+  ///
+  /// Called on app start/resume. Bounded to 200 docs per run; a second run
+  /// picks up the rest. `reasonCode` is left null so the UI can ask why.
+  Future<int> markOverdueDosesMissed(String profileId, {DateTime? now}) async {
+    final cutoff = (now ?? DateTime.now()).toUtc();
+
+    try {
+      final snapshot = await _dosesRef(profileId)
+          .where('missDeadline', isLessThan: cutoff)
+          .limit(200)
+          .get();
+
+      final overdue = snapshot.docs
+          .where((doc) => doc.data()['status'] == DoseStatus.pending.value)
+          .toList();
+      if (overdue.isEmpty) return 0;
+
+      final batch = _db.batch();
+      for (final doc in overdue) {
+        batch.update(doc.reference, {'status': DoseStatus.missed.value});
+      }
+      await batch.commit();
+      return overdue.length;
+    } on FirebaseException catch (e) {
+      throw AppException.fromFirebaseException(e);
+    } catch (e) {
+      throw AppException.unknown('Failed to mark missed doses: $e');
+    }
+  }
 
   /// Update the reason for a missed/skipped dose.
   /// Per M7: reasonCode (forgot / side_effect / ran_out / other) + reasonText.

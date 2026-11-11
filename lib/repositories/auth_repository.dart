@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../core/app_exception.dart';
+import '../core/profile/profile_controller.dart';
 
 /// Result of a Google sign-in attempt.
 class GoogleSignInResult {
@@ -362,17 +364,18 @@ class AuthRepository {
       final q = await _db
           .collection('profiles')
           .where('ownerUid', isEqualTo: uid)
-          .where('kind', isEqualTo: 'self')
-          .limit(1)
+          .limit(5)
           .get();
-      if (q.docs.isEmpty) {
+      // kind filter done here so no composite index is required.
+      final selfDocs = q.docs.where((d) => d.data()['kind'] == 'self').toList();
+      if (selfDocs.isEmpty) {
         return await _createSelfProfile(
           uid: uid,
           displayName: _auth.currentUser?.displayName ?? 'Me',
           email: _auth.currentUser?.email ?? '',
         );
       }
-      final fallbackId = q.docs.first.id;
+      final fallbackId = selfDocs.first.id;
       await _db.collection('users').doc(uid).update({
         'selectedMemberId': fallbackId,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -383,14 +386,50 @@ class AuthRepository {
     }
   }
 
+  /// Bootstraps [ProfileController] from the signed-in account at app start.
+  ///
+  /// Without this the app keeps whatever memberId was stored locally (e.g. a
+  /// legacy `local_*` demo profile) and every Firestore write for that profile
+  /// is rejected by the rules.
+  Future<void> restoreSelectedProfile() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      // A valid Firestore-backed selection is kept; only stale/legacy ids
+      // (and fresh installs) are replaced.
+      final current = ProfileController.instance.memberId;
+      if (current != null &&
+          current.isNotEmpty &&
+          !current.startsWith('local_')) {
+        final existing = await _db.collection('profiles').doc(current).get();
+        if (existing.exists) return;
+      }
+
+      final profileId = await _loadSelectedProfileId(uid: uid);
+      await _initProfileController(uid: uid, profileId: profileId);
+    } catch (e) {
+      debugPrint('AuthRepository: profile restore failed: $e');
+    }
+  }
+
   Future<void> _initProfileController({
     required String uid,
     required String profileId,
   }) async {
     try {
-      // TODO: Replace with your actual ProfileController call.
-      // Example: ProfileController.instance.initialize(uid: uid, profileId: profileId);
-    } catch (_) {}
+      final doc = await _db.collection('profiles').doc(profileId).get();
+      final name = (doc.data()?['name'] as String?)?.trim();
+      await ProfileController.instance.syncFromBackend(
+        memberId: profileId,
+        displayName: (name == null || name.isEmpty)
+            ? (_auth.currentUser?.displayName ?? 'Me')
+            : name,
+        profileImageUrl: _auth.currentUser?.photoURL,
+      );
+    } catch (e) {
+      debugPrint('AuthRepository: profile bootstrap failed: $e');
+    }
   }
 
   AppException _mapAuthException(FirebaseAuthException e) {

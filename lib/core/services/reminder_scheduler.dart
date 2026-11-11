@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:ui' show DartPluginRegistrant;
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -9,6 +11,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../profile/profile_controller.dart';
 import '../../models/dose.dart';
 import '../../repositories/dose_repository.dart';
+import 'reminder_action_queue.dart';
 
 /// ============================================================
 /// REMINDER SCHEDULER — M8, Spark-plan half
@@ -22,10 +25,9 @@ import '../../repositories/dose_repository.dart';
 /// separate concern and plugs in later via PushService; nothing in
 /// this class changes when Blaze is enabled.
 ///
-/// shortcut: only future pending doses are (re)scheduled here.
-/// Overdue-but-not-yet-missed doses need the reschedule hooks from
-/// M8 step 4.
-class ReminderScheduler {
+/// Refreshes on app start/resume, after any dose or medication change, and
+/// when the selected profile changes. Overdue doses are marked missed first.
+class ReminderScheduler with WidgetsBindingObserver {
   ReminderScheduler._();
 
   static final ReminderScheduler instance = ReminderScheduler._();
@@ -41,11 +43,23 @@ class ReminderScheduler {
   /// Hard cap so a large family profile does not flood the OS.
   static const int _maxScheduled = 100;
 
+  /// Escalation repeats (PDF M8: default 10 min, from settings).
+  /// shortcut: fixed values until M8 step 5 reads users/{uid}.settings.
+  static const int _escalationCount = 3;
+  static const int _escalationMinutes = 10;
+
+  static const List<AndroidNotificationAction> _actions = [
+    AndroidNotificationAction('taken', 'Taken'),
+    AndroidNotificationAction('skipped', 'Skip'),
+    AndroidNotificationAction('snooze', 'Snooze'),
+  ];
+
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
   Future<void>? _rescheduling;
+  String? _lastProfileId;
 
   static final NotificationDetails _details = NotificationDetails(
     android: AndroidNotificationDetails(
@@ -57,6 +71,7 @@ class ReminderScheduler {
       priority: Priority.high,
       category: AndroidNotificationCategory.reminder,
       enableVibration: true,
+      actions: _actions,
     ),
     iOS: const DarwinNotificationDetails(),
   );
@@ -102,7 +117,30 @@ class ReminderScheduler {
     );
 
     _initialized = true;
+    WidgetsBinding.instance.addObserver(this);
+    _lastProfileId = ProfileController.instance.memberId;
+    ProfileController.instance.addListener(_onProfileChanged);
     debugPrint('ReminderScheduler: ready (tz: ${tz.local.name})');
+  }
+
+  /// Reminders must follow the selected member (caregiver switching profiles).
+  void _onProfileChanged() {
+    final profileId = ProfileController.instance.memberId;
+    if (profileId == _lastProfileId) return;
+    _lastProfileId = profileId;
+    unawaited(rescheduleAll());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    // Actions tapped while the app was away take effect now.
+    unawaited(_applyQueuedActions());
+  }
+
+  Future<void> _applyQueuedActions() async {
+    await ReminderActionQueue.instance.replay();
+    await rescheduleAll();
   }
 
   Future<void> _setupTimeZone() async {
@@ -166,6 +204,18 @@ class ReminderScheduler {
       return;
     }
 
+    // Close out overdue doses first (Spark has no scheduled functions).
+    try {
+      final missed = await DoseRepository.instance.markOverdueDosesMissed(
+        profileId,
+      );
+      if (missed > 0) {
+        debugPrint('ReminderScheduler: $missed overdue dose(s) marked missed');
+      }
+    } catch (e) {
+      debugPrint('ReminderScheduler: overdue sweep failed: $e');
+    }
+
     final now = DateTime.now();
     // Query is day-granular, so this returns today 00:00 → day after tomorrow.
     final doses = await DoseRepository.instance.getDosesForDateRange(
@@ -175,12 +225,11 @@ class ReminderScheduler {
     );
 
     final upcoming = doses
-        .where(
-          (dose) =>
-              dose.status == DoseStatus.pending &&
-              dose.scheduledAt.isAfter(now) &&
-              dose.scheduledAt.isBefore(now.add(_window)),
-        )
+        .where((dose) {
+          if (dose.status != DoseStatus.pending) return false;
+          final alertAt = dose.snoozedUntil ?? dose.scheduledAt;
+          return alertAt.isAfter(now) && alertAt.isBefore(now.add(_window));
+        })
         .take(_maxScheduled)
         .toList();
 
@@ -188,22 +237,65 @@ class ReminderScheduler {
     await _plugin.cancelAll();
 
     final mode = await _scheduleMode();
+    var alarms = 0;
     for (final dose in upcoming) {
-      await _plugin.zonedSchedule(
-        id: _idFor(dose.id),
-        title: dose.medName,
-        body: dose.doseLabel ?? 'Time to take your medication',
-        scheduledDate: tz.TZDateTime.from(dose.scheduledAt.toLocal(), tz.local),
-        notificationDetails: _details,
-        androidScheduleMode: mode,
-        payload: dose.id,
-      );
+      alarms += await _scheduleDose(dose, mode);
     }
 
     debugPrint(
-      'ReminderScheduler: scheduled ${upcoming.length} reminder(s) '
+      'ReminderScheduler: ${upcoming.length} dose(s), $alarms alarm(s) '
       'for $profileId (${mode.name})',
     );
+  }
+
+  /// Schedules the reminder plus escalation repeats for one dose.
+  /// Returns how many alarms were set.
+  Future<int> _scheduleDose(Dose dose, AndroidScheduleMode mode) async {
+    final first = dose.snoozedUntil ?? dose.scheduledAt;
+    final payload = jsonEncode({
+      'doseId': dose.id,
+      'profileId': dose.profileId,
+    });
+
+    var count = await _schedule(
+      id: _idFor(dose.id),
+      at: first,
+      dose: dose,
+      payload: payload,
+      mode: mode,
+    );
+
+    for (var i = 1; i <= _escalationCount; i++) {
+      final at = first.add(Duration(minutes: _escalationMinutes * i));
+      if (!at.isBefore(dose.missDeadline)) break; // never nag past the deadline
+      count += await _schedule(
+        id: _idFor('${dose.id}#$i'),
+        at: at,
+        dose: dose,
+        payload: payload,
+        mode: mode,
+      );
+    }
+    return count;
+  }
+
+  Future<int> _schedule({
+    required int id,
+    required DateTime at,
+    required Dose dose,
+    required String payload,
+    required AndroidScheduleMode mode,
+  }) async {
+    await _plugin.zonedSchedule(
+      id: id,
+      title: dose.medName,
+      body: dose.doseLabel ?? 'Time to take your medication',
+      scheduledDate: tz.TZDateTime.from(at.toLocal(), tz.local),
+      notificationDetails: _details,
+      androidScheduleMode: mode,
+      payload: payload,
+    );
+    return 1;
   }
 
   /// Exact alarms need a user grant on Android 14+; fall back to inexact.
@@ -220,8 +312,13 @@ class ReminderScheduler {
     }
   }
 
-  /// Cancels the reminder for one dose (used by M8 step 3 after logging).
-  Future<void> cancelForDose(String doseId) => _plugin.cancel(id: _idFor(doseId));
+  /// Cancels every alert for one dose (the reminder + its escalations).
+  Future<void> cancelForDose(String doseId) async {
+    await _plugin.cancel(id: _idFor(doseId));
+    for (var i = 1; i <= _escalationCount; i++) {
+      await _plugin.cancel(id: _idFor('$doseId#$i'));
+    }
+  }
 
   /// Stable across app restarts (unlike String.hashCode).
   static int _idFor(String doseId) {
@@ -237,33 +334,71 @@ class ReminderScheduler {
   // ────────────────────────────────────────────────────────────
 
   void _onNotificationResponse(NotificationResponse response) {
-    // M8 step 3: open the right dose / handle action buttons.
-    debugPrint(
-      'ReminderScheduler: notification tapped '
-      '(action: ${response.actionId}, payload: ${response.payload})',
+    final action = response.actionId;
+    if (action != null) {
+      // Actions normally land in the background isolate; this covers the
+      // case where the app is already in the foreground.
+      unawaited(_handleAction(action, response.payload));
+      return;
+    }
+    // Body tap just opens the app; queued actions replay on resume.
+    debugPrint('ReminderScheduler: notification opened (${response.payload})');
+  }
+
+  Future<void> _handleAction(String action, String? payload) async {
+    final target = _parsePayload(payload);
+    if (target == null) return;
+
+    await ReminderActionQueue.instance.enqueue(
+      doseId: target.doseId,
+      profileId: target.profileId,
+      action: action,
+      snoozeMinutes: action == 'snooze'
+          ? ReminderActionQueue.snoozeMinutes
+          : null,
     );
+    await cancelForDose(target.doseId);
+    await _applyQueuedActions();
+  }
+
+  /// Notification payload: {doseId, profileId}. The background isolate has
+  /// no ProfileController, so the profile travels with the notification.
+  static ({String doseId, String profileId})? _parsePayload(String? raw) {
+    if (raw == null) return null;
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      return (
+        doseId: map['doseId'] as String,
+        profileId: map['profileId'] as String,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   // ────────────────────────────────────────────────────────────
   // DEBUG HELPERS
   // ────────────────────────────────────────────────────────────
 
-  /// Proof that local notifications work. Run with:
+  /// Proof that notifications + action buttons work. Run with:
   ///   flutter run --dart-define=NOTIF_TEST=true
   Future<void> scheduleTestNotification({int seconds = 10}) async {
     if (!_initialized) await init();
-    final mode = await _scheduleMode();
-    await _plugin.zonedSchedule(
-      id: _idFor('__test__'),
-      title: 'MedRemind test reminder',
-      body: 'Local notifications are working',
-      scheduledDate: tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds)),
-      notificationDetails: _details,
-      androidScheduleMode: mode,
-      payload: 'test',
+    final now = DateTime.now();
+    final fake = Dose(
+      id: '__test__',
+      profileId: 'test',
+      medicationId: 'test',
+      medName: 'MedRemind test reminder',
+      doseLabel: '1 tablet',
+      scheduledAt: now.add(Duration(seconds: seconds)),
+      missDeadline: now.add(const Duration(minutes: 30)),
+      createdAt: now,
     );
+    final mode = await _scheduleMode();
+    final alarms = await _scheduleDose(fake, mode);
     debugPrint(
-      'ReminderScheduler: test notification scheduled in ${seconds}s '
+      'ReminderScheduler: $alarms test alarm(s) from +${seconds}s '
       '(${mode.name})',
     );
   }
@@ -274,11 +409,30 @@ class ReminderScheduler {
 
 /// Runs in a background isolate when a notification action is tapped.
 /// Top-level + vm:entry-point is required by flutter_local_notifications.
+///
+/// No Firestore here: auth/profile state is unreliable in this isolate, so
+/// the tap is queued and replayed when the app next opens or resumes.
 @pragma('vm:entry-point')
-void notificationTapBackground(NotificationResponse response) {
-  // M8 step 3: Taken / Skip / Snooze handling.
-  debugPrint(
-    'ReminderScheduler: background action ${response.actionId} '
-    '(payload: ${response.payload})',
+void notificationTapBackground(NotificationResponse response) async {
+  DartPluginRegistrant.ensureInitialized();
+
+  final action = response.actionId;
+  final target = ReminderScheduler._parsePayload(response.payload);
+  if (action == null || target == null) return;
+
+  await ReminderActionQueue.instance.enqueue(
+    doseId: target.doseId,
+    profileId: target.profileId,
+    action: action,
+    snoozeMinutes: action == 'snooze'
+        ? ReminderActionQueue.snoozeMinutes
+        : null,
   );
+
+  try {
+    await ReminderScheduler.instance.cancelForDose(target.doseId);
+  } catch (e) {
+    // Cancelling is a nicety; the queued action is what matters.
+    debugPrint('ReminderScheduler: background cancel failed: $e');
+  }
 }

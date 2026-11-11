@@ -353,6 +353,7 @@ service cloud.firestore {
         || (
           (oldStatus == 'pending' && newStatus == 'taken')
           || (oldStatus == 'pending' && newStatus == 'skipped')
+          || (oldStatus == 'pending' && newStatus == 'missed')
           || (oldStatus == 'missed' && newStatus == 'taken')
           || (oldStatus == 'missed' && newStatus == 'skipped')
           || (oldStatus == 'taken' && newStatus == 'pending')

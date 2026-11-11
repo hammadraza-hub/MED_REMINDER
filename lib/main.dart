@@ -30,8 +30,10 @@ import 'config/remote_config_service.dart';
 import 'core/accessibility/accessibility_controller.dart';
 import 'core/locale/locale_controller.dart';
 import 'core/profile/profile_controller.dart';
+import 'core/services/reminder_action_queue.dart';
 import 'core/services/reminder_scheduler.dart';
 import 'l10n/app_localizations.dart';
+import 'repositories/auth_repository.dart';
 
 // import 'main_shell.dart';
 
@@ -131,6 +133,10 @@ Future<void> main() async {
   // ───────────────────────────────────────────────────────────
   await ProfileController.instance.initialize();
 
+  // Resolve the signed-in account's profile so the app stops using a stale
+  // local memberId (wrong name + Firestore permission-denied on dose writes).
+  await AuthRepository.instance.restoreSelectedProfile();
+
   // ───────────────────────────────────────────────────────────
   // STEP 5: Accessibility + Locale Restore
   // ───────────────────────────────────────────────────────────
@@ -141,6 +147,9 @@ Future<void> main() async {
   // STEP 6: M8 — local dose reminders (Spark: no server involved)
   // ───────────────────────────────────────────────────────────
   await ReminderScheduler.instance.init();
+  // Notification taps recorded while the app was away.
+  await ReminderActionQueue.instance.replay();
+
   unawaited(ReminderScheduler.instance.rescheduleAll());
 
   // Debug-only proof: flutter run --dart-define=NOTIF_TEST=true

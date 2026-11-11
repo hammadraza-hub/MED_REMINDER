@@ -271,7 +271,13 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    memberToSelect ??= members.isNotEmpty ? members.first : null;
+    // Keep a valid selection that is not in the local list (e.g. the
+    // Firestore-backed self profile); only auto-pick when nothing is set.
+    final hasControllerSelection =
+        (profileController.memberId ?? '').isNotEmpty;
+    memberToSelect ??= hasControllerSelection
+        ? null
+        : (members.isNotEmpty ? members.first : null);
     setState(() {
       _members = members;
       _selectedMemberId = memberToSelect?.id;

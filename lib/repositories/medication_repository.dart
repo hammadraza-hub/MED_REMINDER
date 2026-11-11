@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/app_exception.dart';
+import '../core/services/reminder_scheduler.dart';
 import '../models/medication.dart';
 import '../core/dose_engine.dart';
 import '../models/schedule.dart';
@@ -72,6 +75,7 @@ class MedicationRepository {
       final medicationWithId = medication.copyWith(id: docRef.id);
       await _generateAndWriteDoses(profileId, medicationWithId);
 
+      unawaited(ReminderScheduler.instance.rescheduleAll());
       return docRef.id;
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
@@ -189,6 +193,8 @@ class MedicationRepository {
         await _deleteFuturePendingDoses(profileId, medication.id);
         await _generateAndWriteDoses(profileId, medication);
       }
+
+      unawaited(ReminderScheduler.instance.rescheduleAll());
     } on AppException {
       rethrow;
     } on FirebaseException catch (e) {
@@ -228,6 +234,8 @@ class MedicationRepository {
 
       // 2. Delete future pending doses (logged history stays)
       await _deleteFuturePendingDoses(profileId, medicationId);
+
+      unawaited(ReminderScheduler.instance.rescheduleAll());
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
     } catch (e) {
