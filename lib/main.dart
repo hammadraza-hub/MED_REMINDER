@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -29,6 +30,7 @@ import 'config/remote_config_service.dart';
 import 'core/accessibility/accessibility_controller.dart';
 import 'core/locale/locale_controller.dart';
 import 'core/profile/profile_controller.dart';
+import 'core/services/reminder_scheduler.dart';
 import 'l10n/app_localizations.dart';
 
 // import 'main_shell.dart';
@@ -134,6 +136,19 @@ Future<void> main() async {
   // ───────────────────────────────────────────────────────────
   await AccessibilityController.instance.initialize();
   await LocaleController.instance.initialize();
+
+  // ───────────────────────────────────────────────────────────
+  // STEP 6: M8 — local dose reminders (Spark: no server involved)
+  // ───────────────────────────────────────────────────────────
+  await ReminderScheduler.instance.init();
+  unawaited(ReminderScheduler.instance.rescheduleAll());
+
+  // Debug-only proof: flutter run --dart-define=NOTIF_TEST=true
+  if (kDebugMode && const bool.fromEnvironment('NOTIF_TEST')) {
+    // Wait for the startup reschedule (its cancelAll would wipe this test).
+    await ReminderScheduler.instance.rescheduleAll();
+    await ReminderScheduler.instance.scheduleTestNotification();
+  }
 
   runApp(const MyApp());
 }
