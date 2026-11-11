@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../auth/signup_screen.dart';
+import 'notification_permission_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -72,7 +72,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _goToSignup() {
     Navigator.of(
       context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const SignupScreen()));
+    ).pushReplacement(
+      MaterialPageRoute(builder: (_) => const NotificationPermissionScreen()),
+    );
   }
 
   void _nextPage() {
