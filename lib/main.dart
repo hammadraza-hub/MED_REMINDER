@@ -17,6 +17,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 // ──────────────────────────────────────────────────────────────
 // APP CONFIG (M1) — env-based FirebaseOptions + emulator flag
@@ -32,6 +33,7 @@ import 'core/locale/locale_controller.dart';
 import 'core/profile/profile_controller.dart';
 import 'core/services/reminder_action_queue.dart';
 import 'core/services/reminder_scheduler.dart';
+import 'core/services/push_service.dart';
 import 'l10n/app_localizations.dart';
 import 'repositories/auth_repository.dart';
 
@@ -136,6 +138,24 @@ Future<void> main() async {
   // Resolve the signed-in account's profile so the app stops using a stale
   // local memberId (wrong name + Firestore permission-denied on dose writes).
   await AuthRepository.instance.restoreSelectedProfile();
+
+  // ───────────────────────────────────────────────────────────
+  // STEP 5d: FCM token registration (Spark: client writes devices collection;
+  //          server-side sendPush is Blaze-only and deferred)
+  // ───────────────────────────────────────────────────────────
+  final uid = AuthRepository.instance.currentUid;
+  if (uid != null && uid.isNotEmpty) {
+    try {
+      await pushService.registerToken(uid);
+      // Re-register on token refresh.
+      FirebaseMessaging.instance.onRegistered.listen((newToken) {
+        unawaited(pushService.registerToken(uid));
+      });
+    } catch (e) {
+      debugPrint('M8 step 5d: FCM token registration failed: $e');
+      // Non-fatal — reminders still work locally without FCM token.
+    }
+  }
 
   // ───────────────────────────────────────────────────────────
   // STEP 5: Accessibility + Locale Restore
