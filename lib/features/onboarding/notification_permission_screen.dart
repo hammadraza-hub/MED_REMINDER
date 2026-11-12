@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/services/reminder_scheduler.dart';
+import '../../l10n/app_localizations.dart';
 import '../auth/signup_screen.dart';
 
 /// Notification permission screen — part of M8 step 5c (onboarding).
@@ -26,6 +27,14 @@ class _NotificationPermissionScreenState
     extends State<NotificationPermissionScreen> {
   bool _isRequesting = false;
   String? _status; // 'granted', 'denied', 'error'
+
+  late final AppLocalizations l10n;
+
+  @override
+  void initState() {
+    super.initState();
+    l10n = AppLocalizations.of(context);
+  }
 
   /// Calls ReminderScheduler.instance.requestPermissions() and records the result.
   Future<void> _requestPermissions() async {
@@ -85,7 +94,7 @@ class _NotificationPermissionScreenState
                     const SizedBox(height: 20),
 
                     Text(
-                      'Enable Dose Reminders',
+                      l10n.permTitle,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: AppColors.textPrimary,
@@ -97,8 +106,7 @@ class _NotificationPermissionScreenState
                     const SizedBox(height: 12),
 
                     Text(
-                      'MedRemind needs your permission to send dose reminders — '
-                          'at the right time, even when the app is closed.',
+                      l10n.permSubtitle,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: AppColors.textSecondary,
@@ -113,16 +121,14 @@ class _NotificationPermissionScreenState
                     // =========================================================
                     _PermissionCard(
                       icon: Icons.notifications_none_rounded,
-                      title: 'Show notifications',
-                      subtitle:
-                          'Receive dose reminders with Taken / Skip / Snooze buttons.',
+                      title: l10n.permCardNotificationsTitle,
+                      subtitle: l10n.permCardNotificationsSubtitle,
                     ),
                     const SizedBox(height: 12),
                     _PermissionCard(
                       icon: Icons.schedule_rounded,
-                      title: 'Set exact alarms',
-                      subtitle:
-                          'Reminders fire at the exact dose time (required on Android 12+).',
+                      title: l10n.permCardExactAlarmsTitle,
+                      subtitle: l10n.permCardExactAlarmsSubtitle,
                     ),
                     const SizedBox(height: 24),
 
@@ -152,7 +158,7 @@ class _NotificationPermissionScreenState
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Battery optimisation (Xiaomi / Oppo / Samsung)',
+                                  l10n.permBatteryTitle,
                                   style: TextStyle(
                                     color: AppColors.textPrimary,
                                     fontSize: 13,
@@ -161,8 +167,7 @@ class _NotificationPermissionScreenState
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Some phone makers kill background apps aggressively. '
-                                      'If reminders don’t fire, whitelist MedRemind in battery settings.',
+                                  l10n.permBatterySubtitle,
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 13,
@@ -204,10 +209,10 @@ class _NotificationPermissionScreenState
                             Expanded(
                               child: Text(
                                 granted
-                                    ? 'Permissions granted — reminders are on.'
+                                    ? l10n.permStatusGranted
                                     : denied
-                                    ? 'Permissions denied — you can enable them later in Settings.'
-                                    : 'Could not verify permissions — try again.',
+                                    ? l10n.permStatusDenied
+                                    : l10n.permStatusError,
                                 style: TextStyle(
                                   color: granted
                                       ? AppColors.success
@@ -253,8 +258,8 @@ class _NotificationPermissionScreenState
                               )
                             : Text(
                                 granted || denied
-                                    ? 'Continue Anyway'
-                                    : 'Enable Dose Reminders',
+                                    ? l10n.permBtnContinue
+                                    : l10n.permTitle,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -270,7 +275,7 @@ class _NotificationPermissionScreenState
                     TextButton(
                       onPressed: _isRequesting ? null : _continueToSignup,
                       child: Text(
-                        'Skip for now',
+                        l10n.permBtnSkip,
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 14,

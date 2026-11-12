@@ -2869,6 +2869,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm & Continue →'**
   String get reviewScanConfirmContinue;
+
+  /// No description provided for @couldNotLoadSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load settings'**
+  String get couldNotLoadSettings;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync reminder habits with your daily rhythm'**
+  String get notificationsSubtitle;
+
+  /// No description provided for @sectionAlertTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert Types'**
+  String get sectionAlertTypes;
+
+  /// No description provided for @sectionEscalationTiming.
+  ///
+  /// In en, this message translates to:
+  /// **'Escalation Timing'**
+  String get sectionEscalationTiming;
+
+  /// No description provided for @sectionQuietHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet Hours'**
+  String get sectionQuietHours;
+
+  /// No description provided for @alertDoseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dose Reminders'**
+  String get alertDoseTitle;
+
+  /// No description provided for @alertDoseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me at each dose time'**
+  String get alertDoseSubtitle;
+
+  /// No description provided for @alertRefillTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Refill Alerts'**
+  String get alertRefillTitle;
+
+  /// No description provided for @alertRefillSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When supply runs low'**
+  String get alertRefillSubtitle;
+
+  /// No description provided for @alertCaregiverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Caregiver Alerts'**
+  String get alertCaregiverTitle;
+
+  /// No description provided for @alertCaregiverSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert family if a dose is missed'**
+  String get alertCaregiverSubtitle;
+
+  /// No description provided for @escalationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-remind after'**
+  String get escalationLabel;
+
+  /// No description provided for @escalationMinutesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'If a dose is unconfirmed, remind again'**
+  String get escalationMinutesDesc;
+
+  /// No description provided for @quietHoursLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet Hours'**
+  String get quietHoursLabel;
+
+  /// No description provided for @quietHoursRange.
+  ///
+  /// In en, this message translates to:
+  /// **'10:00 PM – 7:00 AM'**
+  String get quietHoursRange;
+
+  /// No description provided for @btnSavePreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Preferences'**
+  String get btnSavePreferences;
+
+  /// No description provided for @snackbarSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences saved'**
+  String get snackbarSaved;
+
+  /// No description provided for @snackbarSavedDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences Saved!'**
+  String get snackbarSavedDone;
+
+  /// No description provided for @snackbarSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed: {error}'**
+  String snackbarSaveFailed(Object error);
+
+  /// No description provided for @minutesFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} minutes'**
+  String minutesFormat(int minutes);
+
+  /// No description provided for @permTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Dose Reminders'**
+  String get permTitle;
+
+  /// No description provided for @permSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MedRemind needs your permission to send dose reminders — at the right time, even when the app is closed.'**
+  String get permSubtitle;
+
+  /// No description provided for @permCardNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show notifications'**
+  String get permCardNotificationsTitle;
+
+  /// No description provided for @permCardNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive dose reminders with Taken / Skip / Snooze buttons.'**
+  String get permCardNotificationsSubtitle;
+
+  /// No description provided for @permCardExactAlarmsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set exact alarms'**
+  String get permCardExactAlarmsTitle;
+
+  /// No description provided for @permCardExactAlarmsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders fire at the exact dose time (required on Android 12+).'**
+  String get permCardExactAlarmsSubtitle;
+
+  /// No description provided for @permBatteryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery optimisation (Xiaomi / Oppo / Samsung)'**
+  String get permBatteryTitle;
+
+  /// No description provided for @permBatterySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Some phone makers kill background apps aggressively. If reminders don\'t fire, whitelist MedRemind in battery settings.'**
+  String get permBatterySubtitle;
+
+  /// No description provided for @permStatusGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions granted — reminders are on.'**
+  String get permStatusGranted;
+
+  /// No description provided for @permStatusDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions denied — you can enable them later in Settings.'**
+  String get permStatusDenied;
+
+  /// No description provided for @permStatusError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not verify permissions — try again.'**
+  String get permStatusError;
+
+  /// No description provided for @permBtnContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Anyway'**
+  String get permBtnContinue;
+
+  /// No description provided for @permBtnSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get permBtnSkip;
 }
 
 class _AppLocalizationsDelegate

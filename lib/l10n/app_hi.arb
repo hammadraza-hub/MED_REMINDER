@@ -481,5 +481,46 @@
   "reviewScanStrengthUnclear": "फ़ोटो में मात्रा फ़ील्ड स्पष्ट नहीं थी — कृपया मैन्युअल रूप से जाँचें।",
   "reviewScanRequired": "आवश्यक",
   "reviewScanStrengthHint": "मात्रा दर्ज करें, उदा. 500mg",
-  "reviewScanConfirmContinue": "पुष्टि करें और जारी रखें →"
+  "reviewScanConfirmContinue": "पुष्टि करें और आगे बढ़ें →",
+
+  "couldNotLoadSettings": "सेटिंग्स लोड नहीं की जा सकीं",
+  "notificationsTitle": "नोटिफिकेशन",
+  "notificationsSubtitle": "अपनी दैनिक दिनचर्या के साथ रिमाइंडर की आदतें सिंक करें",
+  "sectionAlertTypes": "अलर्ट प्रकार",
+  "sectionEscalationTiming": "एस्कलेशन समय",
+  "sectionQuietHours": "शांत घंटे",
+  "alertDoseTitle": "खुराक रिमाइंडर",
+  "alertDoseSubtitle": "प्रत्येक खुराक के समय रिमाइंड करें",
+  "alertRefillTitle": "रिफिल अलर्ट",
+  "alertRefillSubtitle": "जब आपूर्ति कम हो जाए",
+  "alertCaregiverTitle": "केयरगिवर अलर्ट",
+  "alertCaregiverSubtitle": "खुराक छूटने पर परिवार को सूचित करें",
+  "escalationLabel": "फिर से रिमाइंड करें",
+  "escalationMinutesDesc": "अगर खुराक की पुष्टि नहीं होती, तो फिर से रिमाइंड करें",
+  "quietHoursLabel": "शांत घंटे",
+  "quietHoursRange": "रात 10:00 बजे – सुबह 7:00 बजे",
+  "btnSavePreferences": "प्राथमिकताएं सहेजें",
+  "snackbarSaved": "प्राथमिकताएं सहेज ली गईं",
+  "snackbarSavedDone": "प्राथमिकताएं सहेज ली गईं!",
+  "snackbarSaveFailed": "बचाने में विफल: {error}",
+  "minutesFormat": "{minutes} मिनट",
+  "@minutesFormat": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+
+  "permTitle": "खुराक रिमाइंडर सक्षम करें",
+  "permSubtitle": "MedRemind को खुराक रिमाइंडर भेजने की अनुमति चाहिए — सही समय पर, भले ही ऐप बंद हो।",
+  "permCardNotificationsTitle": "नोटिफिकेशन दिखाएं",
+  "permCardNotificationsSubtitle": "Taken / Skip / Snooze बटन के साथ खुराक रिमाइंडर प्राप्त करें।",
+  "permCardExactAlarmsTitle": "सटीक अलार्म सेट करें",
+  "permCardExactAlarmsSubtitle": "रिमाइंडर खुराक के सही समय पर बजेंगे (एंड्रॉइड 12+ के लिए आवश्यक)।",
+  "permBatteryTitle": "बैटरी अनुकूलन (Xiaomi / Oppo / Samsung)",
+  "permBatterySubtitle": "कुछ फोन निर्माता बैकग्राउंड ऐप्स को आक्रामक रूप से मार देते हैं। अगर रिमाइंडर नहीं बज रहे, तो बैटरी सेटिंग में MedRemind को व्हाइटलिस्ट करें।",
+  "permStatusGranted": "अनुमति दी गई — रिमाइंडर चालू हैं।",
+  "permStatusDenied": "अनुमति अस्वीकार की गई — बाद में सेटिंग्स से सक्षम कर सकते हैं।",
+  "permStatusError": "अनुमति सत्यापित नहीं की जा सकी — फिर से कोशिश करें।",
+  "permBtnContinue": "फिर भी जारी रखें",
+  "permBtnSkip": "अभी छोड़ें"
 }

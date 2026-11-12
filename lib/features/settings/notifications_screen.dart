@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../models/notification_settings.dart';
 import '../../repositories/auth_repository.dart';
@@ -59,6 +60,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   String? _uid;
 
+  late final AppLocalizations l10n;
+
   // ============================================================
   // INIT
   // ============================================================
@@ -66,6 +69,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
+    l10n = AppLocalizations.of(context);
     _uid = AuthRepository.instance.currentUid;
     _loadSettings();
   }
@@ -133,7 +137,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('Preferences saved')));
+        ..showSnackBar(SnackBar(content: Text(l10n.snackbarSaved)));
       await Future<void>.delayed(const Duration(seconds: 2));
       if (!mounted) return;
       setState(() {
@@ -148,7 +152,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text('Save failed: $e'),
+            content: Text(l10n.snackbarSaveFailed(e.toString())),
             backgroundColor: AppColors.formAccent.withValues(alpha: 0.9),
           ),
         );
@@ -189,7 +193,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     color: AppColors.reportPrimary, size: 48),
                 const SizedBox(height: 12),
                 Text(
-                  'Could not load settings',
+                  l10n.couldNotLoadSettings,
                   style: TextStyle(
                     color: AppColors.reportPrimary,
                     fontSize: 16,
@@ -230,15 +234,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       children: [
                         _buildContextCard(),
                         const SizedBox(height: 16),
-                        _buildSectionLabel('Alert Types'),
+                        _buildSectionLabel(l10n.sectionAlertTypes),
                         const SizedBox(height: 8),
                         _buildAlertTypesCard(),
                         const SizedBox(height: 16),
-                        _buildSectionLabel('Escalation Timing'),
+                        _buildSectionLabel(l10n.sectionEscalationTiming),
                         const SizedBox(height: 8),
                         _buildEscalationCard(),
                         const SizedBox(height: 16),
-                        _buildSectionLabel('Quiet Hours'),
+                        _buildSectionLabel(l10n.sectionQuietHours),
                         const SizedBox(height: 8),
                         _buildQuietHoursCard(),
                         const SizedBox(height: 12),
@@ -282,9 +286,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               ),
               const SizedBox(width: 2),
-              const Expanded(
+                Expanded(
                 child: Text(
-                  'Notifications',
+                  l10n.notificationsTitle,
                   style: TextStyle(
                     color: AppColors.surface,
                     fontSize: 18,
@@ -319,12 +323,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             background: AppColors.reportSurfaceContainer,
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Notification Controls',
+                  l10n.notificationsTitle,
                   style: TextStyle(
                     color: AppColors.reportPrimary,
                     fontSize: 16,
@@ -333,7 +337,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Sync reminder habits with your daily rhythm',
+                  l10n.notificationsSubtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -434,9 +438,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Re-remind after',
+                  l10n.escalationLabel,
                   style: TextStyle(
                     color: AppColors.reportPrimary,
                     fontSize: 16,
@@ -449,8 +453,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            'If a dose is unconfirmed, remind again',
+          Text(
+            l10n.escalationMinutesDesc,
             style: TextStyle(
               color: AppColors.permissionsSecondary,
               fontSize: 13,
@@ -488,7 +492,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             for (final minutes in NotificationsData.escalationMinutes)
               DropdownMenuItem<int>(
                 value: minutes,
-                child: Text('$minutes minutes'),
+                child: Text(l10n.minutesFormat(minutes)),
               ),
           ],
           onChanged: (value) {
@@ -512,12 +516,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Quiet Hours',
+                  l10n.quietHoursLabel,
                   style: TextStyle(
                     color: AppColors.reportPrimary,
                     fontSize: 16,
@@ -526,7 +530,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  NotificationsData.quietHoursRange,
+                  l10n.quietHoursRange,
                   style: TextStyle(
                     color: AppColors.permissionsSecondary,
                     fontSize: 13,
@@ -580,7 +584,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              _justSaved ? 'Preferences Saved!' : 'Save Preferences',
+              _justSaved ? l10n.snackbarSavedDone : l10n.btnSavePreferences,
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

@@ -1640,5 +1640,119 @@ class AppLocalizationsHi extends AppLocalizations {
   String get reviewScanStrengthHint => 'मात्रा दर्ज करें, उदा. 500mg';
 
   @override
-  String get reviewScanConfirmContinue => 'पुष्टि करें और जारी रखें →';
+  String get reviewScanConfirmContinue => 'पुष्टि करें और आगे बढ़ें →';
+
+  @override
+  String get couldNotLoadSettings => 'सेटिंग्स लोड नहीं की जा सकीं';
+
+  @override
+  String get notificationsTitle => 'नोटिफिकेशन';
+
+  @override
+  String get notificationsSubtitle =>
+      'अपनी दैनिक दिनचर्या के साथ रिमाइंडर की आदतें सिंक करें';
+
+  @override
+  String get sectionAlertTypes => 'अलर्ट प्रकार';
+
+  @override
+  String get sectionEscalationTiming => 'एस्कलेशन समय';
+
+  @override
+  String get sectionQuietHours => 'शांत घंटे';
+
+  @override
+  String get alertDoseTitle => 'खुराक रिमाइंडर';
+
+  @override
+  String get alertDoseSubtitle => 'प्रत्येक खुराक के समय रिमाइंड करें';
+
+  @override
+  String get alertRefillTitle => 'रिफिल अलर्ट';
+
+  @override
+  String get alertRefillSubtitle => 'जब आपूर्ति कम हो जाए';
+
+  @override
+  String get alertCaregiverTitle => 'केयरगिवर अलर्ट';
+
+  @override
+  String get alertCaregiverSubtitle => 'खुराक छूटने पर परिवार को सूचित करें';
+
+  @override
+  String get escalationLabel => 'फिर से रिमाइंड करें';
+
+  @override
+  String get escalationMinutesDesc =>
+      'अगर खुराक की पुष्टि नहीं होती, तो फिर से रिमाइंड करें';
+
+  @override
+  String get quietHoursLabel => 'शांत घंटे';
+
+  @override
+  String get quietHoursRange => 'रात 10:00 बजे – सुबह 7:00 बजे';
+
+  @override
+  String get btnSavePreferences => 'प्राथमिकताएं सहेजें';
+
+  @override
+  String get snackbarSaved => 'प्राथमिकताएं सहेज ली गईं';
+
+  @override
+  String get snackbarSavedDone => 'प्राथमिकताएं सहेज ली गईं!';
+
+  @override
+  String snackbarSaveFailed(Object error) {
+    return 'बचाने में विफल: $error';
+  }
+
+  @override
+  String minutesFormat(int minutes) {
+    return '$minutes मिनट';
+  }
+
+  @override
+  String get permTitle => 'खुराक रिमाइंडर सक्षम करें';
+
+  @override
+  String get permSubtitle =>
+      'MedRemind को खुराक रिमाइंडर भेजने की अनुमति चाहिए — सही समय पर, भले ही ऐप बंद हो।';
+
+  @override
+  String get permCardNotificationsTitle => 'नोटिफिकेशन दिखाएं';
+
+  @override
+  String get permCardNotificationsSubtitle =>
+      'Taken / Skip / Snooze बटन के साथ खुराक रिमाइंडर प्राप्त करें।';
+
+  @override
+  String get permCardExactAlarmsTitle => 'सटीक अलार्म सेट करें';
+
+  @override
+  String get permCardExactAlarmsSubtitle =>
+      'रिमाइंडर खुराक के सही समय पर बजेंगे (एंड्रॉइड 12+ के लिए आवश्यक)।';
+
+  @override
+  String get permBatteryTitle => 'बैटरी अनुकूलन (Xiaomi / Oppo / Samsung)';
+
+  @override
+  String get permBatterySubtitle =>
+      'कुछ फोन निर्माता बैकग्राउंड ऐप्स को आक्रामक रूप से मार देते हैं। अगर रिमाइंडर नहीं बज रहे, तो बैटरी सेटिंग में MedRemind को व्हाइटलिस्ट करें।';
+
+  @override
+  String get permStatusGranted => 'अनुमति दी गई — रिमाइंडर चालू हैं।';
+
+  @override
+  String get permStatusDenied =>
+      'अनुमति अस्वीकार की गई — बाद में सेटिंग्स से सक्षम कर सकते हैं।';
+
+  @override
+  String get permStatusError =>
+      'अनुमति सत्यापित नहीं की जा सकी — फिर से कोशिश करें।';
+
+  @override
+  String get permBtnContinue => 'फिर भी जारी रखें';
+
+  @override
+  String get permBtnSkip => 'अभी छोड़ें';
 }

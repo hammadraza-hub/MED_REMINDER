@@ -583,5 +583,46 @@
   "reviewScanStrengthUnclear": "Strength field was unclear in the photo — please verify manually.",
   "reviewScanRequired": "REQUIRED",
   "reviewScanStrengthHint": "Enter strength e.g. 500mg",
-  "reviewScanConfirmContinue": "Confirm & Continue →"
+  "reviewScanConfirmContinue": "Confirm & Continue →",
+
+  "couldNotLoadSettings": "Could not load settings",
+  "notificationsTitle": "Notifications",
+  "notificationsSubtitle": "Sync reminder habits with your daily rhythm",
+  "sectionAlertTypes": "Alert Types",
+  "sectionEscalationTiming": "Escalation Timing",
+  "sectionQuietHours": "Quiet Hours",
+  "alertDoseTitle": "Dose Reminders",
+  "alertDoseSubtitle": "Remind me at each dose time",
+  "alertRefillTitle": "Refill Alerts",
+  "alertRefillSubtitle": "When supply runs low",
+  "alertCaregiverTitle": "Caregiver Alerts",
+  "alertCaregiverSubtitle": "Alert family if a dose is missed",
+  "escalationLabel": "Re-remind after",
+  "escalationMinutesDesc": "If a dose is unconfirmed, remind again",
+  "quietHoursLabel": "Quiet Hours",
+  "quietHoursRange": "10:00 PM – 7:00 AM",
+  "btnSavePreferences": "Save Preferences",
+  "snackbarSaved": "Preferences saved",
+  "snackbarSavedDone": "Preferences Saved!",
+  "snackbarSaveFailed": "Save failed: {error}",
+  "minutesFormat": "{minutes} minutes",
+  "@minutesFormat": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+
+  "permTitle": "Enable Dose Reminders",
+  "permSubtitle": "MedRemind needs your permission to send dose reminders — at the right time, even when the app is closed.",
+  "permCardNotificationsTitle": "Show notifications",
+  "permCardNotificationsSubtitle": "Receive dose reminders with Taken / Skip / Snooze buttons.",
+  "permCardExactAlarmsTitle": "Set exact alarms",
+  "permCardExactAlarmsSubtitle": "Reminders fire at the exact dose time (required on Android 12+).",
+  "permBatteryTitle": "Battery optimisation (Xiaomi / Oppo / Samsung)",
+  "permBatterySubtitle": "Some phone makers kill background apps aggressively. If reminders don't fire, whitelist MedRemind in battery settings.",
+  "permStatusGranted": "Permissions granted — reminders are on.",
+  "permStatusDenied": "Permissions denied — you can enable them later in Settings.",
+  "permStatusError": "Could not verify permissions — try again.",
+  "permBtnContinue": "Continue Anyway",
+  "permBtnSkip": "Skip for now"
 }
