@@ -69,9 +69,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    l10n = AppLocalizations.of(context);
     _uid = AuthRepository.instance.currentUid;
     _loadSettings();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    l10n = AppLocalizations.of(context);
   }
 
   /// Loads persisted preferences from `users/{uid}.settings`; falls back to

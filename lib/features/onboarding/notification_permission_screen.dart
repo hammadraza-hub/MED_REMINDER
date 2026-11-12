@@ -33,6 +33,11 @@ class _NotificationPermissionScreenState
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     l10n = AppLocalizations.of(context);
   }
 
