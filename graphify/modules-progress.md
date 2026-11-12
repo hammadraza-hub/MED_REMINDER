@@ -8,7 +8,7 @@ Status is derived from git history + code inspection on 2026-11-12. "Spark" = bu
 | ID | Module | Pri | Status | % | Evidence | Gap / next action |
 |----|--------|-----|--------|---|----------|-------------------|
 | M0 | Firebase project, envs, data layout | P0 | ✅ | 90 | `firebase.json`, `.firebaserc`, `firestore.rules` (624 lines), 26 rules tests, `.github/workflows/firebase.yml`, schema doc | Storage rules unused (no bucket, Spark); prod project not wired; Functions folder empty |
-| M1 | Flutter ↔ Firebase foundation | P0 | ✅ | 90 | `AppConfig`, `AppException`, `FunctionsClient`, 7 repos, Crashlytics, App Check | `firebase_options_prod.dart` absent; Storage emulator skipped |
+| M1 | Flutter ↔ Firebase foundation | P0 | ✅ | 90 | `AppConfig`, `AppException`, `FunctionsClient`, 7 repos, Crashlytics, App Check | `firebase_options_prod.dart` gitignored (fresh clone won't build); Storage emulator skipped |
 | M2 | Authentication & accounts | P0 | 🟡 | 70 | login/signup/reset/account screens on FirebaseAuth; splash routing | Google (`login_screen.dart:403`) & Apple (`:405`) TODO; `onUserCreated` done client-side; no "sign out everywhere"; Terms/Privacy screen TODO (`signup_screen.dart:727`) |
 | M3 | Profiles, health profile, access model | P0 | ✅ | 85 | `Profile`/`Allergy` models, rules helpers canRead/canWrite, switcher, allergy CRUD | Avatars to Storage deferred; per-plan profile limit not server-enforced |
 | M4 | Drug catalog & label scan | P0 | 🟡 | 55 | `drug_repository`, ML Kit OCR, scan screens | No `syncRxnorm`/`parseLabel`/`drugInfo` functions |
@@ -39,7 +39,7 @@ Status is derived from git history + code inspection on 2026-11-12. "Spark" = bu
 |----|--------|--------|---|-------|
 | M20 | Loading/error/empty/offline states | 🟡 | 25 | `AppException` exists; screens inconsistent |
 | M21 | Security & hardening | 🟡 | 35 | Rules + tests; App Check **not enforced**; `.env` is gitignored |
-| M22 | Testing | 🟡 | 25 | 26 rules cases, 3 Flutter smoke tests; **no repo/engine/scheduler unit tests** |
+| M22 | Testing | 🟡 | 25 | 30 rules cases, 3 Flutter smoke tests; **no repo/engine/scheduler unit tests** |
 | M23 | Graphify | 🟡 | 50 | This folder (created 2026-11-12). Refresh after each module |
 
 ## Overall

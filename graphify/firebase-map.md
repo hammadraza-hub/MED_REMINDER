@@ -4,7 +4,7 @@
 | Env | Project | Region | Config file |
 |-----|---------|--------|-------------|
 | staging | `medapp-staging` | asia-south1 | `lib/firebase_options_staging.dart` ✅ |
-| prod | `med-reminder-38e5c` | nam5 | `lib/firebase_options_prod.dart` ❌ not in repo |
+| prod | `med-reminder-38e5c` | nam5 | `lib/firebase_options_prod.dart` ⚠️ exists locally but is **gitignored** (fresh clone won't compile — see HANDOFF) |
 
 ## Firestore collections vs rules
 | Path | Rules block | Used by app |
@@ -16,7 +16,8 @@
 | `…/doses`, `…/dailySummaries` | ✅ | M6/M7 |
 | `…/allergies` | ✅ | M3 |
 | `…/{collection}/{docId}` | generic fallback (~line 598) | other health data (refillAlerts, vitals, …) |
-| `drugs`, `invites`, `customers`, `supportTickets`, `exportJobs`, `config`, `mail` | no explicit block (default deny at `{document=**}`) | not yet |
+| `customers/{uid}` | ✅ owner read-only, no client write (added 2026-11-12, uncommitted) | M12 |
+| `drugs`, `invites`, `supportTickets`, `exportJobs`, `config`, `mail` | no explicit block (default deny at `{document=**}`) | not yet |
 
 ## Other backend assets
 - `functions/src/index.ts` — scaffold only, **no functions**.

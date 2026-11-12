@@ -7,6 +7,7 @@ It is hand-maintained (this is plan module **M23 — Graphify architecture updat
 
 | File | Purpose |
 |------|---------|
+| [HANDOFF.md](HANDOFF.md) | **START HERE** — constraints, commands, conventions, traps, ordered work queue |
 | [architecture.md](architecture.md) | Layers, data flow, startup order, mermaid diagrams |
 | [modules-progress.md](modules-progress.md) | M0–M23 status board with % and next actions |
 | [feature-map.md](feature-map.md) | Every `lib/features/*` area → data source → backing module |
