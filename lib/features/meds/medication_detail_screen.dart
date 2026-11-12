@@ -5,6 +5,7 @@ import '../../core/app_exception.dart';
 import '../../models/medication.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/medication_repository.dart';
+import '../../repositories/allergy_repository.dart';
 import 'edit_medication_screen.dart';
 
 /// Medication Detail Screen (M5)
@@ -223,6 +224,8 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
                 const SizedBox(height: 20),
                 _buildFlagsSection(medication),
                 const SizedBox(height: 20),
+                _buildSafetySection(medication),
+                const SizedBox(height: 20),
                 _buildDosesSection(),
                 const SizedBox(height: 32),
               ],
@@ -385,6 +388,103 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
     );
   }
 
+  // ============================================================
+  // SAFETY SECTION (M10 — Allergy + Interaction Checks)
+  // ============================================================
+
+  Widget _buildSafetySection(Medication med) {
+    return FutureBuilder<bool>(
+      future: AllergyRepository.instance.hasAllergyTo(widget.profileId, med.name),
+      builder: (context, snapshot) {
+        final isAllergic = snapshot.data ?? false;
+        final hasInteraction = med.hasInteractionFlag;
+
+        final hasSafetyIssue = isAllergic || hasInteraction;
+
+        return _buildSectionCard(
+          title: 'Safety Check',
+          icon: Icons.health_and_safety_outlined,
+          children: [
+            if (isAllergic)
+              _buildSafetyRow(
+                '⚠️ Allergy Alert',
+                'You are allergic to this medication. Consult your doctor before taking.',
+                Colors.redAccent,
+                Icons.warning_amber_rounded,
+              ),
+            if (hasInteraction)
+              _buildSafetyRow(
+                '⚠️ Interaction Warning',
+                'This medication may interact with another active medication.',
+                Colors.orangeAccent,
+                Icons.warning_rounded,
+              ),
+            if (!hasSafetyIssue)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, size: 16, color: AppColors.formAccent),
+                    const SizedBox(width: 8),
+                    Text(
+                      'No known safety issues.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.fieldHint,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSafetyRow(String title, String message, Color color, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   Widget _buildFlagRow(
     String title,
     String message,

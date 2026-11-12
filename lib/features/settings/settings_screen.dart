@@ -8,6 +8,7 @@ import '../../repositories/auth_repository.dart';
 import '../onboarding/splash_screen.dart';
 import '../../widgets/app_avatar.dart';
 import 'about_screen.dart';
+import 'allergy_screen.dart';
 import 'accessibility_screen.dart';
 import 'account_screen.dart';
 import 'data_export_screen.dart';
@@ -276,6 +277,7 @@ class SettingsScreen extends StatelessWidget {
               'subscription' => const SubscriptionScreen(),
               'privacySecurity' => const PrivacySecurityScreen(),
               'accessibility' => const AccessibilityScreen(),
+              'allergies' => AllergyScreen(profileId: 'current_profile'),
               'dataExport' => const DataExportScreen(),
               'helpSupport' => const HelpSupportScreen(),
               'about' => const AboutScreen(),

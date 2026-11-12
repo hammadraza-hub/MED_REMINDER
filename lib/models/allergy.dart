@@ -1,140 +1,88 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 /// ============================================================
-/// ALLERGY MODEL (M3)
+/// ALLERGY MODEL
 /// ============================================================
 ///
-/// Firestore Path:
-///   profiles/{profileId}/allergies/{allergyId}
+/// Represents a patient allergy for safety checks (M10).
 ///
-/// M3 Fields:
-///   label, rxcui, classId, reaction, severity, createdAt, updatedAt
+/// Firestore Path: profiles/{memberId}/allergies/{allergyId}
+///
+/// Fields: name, severity, description, createdAt
 /// ============================================================
 
-/// Allergy severity levels.
-enum AllergySeverity {
-  mild, // Mild reaction (rash, itching)
-  moderate, // Moderate reaction (swelling, hives)
-  severe; // Severe reaction (anaphylaxis — life-threatening)
-
-  String get name {
-    switch (this) {
-      case AllergySeverity.mild:
-        return 'mild';
-      case AllergySeverity.moderate:
-        return 'moderate';
-      case AllergySeverity.severe:
-        return 'severe';
-    }
-  }
-
-  static AllergySeverity fromString(String? value) {
-    switch (value) {
-      case 'mild':
-        return AllergySeverity.mild;
-      case 'severe':
-        return AllergySeverity.severe;
-      case 'moderate':
-      default:
-        return AllergySeverity.moderate;
-    }
-  }
-}
-
-/// Allergy model — represents a Firestore allergy document.
 class Allergy {
-  const Allergy({
-    required this.id,
-    required this.profileId,
-    required this.label,
-    required this.severity,
-    required this.createdAt,
-    required this.updatedAt,
-    this.rxcui,
-    this.classId,
-    this.reaction,
-  });
-
-  /// Document ID in Firestore.
+  /// Firestore document ID.
   final String id;
 
-  /// Parent profile ID.
-  final String profileId;
+  /// Parent profile ID (profiles/{memberId}/allergies/{id})
+  final String memberId;
 
-  /// Allergy label (e.g., "Penicillin", "Peanuts", "Latex").
-  final String label;
+  /// Allergy name (e.g., "Penicillin", "Peanuts", "Shellfish")
+  final String name;
 
-  /// RxNorm concept ID (from M4 drug database).
-  /// Used for safety checks against medications.
-  final String? rxcui;
+  /// Severity level.
+  /// Used for warning modals and alert prioritization.
+  final String severity; // "mild" | "moderate" | "severe"
 
-  /// Drug class ID (alternative to rxcui for class-level allergies).
-  final String? classId;
+  /// Free-text description or notes.
+  final String? description;
 
-  /// Reaction description (e.g., "Hives", "Anaphylaxis").
-  final String? reaction;
-
-  /// Severity level (mild, moderate, severe).
-  final AllergySeverity severity;
-
+  /// When this allergy was created.
   final DateTime createdAt;
-  final DateTime updatedAt;
 
-  // ───────────────────────────────────────────────────────────
-  // Firestore serialization
-  // ───────────────────────────────────────────────────────────
+  Allergy({
+    required this.id,
+    required this.memberId,
+    required this.name,
+    required this.severity,
+    this.description,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
-  Map<String, dynamic> toFirestore() {
+  /// Factory: create from Firestore map.
+  factory Allergy.fromMap(String id, Map<String, dynamic> data) {
+    return Allergy(
+      id: id,
+      memberId: data['memberId'] as String? ?? '',
+      name: data['name'] as String? ?? '',
+      severity: data['severity'] as String? ?? 'mild',
+      description: data['description'] as String?,
+      createdAt: data['createdAt'] != null
+          ? DateTime.parse(data['createdAt'] as String)
+          : DateTime.now(),
+    );
+  }
+
+  /// Convert to Firestore map.
+  Map<String, dynamic> toMap() {
     return {
-      'label': label,
-      'rxcui': rxcui,
-      'classId': classId,
-      'reaction': reaction,
-      'severity': severity.name,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
+      'id': id,
+      'memberId': memberId,
+      'name': name,
+      'severity': severity,
+      'description': description,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 
-  factory Allergy.fromFirestore(
-    DocumentSnapshot<Map<String, dynamic>> doc, {
-    required String profileId,
-  }) {
-    final data = doc.data() ?? {};
-    return Allergy(
-      id: doc.id,
-      profileId: profileId,
-      label: data['label'] as String? ?? '',
-      rxcui: data['rxcui'] as String?,
-      classId: data['classId'] as String?,
-      reaction: data['reaction'] as String?,
-      severity: AllergySeverity.fromString(data['severity'] as String?),
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-    );
-  }
-
+  /// Copy with modifications.
   Allergy copyWith({
     String? id,
-    String? profileId,
-    String? label,
-    String? rxcui,
-    String? classId,
-    String? reaction,
-    AllergySeverity? severity,
+    String? memberId,
+    String? name,
+    String? severity,
+    String? description,
     DateTime? createdAt,
-    DateTime? updatedAt,
   }) {
     return Allergy(
       id: id ?? this.id,
-      profileId: profileId ?? this.profileId,
-      label: label ?? this.label,
-      rxcui: rxcui ?? this.rxcui,
-      classId: classId ?? this.classId,
-      reaction: reaction ?? this.reaction,
+      memberId: memberId ?? this.memberId,
+      name: name ?? this.name,
       severity: severity ?? this.severity,
+      description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  @override
+  String toString() => 'Allergy($name, $severity)';
 }

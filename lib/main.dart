@@ -31,9 +31,10 @@ import 'config/remote_config_service.dart';
 import 'core/accessibility/accessibility_controller.dart';
 import 'core/locale/locale_controller.dart';
 import 'core/profile/profile_controller.dart';
+import 'core/services/push_service.dart';
 import 'core/services/reminder_action_queue.dart';
 import 'core/services/reminder_scheduler.dart';
-import 'core/services/push_service.dart';
+import 'core/subscription/subscription_service.dart';
 import 'l10n/app_localizations.dart';
 import 'repositories/auth_repository.dart';
 
@@ -146,6 +147,7 @@ Future<void> main() async {
   final uid = AuthRepository.instance.currentUid;
   if (uid != null && uid.isNotEmpty) {
     try {
+      final pushService = LocalOnlyPushService();
       await pushService.registerToken(uid);
       // Re-register on token refresh.
       FirebaseMessaging.instance.onRegistered.listen((newToken) {
@@ -163,6 +165,15 @@ Future<void> main() async {
   await AccessibilityController.instance.initialize();
   await LocaleController.instance.initialize();
 
+  // ───────────────────────────────────────────────────────────
+  // STEP 6.5: M12 — RevenueCat SDK init (Spark: client-side)
+  // ───────────────────────────────────────────────────────────
+  try {
+    await SubscriptionService.instance.initialize();
+  } catch (e) {
+    debugPrint('M12: RevenueCat init failed: $e');
+    // Non-fatal — subscription features gracefully disabled.
+  }
   // ───────────────────────────────────────────────────────────
   // STEP 6: M8 — local dose reminders (Spark: no server involved)
   // ───────────────────────────────────────────────────────────

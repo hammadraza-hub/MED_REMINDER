@@ -7,6 +7,7 @@ import '../core/dose_engine.dart';
 import '../core/services/reminder_scheduler.dart';
 import '../models/dose.dart';
 import '../models/medication.dart';
+import '../repositories/firebase_inventory_repository.dart';
 
 /// Dose Repository — dose logging, snooze, undo, PRN, and adherence.
 ///
@@ -177,6 +178,36 @@ class DoseRepository {
     try {
       await _dosesRef(profileId).doc(doseId).update(updateData);
       unawaited(ReminderScheduler.instance.rescheduleAll());
+
+      // M9: Deduct stock when dose is logged as taken
+      if (status == DoseStatus.taken) {
+        // Fetch the dose to get its medicationId
+        final doseDoc = await _dosesRef(profileId).doc(doseId).get();
+        final doseData = doseDoc.data();
+        final medicationId = doseData?['medicationId'] as String?;
+        if (medicationId != null) {
+          // Fetch the medication to get doseAmount
+          final medDoc = await _db
+              .collection('profiles')
+              .doc(profileId)
+              .collection('medications')
+              .doc(medicationId)
+              .get();
+          final medData = medDoc.data();
+          final doseAmount = (medData?['doseAmount'] as num?)?.toDouble();
+          if (doseAmount != null && doseAmount > 0) {
+            final FirebaseInventoryRepository inventory =
+                FirebaseInventoryRepository.instance;
+            await inventory.adjustQuantity(
+              memberId: profileId,
+              medicationId: medicationId,
+              delta: (-doseAmount).toInt(), // negative = decrement stock
+              reason: 'dose_taken',
+              doseId: doseId,
+            );
+          }
+        }
+      }
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
     } catch (e) {

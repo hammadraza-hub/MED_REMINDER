@@ -106,4 +106,18 @@ class InteractionWarningData {
         'This is not medical advice. Consult your doctor or pharmacist '
         'before making any changes.',
   );
+
+  /// Duplicate medication warning — jab same med already profile mein ho.
+  static const InteractionWarningData duplicateWarning = InteractionWarningData(
+    severity: InteractionSeverity.moderate,
+
+    medications: [],
+
+    explanation:
+        'This medication is already in your profile. '
+        'Adding it again may lead to duplicate dosing.',
+
+    disclaimer:
+        'Consult your doctor or pharmacist before making any changes.',
+  );
 }

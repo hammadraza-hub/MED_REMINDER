@@ -530,6 +530,14 @@ service cloud.firestore {
         }
       }
 
+      // M9: Pharmacies (name, phone, address, linked to medications)
+      match /pharmacies/{pharmacyId} {
+        allow read: if isMember(profileId);
+        allow create: if canEditMedications(profileId);
+        allow update: if canEditMedications(profileId);
+        allow delete: if false;
+      }
+
       // =====================================
       // DOSES (M7)
       // =====================================

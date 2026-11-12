@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,6 +13,7 @@ import 'add_medication_manual_screen.dart';
 import 'add_medication_scan_screen.dart';
 import 'interaction_warning_data.dart';
 import 'interaction_warning_screen.dart';
+import 'interaction_checker.dart';
 
 /// ============================================================
 /// ADD MEDICATION — search → FDA results → Select
@@ -84,30 +86,86 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   // ================= ACTIONS =================
   Future<void> _selectMedicine(Drug drug) async {
-    // TODO Backend:
-    // Interaction engine / rules se check karna hai ke selected
-    // medication user ki current medications se interact karti hai
-    // ya nahi. Abhi demo ke liye warning hamesha dikha rahe hain.
-    final action = await Navigator.of(context).push<InteractionWarningAction>(
-      MaterialPageRoute(
-        builder: (_) => const InteractionWarningScreen(
-          data: InteractionWarningData.sample,
-        ),
-      ),
-    );
+    // Step 3: Check for interactions with existing medications
+    // Get existing medications from Firestore
+    List<String> existingMeds = [];
+    try {
+      final medSnapshot = await FirebaseFirestore.instance
+          .collection('profiles')
+          .doc(widget.profileId)
+          .collection('medications')
+          .get();
+      existingMeds = medSnapshot.docs
+          .map((doc) => (doc.data()['name'] as String?) ?? '')
+          .where((name) => name.isNotEmpty)
+          .toList();
+    } catch (e) {
+      // If we can't fetch, skip interaction check
+      existingMeds = [];
+    }
 
-    if (!mounted || action == null) return;
-
-    if (action == InteractionWarningAction.proceed) {
-      await Navigator.of(context).push(
+    // Step 2: Check for duplicate medication
+    if (!mounted) return;
+    if (InteractionChecker.checkDuplicate(drug.name, existingMeds)) {
+      final action = await Navigator.of(context).push<InteractionWarningAction>(
         MaterialPageRoute(
-          builder: (_) => AddMedicationManualScreen(
-            profileId: widget.profileId,
-            preselectedDrug: drug,
+          builder: (_) => InteractionWarningScreen(
+            data: InteractionWarningData.duplicateWarning,
           ),
         ),
       );
+
+      if (!mounted || action == null) return;
+
+      if (action != InteractionWarningAction.proceed) {
+        return;
+      }
     }
+
+    if (!mounted) return;
+
+    // Step 3: Check for interactions with existing medications
+    final interactions = InteractionChecker.checkInteractions(drug.name, existingMeds);
+
+    if (interactions.isNotEmpty) {
+      // Show interaction warning with real data
+      final warningData = InteractionChecker.buildWarningData(drug.name, interactions);
+      if (warningData != null) {
+        final action = await Navigator.of(context).push<InteractionWarningAction>(
+          MaterialPageRoute(
+            builder: (_) => InteractionWarningScreen(
+              data: warningData,
+            ),
+          ),
+        );
+
+        if (!mounted || action == null) return;
+
+        if (action == InteractionWarningAction.proceed) {
+          if (!mounted) return;
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AddMedicationManualScreen(
+                profileId: widget.profileId,
+                preselectedDrug: drug,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    // No interactions found — proceed directly
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddMedicationManualScreen(
+          profileId: widget.profileId,
+          preselectedDrug: drug,
+        ),
+      ),
+    );
   }
 
   Future<void> _scanLabel() async {

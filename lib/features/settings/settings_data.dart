@@ -75,6 +75,10 @@ class SettingsData {
           id: 'accessibility',
           icon: Icons.accessibility_new_rounded,
         ),
+        SettingsMenuItem(
+          id: 'allergies',
+          icon: Icons.medical_services_rounded,
+        ),
       ],
     ),
     SettingsGroup(
