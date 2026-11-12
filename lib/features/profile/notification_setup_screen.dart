@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/reminder_scheduler.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/onboarding_header.dart';
 import 'family_setup_screen.dart';
 
 /// Notifications permission — Step 2 of 3 (design flow)
-/// Asli image + benefits list + Allow/Not Now + settings hint
-class NotificationSetupScreen extends StatelessWidget {
+/// Real permission via ReminderScheduler.instance.requestPermissions().
+class NotificationSetupScreen extends StatefulWidget {
   const NotificationSetupScreen({super.key});
+
+  @override
+  State<NotificationSetupScreen> createState() => _NotificationSetupScreenState();
+}
+
+class _NotificationSetupScreenState extends State<NotificationSetupScreen> {
+  bool _isRequesting = false;
+  bool? _permissionGranted; // null = not asked yet
 
   // ================= BENEFITS DATA =================
   static const List<(IconData, String)> _benefits = [
@@ -24,23 +33,39 @@ class NotificationSetupScreen extends StatelessWidget {
     ),
   ];
 
-  void _allow(BuildContext context) {
-    // TODO: flutter_local_notifications se asli permission — agle phase
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Notifications allowed! (asli permission agle phase mein)',
-        ),
-      ),
-    );
+  /// Calls ReminderScheduler.instance.requestPermissions() and proceeds
+  /// to family setup regardless of grant/deny (user can enable later in Settings).
+  Future<void> _allow() async {
+    setState(() {
+      _isRequesting = true;
+    });
 
-    // Allow → Step 3 (Family)
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const FamilySetupScreen()));
+    try {
+      final granted = await ReminderScheduler.instance.requestPermissions();
+      if (!mounted) return;
+      setState(() {
+        _permissionGranted = granted;
+        _isRequesting = false;
+      });
+
+      // Always proceed to Step 3 (Family); permission can be enabled later.
+      if (mounted) {
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const FamilySetupScreen()));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isRequesting = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Permission setup failed: $e')),
+      );
+    }
   }
 
-  void _notNow(BuildContext context) {
-    // Not Now → phir bhi family setup (Home abhi nahi bani)
+  void _notNow() {
+    // Not Now → still proceed to family setup
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const FamilySetupScreen()));
   }
@@ -48,7 +73,6 @@ class NotificationSetupScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // ================= RESPONSIVE =================
-    // Chhote phone par image chhoti + text compact — overflow kabhi nahi
     final screenHeight = MediaQuery.sizeOf(context).height;
     final isCompact = screenHeight < 700;
     final titleSize = isCompact ? 22.0 : 26.0;
@@ -70,7 +94,7 @@ class NotificationSetupScreen extends StatelessWidget {
                     step: 2,
                     totalSteps: 3,
                     onBack: () => Navigator.of(context).maybePop(),
-                    onSkip: () => _notNow(context),
+                    onSkip: () => _notNow(),
                   ),
 
                   // ================= SCROLLABLE CONTENT =================
@@ -80,29 +104,28 @@ class NotificationSetupScreen extends StatelessWidget {
                           ScrollViewKeyboardDismissBehavior.onDrag,
                       child: Column(
                         children: [
-                          // ================= ILLUSTRATION (responsive square) =================
+                          // ================= ILLUSTRATION =================
                           Center(
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(24),
                               child: Image.asset(
                                 'assets/images/notification.png',
                                 width: screenHeight * 0.26,
-                                height:
-                                    screenHeight * 0.26, // DONO same = square!
+                                height: screenHeight * 0.26,
                                 fit: BoxFit.cover,
                                 cacheWidth: 600,
                                 errorBuilder: (context, error, stackTrace) =>
                                     Container(
-                                      width: screenHeight * 0.26,
-                                      height: screenHeight * 0.26,
-                                      color: AppColors.primaryLight,
-                                      alignment: Alignment.center,
-                                      child: const Icon(
-                                        Icons.notifications_active_rounded,
-                                        size: 64,
-                                        color: AppColors.formAccent,
-                                      ),
-                                    ),
+                                  width: screenHeight * 0.26,
+                                  height: screenHeight * 0.26,
+                                  color: AppColors.primaryLight,
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.notifications_active_rounded,
+                                    size: 64,
+                                    color: AppColors.formAccent,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -144,15 +167,17 @@ class NotificationSetupScreen extends StatelessWidget {
 
                   // ================= ALLOW BUTTON =================
                   CustomButton.classic(
-                    label: 'Allow Notifications',
+                    label: _permissionGranted == true
+                        ? 'Notifications On'
+                        : 'Allow Notifications',
                     radius: 16,
                     elevation: 0,
-                    onPressed: () => _allow(context),
+                    onPressed: _isRequesting ? null : _allow,
                   ),
 
                   // ================= NOT NOW =================
                   TextButton(
-                    onPressed: () => _notNow(context),
+                    onPressed: _isRequesting ? null : _notNow,
                     child: const Text(
                       'Not Now',
                       style: TextStyle(
@@ -233,7 +258,6 @@ class _SettingsHintCard extends StatelessWidget {
       child: IntrinsicHeight(
         child: Row(
           children: [
-            // Left stripe
             Container(
               width: 5,
               decoration: const BoxDecoration(
