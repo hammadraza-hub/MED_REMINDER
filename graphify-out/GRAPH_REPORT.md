@@ -1,17 +1,17 @@
 # Graph Report - med_remind_app  (2026-11-12)
 
 ## Corpus Check
-- 207 files · ~215,916 words
+- 203 files · ~738,162 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: (none) 5, .arb 5, .rules 2)
 
 ## Summary
-- 4896 nodes · 6219 edges · 213 communities (193 shown, 20 thin omitted)
+- 4895 nodes · 6208 edges · 209 communities (191 shown, 18 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ba3678a1`
+- Built from commit: `8ab69be9`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -64,7 +64,7 @@
 - auth_repository.dart
 - _
 - vitals_list_screen.dart
-- accessibility_controller.dart
+- locale_controller.dart
 - schedule_picker_screen.dart
 - missed_dose_reason_modal.dart
 - community_screen.dart
@@ -109,7 +109,7 @@
 - remote_config_service.dart
 - inventory_data.dart
 - camera_service.dart
-- reset_password_screen.dart
+- ../core/app_exception.dart
 - subscription_repository.dart
 - add_doctor_screen.dart
 - add_medication_search_screen.dart
@@ -131,7 +131,7 @@
 - custom_text_field.dart
 - doctors_screen.dart
 - splash_screen.dart
-- IconData
+- settings_data.dart
 - upgrade_data.dart
 - add_vitals_entry_data.dart
 - medication_schedule_repository.dart
@@ -140,7 +140,7 @@
 - privacy_security_screen.dart
 - ai_service.dart
 - custom_button.dart
-- allergy_screen.dart
+- MemberPermissionsScreen
 - profile_controller.dart
 - community_data.dart
 - accessibility_data.dart
@@ -172,7 +172,6 @@
 - push_service.dart
 - allergy_repository.dart
 - compilerOptions
-- refill_alert_detail_data.dart
 - dose_engine.dart
 - profile_repository.dart
 - side_effects_data.dart
@@ -194,7 +193,7 @@
 - List
 - MedicationRepository
 - app_config.dart
-- String? get
+- String?
 - 🗺️ KAAM ROADMAP — MedRemind (med_remind_app)
 - notificationTapBackground
 - account_data.dart
@@ -206,15 +205,12 @@
 - ReminderScheduler
 - CalendarScreen
 - CustomPainter
-- MedsScreen
 - create_account_screen.dart
 - package:flutter/foundation.dart
 - pubspec.yaml
 - analysis_options.yaml
 - database_provider.dart
-- _SwipeMedicineCard
 - dev_dependencies
-- ScanLabelScreen
 - ScheduleScreen
 - compilerOptions
 - ReportExportOption
@@ -235,11 +231,13 @@
 5. `✨ Features` - 14 edges
 6. `compilerOptions` - 12 edges
 7. `scripts` - 9 edges
-8. `with` - 8 edges
-9. `AppException` - 8 edges
-10. `HANDOFF — read this first (for any agent or developer continuing the project)` - 8 edges
+8. `_int` - 9 edges
+9. `HANDOFF — read this first (for any agent or developer continuing the project)` - 9 edges
+10. `AppException` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `_` --references--> `_int`  [EXTRACTED]
+  lib/features/reports/report_preview_data.dart → lib/models/notification_settings.dart
 - `FirebaseCaregiverRepository` --implements--> `CaregiverRepository`  [EXTRACTED]
   lib/core/caregiver/firebase_caregiver_repository.dart → lib/core/caregiver/caregiver_repository.dart
 - `FirebaseCaregiverRepository` --implements--> `CaregiverRepository`  [EXTRACTED]
@@ -248,13 +246,11 @@
   lib/repositories/firebase_inventory_repository.dart → lib/core/inventory/inventory_repository.dart
 - `LocalMedicationScheduleRepository` --implements--> `MedicationScheduleRepository`  [EXTRACTED]
   lib/core/medications/local_medication_schedule_repository.dart → lib/core/medications/medication_schedule_repository.dart
-- `LocalMemberRepository` --implements--> `MemberRepository`  [EXTRACTED]
-  lib/core/members/local_member_repository.dart → lib/core/members/member_repository.dart
 
 ## Import Cycles
 - None detected.
 
-## Communities (213 total, 20 thin omitted)
+## Communities (209 total, 18 thin omitted)
 
 ### Community 0 - "StatelessWidget"
 Cohesion: 0.09
@@ -266,7 +262,7 @@ Nodes (13): _BrandRow, build, _NavigationRow, onBack, OnboardingHeader, onSkip, 
 
 ### Community 2 - "notification_setup_screen.dart"
 Cohesion: 0.12
-Nodes (12): _allow, _BenefitRow, build, createState, icon, _isRequesting, NotificationSetupScreen, _NotificationSetupScreenState (+4 more)
+Nodes (13): _allow, _BenefitRow, build, createState, icon, _isRequesting, NotificationSetupScreen, _NotificationSetupScreenState (+5 more)
 
 ### Community 3 - "login_screen.dart"
 Cohesion: 0.12
@@ -294,11 +290,11 @@ Nodes (66): accountId, address, colorName, completedAt, courseDay, courseTotalDa
 
 ### Community 9 - "home_screen.dart"
 Cohesion: 0.03
-Nodes (66): _actionButton, _badge, _buildDoseError, _buildEmptyDoses, _buildHomeContent, _confirmSkipFromSheet, _confirmSkipWithReason, createState (+58 more)
+Nodes (68): _actionButton, _badge, _buildDoseError, _buildEmptyDoses, _buildHomeContent, _confirmSkipFromSheet, _confirmSkipWithReason, createState (+60 more)
 
 ### Community 10 - "meds_screen.dart"
 Cohesion: 0.03
-Nodes (65): _actionWidth, _activeMedications, _activeSubscription, _archivedMedications, _archivedSubscription, background, badge, build (+57 more)
+Nodes (69): _actionWidth, _activeMedications, _activeSubscription, _archivedMedications, _archivedSubscription, background, badge, build (+61 more)
 
 ### Community 11 - "_"
 Cohesion: 0.03
@@ -314,7 +310,7 @@ Nodes (60): _applyPreset, build, _buildComplianceMetric, _buildConfigContent, _b
 
 ### Community 14 - "adjust_inventory_count_sheet.dart"
 Cohesion: 0.08
-Nodes (24): _AdjustInventoryCountSheet, _AdjustInventoryCountSheetState, build, _count, _CounterButton, createState, _decrease, dispose (+16 more)
+Nodes (22): build, _count, _CounterButton, createState, _decrease, dispose, _fallbackIcon, filled (+14 more)
 
 ### Community 15 - "schedule_screen.dart"
 Cohesion: 0.04
@@ -345,8 +341,8 @@ Cohesion: 0.05
 Nodes (45): environment, if, name, needs, runs-on, steps, if, name (+37 more)
 
 ### Community 22 - "scan_label_screen.dart"
-Cohesion: 0.05
-Nodes (39): build, _buildBody, _buildCameraControls, _buildCameraLoading, _buildCameraPreview, _buildDetectedCard, _buildHeader, _camera (+31 more)
+Cohesion: 0.04
+Nodes (41): build, _buildBody, _buildCameraControls, _buildCameraLoading, _buildCameraPreview, _buildDetectedCard, _buildHeader, _camera (+33 more)
 
 ### Community 23 - "assistant_chat_screen.dart"
 Cohesion: 0.04
@@ -390,7 +386,7 @@ Nodes (38): build, _buildBillingOption, _buildBillingToggle, _buildCta, _buildHe
 
 ### Community 33 - "account_screen.dart"
 Cohesion: 0.05
-Nodes (35): _accounts, build, _buildAccountRow, _buildDangerZone, _buildHeader, _buildPasswordRow, _buildProfileCard, _buildProfileInfoSection (+27 more)
+Nodes (37): _accounts, AccountScreen, _AccountScreenState, build, _buildAccountRow, _buildDangerZone, _buildHeader, _buildPasswordRow (+29 more)
 
 ### Community 34 - "add_allergy_screen.dart"
 Cohesion: 0.05
@@ -401,8 +397,8 @@ Cohesion: 0.09
 Nodes (22): _openChatHistory, _openAdherenceDetail, build, _openAssistant, _openDoctors, _openProfiles, _openStreaksStats, _openVitals (+14 more)
 
 ### Community 36 - "State"
-Cohesion: 0.12
-Nodes (24): _TypingDots, _TypingDotsState, HomeScreen, _HomeScreenState, AddSymptomScreen, _AddSymptomScreenState, _LoadingDots, _LoadingDotsState (+16 more)
+Cohesion: 0.13
+Nodes (22): _TypingDots, _TypingDotsState, AddSymptomScreen, _AddSymptomScreenState, _AdjustInventoryCountSheet, _AdjustInventoryCountSheetState, _LoadingDots, _LoadingDotsState (+14 more)
 
 ### Community 37 - "payment_success_screen.dart"
 Cohesion: 0.05
@@ -410,7 +406,7 @@ Nodes (38): build, _buildHeader, _buildHeroCard, _buildInfoRow, _buildOrderSumma
 
 ### Community 38 - "add_medication_manual_screen.dart"
 Cohesion: 0.06
-Nodes (35): AddMedicationManualScreen, _AddMedicationManualScreenState, build, _buildDoseSection, _buildDrugSection, _buildInstructionsSection, _buildScheduleSection, _buildSourceBadge (+27 more)
+Nodes (34): AddMedicationManualScreen, _AddMedicationManualScreenState, build, _buildDoseSection, _buildDrugSection, _buildInstructionsSection, _buildScheduleSection, _buildSourceBadge (+26 more)
 
 ### Community 39 - "add_vitals_entry_screen.dart"
 Cohesion: 0.05
@@ -418,15 +414,15 @@ Nodes (36): AddVitalsEntryScreen, _AddVitalsEntryScreenState, _applyDefaults, bu
 
 ### Community 40 - "HANDOFF — read this first (for any agent or developer continuing the project)"
 Cohesion: 0.06
-Nodes (31): Architecture, Core loop (what works end-to-end), Directory sizes (approx.), Layers, Startup order (`lib/main.dart`), Two repository styles (known duplication), Graphify changelog (append only), Feature map (lib/features → data source → module) (+23 more)
+Nodes (32): Architecture, Core loop (what works end-to-end), Directory sizes (approx.), Layers, Startup order (`lib/main.dart`), Two repository styles (known duplication), Graphify changelog (append only), Feature map (lib/features → data source → module) (+24 more)
 
 ### Community 41 - "adherence_detail_screen.dart"
 Cohesion: 0.06
 Nodes (34): _adherenceColor, AdherenceDetailScreen, _AdherenceDetailScreenState, build, _buildBodyContent, _buildExportBarsIcon, _buildExportButton, _buildGoalRing (+26 more)
 
 ### Community 42 - "functions/package.json"
-Cohesion: 0.07
-Nodes (34): dependencies, firebase-admin@^13.6.0, firebase-functions@^7.0.0, devDependencies, eslint@^8.57.0, eslint-config-google@^0.14.0, eslint-plugin-import@^2.25.4, firebase-functions-test@^3.4.1 (+26 more)
+Cohesion: 0.05
+Nodes (34): dependencies, firebase-admin, firebase-functions, devDependencies, eslint, eslint-config-google, eslint-plugin-import, firebase-functions-test (+26 more)
 
 ### Community 43 - "add_medication_screen.dart"
 Cohesion: 0.06
@@ -434,7 +430,7 @@ Nodes (32): AddMedicationScreen, _AddMedicationScreenState, build, _buildActionB
 
 ### Community 44 - "add_medication_scan_screen.dart"
 Cohesion: 0.06
-Nodes (33): AddMedicationScanScreen, _AddMedicationScanScreenState, build, _buildField, _buildHeader, _buildInitialState, _buildProcessingState, _buildResultsView (+25 more)
+Nodes (34): AddMedicationScanScreen, _AddMedicationScanScreenState, build, _buildField, _buildHeader, _buildInitialState, _buildProcessingState, _buildResultsView (+26 more)
 
 ### Community 45 - "auth_repository.dart"
 Cohesion: 0.06
@@ -448,7 +444,7 @@ Nodes (35): _, AssistantChatData, AssistantInsight, AssistantMessage, AssistantM
 Cohesion: 0.06
 Nodes (32): _addVitalEntry, build, _buildBody, _buildHeader, _buildMetricsSummary, _buildMorningStatus, _buildProfileRow, _buildTrendFooter (+24 more)
 
-### Community 48 - "accessibility_controller.dart"
+### Community 48 - "locale_controller.dart"
 Cohesion: 0.11
 Nodes (12): AccessibilityController, defaultLocale, initialize, instance, _isInitialized, _locale, localeCode, LocaleController (+4 more)
 
@@ -549,8 +545,8 @@ Cohesion: 0.07
 Nodes (29): dependencies, camera, cloud_firestore, cloud_functions, cupertino_icons, drift, firebase_app_check, firebase_auth (+21 more)
 
 ### Community 73 - "profiles_screen.dart"
-Cohesion: 0.07
-Nodes (24): _activeMemberId, build, _buildActiveBadge, _buildAddInviteCard, _buildCaregiverBanner, _buildCaregiverSyncChip, _buildContent, _buildHeader (+16 more)
+Cohesion: 0.04
+Nodes (40): _activeMemberId, build, _buildActiveBadge, _buildAddInviteCard, _buildCaregiverBanner, _buildCaregiverSyncChip, _buildContent, _buildHeader (+32 more)
 
 ### Community 74 - "invite_member_screen.dart"
 Cohesion: 0.07
@@ -562,7 +558,7 @@ Nodes (27): daysLeft, Dose, doseAmount, DoseForm, doseFormLabel, DoseSchedule, d
 
 ### Community 76 - "member_permissions_screen.dart"
 Cohesion: 0.07
-Nodes (28): _accessLevel, build, _buildAccessLevelCard, _buildCardDivider, _buildContent, _buildHeader, _buildProfileCard, _buildRevokeSection (+20 more)
+Nodes (26): _accessLevel, build, _buildAccessLevelCard, _buildCardDivider, _buildContent, _buildHeader, _buildProfileCard, _buildRevokeSection (+18 more)
 
 ### Community 77 - "pharmacy_info_screen.dart"
 Cohesion: 0.08
@@ -628,8 +624,8 @@ Nodes (24): _fallbackStockFor, id, inventory, InventoryData, InventoryItem, Inve
 Cohesion: 0.08
 Nodes (18): _cameras, CameraService, capture, captureDocument, captureSquare, _controller, dispose, flashOff (+10 more)
 
-### Community 93 - "reset_password_screen.dart"
-Cohesion: 0.17
+### Community 93 - "../core/app_exception.dart"
+Cohesion: 0.15
 Nodes (10): build, createState, dispose, _emailController, _emailError, _isLoading, _linkSent, ResetPasswordScreen (+2 more)
 
 ### Community 94 - "subscription_repository.dart"
@@ -649,11 +645,11 @@ Cohesion: 0.08
 Nodes (23): address, closeTime, current, distanceLabel, _findSchedule, id, isClosed, isOpenAt (+15 more)
 
 ### Community 98 - "refill_alert_detail_screen.dart"
-Cohesion: 0.09
-Nodes (21): build, _buildCallPharmacyButton, _buildHeader, _buildMarkRefilledButton, _buildMedicationCard, _buildPharmacyCard, _buildRunOutCard, _buildSnoozeButton (+13 more)
+Cohesion: 0.05
+Nodes (34): fromInventoryItem, id, inventoryItem, _monthName, name, openStatus, pharmacy, phoneNumber (+26 more)
 
 ### Community 99 - "package:cloud_firestore/cloud_firestore.dart"
-Cohesion: 0.09
+Cohesion: 0.10
 Nodes (13): _db, DeviceTokenRepository, _instance, isRegistered, removeToken, saveToken, _tokenDoc, _db (+5 more)
 
 ### Community 100 - "data_export_screen.dart"
@@ -716,8 +712,8 @@ Nodes (17): build, _buildContent, _buildDoctorCard, _buildEmptyState, _buildHead
 Cohesion: 0.11
 Nodes (14): _authSubscription, _brandingDelay, build, _controller, createState, dispose, _hasNavigated, initState (+6 more)
 
-### Community 115 - "IconData"
-Cohesion: 0.17
+### Community 115 - "settings_data.dart"
+Cohesion: 0.18
 Nodes (10): groups, highlightIcon, icon, id, items, SettingsData, SettingsGroup, SettingsMenuItem (+2 more)
 
 ### Community 116 - "upgrade_data.dart"
@@ -737,7 +733,7 @@ Cohesion: 0.10
 Nodes (20): build, _buildDoseActions, _buildDoseCard, _buildDosesList, _buildEmptyState, _buildErrorState, _buildNoProfileState, _buildStatusBadge (+12 more)
 
 ### Community 120 - "allergies_data.dart"
-Cohesion: 0.09
+Cohesion: 0.10
 Nodes (19): addedAt, addRecord, AllergiesData, AllergyCategory, AllergyRecord, AllergySeverity, category, countFor (+11 more)
 
 ### Community 121 - "privacy_security_screen.dart"
@@ -749,12 +745,8 @@ Cohesion: 0.12
 Nodes (14): AiChatTurn, AiService, _baseUrl, _client, _defaultModel, _errorFrom, _fallbackModel, isUser (+6 more)
 
 ### Community 123 - "custom_button.dart"
-Cohesion: 0.10
-Nodes (17): build, _ButtonKind, classic, CustomButton, elevation, fontSize, height, icon (+9 more)
-
-### Community 124 - "allergy_screen.dart"
 Cohesion: 0.11
-Nodes (16): _allergiesStream, AllergyScreen, _AllergyScreenState, build, _buildEmptyState, _buildErrorState, createState, _deleteAllergy (+8 more)
+Nodes (17): build, _ButtonKind, classic, CustomButton, elevation, fontSize, height, icon (+9 more)
 
 ### Community 125 - "profile_controller.dart"
 Cohesion: 0.10
@@ -769,8 +761,8 @@ Cohesion: 0.10
 Nodes (19): AccessibilityData, defaultEnabled, defaultVoiceInput, DisplayOption, displayOptions, fraction, icon, id (+11 more)
 
 ### Community 128 - "notification_settings.dart"
-Cohesion: 0.10
-Nodes (18): _bool, caregiverEnabled, copyWith, defaults, doseEnabled, escalationMinutes, fromMap, hideMedicineNamesOnLockScreen (+10 more)
+Cohesion: 0.11
+Nodes (17): caregiverEnabled, copyWith, defaults, doseEnabled, escalationMinutes, fromMap, hideMedicineNamesOnLockScreen, _int (+9 more)
 
 ### Community 129 - "firebase_dose_repository.dart"
 Cohesion: 0.11
@@ -880,10 +872,6 @@ Nodes (11): _allergiesRef, AllergyRepository, createAllergy, deleteAllergy, _fir
 Cohesion: 0.13
 Nodes (14): compileOnSave, compilerOptions, esModuleInterop, module, moduleResolution, noImplicitReturns, noUnusedLocals, outDir (+6 more)
 
-### Community 156 - "refill_alert_detail_data.dart"
-Cohesion: 0.13
-Nodes (13): fromInventoryItem, id, inventoryItem, _monthName, name, openStatus, pharmacy, phoneNumber (+5 more)
-
 ### Community 157 - "dose_engine.dart"
 Cohesion: 0.13
 Nodes (11): _createDose, DoseEngine, _formatDateForId, _formatDoseAmount, generate14DayDoses, _generateCyclical, _generateDaily, generateDoses (+3 more)
@@ -937,8 +925,8 @@ Cohesion: 0.17
 Nodes (11): build, createState, dispose, FamilySetupScreen, _FamilySetupScreenState, _inviteCaregiver, _inviteController, _inviteError (+3 more)
 
 ### Community 171 - "firestore.rules.test.js"
-Cohesion: 0.21
-Nodes (10): devDependencies, firebase@^13.0.0, @firebase/rules-unit-testing@^6.0.0, jest@^30.5.2, firebase, @firebase/rules-unit-testing, jest, {
+Cohesion: 0.17
+Nodes (10): devDependencies, firebase, @firebase/rules-unit-testing, jest, firebase, @firebase/rules-unit-testing, jest, {
   doc,
   getDoc,
   setDoc,
@@ -947,7 +935,7 @@ Nodes (10): devDependencies, firebase@^13.0.0, @firebase/rules-unit-testing@^6.0
 } (+2 more)
 
 ### Community 172 - "IconData"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (10): ActiveSession, defaultBiometricLock, deviceName, icon, isCurrent, lastActive, policyTitle, PrivacySecurityData (+2 more)
 
 ### Community 173 - "adjust_inventory_count_data.dart"
@@ -966,7 +954,7 @@ Nodes (10): availability, columnIds, CompareGroup, ComparePlansData, demoName, f
 Cohesion: 0.18
 Nodes (6): AppConfig, Environment, _envString, isProduction, isStaging, useEmulator
 
-### Community 178 - "String? get"
+### Community 178 - "String?"
 Cohesion: 0.17
 Nodes (9): colorName, displayStrength, imagePath, instructions, MedicationDraft, medicineForm, name, strength (+1 more)
 
@@ -1035,24 +1023,24 @@ Cohesion: 0.67
 Nodes (3): CaregiverRepository, FirebaseCaregiverRepository, FirebaseCaregiverRepository
 
 ## Knowledge Gaps
-- **3723 isolated node(s):** `Environment`, `AppConfig`, `_envString`, `useEmulator`, `isProduction` (+3718 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 4098 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **20 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **3893 isolated node(s):** `name`, `lint`, `build`, `build:watch`, `serve` (+3888 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 4117 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **18 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `_` connect `_` to `accessibility_controller.dart`, `ReportExportOption`, `ReportSeverity`, `package:flutter/material.dart`, `_`, `payment_success_data.dart`, `String? get`, `IconData`, `static const List`, `add_vitals_entry_data.dart`?**
-  _High betweenness centrality (0.035) - this node is a cross-community bridge._
-- **What connects `Environment`, `AppConfig`, `_envString` to the rest of the system?**
-  _3723 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `_` connect `_` to `notification_settings.dart`, `accessibility_controller.dart`, `ReportExportOption`, `ReportSeverity`, `IconData`, `package:flutter/material.dart`, `_`, `payment_success_data.dart`, `String?`, `static const List`?**
+  _High betweenness centrality (0.044) - this node is a cross-community bridge._
+- **Why does `_` connect `_` to `String?`, `package:flutter/material.dart`, `static const List`, `List`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Why does `_int` connect `notification_settings.dart` to `schedule.dart`, `medications/medication_repository.dart`, `inventory_repository.dart`, `_`, `meds_data.dart`, `schedule_picker_screen.dart`, `medication.dart`, `add_vitals_entry_data.dart`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **What connects `name`, `lint`, `build` to the rest of the system?**
+  _3893 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `StatelessWidget` be split into smaller, more focused modules?**
   _Cohesion score 0.08695652173913043 - nodes in this community are weakly interconnected._
-- **Why does `_` connect `_` to `String? get`, `package:flutter/material.dart`, `static const List`, `List`?**
-  _High betweenness centrality (0.013) - this node is a cross-community bridge._
 - **Should `Color` be split into smaller, more focused modules?**
   _Cohesion score 0.10526315789473684 - nodes in this community are weakly interconnected._
 - **Should `notification_setup_screen.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.125 - nodes in this community are weakly interconnected._
-- **Should `login_screen.dart` be split into smaller, more focused modules?**
   _Cohesion score 0.125 - nodes in this community are weakly interconnected._
