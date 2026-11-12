@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/subscription/subscription_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../../repositories/auth_repository.dart';
+import '../../repositories/firebase_subscription_repository.dart';
 import '../../widgets/app_avatar.dart';
 import 'payment_success_screen.dart';
 import 'upgrade_data.dart';
@@ -76,20 +79,66 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
   }
 
   void _onRestore() {
-    // TODO Backend: StoreKit / Play Billing restorePurchases().
-    _showMessage(AppLocalizations.of(context).upgradeRestoreToast);
+    final uid = AuthRepository.instance.currentUid;
+    if (uid == null || uid.isEmpty) {
+      _showMessage(AppLocalizations.of(context).upgradeRestoreToast);
+      return;
+    }
+
+    // Restore purchases via RevenueCat
+    FirebaseSubscriptionRepository.instance
+        .restorePurchases(uid)
+        .then((subInfo) {
+      if (!mounted) return;
+      if (subInfo != null && subInfo.hasPremiumAccess) {
+        _showMessage('Purchases restored successfully!');
+      } else {
+        _showMessage('No purchases found to restore.');
+      }
+    }).catchError((e) {
+      if (mounted) _showMessage('Restore failed: $e');
+    });
   }
 
   void _onStartTrial() {
-    // TODO Backend: real purchase → success. Abhi confirmation screen.
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PaymentSuccessScreen(
-          planId: _selectedPlan,
-          isAnnual: _isAnnual,
+    final uid = AuthRepository.instance.currentUid;
+    if (uid == null || uid.isEmpty) {
+      _showMessage('Please sign in first');
+      return;
+    }
+
+    // Map plan ID to SubscriptionPlan
+    SubscriptionPlan plan;
+    switch (_selectedPlan) {
+      case 'monthly':
+        plan = SubscriptionPlan.monthlyPremium;
+        break;
+      case 'annual':
+        plan = SubscriptionPlan.annualPremium;
+        break;
+      case 'family':
+        plan = SubscriptionPlan.familyPlan;
+        break;
+      default:
+        plan = SubscriptionPlan.monthlyPremium;
+    }
+
+    // Initiate purchase via RevenueCat
+    FirebaseSubscriptionRepository.instance
+        .subscribe(uid: uid, plan: plan)
+        .then((_) {
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PaymentSuccessScreen(
+            planId: _selectedPlan,
+            isAnnual: _isAnnual,
+          ),
         ),
-      ),
-    );
+      );
+    }).catchError((e) {
+      if (mounted) _showMessage('Purchase failed: $e');
+    });
   }
 
   // ============================================================

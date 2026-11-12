@@ -6,6 +6,8 @@
 /// functionality. Spark-compatible (client-side SDK).
 /// ============================================================
 
+library;
+
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
@@ -22,7 +24,7 @@ class SubscriptionService {
 
     // Enable debug logs in debug mode
     if (kDebugMode) {
-      await Purchases.setDebugLogsEnabled(true);
+      await Purchases.setLogLevel(LogLevel.debug);
     }
 
     // Configure with API key from environment

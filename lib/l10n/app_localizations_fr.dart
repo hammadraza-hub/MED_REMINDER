@@ -1662,4 +1662,117 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reviewScanConfirmContinue => 'Confirmer et continuer →';
+
+  @override
+  String get couldNotLoadSettings => 'Could not load settings';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsSubtitle =>
+      'Sync reminder habits with your daily rhythm';
+
+  @override
+  String get sectionAlertTypes => 'Alert Types';
+
+  @override
+  String get sectionEscalationTiming => 'Escalation Timing';
+
+  @override
+  String get sectionQuietHours => 'Quiet Hours';
+
+  @override
+  String get alertDoseTitle => 'Dose Reminders';
+
+  @override
+  String get alertDoseSubtitle => 'Remind me at each dose time';
+
+  @override
+  String get alertRefillTitle => 'Refill Alerts';
+
+  @override
+  String get alertRefillSubtitle => 'When supply runs low';
+
+  @override
+  String get alertCaregiverTitle => 'Caregiver Alerts';
+
+  @override
+  String get alertCaregiverSubtitle => 'Alert family if a dose is missed';
+
+  @override
+  String get escalationLabel => 'Re-remind after';
+
+  @override
+  String get escalationMinutesDesc => 'If a dose is unconfirmed, remind again';
+
+  @override
+  String get quietHoursLabel => 'Quiet Hours';
+
+  @override
+  String get quietHoursRange => '10:00 PM – 7:00 AM';
+
+  @override
+  String get btnSavePreferences => 'Save Preferences';
+
+  @override
+  String get snackbarSaved => 'Preferences saved';
+
+  @override
+  String get snackbarSavedDone => 'Preferences Saved!';
+
+  @override
+  String snackbarSaveFailed(Object error) {
+    return 'Save failed: $error';
+  }
+
+  @override
+  String minutesFormat(int minutes) {
+    return '$minutes minutes';
+  }
+
+  @override
+  String get permTitle => 'Enable Dose Reminders';
+
+  @override
+  String get permSubtitle =>
+      'MedRemind needs your permission to send dose reminders — at the right time, even when the app is closed.';
+
+  @override
+  String get permCardNotificationsTitle => 'Show notifications';
+
+  @override
+  String get permCardNotificationsSubtitle =>
+      'Receive dose reminders with Taken / Skip / Snooze buttons.';
+
+  @override
+  String get permCardExactAlarmsTitle => 'Set exact alarms';
+
+  @override
+  String get permCardExactAlarmsSubtitle =>
+      'Reminders fire at the exact dose time (required on Android 12+).';
+
+  @override
+  String get permBatteryTitle =>
+      'Battery optimisation (Xiaomi / Oppo / Samsung)';
+
+  @override
+  String get permBatterySubtitle =>
+      'Some phone makers kill background apps aggressively. If reminders don\'t fire, whitelist MedRemind in battery settings.';
+
+  @override
+  String get permStatusGranted => 'Permissions granted — reminders are on.';
+
+  @override
+  String get permStatusDenied =>
+      'Permissions denied — you can enable them later in Settings.';
+
+  @override
+  String get permStatusError => 'Could not verify permissions — try again.';
+
+  @override
+  String get permBtnContinue => 'Continue Anyway';
+
+  @override
+  String get permBtnSkip => 'Skip for now';
 }

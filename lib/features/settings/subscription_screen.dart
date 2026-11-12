@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../repositories/auth_repository.dart';
+import '../../repositories/firebase_subscription_repository.dart';
+import '../../core/subscription/subscription_repository.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
@@ -25,12 +28,35 @@ import 'subscription_data.dart';
 /// RevenueCat / App Store / Play Billing integration ke baad yahan se
 /// real upgrade/downgrade/restore/cancel actions chalengi.
 /// ============================================================
-class SubscriptionScreen extends StatelessWidget {
+class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
 
-  // ============================================================
-  // ACTIONS
-  // ============================================================
+  @override
+  State<SubscriptionScreen> createState() => _SubscriptionScreenState();
+}
+
+class _SubscriptionScreenState extends State<SubscriptionScreen> {
+  SubscriptionInfo? _subInfo;
+  bool _isLoading = true;
+  String? _uid;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSubscription();
+  }
+
+  Future<void> _loadSubscription() async {
+    _uid = AuthRepository.instance.currentUid;
+    if (_uid != null && _uid!.isNotEmpty) {
+      try {
+        _subInfo = await FirebaseSubscriptionRepository.instance.getSubscription(_uid!);
+      } catch (e) {
+        debugPrint('SubscriptionScreen: failed to load: $e');
+      }
+    }
+    if (mounted) setState(() => _isLoading = false);
+  }
 
   void _showMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
@@ -79,8 +105,14 @@ class SubscriptionScreen extends StatelessWidget {
       },
     );
 
-    if (confirmed == true && context.mounted) {
-      _showMessage(context, 'Cancel Subscription — coming soon');
+    if (confirmed == true && context.mounted && _uid != null) {
+      try {
+        await FirebaseSubscriptionRepository.instance.cancelSubscription(_uid!);
+        await _loadSubscription();
+        if (context.mounted) _showMessage(context, 'Subscription cancelled');
+      } catch (e) {
+        if (context.mounted) _showMessage(context, 'Failed to cancel: $e');
+      }
     }
   }
 
@@ -192,7 +224,22 @@ class SubscriptionScreen extends StatelessWidget {
   // ============================================================
 
   Widget _buildCurrentPlanCard() {
-    final plan = SubscriptionData.currentPlan;
+    final plan = _subInfo;
+    final planName = plan != null ? plan.plan.name : 'Free';
+    final status = plan != null ? plan.status.name : 'active';
+    final renewalDate = plan?.expiresAt != null
+        ? '${plan!.expiresAt!.day}/${plan.expiresAt!.month}/${plan.expiresAt!.year}'
+        : 'N/A';
+    final billing = plan != null && plan.hasPremiumAccess ? 'Premium' : 'Free';
+    final isPro = plan?.hasPremiumAccess ?? false;
+
+    if (_isLoading) {
+      return _card(
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     return _card(
       child: Column(
@@ -219,7 +266,7 @@ class SubscriptionScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      plan.name,
+                      planName,
                       style: const TextStyle(
                         color: AppColors.permissionsHeader,
                         fontSize: 16,
@@ -228,7 +275,7 @@ class SubscriptionScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      plan.status,
+                      status,
                       style: const TextStyle(
                         color: AppColors.shareSecondaryText,
                         fontSize: 11,
@@ -238,7 +285,7 @@ class SubscriptionScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              if (plan.isPro)
+              if (isPro)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -268,9 +315,42 @@ class SubscriptionScreen extends StatelessWidget {
               color: AppColors.shareDivider,
             ),
           ),
-          _buildInfoRow('Renewal date', plan.renewalDate),
+          _buildInfoRow('Renewal date', renewalDate),
           const SizedBox(height: 10),
-          _buildInfoRow('Billing', plan.billing),
+          _buildInfoRow('Billing', billing),
+          if (_uid != null) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      try {
+                        await FirebaseSubscriptionRepository.instance
+                            .restorePurchases(_uid!);
+                        await _loadSubscription();
+                        if (mounted) _showMessage(context, 'Purchases restored');
+                      } catch (e) {
+                        if (mounted) _showMessage(context, 'Restore failed: $e');
+                      }
+                    },
+                    child: const Text('Restore Purchases'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (isPro)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => _confirmCancel(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.interactionWarningRed,
+                      ),
+                      child: const Text('Cancel Plan'),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
