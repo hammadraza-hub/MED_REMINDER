@@ -1,0 +1,13 @@
+# Platform runners, build output, generated code — noise for architecture graph
+android/
+ios/
+linux/
+macos/
+windows/
+web/
+build/
+node_modules/
+.dart_tool/
+functions/node_modules/
+lib/l10n/app_localizations*.dart
+*.g.dart
