@@ -12,6 +12,7 @@ import '../profile/profile_controller.dart';
 import '../../models/dose.dart';
 import '../../repositories/dose_repository.dart';
 import 'reminder_action_queue.dart';
+import '../../repositories/settings_repository.dart';
 
 /// ============================================================
 /// REMINDER SCHEDULER — M8, Spark-plan half
@@ -44,9 +45,11 @@ class ReminderScheduler with WidgetsBindingObserver {
   static const int _maxScheduled = 100;
 
   /// Escalation repeats (PDF M8: default 10 min, from settings).
-  /// shortcut: fixed values until M8 step 5 reads users/{uid}.settings.
   static const int _escalationCount = 3;
-  static const int _escalationMinutes = 10;
+
+  /// Escalation interval in minutes — loaded from users/{uid}.settings,
+  /// falls back to 10 if preferences haven't been saved yet.
+  int _escalationMinutes = 10;
 
   static const List<AndroidNotificationAction> _actions = [
     AndroidNotificationAction('taken', 'Taken'),
@@ -202,6 +205,14 @@ class ReminderScheduler with WidgetsBindingObserver {
     if (profileId == null || profileId.isEmpty) {
       debugPrint('ReminderScheduler: no profile selected — skipping');
       return;
+    }
+
+    // Load escalation interval from settings (falls back to 10 on first launch).
+    try {
+      final settings = await SettingsRepository.instance.getSettings(profileId);
+      _escalationMinutes = settings.escalationMinutes;
+    } catch (e) {
+      debugPrint('ReminderScheduler: failed to load settings: $e');
     }
 
     // Close out overdue doses first (Spark has no scheduled functions).
