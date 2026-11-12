@@ -475,6 +475,21 @@ service cloud.firestore {
     }
 
     // =====================================
+    // CUSTOMERS (M12 — RevenueCat subscription state)
+    // =====================================
+
+    match /customers/{uid} {
+
+      // M12: Users can read only their own subscription record
+      allow read: if signedIn()
+        && request.auth.uid == uid;
+
+      // M12: Written only by the server (RevenueCat webhook / Admin SDK).
+      // Clients must never grant themselves a plan.
+      allow write: if false;
+    }
+
+    // =====================================
     // PATIENT PROFILES
     // =====================================
 

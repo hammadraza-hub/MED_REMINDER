@@ -434,3 +434,41 @@ describe("Owner Profile Update Security — M0", () => {
   });
 
 });
+
+describe("Customers (Subscriptions) Security — M12", () => {
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "customers", "owner123"), {
+        activePlan: "annual_premium",
+        status: "active",
+      });
+    });
+  });
+
+  test("User can read their own customer record", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(getDoc(doc(db, "customers", "owner123")));
+  });
+
+  test("User cannot read another user's customer record", async () => {
+    const db = testEnv.authenticatedContext("viewer123").firestore();
+    await assertFails(getDoc(doc(db, "customers", "owner123")));
+  });
+
+  test("User cannot write their own customer record", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      updateDoc(doc(db, "customers", "owner123"), { activePlan: "family_plan" })
+    );
+    await assertFails(
+      setDoc(doc(db, "customers", "owner123"), { activePlan: "family_plan" })
+    );
+  });
+
+  test("Unauthenticated user cannot read customer records", async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(db, "customers", "owner123")));
+  });
+
+});
