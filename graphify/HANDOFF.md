@@ -68,10 +68,10 @@ CI: `.github/workflows/firebase.yml` runs the same on PRs and deploys rules+inde
 
 ## 6. Work queue (in order)
 **A. M12 Subscriptions — finishing without Blaze/RevenueCat key (in progress, user doing step by step)**
-1. ✅ `customers/{uid}` rule + 4 tests (uncommitted at time of writing — check `git status`).
-2. ⏳ `cancelSubscription`: remove Firestore `update` in `firebase_subscription_repository.dart`; open Play Store subscriptions page via `url_launcher` (`https://play.google.com/store/account/subscriptions`); wire from `subscription_screen.dart` (~line 110).
-3. ⏳ Placeholder-key guard in `subscription_service.dart`: if key is empty/`your_revenuecat_api_key_here`, skip `Purchases.configure`, keep `_initialized=false`, and make other methods throw a clear error so the upgrade screen shows "plans unavailable".
-4. ⏳ UI test by writing `customers/{uid}` docs in the emulator UI (`active/trial/canceled/expired`).
+1. ✅ `customers/{uid}` rule + 4 tests (commit `0d60195`).
+2. ✅ (done, uncommitted) `cancelSubscription`: remove Firestore `update` in `firebase_subscription_repository.dart`; open Play Store subscriptions page via `url_launcher` (`https://play.google.com/store/account/subscriptions`); wire from `subscription_screen.dart` (~line 110).
+3. ✅ (done, uncommitted) Placeholder-key guard (`SubscriptionService.isConfigured`, `SubscriptionUnavailableException`) in `subscription_service.dart`: if key is empty/`your_revenuecat_api_key_here`, skip `Purchases.configure`, keep `_initialized=false`, and make other methods throw a clear error so the upgrade screen shows "plans unavailable".
+4. ✅ (done 2026-11-12, Android emulator + Firebase emulators) UI test by writing `customers/{uid}` docs in the emulator UI (`active/trial/canceled/expired`).
 5. After a RevenueCat key (or Test Store key) exists: `Purchases.logIn(uid)`/`logOut` on auth changes; derive premium from `CustomerInfo` entitlements; verify purchase on device.
 6. Needs Blaze (blocked): RevenueCat webhook → `customers/{uid}`; server-enforced profile limit.
 
@@ -92,3 +92,9 @@ graphify path "DoseEngine" "DoseRepository"
 graphify affected "Dose"                  # what breaks if this changes
 ```
 Caveats: some Dart nodes are noisy (`_`, `with`, `dependencies` from yaml/json); trust file-level and class-level nodes. The hand-written docs in this folder are the source of truth for *status*; the graph is for *structure*.
+
+### M12 UI test notes (2026-11-12, verified on Android emulator)
+- Verified: no-key guard ("Purchases are not available right now."), states none/active/trial/canceled/expired render correctly, Cancel opens Chrome → Play Store subscriptions page.
+- Bug found+fixed: `SubscriptionInfo.hasPremiumAccess` ignored `canceled` with a future `expiresAt` (user lost Pro early). Now stays premium until expiry.
+- Open UI nits (not fixed): plan shows raw id (`annual_premium`) and raw status; footer says "App Store Settings" on Android; "Cancel Plan" button still shown for already-canceled plans; Subscription screen loads once (no live `watchSubscription`).
+- Test recipe: `firebase emulators:start --only auth,firestore --project medapp-staging`; `flutter run -d <android> --dart-define=ENV=staging --dart-define=USE_EMULATOR=true`; seed `customers/{uid}` via emulator REST (`Authorization: Bearer owner`) or Emulator UI at :4000. Local app may hold a stale saved login whose profile/user docs must be seeded first.

@@ -19,7 +19,7 @@ Status is derived from git history + code inspection on 2026-11-12. "Spark" = bu
 | M9 | Inventory, refills, pharmacies | P0/P1 | 🟡 | 65 | `firebase_inventory_repository`, inventory/refill/pharmacy screens, rules (inventoryEvents, pharmacies) | `refillAlerts` only under generic rule; no scheduled refill job |
 | M10 | Safety checks | P0/P1 | 🟡 | 40 | static `interaction_checker.dart`, warning screen | Hard-coded map; no RxNorm/classes; no allergy/duplicate auto-trigger |
 | M11 | Caregiver & family sharing | P0/P1 | ⛔ | 25 | `firebase_caregiver_repository.dart` is a **stub**; invite/permissions screens | Needs callable functions (Blaze) |
-| M12 | Subscriptions (RevenueCat) | P1 | 🟡 | 60 | `subscription_service.dart`, paywall/compare/upgrade screens | **Uncommitted edits** in progress; webhook → `customers/{uid}` needs functions |
+| M12 | Subscriptions (RevenueCat) | P1 | 🟡 | 60 | `subscription_service.dart`, paywall/compare/upgrade screens | `customers` rule + tests done; cancel opens store page (step 2); key guard + UI test done on emulator (steps 3–4); **step 5 needs RevenueCat key**; webhook → `customers/{uid}` needs functions |
 | M13 | Settings, support, Remote Config | P1 | 🟡 | 45 | `remote_config_service`, `settings_repository`, notification settings in `users/{uid}.settings` | `supportTickets`, FAQ/plans in `config/*`, legal-version re-prompt not done |
 | M14 | Data export & account deletion | P1 | ⬜ | 10 | `data_export_screen` UI only | `exportJobs`, delete-account flow, functions |
 
