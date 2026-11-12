@@ -15,6 +15,7 @@ library;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/subscription/subscription_repository.dart';
 import '../core/subscription/subscription_service.dart';
@@ -97,17 +98,24 @@ class FirebaseSubscriptionRepository implements SubscriptionRepository {
   }
 
   /// Cancel active subscription.
+  ///
+  /// Subscriptions can only be cancelled in the store, not from the SDK, and
+  /// `customers/{uid}` is server-write-only (firestore.rules), so this opens
+  /// the store's subscription management page. The status in Firestore will
+  /// update when the server (RevenueCat webhook) syncs it.
   /// Subscription remains active until expiresAt.
   @override
   Future<void> cancelSubscription(String uid) async {
+    final uri = Uri.parse(
+      defaultTargetPlatform == TargetPlatform.iOS
+          ? 'https://apps.apple.com/account/subscriptions'
+          : 'https://play.google.com/store/account/subscriptions',
+    );
     try {
-      // RevenueCat doesn't support direct cancellation from SDK
-      // User must cancel via App Store/Play Store
-      // We can only update local state
-      await _firestore.collection('customers').doc(uid).update({
-        'renewalEnabled': false,
-        'status': 'canceled',
-      });
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) {
+        throw Exception('Could not open subscription management page');
+      }
     } catch (e) {
       debugPrint('M12: cancelSubscription failed: $e');
       rethrow;
@@ -122,6 +130,9 @@ class FirebaseSubscriptionRepository implements SubscriptionRepository {
       // RevenueCat webhook will sync to Firestore
       // Return updated subscription from Firestore
       return await getSubscription(uid);
+    } on SubscriptionUnavailableException {
+      // Let the UI say purchases are unavailable instead of "none found".
+      rethrow;
     } catch (e) {
       debugPrint('M12: restorePurchases failed: $e');
       return null;

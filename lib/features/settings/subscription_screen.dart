@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/firebase_subscription_repository.dart';
 import '../../core/subscription/subscription_repository.dart';
+import '../../core/subscription/subscription_service.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
@@ -107,11 +108,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     if (confirmed == true && context.mounted && _uid != null) {
       try {
+        // Opens the store's subscription page; cancellation happens there.
         await FirebaseSubscriptionRepository.instance.cancelSubscription(_uid!);
-        await _loadSubscription();
-        if (context.mounted) _showMessage(context, 'Subscription cancelled');
       } catch (e) {
-        if (context.mounted) _showMessage(context, 'Failed to cancel: $e');
+        if (context.mounted) {
+          _showMessage(context, 'Could not open subscription settings: $e');
+        }
       }
     }
   }
@@ -331,7 +333,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         await _loadSubscription();
                         if (mounted) _showMessage(context, 'Purchases restored');
                       } catch (e) {
-                        if (mounted) _showMessage(context, 'Restore failed: $e');
+                        if (mounted) {
+                          _showMessage(
+                            context,
+                            e is SubscriptionUnavailableException
+                                ? e.message
+                                : 'Restore failed: $e',
+                          );
+                        }
                       }
                     },
                     child: const Text('Restore Purchases'),

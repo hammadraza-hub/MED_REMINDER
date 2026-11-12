@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/subscription/subscription_repository.dart';
+import '../../core/subscription/subscription_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/firebase_subscription_repository.dart';
@@ -96,7 +97,10 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         _showMessage('No purchases found to restore.');
       }
     }).catchError((e) {
-      if (mounted) _showMessage('Restore failed: $e');
+      if (!mounted) return;
+      _showMessage(e is SubscriptionUnavailableException
+          ? e.message
+          : 'Restore failed: $e');
     });
   }
 
@@ -137,7 +141,10 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
         ),
       );
     }).catchError((e) {
-      if (mounted) _showMessage('Purchase failed: $e');
+      if (!mounted) return;
+      _showMessage(e is SubscriptionUnavailableException
+          ? e.message
+          : 'Purchase failed: $e');
     });
   }
 

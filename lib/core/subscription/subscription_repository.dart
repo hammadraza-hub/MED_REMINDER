@@ -131,9 +131,14 @@ class SubscriptionInfo {
 
   /// Whether user has premium access right now.
   bool get hasPremiumAccess {
+    // A cancelled subscription keeps access until the paid period ends.
+    final canceledButPaid = status == SubscriptionStatus.canceled &&
+        expiresAt != null &&
+        expiresAt!.isAfter(DateTime.now());
     return status == SubscriptionStatus.active ||
         status == SubscriptionStatus.trial ||
-        status == SubscriptionStatus.gracePeriod;
+        status == SubscriptionStatus.gracePeriod ||
+        canceledButPaid;
   }
 
   /// Whether subscription will renew automatically.
