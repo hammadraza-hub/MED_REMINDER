@@ -1,0 +1,30 @@
+{
+  "snapshot": "2026-11-12",
+  "commit": "747bc77",
+  "modules": [
+    {"id":"M0","name":"Firebase project & data layout","status":"done","percent":90},
+    {"id":"M1","name":"Flutter-Firebase foundation","status":"done","percent":90},
+    {"id":"M2","name":"Authentication & accounts","status":"partial","percent":70},
+    {"id":"M3","name":"Profiles & access model","status":"done","percent":85},
+    {"id":"M4","name":"Drug catalog & label scan","status":"partial","percent":55},
+    {"id":"M5","name":"Medications & schedules","status":"done","percent":80},
+    {"id":"M6","name":"Dose engine","status":"done","percent":80},
+    {"id":"M7","name":"Dose logging, adherence, calendar","status":"done","percent":85},
+    {"id":"M8","name":"Reminders & push","status":"partial","percent":70},
+    {"id":"M9","name":"Inventory, refills, pharmacies","status":"partial","percent":65},
+    {"id":"M10","name":"Safety checks","status":"partial","percent":40},
+    {"id":"M11","name":"Caregiver & family sharing","status":"blocked","percent":25},
+    {"id":"M12","name":"Subscriptions (RevenueCat)","status":"partial","percent":60},
+    {"id":"M13","name":"Settings, support, Remote Config","status":"partial","percent":45},
+    {"id":"M14","name":"Data export & deletion","status":"not_started","percent":10},
+    {"id":"M15","name":"Vitals, symptoms","status":"ui_only","percent":15},
+    {"id":"M16","name":"Prescribers & appointments","status":"ui_only","percent":10},
+    {"id":"M17","name":"Reports","status":"ui_only","percent":15},
+    {"id":"M18","name":"AI assistant","status":"ui_only","percent":20},
+    {"id":"M19","name":"Community","status":"ui_only","percent":5},
+    {"id":"M20","name":"Async/error/offline states","status":"partial","percent":25},
+    {"id":"M21","name":"Security hardening","status":"partial","percent":35},
+    {"id":"M22","name":"Testing","status":"partial","percent":25},
+    {"id":"M23","name":"Graphify","status":"partial","percent":50}
+  ]
+}
