@@ -1,6 +1,6 @@
 # graphify — MedRemind architecture & progress tracker
 
-Snapshot date: **2026-11-12** · branch `main` · last commit `747bc77` (M9–M12)
+Snapshot date: **2026-11-12** · branch `main` · M12 steps 1–4 done; M13 step 1 done
 
 This folder is the single place to see *what the app is*, *how it is wired*, and *how far along* it is.
 It is hand-maintained (this is plan module **M23 — Graphify architecture update**). Update it at the end of every module.
@@ -24,4 +24,4 @@ It is hand-maintained (this is plan module **M23 — Graphify architecture updat
 - Phase 1 core loop (add med → schedule → dose → remind → log) is built on Firebase **Spark plan** (client-side only).
 - **Cloud Functions are empty** (`functions/src/index.ts` is the scaffold). Anything needing server logic (caregiver invites, RxNorm sync, label parse, export, delete, push fan-out) is stubbed or done client-side.
 - Phase 2/3 screens (vitals, appointments, reports, AI, community) exist as UI, mostly on local Drift/dummy data.
-- Uncommitted work in progress: M12 subscription/paywall (RevenueCat) + l10n for ar/es/fr.
+- M12 subscriptions: rule, store-cancel, no-key guard and UI test done; RevenueCat key (step 5) and Blaze webhook (step 6) pending.
