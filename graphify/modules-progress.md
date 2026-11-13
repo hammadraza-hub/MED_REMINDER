@@ -20,7 +20,7 @@ Status is derived from git history + code inspection on 2026-11-12. "Spark" = bu
 | M10 | Safety checks | P0/P1 | 🟡 | 40 | static `interaction_checker.dart`, warning screen | Hard-coded map; no RxNorm/classes; no allergy/duplicate auto-trigger |
 | M11 | Caregiver & family sharing | P0/P1 | ⛔ | 25 | `firebase_caregiver_repository.dart` is a **stub**; invite/permissions screens | Needs callable functions (Blaze) |
 | M12 | Subscriptions (RevenueCat) | P1 | 🟡 | 60 | `subscription_service.dart`, paywall/compare/upgrade screens | `customers` rule + tests done; cancel opens store page (step 2); key guard + UI test done on emulator (steps 3–4); **step 5 needs RevenueCat key**; webhook → `customers/{uid}` needs functions |
-| M13 | Settings, support, Remote Config | P1 | 🟡 | 65 | `remote_config_service`, `settings_repository`, notification settings in `users/{uid}.settings` | Steps 1–2 of 7 done (RC keys + force-update/maintenance gate + real version; legal re-consent). Left: settings sync, `config/faq`, `supportTickets`, biometric lock; ticket email needs Blaze |
+| M13 | Settings, support, Remote Config | P1 | 🟡 | 75 | `remote_config_service`, `settings_repository`, notification settings in `users/{uid}.settings` | Steps 1–3 of 7 done (RC gate + real version; legal re-consent; language/accessibility sync). Left: `config/faq`, `supportTickets`, biometric lock; ticket email needs Blaze |
 | M14 | Data export & account deletion | P1 | ⬜ | 10 | `data_export_screen` UI only | `exportJobs`, delete-account flow, functions |
 
 ## Phase 2/3

@@ -10,3 +10,5 @@
 - 2026-11-13 — M13 step 1: Remote Config terms/privacy/disclaimer keys, AppGate force-update/maintenance screen, AppInfoService (real version), About shows real version, debug cleartext for emulators, 10 new tests.
 - 2026-11-13 — M13 step 1 fully verified on emulator (gate screens, About, Settings trailing version); found Settings 'About'/Allergies label bug.
 - 2026-11-13 — M13 step 2: legal re-consent (LegalGate/LegalService/LegalReconsentScreen), signup uses Remote Config versions, shared LegalDocSheet, 12 new tests (33 rules tests). Verified on emulator.
+- 2026-11-13 — Fixed Settings Allergies row label; added 10 s timeout to re-consent accept (offline spinner bug). Found: main() hangs on native splash when Firestore is unreachable (pre-existing).
+- 2026-11-13 — M13 step 3: language/accessibility prefs synced to users/{uid}.settings (AppPreferences, PreferencesSyncService, dotted-path saves incl. notifications), toggles persisted, Notifications dropdown crash fix. 15 new tests (36 rules). Verified on emulator.
