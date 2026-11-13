@@ -477,7 +477,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get aboutAppName => 'MedRemind';
 
   @override
-  String get aboutVersion => 'संस्करण 1.2.0 (बिल्ड 245)';
+  String aboutVersion(String version, String build) {
+    return 'संस्करण $version (बिल्ड $build)';
+  }
 
   @override
   String get aboutUpToDate => 'अद्यतित ✓';
@@ -1755,4 +1757,24 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get permBtnSkip => 'अभी छोड़ें';
+
+  @override
+  String get appBlockedUpdateTitle => 'अपडेट आवश्यक है';
+
+  @override
+  String get appBlockedUpdateBody =>
+      'आपके रिमाइंडर सुरक्षित और सटीक रखने के लिए MedRemind का नया संस्करण ज़रूरी है। जारी रखने के लिए कृपया अपडेट करें।';
+
+  @override
+  String get appBlockedUpdateButton => 'अभी अपडेट करें';
+
+  @override
+  String get appBlockedMaintenanceTitle => 'रखरखाव जारी है';
+
+  @override
+  String get appBlockedMaintenanceBody =>
+      'सुधार के दौरान MedRemind कुछ समय के लिए उपलब्ध नहीं है। इस डिवाइस पर पहले से तय रिमाइंडर फिर भी बजेंगे। कृपया थोड़ी देर बाद फिर कोशिश करें।';
+
+  @override
+  String get appBlockedRetryButton => 'फिर कोशिश करें';
 }

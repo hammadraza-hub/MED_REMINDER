@@ -152,7 +152,7 @@
 
   "aboutTitle": "À propos",
   "aboutAppName": "MedRemind",
-  "aboutVersion": "Version 1.2.0 (build 245)",
+  "aboutVersion": "Version {version} (build {build})",
   "aboutUpToDate": "À JOUR ✓",
   "aboutTerms": "Conditions d'utilisation",
   "aboutPrivacy": "Politique de confidentialité",
@@ -481,5 +481,11 @@
   "reviewScanStrengthUnclear": "Le champ du dosage était flou sur la photo : veuillez vérifier manuellement.",
   "reviewScanRequired": "OBLIGATOIRE",
   "reviewScanStrengthHint": "Entrez le dosage, ex. 500mg",
-  "reviewScanConfirmContinue": "Confirmer et continuer →"
+  "reviewScanConfirmContinue": "Confirmer et continuer →",
+  "appBlockedUpdateTitle": "Mise à jour requise",
+  "appBlockedUpdateBody": "Une version plus récente de MedRemind est nécessaire pour garder vos rappels sûrs et précis. Veuillez mettre à jour pour continuer.",
+  "appBlockedUpdateButton": "Mettre à jour",
+  "appBlockedMaintenanceTitle": "En maintenance",
+  "appBlockedMaintenanceBody": "MedRemind est brièvement indisponible pendant des améliorations. Les rappels déjà programmés sur cet appareil sonneront toujours. Réessayez bientôt.",
+  "appBlockedRetryButton": "Réessayer"
 }

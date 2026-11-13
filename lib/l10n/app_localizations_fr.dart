@@ -480,7 +480,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aboutAppName => 'MedRemind';
 
   @override
-  String get aboutVersion => 'Version 1.2.0 (build 245)';
+  String aboutVersion(String version, String build) {
+    return 'Version $version (build $build)';
+  }
 
   @override
   String get aboutUpToDate => 'À JOUR ✓';
@@ -1775,4 +1777,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get permBtnSkip => 'Skip for now';
+
+  @override
+  String get appBlockedUpdateTitle => 'Mise à jour requise';
+
+  @override
+  String get appBlockedUpdateBody =>
+      'Une version plus récente de MedRemind est nécessaire pour garder vos rappels sûrs et précis. Veuillez mettre à jour pour continuer.';
+
+  @override
+  String get appBlockedUpdateButton => 'Mettre à jour';
+
+  @override
+  String get appBlockedMaintenanceTitle => 'En maintenance';
+
+  @override
+  String get appBlockedMaintenanceBody =>
+      'MedRemind est brièvement indisponible pendant des améliorations. Les rappels déjà programmés sur cet appareil sonneront toujours. Réessayez bientôt.';
+
+  @override
+  String get appBlockedRetryButton => 'Réessayer';
 }

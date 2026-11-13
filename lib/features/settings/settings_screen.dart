@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
+import '../../core/services/app_info_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../repositories/auth_repository.dart';
 import '../onboarding/splash_screen.dart';
@@ -52,7 +53,8 @@ String _trailingText(AppLocalizations l10n, String? trailingId) {
     'settingsNotificationsTrailing' => l10n.settingsNotificationsTrailing,
     'settingsLanguageTrailing' => l10n.settingsLanguageTrailing,
     'settingsDataExportTrailing' => l10n.settingsDataExportTrailing,
-    'settingsAboutTrailing' => l10n.settingsAboutTrailing,
+    // M13: real installed version instead of the hard-coded ARB string.
+    'settingsAboutTrailing' => 'v${AppInfoService.instance.version}',
     _ => '',
   };
 }

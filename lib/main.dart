@@ -31,6 +31,7 @@ import 'config/remote_config_service.dart';
 import 'core/accessibility/accessibility_controller.dart';
 import 'core/locale/locale_controller.dart';
 import 'core/profile/profile_controller.dart';
+import 'core/services/app_info_service.dart';
 import 'core/services/push_service.dart';
 import 'core/services/reminder_action_queue.dart';
 import 'core/services/reminder_scheduler.dart';
@@ -120,6 +121,8 @@ Future<void> main() async {
   // ───────────────────────────────────────────────────────────
   // STEP 2.5: Remote Config Initialize
   // ───────────────────────────────────────────────────────────
+  // Installed version first: the force-update check compares against it.
+  await AppInfoService.instance.initialize();
   await RemoteConfigService.instance.initialize();
 
   // ───────────────────────────────────────────────────────────

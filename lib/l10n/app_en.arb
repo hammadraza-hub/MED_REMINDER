@@ -192,7 +192,13 @@
 
   "aboutTitle": "About",
   "aboutAppName": "MedRemind",
-  "aboutVersion": "Version 1.2.0 (build 245)",
+  "aboutVersion": "Version {version} (build {build})",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": {"type": "String"},
+      "build": {"type": "String"}
+    }
+  },
   "aboutUpToDate": "UP TO DATE ✓",
   "aboutTerms": "Terms of Service",
   "aboutPrivacy": "Privacy Policy",
@@ -624,5 +630,11 @@
   "permStatusDenied": "Permissions denied — you can enable them later in Settings.",
   "permStatusError": "Could not verify permissions — try again.",
   "permBtnContinue": "Continue Anyway",
-  "permBtnSkip": "Skip for now"
+  "permBtnSkip": "Skip for now",
+  "appBlockedUpdateTitle": "Update required",
+  "appBlockedUpdateBody": "A newer version of MedRemind is required to keep your reminders safe and accurate. Please update to continue.",
+  "appBlockedUpdateButton": "Update now",
+  "appBlockedMaintenanceTitle": "Under maintenance",
+  "appBlockedMaintenanceBody": "MedRemind is briefly unavailable while we make improvements. Reminders already scheduled on this device will still ring. Please try again soon.",
+  "appBlockedRetryButton": "Try again"
 }

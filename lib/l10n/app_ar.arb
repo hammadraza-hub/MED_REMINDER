@@ -152,7 +152,7 @@
 
   "aboutTitle": "حول",
   "aboutAppName": "MedRemind",
-  "aboutVersion": "الإصدار 1.2.0 (إصدار 245)",
+  "aboutVersion": "الإصدار {version} (إصدار {build})",
   "aboutUpToDate": "محدّث ✓",
   "aboutTerms": "شروط الخدمة",
   "aboutPrivacy": "سياسة الخصوصية",
@@ -481,5 +481,11 @@
   "reviewScanStrengthUnclear": "كان حقل التركيز غير واضح في الصورة — يرجى التحقق يدويًا.",
   "reviewScanRequired": "مطلوب",
   "reviewScanStrengthHint": "أدخل التركيز، مثال: 500mg",
-  "reviewScanConfirmContinue": "تأكيد ومتابعة ←"
+  "reviewScanConfirmContinue": "تأكيد ومتابعة ←",
+  "appBlockedUpdateTitle": "التحديث مطلوب",
+  "appBlockedUpdateBody": "يلزم إصدار أحدث من MedRemind للحفاظ على تذكيراتك آمنة ودقيقة. يرجى التحديث للمتابعة.",
+  "appBlockedUpdateButton": "حدّث الآن",
+  "appBlockedMaintenanceTitle": "قيد الصيانة",
+  "appBlockedMaintenanceBody": "MedRemind غير متاح مؤقتًا أثناء إجراء تحسينات. ستظل التذكيرات المجدولة بالفعل على هذا الجهاز تعمل. يرجى المحاولة مرة أخرى قريبًا.",
+  "appBlockedRetryButton": "حاول مرة أخرى"
 }

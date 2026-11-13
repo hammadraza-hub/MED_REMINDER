@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import '../../config/remote_config_service.dart';
+import '../../core/app_gate.dart';
 import '../../core/constants/app_colors.dart';
 import '../../repositories/auth_repository.dart';
 
@@ -8,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../main_shell.dart';
+import 'app_blocked_screen.dart';
 import 'onboarding_screen.dart';
 
 /// ============================================================
@@ -70,6 +73,17 @@ class _SplashScreenState extends State<SplashScreen> {
     // Wait for branding duration, then route based on auth state
     Timer(_brandingDelay, () {
       if (!mounted || _hasNavigated) return;
+
+      // M13: Remote Config gate (force update / maintenance) comes first.
+      final gate = RemoteConfigService.instance.gateStatus;
+      if (gate != AppGateStatus.ok) {
+        debugPrint('🔒 App gate: $gate → blocked screen');
+        _hasNavigated = true;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => AppBlockedScreen(status: gate)),
+        );
+        return;
+      }
 
       if (user != null) {
         debugPrint('🔥 Auth state: user signed in → ${user.uid}');

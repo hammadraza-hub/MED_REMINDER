@@ -152,7 +152,7 @@
 
   "aboutTitle": "परिचय",
   "aboutAppName": "MedRemind",
-  "aboutVersion": "संस्करण 1.2.0 (बिल्ड 245)",
+  "aboutVersion": "संस्करण {version} (बिल्ड {build})",
   "aboutUpToDate": "अद्यतित ✓",
   "aboutTerms": "सेवा की शर्तें",
   "aboutPrivacy": "गोपनीयता नीति",
@@ -522,5 +522,11 @@
   "permStatusDenied": "अनुमति अस्वीकार की गई — बाद में सेटिंग्स से सक्षम कर सकते हैं।",
   "permStatusError": "अनुमति सत्यापित नहीं की जा सकी — फिर से कोशिश करें।",
   "permBtnContinue": "फिर भी जारी रखें",
-  "permBtnSkip": "अभी छोड़ें"
+  "permBtnSkip": "अभी छोड़ें",
+  "appBlockedUpdateTitle": "अपडेट आवश्यक है",
+  "appBlockedUpdateBody": "आपके रिमाइंडर सुरक्षित और सटीक रखने के लिए MedRemind का नया संस्करण ज़रूरी है। जारी रखने के लिए कृपया अपडेट करें।",
+  "appBlockedUpdateButton": "अभी अपडेट करें",
+  "appBlockedMaintenanceTitle": "रखरखाव जारी है",
+  "appBlockedMaintenanceBody": "सुधार के दौरान MedRemind कुछ समय के लिए उपलब्ध नहीं है। इस डिवाइस पर पहले से तय रिमाइंडर फिर भी बजेंगे। कृपया थोड़ी देर बाद फिर कोशिश करें।",
+  "appBlockedRetryButton": "फिर कोशिश करें"
 }

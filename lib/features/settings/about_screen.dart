@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/app_info_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
@@ -238,7 +239,10 @@ class _AboutScreenState extends State<AboutScreen>
           ),
           const SizedBox(height: 2),
           Text(
-            l10n.aboutVersion,
+            l10n.aboutVersion(
+              AppInfoService.instance.version,
+              AppInfoService.instance.buildNumber,
+            ),
             style: const TextStyle(
               color: AppColors.permissionsSecondary,
               fontSize: 13,

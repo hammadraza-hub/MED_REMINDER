@@ -476,7 +476,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get aboutAppName => 'MedRemind';
 
   @override
-  String get aboutVersion => 'الإصدار 1.2.0 (إصدار 245)';
+  String aboutVersion(String version, String build) {
+    return 'الإصدار $version (إصدار $build)';
+  }
 
   @override
   String get aboutUpToDate => 'محدّث ✓';
@@ -1747,4 +1749,24 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get permBtnSkip => 'Skip for now';
+
+  @override
+  String get appBlockedUpdateTitle => 'التحديث مطلوب';
+
+  @override
+  String get appBlockedUpdateBody =>
+      'يلزم إصدار أحدث من MedRemind للحفاظ على تذكيراتك آمنة ودقيقة. يرجى التحديث للمتابعة.';
+
+  @override
+  String get appBlockedUpdateButton => 'حدّث الآن';
+
+  @override
+  String get appBlockedMaintenanceTitle => 'قيد الصيانة';
+
+  @override
+  String get appBlockedMaintenanceBody =>
+      'MedRemind غير متاح مؤقتًا أثناء إجراء تحسينات. ستظل التذكيرات المجدولة بالفعل على هذا الجهاز تعمل. يرجى المحاولة مرة أخرى قريبًا.';
+
+  @override
+  String get appBlockedRetryButton => 'حاول مرة أخرى';
 }

@@ -935,8 +935,8 @@ abstract class AppLocalizations {
   /// No description provided for @aboutVersion.
   ///
   /// In en, this message translates to:
-  /// **'Version 1.2.0 (build 245)'**
-  String get aboutVersion;
+  /// **'Version {version} (build {build})'**
+  String aboutVersion(String version, String build);
 
   /// No description provided for @aboutUpToDate.
   ///
@@ -3073,6 +3073,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip for now'**
   String get permBtnSkip;
+
+  /// No description provided for @appBlockedUpdateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update required'**
+  String get appBlockedUpdateTitle;
+
+  /// No description provided for @appBlockedUpdateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A newer version of MedRemind is required to keep your reminders safe and accurate. Please update to continue.'**
+  String get appBlockedUpdateBody;
+
+  /// No description provided for @appBlockedUpdateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get appBlockedUpdateButton;
+
+  /// No description provided for @appBlockedMaintenanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Under maintenance'**
+  String get appBlockedMaintenanceTitle;
+
+  /// No description provided for @appBlockedMaintenanceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'MedRemind is briefly unavailable while we make improvements. Reminders already scheduled on this device will still ring. Please try again soon.'**
+  String get appBlockedMaintenanceBody;
+
+  /// No description provided for @appBlockedRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get appBlockedRetryButton;
 }
 
 class _AppLocalizationsDelegate
