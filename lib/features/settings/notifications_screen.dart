@@ -99,7 +99,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           'refill': settings.refillEnabled,
           'caregiver': settings.caregiverEnabled,
         };
-        _escalationMinutes = settings.escalationMinutes;
+        // Server value may not be one of the dropdown options (it would
+        // crash the DropdownButton): snap to the nearest allowed one.
+        _escalationMinutes = NotificationsData.escalationMinutes.reduce(
+          (a, b) => (a - settings.escalationMinutes).abs() <=
+                  (b - settings.escalationMinutes).abs()
+              ? a
+              : b,
+        );
         _quietHoursEnabled = settings.quietHoursEnabled;
         _isLoading = false;
       });

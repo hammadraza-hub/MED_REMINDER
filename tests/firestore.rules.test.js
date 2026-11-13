@@ -525,3 +525,55 @@ describe("Users legal acceptance — M13 step 2", () => {
   });
 
 });
+
+
+describe("Users settings map — M13 step 3", () => {
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "users", "owner123"), {
+        email: "o@example.com",
+        displayName: "Owner",
+        settings: { doseEnabled: false, escalationMinutes: 25 },
+      });
+    });
+  });
+
+  test("Saving language by dotted path keeps notification settings", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "owner123"), {
+        "settings.language": "hi",
+        "settings.textSizeIndex": 3,
+      })
+    );
+    const snap = await assertSucceeds(getDoc(doc(db, "users", "owner123")));
+    expect(snap.data().settings).toEqual({
+      doseEnabled: false,
+      escalationMinutes: 25,
+      language: "hi",
+      textSizeIndex: 3,
+    });
+  });
+
+  test("Saving notification keys by dotted path keeps language", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "owner123"), { "settings.language": "es" })
+    );
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "owner123"), { "settings.doseEnabled": true })
+    );
+    const snap = await assertSucceeds(getDoc(doc(db, "users", "owner123")));
+    expect(snap.data().settings.language).toBe("es");
+    expect(snap.data().settings.doseEnabled).toBe(true);
+  });
+
+  test("User cannot change another user's settings", async () => {
+    const db = testEnv.authenticatedContext("viewer123").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "owner123"), { "settings.language": "ar" })
+    );
+  });
+
+});

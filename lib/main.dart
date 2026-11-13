@@ -32,6 +32,7 @@ import 'core/accessibility/accessibility_controller.dart';
 import 'core/locale/locale_controller.dart';
 import 'core/profile/profile_controller.dart';
 import 'core/services/app_info_service.dart';
+import 'core/services/preferences_sync_service.dart';
 import 'core/services/push_service.dart';
 import 'core/services/reminder_action_queue.dart';
 import 'core/services/reminder_scheduler.dart';
@@ -167,6 +168,10 @@ Future<void> main() async {
   // ───────────────────────────────────────────────────────────
   await AccessibilityController.instance.initialize();
   await LocaleController.instance.initialize();
+
+  // M13 step 3: sync language + accessibility prefs with users/{uid}.settings
+  // (best-effort, never blocks startup).
+  PreferencesSyncService.instance.start();
 
   // ───────────────────────────────────────────────────────────
   // STEP 6.5: M12 — RevenueCat SDK init (Spark: client-side)

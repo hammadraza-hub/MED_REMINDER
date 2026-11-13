@@ -50,12 +50,18 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
 
     _textSizeIndex = AccessibilityController.instance.textSizeIndex;
 
+    // Toggle state comes from the controller (persisted + synced, M13 step 3).
+    final a11y = AccessibilityController.instance;
     _displayEnabled = {
       for (final option in AccessibilityData.displayOptions)
-        option.id: option.defaultEnabled,
+        option.id: switch (option.id) {
+          'highContrast' => a11y.highContrast,
+          'simplified' => a11y.simplifiedMode,
+          _ => option.defaultEnabled,
+        },
     };
 
-    _voiceInput = AccessibilityData.defaultVoiceInput;
+    _voiceInput = a11y.voiceInput;
   }
 
   // ============================================================
@@ -435,6 +441,12 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
                 setState(() {
                   _displayEnabled[options[i].id] = value;
                 });
+                switch (options[i].id) {
+                  case 'highContrast':
+                    AccessibilityController.instance.setHighContrast(value);
+                  case 'simplified':
+                    AccessibilityController.instance.setSimplifiedMode(value);
+                }
               },
             ),
           ],
@@ -459,6 +471,7 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
           setState(() {
             _voiceInput = value;
           });
+          AccessibilityController.instance.setVoiceInput(value);
         },
       ),
     );

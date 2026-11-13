@@ -13,6 +13,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/app_exception.dart';
+import '../models/app_preferences.dart';
 import '../models/notification_settings.dart';
 
 class SettingsRepository {
@@ -48,7 +49,46 @@ class SettingsRepository {
   /// Save preferences for `uid`. Merges only the `settings` field.
   Future<void> saveSettings(String uid, NotificationSettings settings) async {
     try {
-      await _userDoc(uid).update({'settings': settings.toMap()});
+      // Dotted paths: touch only the notification keys. Replacing the whole
+      // `settings` map would erase the language / accessibility keys that
+      // live beside them (M13 step 3).
+      await _userDoc(uid).update({
+        for (final e in settings.toMap().entries) 'settings.${e.key}': e.value,
+      });
+    } on FirebaseException catch (e) {
+      throw AppException.fromFirebaseException(e);
+    }
+  }
+
+  // ============================================================
+  // APP PREFERENCES — language + accessibility (M13 step 3)
+  // ============================================================
+
+  /// Reads language / accessibility preferences. Never throws: any failure
+  /// (offline, permission, missing doc) returns an empty [AppPreferences]
+  /// meaning "nothing known on the server".
+  Future<AppPreferences> getAppPreferences(String uid) async {
+    try {
+      final snap = await _userDoc(uid).get();
+      final data = snap.data() as Map<String, dynamic>?;
+      final settings = data?['settings'];
+      if (settings is! Map) return const AppPreferences();
+      return AppPreferences.fromSettingsMap(
+        Map<String, dynamic>.from(settings),
+      );
+    } on FirebaseException catch (e) {
+      debugPrint('SettingsRepository: getAppPreferences failed: $e');
+      return const AppPreferences();
+    }
+  }
+
+  /// Saves ONLY the non-null fields of [prefs] (dotted paths), leaving the
+  /// notification settings and the other preference keys untouched.
+  Future<void> saveAppPreferences(String uid, AppPreferences prefs) async {
+    final updates = prefs.toFieldUpdates();
+    if (updates.isEmpty) return;
+    try {
+      await _userDoc(uid).update(updates);
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);
     }
