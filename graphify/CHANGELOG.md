@@ -9,3 +9,4 @@
 - 2026-11-12 — Graph rebuilt after M12 steps 1-4 (4,903 nodes / 6,222 edges / 207 communities); README/HANDOFF snapshot refreshed.
 - 2026-11-13 — M13 step 1: Remote Config terms/privacy/disclaimer keys, AppGate force-update/maintenance screen, AppInfoService (real version), About shows real version, debug cleartext for emulators, 10 new tests.
 - 2026-11-13 — M13 step 1 fully verified on emulator (gate screens, About, Settings trailing version); found Settings 'About'/Allergies label bug.
+- 2026-11-13 — M13 step 2: legal re-consent (LegalGate/LegalService/LegalReconsentScreen), signup uses Remote Config versions, shared LegalDocSheet, 12 new tests (33 rules tests). Verified on emulator.
