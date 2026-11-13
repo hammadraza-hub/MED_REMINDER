@@ -44,6 +44,7 @@ String _itemTitle(AppLocalizations l10n, String id) {
     'subscription' => l10n.settingsSubscription,
     'dataExport' => l10n.settingsDataExport,
     'helpSupport' => l10n.settingsHelpSupport,
+    'allergies' => l10n.medsAllergies,
     _ => l10n.settingsAbout,
   };
 }

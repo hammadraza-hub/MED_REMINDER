@@ -40,7 +40,12 @@ class _LegalReconsentScreenState extends State<LegalReconsentScreen> {
     if (!_agreed || _busy) return;
     setState(() => _busy = true);
     try {
-      await LegalService.instance.accept(widget.uid);
+      // Firestore writes wait for the server, so offline this would spin
+      // forever. Give up after a while (the write stays queued and syncs
+      // later) so the user can retry or sign out.
+      await LegalService.instance
+          .accept(widget.uid)
+          .timeout(const Duration(seconds: 10));
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: widget.next),
