@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../core/app_exception.dart';
+import '../config/remote_config_service.dart';
 import '../core/profile/profile_controller.dart';
 
 /// Result of a Google sign-in attempt.
@@ -286,6 +287,51 @@ class AuthRepository {
     }
   }
 
+  // ============================================================
+  // LEGAL ACCEPTANCE (M13 step 2)
+  // ============================================================
+
+  /// Versions of the Terms / Privacy Policy the user last accepted.
+  /// Reads `users/{uid}.legal` and falls back to the older
+  /// `legalVersions` map. Missing values are returned as null.
+  Future<({String? terms, String? privacy})> getAcceptedLegal(
+    String uid,
+  ) async {
+    try {
+      final snap = await _db.collection('users').doc(uid).get();
+      final data = snap.data() ?? const <String, dynamic>{};
+      final legal = data['legal'] as Map<String, dynamic>?;
+      final old = data['legalVersions'] as Map<String, dynamic>?;
+      return (
+        terms: (legal?['termsVersion'] ?? old?['terms']) as String?,
+        privacy: (legal?['privacyVersion'] ?? old?['privacy']) as String?,
+      );
+    } on FirebaseException catch (e) {
+      throw AppException.fromFirebaseException(e);
+    }
+  }
+
+  /// Records that the user accepted the given Terms / Privacy versions.
+  Future<void> acceptLegal({
+    required String uid,
+    required String termsVersion,
+    required String privacyVersion,
+  }) async {
+    try {
+      await _db.collection('users').doc(uid).update({
+        'legal': {
+          'termsVersion': termsVersion,
+          'privacyVersion': privacyVersion,
+          'acceptedAt': FieldValue.serverTimestamp(),
+        },
+        'legalVersions': {'terms': termsVersion, 'privacy': privacyVersion},
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } on FirebaseException catch (e) {
+      throw AppException.fromFirebaseException(e);
+    }
+  }
+
   Future<void> _createUserDocument({
     required String uid,
     required String email,
@@ -301,11 +347,14 @@ class AuthRepository {
       'displayName': displayName,
       'timezone': timezone,
       'settings': {},
-      'legalVersions': {'terms': '1.0', 'privacy': '1.0'},
+      'legalVersions': {
+        'terms': RemoteConfigService.instance.termsVersion,
+        'privacy': RemoteConfigService.instance.privacyVersion,
+      },
       'aiConsentAt': null,
       'legal': {
-        'termsVersion': '1.0',
-        'privacyVersion': '1.0',
+        'termsVersion': RemoteConfigService.instance.termsVersion,
+        'privacyVersion': RemoteConfigService.instance.privacyVersion,
         'acceptedAt': now,
       },
       'selectedMemberId': null,

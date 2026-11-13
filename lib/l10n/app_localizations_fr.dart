@@ -1797,4 +1797,25 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get appBlockedRetryButton => 'Réessayer';
+
+  @override
+  String get legalReconsentTitle => 'Nous avons mis à jour nos conditions';
+
+  @override
+  String get legalReconsentBody =>
+      'Pour continuer à utiliser MedRemind, veuillez lire et accepter nos Conditions d\'utilisation et notre Politique de confidentialité mises à jour. Vos rappels programmés continueront de fonctionner entre-temps.';
+
+  @override
+  String get legalReconsentAgree =>
+      'J\'ai lu et j\'accepte les Conditions d\'utilisation et la Politique de confidentialité';
+
+  @override
+  String get legalReconsentAccept => 'Accepter et continuer';
+
+  @override
+  String get legalReconsentSignOut => 'Se déconnecter';
+
+  @override
+  String get legalReconsentError =>
+      'Impossible d\'enregistrer votre choix. Veuillez réessayer.';
 }

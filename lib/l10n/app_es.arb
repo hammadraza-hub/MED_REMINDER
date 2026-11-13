@@ -487,5 +487,11 @@
   "appBlockedUpdateButton": "Actualizar ahora",
   "appBlockedMaintenanceTitle": "En mantenimiento",
   "appBlockedMaintenanceBody": "MedRemind no está disponible por un momento mientras hacemos mejoras. Los recordatorios ya programados en este dispositivo seguirán sonando. Inténtalo de nuevo pronto.",
-  "appBlockedRetryButton": "Reintentar"
+  "appBlockedRetryButton": "Reintentar",
+  "legalReconsentTitle": "Hemos actualizado nuestros términos",
+  "legalReconsentBody": "Para seguir usando MedRemind, revisa y acepta nuestros Términos de servicio y Política de privacidad actualizados. Mientras tanto, tus recordatorios programados seguirán funcionando.",
+  "legalReconsentAgree": "He leído y acepto los Términos de servicio y la Política de privacidad",
+  "legalReconsentAccept": "Aceptar y continuar",
+  "legalReconsentSignOut": "Cerrar sesión",
+  "legalReconsentError": "No se pudo guardar tu elección. Inténtalo de nuevo."
 }

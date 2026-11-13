@@ -487,5 +487,11 @@
   "appBlockedUpdateButton": "حدّث الآن",
   "appBlockedMaintenanceTitle": "قيد الصيانة",
   "appBlockedMaintenanceBody": "MedRemind غير متاح مؤقتًا أثناء إجراء تحسينات. ستظل التذكيرات المجدولة بالفعل على هذا الجهاز تعمل. يرجى المحاولة مرة أخرى قريبًا.",
-  "appBlockedRetryButton": "حاول مرة أخرى"
+  "appBlockedRetryButton": "حاول مرة أخرى",
+  "legalReconsentTitle": "لقد حدّثنا شروطنا",
+  "legalReconsentBody": "لمواصلة استخدام MedRemind، يرجى مراجعة شروط الخدمة وسياسة الخصوصية المحدّثة والموافقة عليها. ستظل التذكيرات المجدولة تعمل في هذه الأثناء.",
+  "legalReconsentAgree": "لقد قرأت شروط الخدمة وسياسة الخصوصية وأوافق عليهما",
+  "legalReconsentAccept": "موافقة ومتابعة",
+  "legalReconsentSignOut": "تسجيل الخروج",
+  "legalReconsentError": "تعذّر حفظ اختيارك. يرجى المحاولة مرة أخرى."
 }

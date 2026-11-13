@@ -3109,6 +3109,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try again'**
   String get appBlockedRetryButton;
+
+  /// No description provided for @legalReconsentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve updated our terms'**
+  String get legalReconsentTitle;
+
+  /// No description provided for @legalReconsentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To keep using MedRemind, please review and accept our updated Terms of Service and Privacy Policy. Your scheduled reminders will keep working in the meantime.'**
+  String get legalReconsentBody;
+
+  /// No description provided for @legalReconsentAgree.
+  ///
+  /// In en, this message translates to:
+  /// **'I have read and agree to the Terms of Service and Privacy Policy'**
+  String get legalReconsentAgree;
+
+  /// No description provided for @legalReconsentAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept and continue'**
+  String get legalReconsentAccept;
+
+  /// No description provided for @legalReconsentSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get legalReconsentSignOut;
+
+  /// No description provided for @legalReconsentError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your choice. Please try again.'**
+  String get legalReconsentError;
 }
 
 class _AppLocalizationsDelegate

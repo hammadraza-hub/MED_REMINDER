@@ -472,3 +472,56 @@ describe("Customers (Subscriptions) Security — M12", () => {
   });
 
 });
+
+
+describe("Users legal acceptance — M13 step 2", () => {
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "users", "owner123"), {
+        email: "o@example.com",
+        displayName: "Owner",
+        legal: { termsVersion: "1.0", privacyVersion: "1.0" },
+        legalVersions: { terms: "1.0", privacy: "1.0" },
+      });
+      await setDoc(doc(db, "users", "viewer123"), {
+        email: "v@example.com",
+        displayName: "Viewer",
+      });
+    });
+  });
+
+  test("User can record acceptance of newer legal versions", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "owner123"), {
+        legal: { termsVersion: "1.1", privacyVersion: "1.1", acceptedAt: new Date() },
+        legalVersions: { terms: "1.1", privacy: "1.1" },
+        updatedAt: new Date(),
+      })
+    );
+  });
+
+  test("User cannot record acceptance for another user", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "viewer123"), {
+        legal: { termsVersion: "9.9", privacyVersion: "9.9" },
+        updatedAt: new Date(),
+      })
+    );
+  });
+
+  test("Legal acceptance update cannot smuggle in protected fields", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "owner123"), {
+        legal: { termsVersion: "1.1", privacyVersion: "1.1" },
+        plan: "family_plan",
+        updatedAt: new Date(),
+      })
+    );
+  });
+
+});

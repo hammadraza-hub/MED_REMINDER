@@ -9,9 +9,9 @@ import '../../repositories/auth_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../../main_shell.dart';
 import 'app_blocked_screen.dart';
 import 'onboarding_screen.dart';
+import 'post_auth_router.dart';
 
 /// ============================================================
 /// SPLASH SCREEN (M2 — Auth-based routing)
@@ -87,7 +87,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
       if (user != null) {
         debugPrint('🔥 Auth state: user signed in → ${user.uid}');
-        _navigateToDashboard();
+        _navigateToDashboard(user.uid);
       } else {
         debugPrint('🔥 Auth state: no user → onboarding');
         _navigateToOnboarding();
@@ -99,12 +99,16 @@ class _SplashScreenState extends State<SplashScreen> {
   // Navigation helpers
   // ───────────────────────────────────────────────────────────
 
-  void _navigateToDashboard() {
+  Future<void> _navigateToDashboard(String uid) async {
     if (_hasNavigated || !mounted) return;
     _hasNavigated = true;
 
+    // M13 step 2: dashboard, or the legal re-consent screen first.
+    final home = await resolvePostAuthHome(uid);
+    if (!mounted) return;
+
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const MedRemindShell()),
+      MaterialPageRoute(builder: (context) => home),
     );
   }
 

@@ -636,5 +636,11 @@
   "appBlockedUpdateButton": "Update now",
   "appBlockedMaintenanceTitle": "Under maintenance",
   "appBlockedMaintenanceBody": "MedRemind is briefly unavailable while we make improvements. Reminders already scheduled on this device will still ring. Please try again soon.",
-  "appBlockedRetryButton": "Try again"
+  "appBlockedRetryButton": "Try again",
+  "legalReconsentTitle": "We've updated our terms",
+  "legalReconsentBody": "To keep using MedRemind, please review and accept our updated Terms of Service and Privacy Policy. Your scheduled reminders will keep working in the meantime.",
+  "legalReconsentAgree": "I have read and agree to the Terms of Service and Privacy Policy",
+  "legalReconsentAccept": "Accept and continue",
+  "legalReconsentSignOut": "Sign out",
+  "legalReconsentError": "Could not save your choice. Please try again."
 }

@@ -7,7 +7,7 @@ import '../../core/app_exception.dart';
 import '../../core/profile/profile_repository.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/firebase_profile_repository.dart';
-import '../../main_shell.dart';
+import '../onboarding/post_auth_router.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/social_icons.dart';
@@ -86,8 +86,11 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Welcome back!')));
 
+        // M13 step 2: dashboard, or the legal re-consent screen first.
+        final home = await resolvePostAuthHome(user.uid);
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MedRemindShell()),
+          MaterialPageRoute(builder: (context) => home),
         );
       }
     } on AppException catch (e) {

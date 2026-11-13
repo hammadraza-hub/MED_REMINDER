@@ -1777,4 +1777,25 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get appBlockedRetryButton => 'फिर कोशिश करें';
+
+  @override
+  String get legalReconsentTitle => 'हमने अपनी शर्तें अपडेट की हैं';
+
+  @override
+  String get legalReconsentBody =>
+      'MedRemind का उपयोग जारी रखने के लिए कृपया हमारी अपडेट की गई सेवा की शर्तें और गोपनीयता नीति देखकर स्वीकार करें। तब तक आपके तय रिमाइंडर काम करते रहेंगे।';
+
+  @override
+  String get legalReconsentAgree =>
+      'मैंने सेवा की शर्तें और गोपनीयता नीति पढ़ ली हैं और मैं सहमत हूँ';
+
+  @override
+  String get legalReconsentAccept => 'स्वीकार करें और जारी रखें';
+
+  @override
+  String get legalReconsentSignOut => 'साइन आउट';
+
+  @override
+  String get legalReconsentError =>
+      'आपका चुनाव सहेजा नहीं जा सका। कृपया फिर कोशिश करें।';
 }

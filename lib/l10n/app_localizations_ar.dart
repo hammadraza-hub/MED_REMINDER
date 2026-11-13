@@ -1769,4 +1769,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get appBlockedRetryButton => 'حاول مرة أخرى';
+
+  @override
+  String get legalReconsentTitle => 'لقد حدّثنا شروطنا';
+
+  @override
+  String get legalReconsentBody =>
+      'لمواصلة استخدام MedRemind، يرجى مراجعة شروط الخدمة وسياسة الخصوصية المحدّثة والموافقة عليها. ستظل التذكيرات المجدولة تعمل في هذه الأثناء.';
+
+  @override
+  String get legalReconsentAgree =>
+      'لقد قرأت شروط الخدمة وسياسة الخصوصية وأوافق عليهما';
+
+  @override
+  String get legalReconsentAccept => 'موافقة ومتابعة';
+
+  @override
+  String get legalReconsentSignOut => 'تسجيل الخروج';
+
+  @override
+  String get legalReconsentError =>
+      'تعذّر حفظ اختيارك. يرجى المحاولة مرة أخرى.';
 }

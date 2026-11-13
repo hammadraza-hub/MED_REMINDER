@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../config/remote_config_service.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/app_exception.dart';
 import '../../core/profile/profile_repository.dart';
@@ -11,6 +12,7 @@ import '../../repositories/firebase_profile_repository.dart';
 import '../../main_shell.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/legal_doc_sheet.dart';
 import '../../widgets/social_icons.dart';
 import 'login_screen.dart';
 import '../../core/profile/profile_controller.dart';
@@ -191,11 +193,14 @@ class _SignupScreenState extends State<SignupScreen> {
       'updatedAt': FieldValue.serverTimestamp(),
       'timezone': timezone,
       'settings': {},
-      'legalVersions': {'terms': '1.0', 'privacy': '1.0'},
+      'legalVersions': {
+        'terms': RemoteConfigService.instance.termsVersion,
+        'privacy': RemoteConfigService.instance.privacyVersion,
+      },
       'aiConsentAt': null,
       'legal': {
-        'termsVersion': '1.0',
-        'privacyVersion': '1.0',
+        'termsVersion': RemoteConfigService.instance.termsVersion,
+        'privacyVersion': RemoteConfigService.instance.privacyVersion,
         'acceptedAt': FieldValue.serverTimestamp(),
       },
     });
@@ -646,7 +651,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     : AppColors.textPrimary,
                               ),
                             ),
-                            _linkText('Terms of Service'),
+                            _linkText('Terms of Service', 'terms'),
                             Text(
                               ' and ',
                               style: TextStyle(
@@ -656,7 +661,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                     : AppColors.textPrimary,
                               ),
                             ),
-                            _linkText('Privacy Policy'),
+                            _linkText('Privacy Policy', 'privacy'),
                           ],
                         ),
                       ),
@@ -721,11 +726,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // ================= HELPERS =================
 
-  Widget _linkText(String text) {
+  Widget _linkText(String text, String docId) {
     return GestureDetector(
-      onTap: () {
-        // TODO: Terms / Privacy screen
-      },
+      onTap: () => LegalDocSheet.show(context, docId),
       child: Text(
         text,
         style: const TextStyle(
