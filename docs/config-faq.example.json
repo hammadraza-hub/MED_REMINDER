@@ -1,0 +1,77 @@
+{
+  "_comment": "Paste the value of 'items' into Firestore document config/faq (field 'items', type array of maps). q/a may be a plain string or a {languageCode: text} map; missing languages fall back to 'en'. Items without a usable question+answer are skipped. 'order' sorts ascending.",
+  "items": [
+    {
+      "id": "doseTime",
+      "order": 1,
+      "q": {
+        "en": "How do I change a dose time?",
+        "es": "¿Cómo cambio la hora de una dosis?",
+        "fr": "Comment modifier l'heure d'une dose ?",
+        "ar": "كيف أغيّر وقت الجرعة؟",
+        "hi": "मैं डोज़ का समय कैसे बदलूँ?"
+      },
+      "a": {
+        "en": "Open your Schedule or Medication tab, tap the specific medication card, select Edit Schedule, and adjust your dosage alerts. Changes sync instantly across caregiver devices.",
+        "es": "Abre tu pestaña de Horario o Medicamentos, toca la tarjeta del medicamento, selecciona Editar horario y ajusta tus alertas. Los cambios se sincronizan al instante entre los dispositivos de cuidadores.",
+        "fr": "Ouvrez l'onglet Planning ou Médicaments, touchez la carte du médicament, sélectionnez Modifier le planning, puis ajustez vos alertes. Les changements se synchronisent instantanément entre les appareils des aidants.",
+        "ar": "افتح تبويب الجدول أو الأدوية، وانقر على بطاقة الدواء المحددة، واختر تعديل الجدول، ثم اضبط تنبيهات الجرعة. تتم المزامنة فورًا بين أجهزة مقدّمي الرعاية.",
+        "hi": "अपना शेड्यूल या दवा टैब खोलें, उस दवा कार्ड पर टैप करें, शेड्यूल संपादित करें चुनें, और अपनी डोज़ अलर्ट समायोजित करें। बदलाव देखभालकर्ता उपकरणों पर तुरंत सिंक हो जाते हैं।"
+      }
+    },
+    {
+      "id": "reminder",
+      "order": 2,
+      "q": {
+        "en": "Why didn't I get a reminder?",
+        "es": "¿Por qué no recibí un recordatorio?",
+        "fr": "Pourquoi n'ai-je pas reçu de rappel ?",
+        "ar": "لماذا لم أستلم تذكيرًا؟",
+        "hi": "मुझे रिमाइंडर क्यों नहीं मिला?"
+      },
+      "a": {
+        "en": "Ensure battery optimization is disabled for MedRemind in phone Settings. Also verify that Critical Alerts and notification permissions are granted in your operating system settings.",
+        "es": "Asegúrate de que la optimización de batería esté desactivada para MedRemind en los Ajustes del teléfono. Verifica también que las Alertas críticas y los permisos de notificación estén concedidos en los ajustes de tu sistema operativo.",
+        "fr": "Assurez-vous que l'optimisation de la batterie est désactivée pour MedRemind dans les Réglages du téléphone. Vérifiez aussi que les Alertes critiques et les autorisations de notification sont accordées dans les réglages de votre système.",
+        "ar": "تأكد من تعطيل تحسين البطارية لتطبيق MedRemind في إعدادات الهاتف. تحقق أيضًا من منح أذونات التنبيهات الحرجة والإشعارات في إعدادات نظام التشغيل.",
+        "hi": "सुनिश्चित करें कि फ़ोन सेटिंग्स में MedRemind के लिए बैटरी ऑप्टिमाइज़ेशन बंद है। यह भी जाँचें कि क्रिटिकल अलर्ट और नोटिफ़िकेशन अनुमतियाँ आपके ऑपरेटिंग सिस्टम सेटिंग्स में दी गई हैं।"
+      }
+    },
+    {
+      "id": "caregiverAlerts",
+      "order": 3,
+      "q": {
+        "en": "How do caregiver alerts work?",
+        "es": "¿Cómo funcionan las alertas de cuidadores?",
+        "fr": "Comment fonctionnent les alertes des aidants ?",
+        "ar": "كيف تعمل تنبيهات مقدّمي الرعاية؟",
+        "hi": "देखभालकर्ता अलर्ट कैसे काम करते हैं?"
+      },
+      "a": {
+        "en": "Caregivers receive silent affirmations when medicines are logged. If a crucial dose is missed for over 30 minutes, an escalated notification is automatically sent to the primary caregiver.",
+        "es": "Los cuidadores reciben confirmaciones silenciosas cuando se registran los medicamentos. Si se omite una dosis crucial durante más de 30 minutos, se envía una notificación escalada al cuidador principal.",
+        "fr": "Les aidants reçoivent des confirmations silencieuses lorsque les médicaments sont enregistrés. Si une dose cruciale est manquée pendant plus de 30 minutes, une notification escaladée est automatiquement envoyée à l'aidant principal.",
+        "ar": "يتلقى مقدّمو الرعاية تأكيدات صامتة عند تسجيل الأدوية. إذا فاتت جرعة حاسمة لأكثر من 30 دقيقة، يُرسل إشعار مُصعَّد تلقائيًا إلى مقدّم الرعاية الأساسي.",
+        "hi": "दवाएँ दर्ज होने पर देखभालकर्ताओं को मौन पुष्टि मिलती है। यदि कोई महत्वपूर्ण डोज़ 30 मिनट से अधिक छूट जाए, तो मुख्य देखभालकर्ता को स्वतः एस्केलेटेड सूचना भेजी जाती है।"
+      }
+    },
+    {
+      "id": "addMember",
+      "order": 4,
+      "q": {
+        "en": "How do I add a family member?",
+        "es": "¿Cómo añado un familiar?",
+        "fr": "Comment ajouter un membre de la famille ?",
+        "ar": "كيف أضيف فردًا من العائلة؟",
+        "hi": "मैं परिवार का सदस्य कैसे जोड़ूँ?"
+      },
+      "a": {
+        "en": "Go to Profiles, tap Add, then send an invite by email or phone. They accept the link to connect.",
+        "es": "Ve a Perfiles, toca Añadir y envía una invitación por correo o teléfono. Ellos aceptan el enlace para conectarse.",
+        "fr": "Allez dans Profils, touchez Ajouter, puis envoyez une invitation par e-mail ou téléphone. La personne accepte le lien pour se connecter.",
+        "ar": "انتقل إلى الملفات، وانقر على إضافة، ثم أرسل دعوة عبر البريد أو الهاتف. سيقبلون الرابط للاتصال.",
+        "hi": "प्रोफ़ाइल पर जाएँ, जोड़ें पर टैप करें, फिर ईमेल या फ़ोन से निमंत्रण भेजें। वे जुड़ने के लिए लिंक स्वीकार करेंगे।"
+      }
+    }
+  ]
+}

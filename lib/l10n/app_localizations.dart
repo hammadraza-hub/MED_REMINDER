@@ -221,7 +221,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsDataExportTrailing.
   ///
   /// In en, this message translates to:
-  /// **'CSV & PDF'**
+  /// **'ZIP'**
   String get settingsDataExportTrailing;
 
   /// No description provided for @settingsHelpSupport.
@@ -281,8 +281,8 @@ abstract class AppLocalizations {
   /// No description provided for @settingsFooterVersion.
   ///
   /// In en, this message translates to:
-  /// **'MedRemind Care Health Suite • v1.2.0 (Build 412)'**
-  String get settingsFooterVersion;
+  /// **'MedRemind Care Health Suite • v{version} (Build {build})'**
+  String settingsFooterVersion(String version, String build);
 
   /// No description provided for @settingsHipaa.
   ///
@@ -641,7 +641,7 @@ abstract class AppLocalizations {
   /// No description provided for @dataExportBadge.
   ///
   /// In en, this message translates to:
-  /// **'Encrypted GDPR & HIPAA standard export'**
+  /// **'Created on this device only'**
   String get dataExportBadge;
 
   /// No description provided for @dataExportIncludedTitle.
@@ -683,7 +683,7 @@ abstract class AppLocalizations {
   /// No description provided for @dataExportFormatNote.
   ///
   /// In en, this message translates to:
-  /// **'You\'ll receive a ZIP archive ({formats}) via email within 24 hours.'**
+  /// **'A ZIP file ({formats}) is created on this device. You choose where to save or share it.'**
   String dataExportFormatNote(String formats);
 
   /// No description provided for @dataExportFormats.
@@ -695,44 +695,218 @@ abstract class AppLocalizations {
   /// No description provided for @dataExportSentTo.
   ///
   /// In en, this message translates to:
-  /// **'Sent directly to {email}'**
+  /// **'Data of account {email}'**
   String dataExportSentTo(String email);
 
   /// No description provided for @dataExportRequest.
   ///
   /// In en, this message translates to:
-  /// **'Request Export'**
+  /// **'Create Export'**
   String get dataExportRequest;
 
   /// No description provided for @dataExportGenerating.
   ///
   /// In en, this message translates to:
-  /// **'Generating Package...'**
+  /// **'Preparing your data...'**
   String get dataExportGenerating;
 
   /// No description provided for @dataExportSubmitted.
   ///
   /// In en, this message translates to:
-  /// **'Request Submitted'**
+  /// **'Export Ready'**
   String get dataExportSubmitted;
 
   /// No description provided for @dataExportSuccessTitle.
   ///
   /// In en, this message translates to:
-  /// **'Export Requested!'**
+  /// **'Export Ready!'**
   String get dataExportSuccessTitle;
 
   /// No description provided for @dataExportSuccessMessage.
   ///
   /// In en, this message translates to:
-  /// **'We\'re preparing your raw data archive. You will receive a direct link once compilation completes.'**
+  /// **'Your ZIP file was created. It contains your health data, so keep it somewhere safe.'**
   String get dataExportSuccessMessage;
 
   /// No description provided for @dataExportQueued.
   ///
   /// In en, this message translates to:
-  /// **'Queued in server batch'**
+  /// **'Not stored by the app after sharing'**
   String get dataExportQueued;
+
+  /// No description provided for @dataExportShareAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Again'**
+  String get dataExportShareAgain;
+
+  /// No description provided for @dataExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the export. Check your connection and try again.'**
+  String get dataExportFailed;
+
+  /// No description provided for @accountDeleteSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account?'**
+  String get accountDeleteSheetTitle;
+
+  /// No description provided for @accountDeleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get accountDeleteButton;
+
+  /// No description provided for @accountDeleteSheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account will be scheduled for deletion in {days} days. You can cancel from this screen until then. After that your profiles, medications and dose history are permanently removed.'**
+  String accountDeleteSheetBody(int days);
+
+  /// No description provided for @accountDeleteExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup your data first'**
+  String get accountDeleteExportTitle;
+
+  /// No description provided for @accountDeleteExportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a ZIP export of everything before deleting.'**
+  String get accountDeleteExportHint;
+
+  /// No description provided for @accountDeleteExportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get accountDeleteExportButton;
+
+  /// No description provided for @accountDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule Deletion'**
+  String get accountDeleteConfirm;
+
+  /// No description provided for @accountDeleteKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Account'**
+  String get accountDeleteKeep;
+
+  /// No description provided for @accountDeleteScheduledTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion scheduled'**
+  String get accountDeleteScheduledTitle;
+
+  /// No description provided for @accountDeleteScheduledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account will be deleted in {days} days. You can still cancel.'**
+  String accountDeleteScheduledBody(int days);
+
+  /// No description provided for @accountDeleteDueBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The waiting period is over. Your account is ready to be deleted.'**
+  String get accountDeleteDueBody;
+
+  /// No description provided for @accountDeleteCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Deletion'**
+  String get accountDeleteCancel;
+
+  /// No description provided for @accountDeleteRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion scheduled.'**
+  String get accountDeleteRequested;
+
+  /// No description provided for @accountDeleteCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion cancelled. Your account stays active.'**
+  String get accountDeleteCancelled;
+
+  /// No description provided for @accountDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update your request. Check your connection and try again.'**
+  String get accountDeleteFailed;
+
+  /// No description provided for @accountDeleteFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'We recommend exporting your data first.'**
+  String get accountDeleteFooter;
+
+  /// No description provided for @accountPurgeRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account...'**
+  String get accountPurgeRunning;
+
+  /// No description provided for @accountPurgeRunningHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please keep the app open until this finishes.'**
+  String get accountPurgeRunningHint;
+
+  /// No description provided for @accountPurgeNeedsLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'For your security, please log in again to finish deleting your account. Nothing has been deleted yet.'**
+  String get accountPurgeNeedsLogin;
+
+  /// No description provided for @accountPurgeLoginButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Log In Again'**
+  String get accountPurgeLoginButton;
+
+  /// No description provided for @accountPurgeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion could not be finished. Data deleted so far stays deleted. Check your connection and try again.'**
+  String get accountPurgeFailed;
+
+  /// No description provided for @accountPurgeRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get accountPurgeRetry;
+
+  /// No description provided for @accountDeleteSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What will be deleted'**
+  String get accountDeleteSummaryTitle;
+
+  /// No description provided for @accountDeleteOthersLose.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 other person will lose access} other{{count} other people will lose access}}'**
+  String accountDeleteOthersLose(int count);
+
+  /// No description provided for @accountDeleteMemberOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You will also be removed from 1 profile shared with you. Its data stays with its owner.} other{You will also be removed from {count} profiles shared with you. Their data stays with their owners.}}'**
+  String accountDeleteMemberOf(int count);
+
+  /// No description provided for @accountDeleteSubscriptionNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account does not cancel a paid subscription. Cancel it in the store to avoid further charges.'**
+  String get accountDeleteSubscriptionNote;
+
+  /// No description provided for @accountDeleteSubscriptionButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage subscription'**
+  String get accountDeleteSubscriptionButton;
 
   /// No description provided for @dataExportLastExportNever.
   ///
@@ -857,8 +1031,8 @@ abstract class AppLocalizations {
   /// No description provided for @helpSupportVersion.
   ///
   /// In en, this message translates to:
-  /// **'MedRemind v1.2.0 (build 245)'**
-  String get helpSupportVersion;
+  /// **'MedRemind v{version} (build {build})'**
+  String helpSupportVersion(String version, String build);
 
   /// No description provided for @helpSupportCompliance.
   ///
@@ -3145,6 +3319,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save your choice. Please try again.'**
   String get legalReconsentError;
+
+  /// No description provided for @supportRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit a Request'**
+  String get supportRequestTitle;
+
+  /// No description provided for @supportRequestIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what went wrong or what you need. Our team will get back to you by email.'**
+  String get supportRequestIntro;
+
+  /// No description provided for @supportRequestSubjectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject'**
+  String get supportRequestSubjectLabel;
+
+  /// No description provided for @supportRequestSubjectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Reminders are not ringing'**
+  String get supportRequestSubjectHint;
+
+  /// No description provided for @supportRequestBodyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get supportRequestBodyLabel;
+
+  /// No description provided for @supportRequestBodyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the problem and what you expected to happen'**
+  String get supportRequestBodyHint;
+
+  /// No description provided for @supportRequestSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send request'**
+  String get supportRequestSend;
+
+  /// No description provided for @supportRequestSubjectRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a subject'**
+  String get supportRequestSubjectRequired;
+
+  /// No description provided for @supportRequestBodyRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe your request'**
+  String get supportRequestBodyRequired;
+
+  /// No description provided for @supportRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent. Thank you — we\'ll reply by email.'**
+  String get supportRequestSent;
+
+  /// No description provided for @supportRequestQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection. Your request is saved and will be sent automatically when you\'re back online.'**
+  String get supportRequestQueued;
+
+  /// No description provided for @supportRequestError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your request. Please try again.'**
+  String get supportRequestError;
+
+  /// No description provided for @supportRequestSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in to send a request.'**
+  String get supportRequestSignIn;
+
+  /// No description provided for @helpSupportEmailOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open your email app. Write to us at {email}'**
+  String helpSupportEmailOpenFailed(String email);
+
+  /// No description provided for @appLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MedRemind is locked'**
+  String get appLockTitle;
+
+  /// No description provided for @appLockSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with your fingerprint, face or phone PIN to continue.'**
+  String get appLockSubtitle;
+
+  /// No description provided for @appLockUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get appLockUnlock;
+
+  /// No description provided for @appLockSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get appLockSignOut;
+
+  /// No description provided for @appLockReasonUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock MedRemind'**
+  String get appLockReasonUnlock;
+
+  /// No description provided for @appLockReasonEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm to turn on app lock'**
+  String get appLockReasonEnable;
+
+  /// No description provided for @appLockReasonDisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm to turn off app lock'**
+  String get appLockReasonDisable;
+
+  /// No description provided for @appLockUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a screen lock or fingerprint on this phone first to use app lock.'**
+  String get appLockUnsupported;
+
+  /// No description provided for @appLockNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t verify it\'s you. Please try again.'**
+  String get appLockNotVerified;
 }
 
 class _AppLocalizationsDelegate

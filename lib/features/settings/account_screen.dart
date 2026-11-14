@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../core/account_deletion_policy.dart';
+import '../../core/account_deletion_summary.dart';
 import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
+import '../../core/services/account_deletion_service.dart';
+import '../../l10n/app_localizations.dart';
 import '../../repositories/auth_repository.dart';
+import '../../repositories/firebase_subscription_repository.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_photo_picker.dart';
 import '../../widgets/social_icons.dart';
 import '../onboarding/splash_screen.dart';
 import 'account_data.dart';
+import 'data_export_screen.dart';
 
 /// ============================================================
 /// ACCOUNT — account-level personal info & security
@@ -58,6 +65,7 @@ class _AccountScreenState extends State<AccountScreen> {
       text: ProfileController.instance.displayName,
     );
     _accounts = List.of(AccountData.linkedAccounts);
+    AccountDeletionService.instance.refresh();
   }
 
   @override
@@ -220,12 +228,17 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   void _exportData() {
-    _showMessage('Preparing your medical archive — coming soon');
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const DataExportScreen()));
   }
 
-  /// M2: Delete account via Firebase Auth + navigate to splash
+  /// M14 step 4: asks for confirmation, then schedules the deletion
+  /// (7-day grace period). Nothing is deleted yet.
   Future<void> _openDeleteSheet() async {
     if (_isDeleting) return;
+
+    final summary = await AccountDeletionService.instance.loadSummary();
+    if (!mounted) return;
 
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
@@ -234,7 +247,12 @@ class _AccountScreenState extends State<AccountScreen> {
       barrierColor: AppColors.allergyScrim,
       builder: (sheetContext) {
         return _DeleteAccountSheet(
-          onExport: _exportData,
+          summary: summary,
+          onManageSubscription: _manageSubscription,
+          onExport: () {
+            Navigator.of(sheetContext).pop(false);
+            _exportData();
+          },
           onDelete: () => Navigator.of(sheetContext).pop(true),
           onKeep: () => Navigator.of(sheetContext).pop(false),
         );
@@ -243,21 +261,41 @@ class _AccountScreenState extends State<AccountScreen> {
 
     if (confirmed != true || !mounted) return;
 
+    final l10n = AppLocalizations.of(context);
     setState(() => _isDeleting = true);
-
     try {
-      await AuthRepository.instance.deleteAccount();
-
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const SplashScreen()),
-          (route) => false,
-        );
-      }
-    } on AppException catch (e) {
-      if (mounted) _showMessage(e.message);
+      await AccountDeletionService.instance.request();
+      if (mounted) _showMessage(l10n.accountDeleteRequested);
     } catch (e) {
-      if (mounted) _showMessage('Failed to delete account: $e');
+      debugPrint('Account deletion request failed: $e');
+      if (mounted) _showMessage(l10n.accountDeleteFailed);
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
+    }
+  }
+
+  /// Opens the store's subscription page (deleting the account does not
+  /// cancel a store subscription).
+  Future<void> _manageSubscription() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      await FirebaseSubscriptionRepository.instance.cancelSubscription(uid);
+    } catch (e) {
+      debugPrint('Manage subscription failed: $e');
+    }
+  }
+
+  Future<void> _cancelDeletion() async {
+    if (_isDeleting) return;
+    final l10n = AppLocalizations.of(context);
+    setState(() => _isDeleting = true);
+    try {
+      await AccountDeletionService.instance.cancel();
+      if (mounted) _showMessage(l10n.accountDeleteCancelled);
+    } catch (e) {
+      debugPrint('Account deletion cancel failed: $e');
+      if (mounted) _showMessage(l10n.accountDeleteFailed);
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }
@@ -972,6 +1010,91 @@ class _AccountScreenState extends State<AccountScreen> {
   // ============================================================
 
   Widget _buildDangerZone() {
+    return ValueListenableBuilder<DeletionStatus>(
+      valueListenable: AccountDeletionService.instance.status,
+      builder: (context, status, _) {
+        if (status.isPending) return _buildDeletionPending(status);
+        return _buildDeleteButtonCard();
+      },
+    );
+  }
+
+  Widget _buildDeletionPending(DeletionStatus status) {
+    final l10n = AppLocalizations.of(context);
+    final body = status.phase == DeletionPhase.due
+        ? l10n.accountDeleteDueBody
+        : l10n.accountDeleteScheduledBody(status.daysLeft);
+
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.schedule_rounded,
+                color: AppColors.permissionsErrorIcon,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.accountDeleteScheduledTitle,
+                  style: const TextStyle(
+                    color: AppColors.permissionsErrorIcon,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            body,
+            style: const TextStyle(
+              color: AppColors.permissionsSecondary,
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 48,
+            child: Material(
+              color: AppColors.formAccent,
+              borderRadius: BorderRadius.circular(12),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: _isDeleting ? null : _cancelDeletion,
+                child: Center(
+                  child: _isDeleting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: AppColors.surface,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          l10n.accountDeleteCancel,
+                          style: const TextStyle(
+                            color: AppColors.surface,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeleteButtonCard() {
     return _Card(
       child: Column(
         children: [
@@ -1054,7 +1177,7 @@ class _AccountScreenState extends State<AccountScreen> {
                         ),
                       const SizedBox(width: 8),
                       Text(
-                        _isDeleting ? 'Deleting...' : 'Delete Account',
+                        AppLocalizations.of(context).accountDeleteButton,
                         style: const TextStyle(
                           color: AppColors.permissionsErrorIcon,
                           fontSize: 15,
@@ -1068,11 +1191,10 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'You will be prompted to export medication history and '
-            'prescriber notes first.',
+          Text(
+            AppLocalizations.of(context).accountDeleteFooter,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.permissionsSecondary,
               fontSize: 13,
             ),
@@ -1167,17 +1289,72 @@ class _Card extends StatelessWidget {
 
 class _DeleteAccountSheet extends StatelessWidget {
   const _DeleteAccountSheet({
+    required this.summary,
+    required this.onManageSubscription,
     required this.onExport,
     required this.onDelete,
     required this.onKeep,
   });
 
+  final DeletionSummary? summary;
+  final VoidCallback onManageSubscription;
   final VoidCallback onExport;
   final VoidCallback onDelete;
   final VoidCallback onKeep;
 
+  Widget _summaryBox(AppLocalizations l10n, DeletionSummary s) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.permissionsErrorContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.accountDeleteSummaryTitle,
+            style: const TextStyle(
+              color: AppColors.permissionsHeader,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          for (final p in s.owned) ...[
+            const SizedBox(height: 6),
+            Text(
+              p.otherMembers > 0
+                  ? '• ${p.name} — '
+                        '${l10n.accountDeleteOthersLose(p.otherMembers)}'
+                  : '• ${p.name}',
+              style: const TextStyle(
+                color: AppColors.permissionsHeader,
+                fontSize: 13,
+                height: 1.3,
+              ),
+            ),
+          ],
+          if (s.memberOf > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.accountDeleteMemberOf(s.memberOf),
+              style: const TextStyle(
+                color: AppColors.permissionsSecondary,
+                fontSize: 12,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final s = summary;
     return SafeArea(
       top: false,
       child: SingleChildScrollView(
@@ -1212,24 +1389,27 @@ class _DeleteAccountSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Delete Account?',
-                style: TextStyle(
+              Text(
+                l10n.accountDeleteSheetTitle,
+                style: const TextStyle(
                   color: AppColors.permissionsHeader,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'All schedule logs, caregiver links, and pill inventory '
-                'tracking will be permanently removed.',
+              Text(
+                l10n.accountDeleteSheetBody(AccountDeletionPolicy.graceDays),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.permissionsSecondary,
                   fontSize: 14,
                 ),
               ),
+              if (s != null && (s.owned.isNotEmpty || s.memberOf > 0)) ...[
+                const SizedBox(height: 14),
+                _summaryBox(l10n, s),
+              ],
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(10),
@@ -1245,22 +1425,22 @@ class _DeleteAccountSheet extends StatelessWidget {
                       size: 22,
                     ),
                     const SizedBox(width: 10),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Backup Medical Logs',
-                            style: TextStyle(
+                            l10n.accountDeleteExportTitle,
+                            style: const TextStyle(
                               color: AppColors.permissionsHeader,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            'Download PDF report before deleting.',
-                            style: TextStyle(
+                            l10n.accountDeleteExportHint,
+                            style: const TextStyle(
                               color: AppColors.permissionsSecondary,
                               fontSize: 13,
                             ),
@@ -1275,14 +1455,14 @@ class _DeleteAccountSheet extends StatelessWidget {
                       child: InkWell(
                         onTap: onExport,
                         borderRadius: BorderRadius.circular(8),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 10,
                             vertical: 6,
                           ),
                           child: Text(
-                            'Export',
-                            style: TextStyle(
+                            l10n.accountDeleteExportButton,
+                            style: const TextStyle(
                               color: AppColors.permissionsSecondary,
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -1294,7 +1474,39 @@ class _DeleteAccountSheet extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: AppColors.permissionsSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.accountDeleteSubscriptionNote,
+                      style: const TextStyle(
+                        color: AppColors.permissionsSecondary,
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  onPressed: onManageSubscription,
+                  child: Text(l10n.accountDeleteSubscriptionButton),
+                ),
+              ),
+              const SizedBox(height: 4),
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -1304,10 +1516,10 @@ class _DeleteAccountSheet extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onTap: onDelete,
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        'Permanently Delete',
-                        style: TextStyle(
+                        l10n.accountDeleteConfirm,
+                        style: const TextStyle(
                           color: AppColors.surface,
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -1327,10 +1539,10 @@ class _DeleteAccountSheet extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onTap: onKeep,
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        'Keep Account',
-                        style: TextStyle(
+                        l10n.accountDeleteKeep,
+                        style: const TextStyle(
                           color: AppColors.permissionsHeader,
                           fontSize: 15,
                           fontWeight: FontWeight.w700,

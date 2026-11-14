@@ -29,15 +29,18 @@ import 'config/remote_config_service.dart';
 // EXISTING CONTROLLERS
 // ──────────────────────────────────────────────────────────────
 import 'core/accessibility/accessibility_controller.dart';
+import 'core/app_navigator.dart';
 import 'core/locale/locale_controller.dart';
 import 'core/profile/profile_controller.dart';
 import 'core/services/app_info_service.dart';
+import 'core/services/app_lock_service.dart';
 import 'core/services/preferences_sync_service.dart';
 import 'core/services/push_service.dart';
 import 'core/services/reminder_action_queue.dart';
 import 'core/services/reminder_scheduler.dart';
 import 'core/subscription/subscription_service.dart';
 import 'l10n/app_localizations.dart';
+import 'widgets/app_lock_gate.dart';
 import 'repositories/auth_repository.dart';
 
 // import 'main_shell.dart';
@@ -173,6 +176,16 @@ Future<void> main() async {
   // (best-effort, never blocks startup).
   PreferencesSyncService.instance.start();
 
+  // M13 step 6: optional biometric app lock (device-only setting). Locks on
+  // every cold start, and after >30 s in the background.
+  AppLockService.instance.bindSignedIn(
+    () => FirebaseAuth.instance.currentUser != null,
+  );
+  await AppLockService.instance.initialize();
+  FirebaseAuth.instance.authStateChanges().listen(
+    (user) => AppLockService.instance.handleAuthChanged(user != null),
+  );
+
   // ───────────────────────────────────────────────────────────
   // STEP 6.5: M12 — RevenueCat SDK init (Spark: client-side)
   // ───────────────────────────────────────────────────────────
@@ -211,31 +224,34 @@ class MyApp extends StatelessWidget {
       builder: (context, _) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
+          navigatorKey: appNavigatorKey,
           title: 'MedRemind',
           theme: ThemeData(useMaterial3: true),
           locale: LocaleController.instance.locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) {
-            return ListenableBuilder(
-              listenable: AccessibilityController.instance,
-              builder: (context, _) {
-                final media = MediaQuery.of(context);
-                final systemScale = media.textScaler.scale(1.0);
-                final combined =
-                    systemScale *
-                    AccessibilityController.instance.textScaleFactor;
+            return AppLockGate(
+              child: ListenableBuilder(
+                listenable: AccessibilityController.instance,
+                builder: (context, _) {
+                  final media = MediaQuery.of(context);
+                  final systemScale = media.textScaler.scale(1.0);
+                  final combined =
+                      systemScale *
+                      AccessibilityController.instance.textScaleFactor;
 
-                return MediaQuery(
-                  data: media.copyWith(
-                    textScaler: TextScaler.linear(combined).clamp(
-                      minScaleFactor: AccessibilityController.minScaleFactor,
-                      maxScaleFactor: AccessibilityController.maxScaleFactor,
+                  return MediaQuery(
+                    data: media.copyWith(
+                      textScaler: TextScaler.linear(combined).clamp(
+                        minScaleFactor: AccessibilityController.minScaleFactor,
+                        maxScaleFactor: AccessibilityController.maxScaleFactor,
+                      ),
                     ),
-                  ),
-                  child: child!,
-                );
-              },
+                    child: child!,
+                  );
+                },
+              ),
             );
           },
           home: const SplashScreen(),

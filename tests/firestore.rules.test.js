@@ -12,6 +12,9 @@ const {
   setDoc,
   updateDoc,
   deleteDoc,
+  serverTimestamp,
+  deleteField,
+  arrayRemove,
 } = require("firebase/firestore");
 
 let testEnv;
@@ -577,3 +580,504 @@ describe("Users settings map — M13 step 3", () => {
   });
 
 });
+
+
+describe("Config (remote FAQ) — M13 step 4", () => {
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "config", "faq"), {
+        items: [{ id: "a", order: 1, q: { en: "Q?" }, a: { en: "A." } }],
+      });
+    });
+  });
+
+  test("Signed-in user can read config/faq", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(getDoc(doc(db, "config", "faq")));
+  });
+
+  test("Unauthenticated user cannot read config/faq", async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(db, "config", "faq")));
+  });
+
+  test("Clients cannot write config/faq", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      setDoc(doc(db, "config", "faq"), { items: [] })
+    );
+    await assertFails(
+      updateDoc(doc(db, "config", "faq"), { items: [] })
+    );
+    await assertFails(deleteDoc(doc(db, "config", "faq")));
+  });
+
+});
+
+
+describe("Support tickets — M13 step 5", () => {
+
+  const { serverTimestamp, collection, addDoc } = require("firebase/firestore");
+
+  const ticket = (over = {}) => ({
+    uid: "owner123",
+    subject: "Reminders are not ringing",
+    body: "Since yesterday no dose reminder rings on my phone.",
+    appVersion: "1.0.0",
+    device: "android Android 15",
+    locale: "en",
+    status: "open",
+    createdAt: serverTimestamp(),
+    ...over,
+  });
+
+  test("User can create their own ticket", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(addDoc(collection(db, "supportTickets"), ticket()));
+  });
+
+  test("Unauthenticated user cannot create a ticket", async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(addDoc(collection(db, "supportTickets"), ticket()));
+  });
+
+  test("Cannot create a ticket for another user", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      addDoc(collection(db, "supportTickets"), ticket({ uid: "viewer123" }))
+    );
+  });
+
+  test("Extra or missing fields are rejected", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      addDoc(collection(db, "supportTickets"), ticket({ admin: true }))
+    );
+    const { body, ...withoutBody } = ticket();
+    await assertFails(addDoc(collection(db, "supportTickets"), withoutBody));
+  });
+
+  test("Empty or oversized subject/body are rejected", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      addDoc(collection(db, "supportTickets"), ticket({ subject: "" }))
+    );
+    await assertFails(
+      addDoc(collection(db, "supportTickets"), ticket({ subject: "x".repeat(121) }))
+    );
+    await assertFails(
+      addDoc(collection(db, "supportTickets"), ticket({ body: "" }))
+    );
+    await assertFails(
+      addDoc(collection(db, "supportTickets"), ticket({ body: "x".repeat(2001) }))
+    );
+  });
+
+  test("Limits are inclusive (120 / 2000 characters)", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(
+      addDoc(
+        collection(db, "supportTickets"),
+        ticket({ subject: "x".repeat(120), body: "y".repeat(2000) })
+      )
+    );
+  });
+
+  test("Status must be open and createdAt must be server time", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      addDoc(collection(db, "supportTickets"), ticket({ status: "closed" }))
+    );
+    await assertFails(
+      addDoc(collection(db, "supportTickets"), ticket({ createdAt: new Date(2020, 1, 1) }))
+    );
+  });
+
+  test("User reads own tickets only; tickets are immutable", async () => {
+    let id;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const r = await addDoc(collection(context.firestore(), "supportTickets"), {
+        ...ticket(),
+        createdAt: new Date(),
+      });
+      id = r.id;
+    });
+    const owner = testEnv.authenticatedContext("owner123").firestore();
+    const other = testEnv.authenticatedContext("viewer123").firestore();
+    await assertSucceeds(getDoc(doc(owner, "supportTickets", id)));
+    await assertFails(getDoc(doc(other, "supportTickets", id)));
+    await assertFails(updateDoc(doc(owner, "supportTickets", id), { subject: "x" }));
+    await assertFails(deleteDoc(doc(owner, "supportTickets", id)));
+  });
+
+});
+
+
+describe("Account deletion request — M14 step 4", () => {
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "users", "owner123"), {
+        email: "o@example.com",
+        displayName: "Owner",
+      });
+      await setDoc(doc(db, "users", "pending123"), {
+        email: "p@example.com",
+        displayName: "Pending",
+        deletionRequestedAt: new Date("2026-11-01T00:00:00Z"),
+      });
+    });
+  });
+
+  test("User can request deletion with the server time", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "owner123"), {
+        deletionRequestedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+    );
+  });
+
+  test("Request with a client-chosen time is rejected", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "owner123"), {
+        deletionRequestedAt: new Date("2020-01-01T00:00:00Z"),
+      })
+    );
+  });
+
+  test("User can cancel a pending request", async () => {
+    const db = testEnv.authenticatedContext("pending123").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "pending123"), {
+        deletionRequestedAt: deleteField(),
+        updatedAt: serverTimestamp(),
+      })
+    );
+    const snap = await assertSucceeds(
+      getDoc(doc(testEnv.authenticatedContext("pending123").firestore(), "users", "pending123"))
+    );
+    expect(snap.data().deletionRequestedAt).toBeUndefined();
+  });
+
+  test("Cannot move a pending request to a different time", async () => {
+    const db = testEnv.authenticatedContext("pending123").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "pending123"), {
+        deletionRequestedAt: new Date("2030-01-01T00:00:00Z"),
+      })
+    );
+  });
+
+  test("Cannot request deletion for another user", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "pending123"), {
+        deletionRequestedAt: deleteField(),
+      })
+    );
+    await assertFails(
+      updateDoc(doc(db, "users", "pending123"), {
+        deletionRequestedAt: serverTimestamp(),
+      })
+    );
+  });
+
+  test("Deletion request cannot smuggle in other fields", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "owner123"), {
+        deletionRequestedAt: serverTimestamp(),
+        plan: "family_plan",
+      })
+    );
+    await assertFails(
+      updateDoc(doc(db, "users", "owner123"), {
+        deletionRequestedAt: serverTimestamp(),
+        displayName: "Changed",
+      })
+    );
+  });
+
+  test("Unauthenticated user cannot request deletion", async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "owner123"), {
+        deletionRequestedAt: serverTimestamp(),
+      })
+    );
+  });
+
+  test("User document still cannot be deleted directly", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(deleteDoc(doc(db, "users", "owner123")));
+  });
+
+});
+
+
+// ---------------------------------------------------------------
+// M14 step 5 — account purge (delete allowed only after the grace period)
+// ---------------------------------------------------------------
+
+const DAY = 24 * 60 * 60 * 1000;
+
+async function seedPurgeData(requestedAt, uid = "owner123") {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    const user = { email: "x@example.com", displayName: "X" };
+    if (requestedAt) user.deletionRequestedAt = requestedAt;
+    await setDoc(doc(db, "users", uid), user);
+    await setDoc(doc(db, "users", uid, "devices", "dev1"), { token: "t" });
+
+    const p = ["profiles", "profile1"];
+    await setDoc(doc(db, ...p, "medications", "med1", "inventoryEvents", "ev1"), { delta: -1 });
+    await setDoc(doc(db, ...p, "doses", "dose2"), { medId: "med1", status: "taken" });
+    await setDoc(doc(db, ...p, "pharmacies", "ph1"), { name: "Ph" });
+    await setDoc(doc(db, ...p, "dailySummaries", "2026-11-01"), { taken: 1 });
+    await setDoc(doc(db, ...p, "vitals", "v1"), { bp: "120/80" });
+    await setDoc(doc(db, ...p, "symptoms", "s1"), { name: "x" });
+    await setDoc(doc(db, ...p, "allergies", "a1"), { name: "Pen" });
+  });
+}
+
+describe("Account purge after grace period — M14 step 5", () => {
+
+  beforeEach(async () => {
+    await seedPurgeData(new Date(Date.now() - 8 * DAY));
+  });
+
+  test("Owner can delete every kind of record once the grace period is over", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    const p = ["profiles", "profile1"];
+
+    await assertSucceeds(deleteDoc(doc(db, ...p, "medications", "med1", "inventoryEvents", "ev1")));
+    await assertSucceeds(deleteDoc(doc(db, ...p, "medications", "med1")));
+    await assertSucceeds(deleteDoc(doc(db, ...p, "doses", "dose1")));
+    await assertSucceeds(deleteDoc(doc(db, ...p, "doses", "dose2"))); // taken dose
+    await assertSucceeds(deleteDoc(doc(db, ...p, "pharmacies", "ph1")));
+    await assertSucceeds(deleteDoc(doc(db, ...p, "dailySummaries", "2026-11-01")));
+    await assertSucceeds(deleteDoc(doc(db, ...p, "vitals", "v1")));
+    await assertSucceeds(deleteDoc(doc(db, ...p, "symptoms", "s1")));
+    await assertSucceeds(deleteDoc(doc(db, ...p, "allergies", "a1")));
+  });
+
+  test("Owner can delete the profile, devices and the user document", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(deleteDoc(doc(db, "profiles", "profile1")));
+    await assertSucceeds(deleteDoc(doc(db, "users", "owner123", "devices", "dev1")));
+    await assertSucceeds(deleteDoc(doc(db, "users", "owner123")));
+  });
+
+  test("Deleting a profile does not need its children to be empty first", async () => {
+    // Firestore does not cascade; the app deletes children first. The rule
+    // itself must still allow the owner to remove the profile document.
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(deleteDoc(doc(db, "profiles", "profile1")));
+  });
+
+  test("A caregiver cannot purge the owner's data even with their own due request", async () => {
+    await seedPurgeData(new Date(Date.now() - 8 * DAY), "caregiver123");
+    const db = testEnv.authenticatedContext("caregiver123").firestore();
+    await assertFails(deleteDoc(doc(db, "profiles", "profile1")));
+    await assertFails(deleteDoc(doc(db, "profiles", "profile1", "medications", "med1")));
+    await assertFails(deleteDoc(doc(db, "profiles", "profile1", "doses", "dose2")));
+    await assertFails(deleteDoc(doc(db, "profiles", "profile1", "vitals", "v1")));
+  });
+
+  test("Cannot delete another user's document", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(deleteDoc(doc(db, "users", "viewer123")));
+  });
+
+  test("Records that are not health data stay protected", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "profiles", "profile1", "randomStuff", "r1"), { a: 1 });
+    });
+    await assertFails(deleteDoc(doc(db, "profiles", "profile1", "randomStuff", "r1")));
+  });
+
+  test("Unauthenticated users cannot purge", async () => {
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(deleteDoc(doc(db, "profiles", "profile1")));
+    await assertFails(deleteDoc(doc(db, "users", "owner123")));
+  });
+});
+
+describe("Purge is blocked during the grace period — M14 step 5", () => {
+
+  async function expectAllDeletesDenied() {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    const p = ["profiles", "profile1"];
+    await assertFails(deleteDoc(doc(db, ...p, "medications", "med1", "inventoryEvents", "ev1")));
+    await assertFails(deleteDoc(doc(db, ...p, "medications", "med1")));
+    await assertFails(deleteDoc(doc(db, ...p, "doses", "dose2"))); // taken
+    await assertFails(deleteDoc(doc(db, ...p, "pharmacies", "ph1")));
+    await assertFails(deleteDoc(doc(db, ...p, "dailySummaries", "2026-11-01")));
+    await assertFails(deleteDoc(doc(db, ...p, "vitals", "v1")));
+    await assertFails(deleteDoc(doc(db, ...p, "symptoms", "s1")));
+    await assertFails(deleteDoc(doc(db, "profiles", "profile1")));
+    await assertFails(deleteDoc(doc(db, "users", "owner123")));
+  }
+
+  test("2 days after the request: nothing can be deleted", async () => {
+    await seedPurgeData(new Date(Date.now() - 2 * DAY));
+    await expectAllDeletesDenied();
+  });
+
+  test("6 days 23 hours after the request: still blocked", async () => {
+    await seedPurgeData(new Date(Date.now() - (7 * DAY - 60 * 60 * 1000)));
+    await expectAllDeletesDenied();
+  });
+
+  test("No deletion request at all: nothing can be deleted", async () => {
+    await seedPurgeData(null);
+    await expectAllDeletesDenied();
+  });
+
+  test("After cancelling (field removed) deletes are blocked again", async () => {
+    await seedPurgeData(new Date(Date.now() - 8 * DAY));
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "owner123"), { deletionRequestedAt: deleteField() })
+    );
+    await expectAllDeletesDenied();
+  });
+
+  test("User cannot backdate the request to skip the grace period", async () => {
+    await seedPurgeData(new Date(Date.now() - 1 * DAY));
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "owner123"), {
+        deletionRequestedAt: new Date(Date.now() - 30 * DAY),
+      })
+    );
+    await expectAllDeletesDenied();
+  });
+});
+
+
+describe("Member leaves a profile (own access only) — M14 step 6", () => {
+
+  const ref = (db) => doc(db, "profiles", "profile1");
+
+  test("A viewer can remove only their own access", async () => {
+    const db = testEnv.authenticatedContext("viewer123").firestore();
+    await assertSucceeds(
+      updateDoc(ref(db), {
+        memberUids: arrayRemove("viewer123"),
+        healthUids: arrayRemove("viewer123"), // not in the list: no-op
+        "roles.viewer123": deleteField(),
+        updatedAt: serverTimestamp(),
+      })
+    );
+  });
+
+  test("A caregiver with permissions can leave, entry included", async () => {
+    const db = testEnv.authenticatedContext("caregiver123").firestore();
+    await assertSucceeds(
+      updateDoc(ref(db), {
+        memberUids: arrayRemove("caregiver123"),
+        healthUids: arrayRemove("caregiver123"),
+        "roles.caregiver123": deleteField(),
+        "permissions.caregiver123": deleteField(),
+      })
+    );
+  });
+
+  test("Leaving but keeping the permissions entry is rejected", async () => {
+    const db = testEnv.authenticatedContext("caregiver123").firestore();
+    await assertFails(
+      updateDoc(ref(db), {
+        memberUids: arrayRemove("caregiver123"),
+        healthUids: arrayRemove("caregiver123"),
+        "roles.caregiver123": deleteField(),
+      })
+    );
+  });
+
+  test("Leaving but keeping the role entry is rejected", async () => {
+    const db = testEnv.authenticatedContext("viewer123").firestore();
+    await assertFails(
+      updateDoc(ref(db), { memberUids: arrayRemove("viewer123") })
+    );
+  });
+
+  test("Cannot remove somebody else's access", async () => {
+    const db = testEnv.authenticatedContext("viewer123").firestore();
+    await assertFails(
+      updateDoc(ref(db), {
+        memberUids: arrayRemove("caregiver123"),
+        "roles.caregiver123": deleteField(),
+      })
+    );
+  });
+
+  test("Cannot remove the owner", async () => {
+    const db = testEnv.authenticatedContext("viewer123").firestore();
+    await assertFails(
+      updateDoc(ref(db), {
+        memberUids: arrayRemove("owner123"),
+        healthUids: arrayRemove("owner123"),
+        "roles.owner123": deleteField(),
+      })
+    );
+  });
+
+  test("Cannot leave AND remove someone else in the same write", async () => {
+    const db = testEnv.authenticatedContext("viewer123").firestore();
+    await assertFails(
+      updateDoc(ref(db), {
+        memberUids: arrayRemove("viewer123", "caregiver123"),
+        "roles.viewer123": deleteField(),
+      })
+    );
+  });
+
+  test("Cannot promote yourself or change other fields while leaving", async () => {
+    const db = testEnv.authenticatedContext("viewer123").firestore();
+    await assertFails(updateDoc(ref(db), { "roles.viewer123": "owner" }));
+    await assertFails(
+      updateDoc(ref(db), {
+        memberUids: arrayRemove("viewer123"),
+        "roles.viewer123": deleteField(),
+        name: "Hijacked",
+      })
+    );
+    await assertFails(
+      updateDoc(ref(db), {
+        memberUids: arrayRemove("viewer123"),
+        "roles.viewer123": deleteField(),
+        ownerUid: "viewer123",
+      })
+    );
+  });
+
+  test("The owner cannot use the leave path", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      updateDoc(ref(db), {
+        memberUids: arrayRemove("owner123"),
+        healthUids: arrayRemove("owner123"),
+        "roles.owner123": deleteField(),
+      })
+    );
+  });
+
+  test("Non-members and anonymous users cannot touch membership", async () => {
+    const outsider = testEnv.authenticatedContext("stranger999").firestore();
+    await assertFails(
+      updateDoc(ref(outsider), { memberUids: arrayRemove("viewer123") })
+    );
+    const anon = testEnv.unauthenticatedContext().firestore();
+    await assertFails(
+      updateDoc(ref(anon), { memberUids: arrayRemove("viewer123") })
+    );
+  });
+});
+

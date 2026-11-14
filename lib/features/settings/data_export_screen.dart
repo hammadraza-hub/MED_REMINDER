@@ -1,7 +1,10 @@
+import 'dart:io';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/profile/profile_controller.dart';
+import '../../core/export/export_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
@@ -22,9 +25,9 @@ import 'data_export_data.dart';
 /// COLORS:
 /// Sirf AppColors — koi hardcoded hex nahi.
 ///
-/// TODO Backend:
-/// Asli ZIP archive generate karke email bhejna backend phase mein
-/// wire hoga; yahan UI + local state hai.
+/// M14 step 3 (Spark plan, no server):
+/// Data device par Firestore se padha jata hai, ZIP banta hai aur share
+/// sheet se user khud save/share karta hai. Email/server queue nahi.
 /// ============================================================
 class DataExportScreen extends StatefulWidget {
   const DataExportScreen({super.key});
@@ -67,26 +70,47 @@ class _DataExportScreenState extends State<DataExportScreen>
   // ACTIONS
   // ============================================================
 
-  void _requestExport() {
-    if (_requesting || _requested) return;
+  Future<void> _requestExport() async {
+    if (_requesting) return;
 
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _requesting = true);
 
-    // TODO Backend: export request queue karna + email bhejna.
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    File? file;
+    try {
+      file = await ExportService.instance
+          .createExportFile(onProgress: (s) => debugPrint('Export: $s'))
+          .timeout(const Duration(minutes: 3));
       if (!mounted) return;
 
       final now = DateTime.now();
       final material = MaterialLocalizations.of(context);
       final date = material.formatShortDate(now);
       final time = material.formatTimeOfDay(TimeOfDay.fromDateTime(now));
-
       setState(() {
-        _requesting = false;
+        _requesting = false; // file is ready; share sheet may stay open
         _requested = true;
         _lastExportAt = '$date, $time';
       });
-    });
+
+      await ExportService.instance.shareAndCleanUp(
+        file,
+        subject: l10n.dataExportTitle,
+      );
+    } catch (e) {
+      debugPrint('Export failed: $e');
+      if (file != null) {
+        try {
+          if (await file.exists()) await file.delete();
+        } catch (_) {}
+      }
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.dataExportFailed)));
+      }
+    } finally {
+      if (mounted) setState(() => _requesting = false);
+    }
   }
 
   // ============================================================
@@ -371,9 +395,7 @@ class _DataExportScreenState extends State<DataExportScreen>
 
   Widget _buildFormatNote() {
     final l10n = AppLocalizations.of(context);
-    final name = ProfileController.instance.displayName;
-    final email = '${name.toLowerCase().replaceAll(RegExp(r'\s+'), '.')}'
-        '@email.com';
+    final email = FirebaseAuth.instance.currentUser?.email ?? '';
 
     return _card(
       child: Row(
@@ -406,17 +428,18 @@ class _DataExportScreenState extends State<DataExportScreen>
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.dataExportSentTo(email),
-                  style: TextStyle(
-                    color: AppColors.permissionsSecondary.withValues(
-                      alpha: 0.8,
+                if (email.isNotEmpty) const SizedBox(height: 4),
+                if (email.isNotEmpty)
+                  Text(
+                    l10n.dataExportSentTo(email),
+                    style: TextStyle(
+                      color: AppColors.permissionsSecondary.withValues(
+                        alpha: 0.8,
+                      ),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
                   ),
-                ),
               ],
             ),
           ),
@@ -447,18 +470,16 @@ class _DataExportScreenState extends State<DataExportScreen>
   }
 
   Widget _buildRequestButton(AppLocalizations l10n) {
-    final label = _requested
-        ? l10n.dataExportSubmitted
-        : (_requesting ? l10n.dataExportGenerating : l10n.dataExportRequest);
+    final label = _requesting
+        ? l10n.dataExportGenerating
+        : (_requested ? l10n.dataExportShareAgain : l10n.dataExportRequest);
 
     return GestureDetector(
-      onTap: _requested ? null : _requestExport,
+      onTap: _requesting ? null : _requestExport,
       child: Container(
         height: 56,
         decoration: BoxDecoration(
-          color: _requested
-              ? AppColors.permissionsGreenDark
-              : AppColors.formAccent,
+          color: AppColors.formAccent,
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
@@ -482,7 +503,7 @@ class _DataExportScreenState extends State<DataExportScreen>
               )
             else
               Icon(
-                _requested ? Icons.done_all_rounded : Icons.download_rounded,
+                _requested ? Icons.refresh_rounded : Icons.download_rounded,
                 size: 20,
                 color: AppColors.surface,
               ),
@@ -514,7 +535,7 @@ class _DataExportScreenState extends State<DataExportScreen>
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.mark_email_read_rounded,
+              Icons.task_alt_rounded,
               size: 18,
               color: AppColors.permissionsGreenDark,
             ),
@@ -545,9 +566,10 @@ class _DataExportScreenState extends State<DataExportScreen>
                 Row(
                   children: [
                     FadeTransition(
-                      opacity: Tween<double>(begin: 0.3, end: 1).animate(
-                        _pulseController,
-                      ),
+                      opacity: Tween<double>(
+                        begin: 0.3,
+                        end: 1,
+                      ).animate(_pulseController),
                       child: Container(
                         width: 8,
                         height: 8,
@@ -592,15 +614,6 @@ class _DataExportScreenState extends State<DataExportScreen>
             fontWeight: _lastExportAt == null
                 ? FontWeight.w500
                 : FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          l10n.dataExportRetentionId(DataExportData.retentionId),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppColors.permissionsSecondary.withValues(alpha: 0.6),
-            fontSize: 11,
           ),
         ),
       ],

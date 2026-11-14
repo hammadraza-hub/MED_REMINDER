@@ -653,7 +653,10 @@ class _AppFooter extends StatelessWidget {
     return Column(
       children: [
         Text(
-          l10n.settingsFooterVersion,
+          l10n.settingsFooterVersion(
+            AppInfoService.instance.version,
+            AppInfoService.instance.buildNumber,
+          ),
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: AppColors.permissionsSecondary,

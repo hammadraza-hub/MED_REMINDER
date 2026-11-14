@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/app_lock_service.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
@@ -46,12 +48,41 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
   void initState() {
     super.initState();
 
-    _biometricLock = PrivacySecurityData.defaultBiometricLock;
+    // Real, device-only setting (M13 step 6). Off until the user turns it on.
+    _biometricLock = AppLockService.instance.enabled;
   }
 
   // ============================================================
   // ACTIONS
   // ============================================================
+
+  /// Turns the biometric app lock on/off. Both directions ask the user to
+  /// authenticate first; on failure the switch stays where it was.
+  Future<void> _toggleAppLock(bool value) async {
+    final l10n = AppLocalizations.of(context);
+    final service = AppLockService.instance;
+
+    if (value) {
+      final result = await service.enable(l10n.appLockReasonEnable);
+      if (!mounted) return;
+      switch (result) {
+        case AppLockEnableResult.enabled:
+          setState(() => _biometricLock = true);
+        case AppLockEnableResult.unsupported:
+          _showMessage(l10n.appLockUnsupported);
+        case AppLockEnableResult.failed:
+          _showMessage(l10n.appLockNotVerified);
+      }
+    } else {
+      final ok = await service.disable(l10n.appLockReasonDisable);
+      if (!mounted) return;
+      if (ok) {
+        setState(() => _biometricLock = false);
+      } else {
+        _showMessage(l10n.appLockNotVerified);
+      }
+    }
+  }
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
@@ -201,11 +232,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
           const SizedBox(width: 8),
           AppToggleSwitch(
             value: _biometricLock,
-            onChanged: (value) {
-              setState(() {
-                _biometricLock = value;
-              });
-            },
+            onChanged: _toggleAppLock,
           ),
         ],
       ),

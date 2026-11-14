@@ -69,7 +69,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsDataExport => 'Exportation des données';
 
   @override
-  String get settingsDataExportTrailing => 'CSV et PDF';
+  String get settingsDataExportTrailing => 'ZIP';
 
   @override
   String get settingsHelpSupport => 'Aide et assistance';
@@ -100,8 +100,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsLogoutComingSoon => 'Déconnexion — bientôt disponible';
 
   @override
-  String get settingsFooterVersion =>
-      'MedRemind Care Health Suite • v1.2.0 (Build 412)';
+  String settingsFooterVersion(String version, String build) {
+    return 'MedRemind Care Health Suite • v$version (Build $build)';
+  }
 
   @override
   String get settingsHipaa => 'Conforme HIPAA et chiffré';
@@ -312,7 +313,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Obtenez une copie complète de tout ce qui est stocké dans votre compte.';
 
   @override
-  String get dataExportBadge => 'Export chiffré conforme GDPR et HIPAA';
+  String get dataExportBadge => 'Créé uniquement sur cet appareil';
 
   @override
   String get dataExportIncludedTitle => 'Ce qui est inclus';
@@ -336,7 +337,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String dataExportFormatNote(String formats) {
-    return 'Vous recevrez une archive ZIP ($formats) par e-mail sous 24 heures.';
+    return 'Un fichier ZIP ($formats) est créé sur cet appareil. Vous choisissez où l’enregistrer ou le partager.';
   }
 
   @override
@@ -344,27 +345,145 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String dataExportSentTo(String email) {
-    return 'Envoyé directement à $email';
+    return 'Données du compte $email';
   }
 
   @override
-  String get dataExportRequest => 'Demander l\'exportation';
+  String get dataExportRequest => 'Créer l’export';
 
   @override
-  String get dataExportGenerating => 'Génération du paquet...';
+  String get dataExportGenerating => 'Préparation de vos données...';
 
   @override
-  String get dataExportSubmitted => 'Demande envoyée';
+  String get dataExportSubmitted => 'Export prêt';
 
   @override
-  String get dataExportSuccessTitle => 'Exportation demandée !';
+  String get dataExportSuccessTitle => 'Export prêt !';
 
   @override
   String get dataExportSuccessMessage =>
-      'Nous préparons votre archive de données brutes. Vous recevrez un lien direct dès la fin de la compilation.';
+      'Votre fichier ZIP a été créé. Il contient vos données de santé, gardez-le en lieu sûr.';
 
   @override
-  String get dataExportQueued => 'En file d\'attente sur le serveur';
+  String get dataExportQueued => 'Non conservé par l’app après le partage';
+
+  @override
+  String get dataExportShareAgain => 'Recréer';
+
+  @override
+  String get dataExportFailed =>
+      'Impossible de créer l’export. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get accountDeleteSheetTitle => 'Supprimer le compte ?';
+
+  @override
+  String get accountDeleteButton => 'Supprimer le compte';
+
+  @override
+  String accountDeleteSheetBody(int days) {
+    return 'La suppression de votre compte sera programmée dans $days jours. Vous pouvez l’annuler depuis cet écran d’ici là. Ensuite, vos profils, médicaments et historique de prises seront définitivement supprimés.';
+  }
+
+  @override
+  String get accountDeleteExportTitle => 'Sauvegardez d’abord vos données';
+
+  @override
+  String get accountDeleteExportHint =>
+      'Créez un export ZIP de tout avant de supprimer.';
+
+  @override
+  String get accountDeleteExportButton => 'Exporter';
+
+  @override
+  String get accountDeleteConfirm => 'Programmer la suppression';
+
+  @override
+  String get accountDeleteKeep => 'Garder le compte';
+
+  @override
+  String get accountDeleteScheduledTitle => 'Suppression programmée';
+
+  @override
+  String accountDeleteScheduledBody(int days) {
+    return 'Votre compte sera supprimé dans $days jours. Vous pouvez encore annuler.';
+  }
+
+  @override
+  String get accountDeleteDueBody =>
+      'Le délai d’attente est écoulé. Votre compte est prêt à être supprimé.';
+
+  @override
+  String get accountDeleteCancel => 'Annuler la suppression';
+
+  @override
+  String get accountDeleteRequested => 'Suppression programmée.';
+
+  @override
+  String get accountDeleteCancelled =>
+      'Suppression annulée. Votre compte reste actif.';
+
+  @override
+  String get accountDeleteFailed =>
+      'Impossible de mettre à jour votre demande. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get accountDeleteFooter =>
+      'Nous vous conseillons d’exporter vos données d’abord.';
+
+  @override
+  String get accountPurgeRunning => 'Suppression de votre compte...';
+
+  @override
+  String get accountPurgeRunningHint =>
+      'Gardez l’application ouverte jusqu’à la fin.';
+
+  @override
+  String get accountPurgeNeedsLogin =>
+      'Pour votre sécurité, reconnectez-vous afin de terminer la suppression de votre compte. Rien n’a encore été supprimé.';
+
+  @override
+  String get accountPurgeLoginButton => 'Se reconnecter';
+
+  @override
+  String get accountPurgeFailed =>
+      'La suppression n’a pas pu être terminée. Ce qui a déjà été supprimé le reste. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get accountPurgeRetry => 'Réessayer';
+
+  @override
+  String get accountDeleteSummaryTitle => 'Ce qui sera supprimé';
+
+  @override
+  String accountDeleteOthersLose(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count autres personnes perdront l’accès',
+      one: '1 autre personne perdra l’accès',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountDeleteMemberOf(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Vous serez aussi retiré de $count profils partagés avec vous. Leurs données restent à leurs propriétaires.',
+      one: 'Vous serez aussi retiré de 1 profil partagé avec vous. Ses données restent à son propriétaire.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountDeleteSubscriptionNote =>
+      'Supprimer votre compte n’annule pas un abonnement payant. Annulez-le dans le store pour éviter d’autres frais.';
+
+  @override
+  String get accountDeleteSubscriptionButton => 'Gérer l’abonnement';
 
   @override
   String get dataExportLastExportNever => 'Dernière exportation : Jamais';
@@ -434,7 +553,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get helpSupportFeedbackThanks => 'Merci pour votre retour !';
 
   @override
-  String get helpSupportVersion => 'MedRemind v1.2.0 (build 245)';
+  String helpSupportVersion(String version, String build) {
+    return 'MedRemind v$version (build $build)';
+  }
 
   @override
   String get helpSupportCompliance =>
@@ -1818,4 +1939,85 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get legalReconsentError =>
       'Impossible d\'enregistrer votre choix. Veuillez réessayer.';
+
+  @override
+  String get supportRequestTitle => 'Envoyer une demande';
+
+  @override
+  String get supportRequestIntro =>
+      'Dites-nous ce qui ne va pas ou ce dont vous avez besoin. Notre équipe vous répondra par e-mail.';
+
+  @override
+  String get supportRequestSubjectLabel => 'Objet';
+
+  @override
+  String get supportRequestSubjectHint => 'ex. Les rappels ne sonnent pas';
+
+  @override
+  String get supportRequestBodyLabel => 'Détails';
+
+  @override
+  String get supportRequestBodyHint =>
+      'Décrivez le problème et ce que vous attendiez';
+
+  @override
+  String get supportRequestSend => 'Envoyer la demande';
+
+  @override
+  String get supportRequestSubjectRequired => 'Veuillez saisir un objet';
+
+  @override
+  String get supportRequestBodyRequired => 'Veuillez décrire votre demande';
+
+  @override
+  String get supportRequestSent =>
+      'Demande envoyée. Merci, nous vous répondrons par e-mail.';
+
+  @override
+  String get supportRequestQueued =>
+      'Pas de connexion. Votre demande est enregistrée et sera envoyée automatiquement dès que vous serez en ligne.';
+
+  @override
+  String get supportRequestError =>
+      'Impossible d\'envoyer votre demande. Veuillez réessayer.';
+
+  @override
+  String get supportRequestSignIn => 'Connectez-vous pour envoyer une demande.';
+
+  @override
+  String helpSupportEmailOpenFailed(String email) {
+    return 'Impossible d\'ouvrir votre application de messagerie. Écrivez-nous à $email';
+  }
+
+  @override
+  String get appLockTitle => 'MedRemind est verrouillée';
+
+  @override
+  String get appLockSubtitle =>
+      'Déverrouillez avec votre empreinte, votre visage ou le code du téléphone pour continuer.';
+
+  @override
+  String get appLockUnlock => 'Déverrouiller';
+
+  @override
+  String get appLockSignOut => 'Se déconnecter';
+
+  @override
+  String get appLockReasonUnlock => 'Déverrouiller MedRemind';
+
+  @override
+  String get appLockReasonEnable =>
+      'Confirmez pour activer le verrouillage de l\'app';
+
+  @override
+  String get appLockReasonDisable =>
+      'Confirmez pour désactiver le verrouillage de l\'app';
+
+  @override
+  String get appLockUnsupported =>
+      'Configurez d\'abord un verrouillage d\'écran ou une empreinte sur ce téléphone pour utiliser le verrouillage de l\'app.';
+
+  @override
+  String get appLockNotVerified =>
+      'Impossible de vérifier votre identité. Veuillez réessayer.';
 }

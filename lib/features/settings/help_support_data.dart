@@ -29,5 +29,7 @@ class HelpSupportData {
   static const String supportEmail = 'support@medremind.app';
 
   /// Support request email subject.
-  static const String ticketSubject = 'MedRemind Support Request (v1.2.0)';
+  /// Subject line of the prefilled support email.
+  static String emailSubject(String version) =>
+      'MedRemind Support Request (v$version)';
 }

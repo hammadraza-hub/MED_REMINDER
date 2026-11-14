@@ -69,7 +69,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsDataExport => 'تصدير البيانات';
 
   @override
-  String get settingsDataExportTrailing => 'CSV و PDF';
+  String get settingsDataExportTrailing => 'ZIP';
 
   @override
   String get settingsHelpSupport => 'المساعدة والدعم';
@@ -100,8 +100,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsLogoutComingSoon => 'تسجيل الخروج — قريبًا';
 
   @override
-  String get settingsFooterVersion =>
-      'MedRemind Care Health Suite • إصدار 1.2.0 (412)';
+  String settingsFooterVersion(String version, String build) {
+    return 'MedRemind Care Health Suite • إصدار $version ($build)';
+  }
 
   @override
   String get settingsHipaa => 'متوافق مع HIPAA ومشفّر';
@@ -311,7 +312,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'احصل على نسخة كاملة من كل ما هو مخزّن في حسابك.';
 
   @override
-  String get dataExportBadge => 'تصدير مشفّر بمعيار GDPR وHIPAA';
+  String get dataExportBadge => 'يُنشأ على هذا الجهاز فقط';
 
   @override
   String get dataExportIncludedTitle => 'ما الذي يشمله';
@@ -333,7 +334,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String dataExportFormatNote(String formats) {
-    return 'ستستلم أرشيف ZIP ($formats) عبر البريد الإلكتروني خلال 24 ساعة.';
+    return 'يتم إنشاء ملف ZIP ($formats) على هذا الجهاز. أنت تختار مكان حفظه أو مشاركته.';
   }
 
   @override
@@ -341,27 +342,140 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String dataExportSentTo(String email) {
-    return 'أُرسل مباشرةً إلى $email';
+    return 'بيانات الحساب $email';
   }
 
   @override
-  String get dataExportRequest => 'طلب التصدير';
+  String get dataExportRequest => 'إنشاء التصدير';
 
   @override
-  String get dataExportGenerating => 'جارٍ إنشاء الحزمة...';
+  String get dataExportGenerating => 'جارٍ تجهيز بياناتك...';
 
   @override
-  String get dataExportSubmitted => 'تم إرسال الطلب';
+  String get dataExportSubmitted => 'التصدير جاهز';
 
   @override
-  String get dataExportSuccessTitle => 'تم طلب التصدير!';
+  String get dataExportSuccessTitle => 'التصدير جاهز!';
 
   @override
   String get dataExportSuccessMessage =>
-      'نقوم بتحضير أرشيف بياناتك الخام. ستتلقى رابطًا مباشرًا بمجرد اكتمال التجميع.';
+      'تم إنشاء ملف ZIP. يحتوي على بياناتك الصحية، لذا احتفظ به في مكان آمن.';
 
   @override
-  String get dataExportQueued => 'في قائمة الانتظار على الخادم';
+  String get dataExportQueued => 'لا يحتفظ به التطبيق بعد المشاركة';
+
+  @override
+  String get dataExportShareAgain => 'إنشاء مرة أخرى';
+
+  @override
+  String get dataExportFailed =>
+      'تعذّر إنشاء التصدير. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get accountDeleteSheetTitle => 'حذف الحساب؟';
+
+  @override
+  String get accountDeleteButton => 'حذف الحساب';
+
+  @override
+  String accountDeleteSheetBody(int days) {
+    return 'سيتم جدولة حذف حسابك بعد $days أيام. يمكنك الإلغاء من هذه الشاشة حتى ذلك الحين. بعدها ستُحذف ملفاتك الشخصية وأدويتك وسجل الجرعات نهائيًا.';
+  }
+
+  @override
+  String get accountDeleteExportTitle => 'احفظ بياناتك أولًا';
+
+  @override
+  String get accountDeleteExportHint => 'أنشئ ملف ZIP بكل بياناتك قبل الحذف.';
+
+  @override
+  String get accountDeleteExportButton => 'تصدير';
+
+  @override
+  String get accountDeleteConfirm => 'جدولة الحذف';
+
+  @override
+  String get accountDeleteKeep => 'الإبقاء على الحساب';
+
+  @override
+  String get accountDeleteScheduledTitle => 'تمت جدولة الحذف';
+
+  @override
+  String accountDeleteScheduledBody(int days) {
+    return 'سيتم حذف حسابك بعد $days أيام. يمكنك الإلغاء الآن.';
+  }
+
+  @override
+  String get accountDeleteDueBody => 'انتهت فترة الانتظار. حسابك جاهز للحذف.';
+
+  @override
+  String get accountDeleteCancel => 'إلغاء الحذف';
+
+  @override
+  String get accountDeleteRequested => 'تمت جدولة الحذف.';
+
+  @override
+  String get accountDeleteCancelled => 'تم إلغاء الحذف. حسابك لا يزال نشطًا.';
+
+  @override
+  String get accountDeleteFailed =>
+      'تعذّر تحديث طلبك. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get accountDeleteFooter => 'نوصي بتصدير بياناتك أولًا.';
+
+  @override
+  String get accountPurgeRunning => 'جارٍ حذف حسابك...';
+
+  @override
+  String get accountPurgeRunningHint => 'أبقِ التطبيق مفتوحًا حتى ينتهي الحذف.';
+
+  @override
+  String get accountPurgeNeedsLogin =>
+      'لأمانك، سجّل الدخول مرة أخرى لإكمال حذف حسابك. لم يتم حذف أي شيء بعد.';
+
+  @override
+  String get accountPurgeLoginButton => 'تسجيل الدخول مرة أخرى';
+
+  @override
+  String get accountPurgeFailed =>
+      'تعذّر إكمال الحذف. ما تم حذفه يبقى محذوفًا. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get accountPurgeRetry => 'إعادة المحاولة';
+
+  @override
+  String get accountDeleteSummaryTitle => 'ما الذي سيتم حذفه';
+
+  @override
+  String accountDeleteOthersLose(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'سيفقد $count أشخاص آخرين الوصول',
+      one: 'سيفقد شخص آخر الوصول',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountDeleteMemberOf(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'ستتم إزالتك أيضًا من $count ملفات شخصية تمت مشاركتها معك. تبقى بياناتها لدى مالكيها.',
+      one: 'ستتم إزالتك أيضًا من ملف شخصي واحد تمت مشاركته معك. تبقى بياناته لدى مالكه.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountDeleteSubscriptionNote =>
+      'حذف حسابك لا يلغي الاشتراك المدفوع. ألغِه من المتجر لتجنب أي رسوم إضافية.';
+
+  @override
+  String get accountDeleteSubscriptionButton => 'إدارة الاشتراك';
 
   @override
   String get dataExportLastExportNever => 'آخر تصدير: أبدًا';
@@ -430,7 +544,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get helpSupportFeedbackThanks => 'شكرًا على ملاحظاتك!';
 
   @override
-  String get helpSupportVersion => 'MedRemind v1.2.0 (إصدار 245)';
+  String helpSupportVersion(String version, String build) {
+    return 'MedRemind v$version (إصدار $build)';
+  }
 
   @override
   String get helpSupportCompliance =>
@@ -1790,4 +1906,81 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get legalReconsentError =>
       'تعذّر حفظ اختيارك. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get supportRequestTitle => 'إرسال طلب';
+
+  @override
+  String get supportRequestIntro =>
+      'أخبرنا بما حدث أو بما تحتاجه. سيردّ عليك فريقنا عبر البريد الإلكتروني.';
+
+  @override
+  String get supportRequestSubjectLabel => 'الموضوع';
+
+  @override
+  String get supportRequestSubjectHint => 'مثال: التذكيرات لا ترنّ';
+
+  @override
+  String get supportRequestBodyLabel => 'التفاصيل';
+
+  @override
+  String get supportRequestBodyHint => 'صف المشكلة وما كنت تتوقع حدوثه';
+
+  @override
+  String get supportRequestSend => 'إرسال الطلب';
+
+  @override
+  String get supportRequestSubjectRequired => 'يرجى إدخال الموضوع';
+
+  @override
+  String get supportRequestBodyRequired => 'يرجى وصف طلبك';
+
+  @override
+  String get supportRequestSent =>
+      'تم إرسال الطلب. شكرًا لك، سنردّ عبر البريد الإلكتروني.';
+
+  @override
+  String get supportRequestQueued =>
+      'لا يوجد اتصال. تم حفظ طلبك وسيُرسل تلقائيًا عند عودة الاتصال.';
+
+  @override
+  String get supportRequestError => 'تعذّر إرسال طلبك. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get supportRequestSignIn => 'يرجى تسجيل الدخول لإرسال طلب.';
+
+  @override
+  String helpSupportEmailOpenFailed(String email) {
+    return 'تعذّر فتح تطبيق البريد. راسلنا على $email';
+  }
+
+  @override
+  String get appLockTitle => 'MedRemind مقفل';
+
+  @override
+  String get appLockSubtitle =>
+      'افتح القفل ببصمتك أو وجهك أو رمز PIN الخاص بالهاتف للمتابعة.';
+
+  @override
+  String get appLockUnlock => 'فتح القفل';
+
+  @override
+  String get appLockSignOut => 'تسجيل الخروج';
+
+  @override
+  String get appLockReasonUnlock => 'فتح قفل MedRemind';
+
+  @override
+  String get appLockReasonEnable => 'أكّد لتفعيل قفل التطبيق';
+
+  @override
+  String get appLockReasonDisable => 'أكّد لإيقاف قفل التطبيق';
+
+  @override
+  String get appLockUnsupported =>
+      'قم أولًا بإعداد قفل الشاشة أو البصمة على هذا الهاتف لاستخدام قفل التطبيق.';
+
+  @override
+  String get appLockNotVerified =>
+      'تعذّر التحقق من هويتك. يرجى المحاولة مرة أخرى.';
 }

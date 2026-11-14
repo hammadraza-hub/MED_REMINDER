@@ -69,7 +69,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDataExport => 'Data Export';
 
   @override
-  String get settingsDataExportTrailing => 'CSV & PDF';
+  String get settingsDataExportTrailing => 'ZIP';
 
   @override
   String get settingsHelpSupport => 'Help & Support';
@@ -100,8 +100,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLogoutComingSoon => 'Log Out — coming soon';
 
   @override
-  String get settingsFooterVersion =>
-      'MedRemind Care Health Suite • v1.2.0 (Build 412)';
+  String settingsFooterVersion(String version, String build) {
+    return 'MedRemind Care Health Suite • v$version (Build $build)';
+  }
 
   @override
   String get settingsHipaa => 'HIPAA Compliant & Encrypted';
@@ -312,7 +313,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Get a complete copy of everything stored in your account.';
 
   @override
-  String get dataExportBadge => 'Encrypted GDPR & HIPAA standard export';
+  String get dataExportBadge => 'Created on this device only';
 
   @override
   String get dataExportIncludedTitle => 'What\'s Included';
@@ -335,7 +336,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dataExportFormatNote(String formats) {
-    return 'You\'ll receive a ZIP archive ($formats) via email within 24 hours.';
+    return 'A ZIP file ($formats) is created on this device. You choose where to save or share it.';
   }
 
   @override
@@ -343,27 +344,144 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dataExportSentTo(String email) {
-    return 'Sent directly to $email';
+    return 'Data of account $email';
   }
 
   @override
-  String get dataExportRequest => 'Request Export';
+  String get dataExportRequest => 'Create Export';
 
   @override
-  String get dataExportGenerating => 'Generating Package...';
+  String get dataExportGenerating => 'Preparing your data...';
 
   @override
-  String get dataExportSubmitted => 'Request Submitted';
+  String get dataExportSubmitted => 'Export Ready';
 
   @override
-  String get dataExportSuccessTitle => 'Export Requested!';
+  String get dataExportSuccessTitle => 'Export Ready!';
 
   @override
   String get dataExportSuccessMessage =>
-      'We\'re preparing your raw data archive. You will receive a direct link once compilation completes.';
+      'Your ZIP file was created. It contains your health data, so keep it somewhere safe.';
 
   @override
-  String get dataExportQueued => 'Queued in server batch';
+  String get dataExportQueued => 'Not stored by the app after sharing';
+
+  @override
+  String get dataExportShareAgain => 'Create Again';
+
+  @override
+  String get dataExportFailed =>
+      'Could not create the export. Check your connection and try again.';
+
+  @override
+  String get accountDeleteSheetTitle => 'Delete Account?';
+
+  @override
+  String get accountDeleteButton => 'Delete Account';
+
+  @override
+  String accountDeleteSheetBody(int days) {
+    return 'Your account will be scheduled for deletion in $days days. You can cancel from this screen until then. After that your profiles, medications and dose history are permanently removed.';
+  }
+
+  @override
+  String get accountDeleteExportTitle => 'Backup your data first';
+
+  @override
+  String get accountDeleteExportHint =>
+      'Create a ZIP export of everything before deleting.';
+
+  @override
+  String get accountDeleteExportButton => 'Export';
+
+  @override
+  String get accountDeleteConfirm => 'Schedule Deletion';
+
+  @override
+  String get accountDeleteKeep => 'Keep Account';
+
+  @override
+  String get accountDeleteScheduledTitle => 'Deletion scheduled';
+
+  @override
+  String accountDeleteScheduledBody(int days) {
+    return 'Your account will be deleted in $days days. You can still cancel.';
+  }
+
+  @override
+  String get accountDeleteDueBody =>
+      'The waiting period is over. Your account is ready to be deleted.';
+
+  @override
+  String get accountDeleteCancel => 'Cancel Deletion';
+
+  @override
+  String get accountDeleteRequested => 'Deletion scheduled.';
+
+  @override
+  String get accountDeleteCancelled =>
+      'Deletion cancelled. Your account stays active.';
+
+  @override
+  String get accountDeleteFailed =>
+      'Could not update your request. Check your connection and try again.';
+
+  @override
+  String get accountDeleteFooter => 'We recommend exporting your data first.';
+
+  @override
+  String get accountPurgeRunning => 'Deleting your account...';
+
+  @override
+  String get accountPurgeRunningHint =>
+      'Please keep the app open until this finishes.';
+
+  @override
+  String get accountPurgeNeedsLogin =>
+      'For your security, please log in again to finish deleting your account. Nothing has been deleted yet.';
+
+  @override
+  String get accountPurgeLoginButton => 'Log In Again';
+
+  @override
+  String get accountPurgeFailed =>
+      'Deletion could not be finished. Data deleted so far stays deleted. Check your connection and try again.';
+
+  @override
+  String get accountPurgeRetry => 'Try Again';
+
+  @override
+  String get accountDeleteSummaryTitle => 'What will be deleted';
+
+  @override
+  String accountDeleteOthersLose(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count other people will lose access',
+      one: '1 other person will lose access',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountDeleteMemberOf(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'You will also be removed from $count profiles shared with you. Their data stays with their owners.',
+      one: 'You will also be removed from 1 profile shared with you. Its data stays with its owner.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountDeleteSubscriptionNote =>
+      'Deleting your account does not cancel a paid subscription. Cancel it in the store to avoid further charges.';
+
+  @override
+  String get accountDeleteSubscriptionButton => 'Manage subscription';
 
   @override
   String get dataExportLastExportNever => 'Last export: Never';
@@ -433,7 +551,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpSupportFeedbackThanks => 'Thanks for your feedback!';
 
   @override
-  String get helpSupportVersion => 'MedRemind v1.2.0 (build 245)';
+  String helpSupportVersion(String version, String build) {
+    return 'MedRemind v$version (build $build)';
+  }
 
   @override
   String get helpSupportCompliance =>
@@ -1799,4 +1919,83 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get legalReconsentError =>
       'Could not save your choice. Please try again.';
+
+  @override
+  String get supportRequestTitle => 'Submit a Request';
+
+  @override
+  String get supportRequestIntro =>
+      'Tell us what went wrong or what you need. Our team will get back to you by email.';
+
+  @override
+  String get supportRequestSubjectLabel => 'Subject';
+
+  @override
+  String get supportRequestSubjectHint => 'e.g. Reminders are not ringing';
+
+  @override
+  String get supportRequestBodyLabel => 'Details';
+
+  @override
+  String get supportRequestBodyHint =>
+      'Describe the problem and what you expected to happen';
+
+  @override
+  String get supportRequestSend => 'Send request';
+
+  @override
+  String get supportRequestSubjectRequired => 'Please enter a subject';
+
+  @override
+  String get supportRequestBodyRequired => 'Please describe your request';
+
+  @override
+  String get supportRequestSent =>
+      'Request sent. Thank you — we\'ll reply by email.';
+
+  @override
+  String get supportRequestQueued =>
+      'No connection. Your request is saved and will be sent automatically when you\'re back online.';
+
+  @override
+  String get supportRequestError =>
+      'Couldn\'t send your request. Please try again.';
+
+  @override
+  String get supportRequestSignIn => 'Please sign in to send a request.';
+
+  @override
+  String helpSupportEmailOpenFailed(String email) {
+    return 'Couldn\'t open your email app. Write to us at $email';
+  }
+
+  @override
+  String get appLockTitle => 'MedRemind is locked';
+
+  @override
+  String get appLockSubtitle =>
+      'Unlock with your fingerprint, face or phone PIN to continue.';
+
+  @override
+  String get appLockUnlock => 'Unlock';
+
+  @override
+  String get appLockSignOut => 'Sign out';
+
+  @override
+  String get appLockReasonUnlock => 'Unlock MedRemind';
+
+  @override
+  String get appLockReasonEnable => 'Confirm to turn on app lock';
+
+  @override
+  String get appLockReasonDisable => 'Confirm to turn off app lock';
+
+  @override
+  String get appLockUnsupported =>
+      'Set up a screen lock or fingerprint on this phone first to use app lock.';
+
+  @override
+  String get appLockNotVerified =>
+      'Couldn\'t verify it\'s you. Please try again.';
 }

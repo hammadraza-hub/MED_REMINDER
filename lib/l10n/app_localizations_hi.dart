@@ -69,7 +69,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settingsDataExport => 'डेटा निर्यात';
 
   @override
-  String get settingsDataExportTrailing => 'CSV और PDF';
+  String get settingsDataExportTrailing => 'ZIP';
 
   @override
   String get settingsHelpSupport => 'सहायता और समर्थन';
@@ -100,8 +100,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get settingsLogoutComingSoon => 'लॉग आउट — जल्द आ रहा है';
 
   @override
-  String get settingsFooterVersion =>
-      'MedRemind Care Health Suite • v1.2.0 (बिल्ड 412)';
+  String settingsFooterVersion(String version, String build) {
+    return 'MedRemind Care Health Suite • v$version (बिल्ड $build)';
+  }
 
   @override
   String get settingsHipaa => 'HIPAA अनुरूप और एन्क्रिप्टेड';
@@ -311,7 +312,7 @@ class AppLocalizationsHi extends AppLocalizations {
       'आपके खाते में संग्रहीत सब कुछ की पूरी प्रति प्राप्त करें।';
 
   @override
-  String get dataExportBadge => 'एन्क्रिप्टेड GDPR और HIPAA मानक निर्यात';
+  String get dataExportBadge => 'सिर्फ़ इस डिवाइस पर बनता है';
 
   @override
   String get dataExportIncludedTitle => 'इसमें क्या शामिल है';
@@ -333,7 +334,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String dataExportFormatNote(String formats) {
-    return 'आपको 24 घंटे के भीतर ईमेल से ZIP आर्काइव ($formats) प्राप्त होगा।';
+    return 'इस डिवाइस पर एक ZIP फ़ाइल ($formats) बनती है। इसे कहाँ सेव या शेयर करना है, आप चुनते हैं।';
   }
 
   @override
@@ -341,27 +342,143 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String dataExportSentTo(String email) {
-    return 'सीधे $email पर भेजा गया';
+    return 'खाते $email का डेटा';
   }
 
   @override
-  String get dataExportRequest => 'निर्यात का अनुरोध करें';
+  String get dataExportRequest => 'एक्सपोर्ट बनाएँ';
 
   @override
-  String get dataExportGenerating => 'पैकेज बन रहा है...';
+  String get dataExportGenerating => 'आपका डेटा तैयार हो रहा है...';
 
   @override
-  String get dataExportSubmitted => 'अनुरोध सबमिट हुआ';
+  String get dataExportSubmitted => 'एक्सपोर्ट तैयार';
 
   @override
-  String get dataExportSuccessTitle => 'निर्यात का अनुरोध किया गया!';
+  String get dataExportSuccessTitle => 'एक्सपोर्ट तैयार!';
 
   @override
   String get dataExportSuccessMessage =>
-      'हम आपका रॉ डेटा आर्काइव तैयार कर रहे हैं। संकलन पूरा होते ही आपको सीधा लिंक मिलेगा।';
+      'आपकी ZIP फ़ाइल बन गई। इसमें आपका स्वास्थ्य डेटा है, इसे सुरक्षित जगह रखें।';
 
   @override
-  String get dataExportQueued => 'सर्वर बैच में कतार में';
+  String get dataExportQueued => 'शेयर के बाद ऐप इसे नहीं रखता';
+
+  @override
+  String get dataExportShareAgain => 'फिर से बनाएँ';
+
+  @override
+  String get dataExportFailed =>
+      'एक्सपोर्ट नहीं बन सका। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get accountDeleteSheetTitle => 'खाता हटाएँ?';
+
+  @override
+  String get accountDeleteButton => 'खाता हटाएँ';
+
+  @override
+  String accountDeleteSheetBody(int days) {
+    return 'आपका खाता $days दिन में हटाने के लिए शेड्यूल हो जाएगा। तब तक आप इसी स्क्रीन से रद्द कर सकते हैं। उसके बाद आपकी प्रोफ़ाइल, दवाइयाँ और खुराक का इतिहास हमेशा के लिए हट जाएगा।';
+  }
+
+  @override
+  String get accountDeleteExportTitle => 'पहले अपना डेटा सुरक्षित करें';
+
+  @override
+  String get accountDeleteExportHint =>
+      'हटाने से पहले सब कुछ का ZIP एक्सपोर्ट बना लें।';
+
+  @override
+  String get accountDeleteExportButton => 'एक्सपोर्ट';
+
+  @override
+  String get accountDeleteConfirm => 'हटाना शेड्यूल करें';
+
+  @override
+  String get accountDeleteKeep => 'खाता रखें';
+
+  @override
+  String get accountDeleteScheduledTitle => 'हटाना शेड्यूल हो गया';
+
+  @override
+  String accountDeleteScheduledBody(int days) {
+    return 'आपका खाता $days दिन में हट जाएगा। आप अभी भी रद्द कर सकते हैं।';
+  }
+
+  @override
+  String get accountDeleteDueBody =>
+      'प्रतीक्षा अवधि पूरी हो गई। आपका खाता हटाने के लिए तैयार है।';
+
+  @override
+  String get accountDeleteCancel => 'हटाना रद्द करें';
+
+  @override
+  String get accountDeleteRequested => 'हटाना शेड्यूल हो गया।';
+
+  @override
+  String get accountDeleteCancelled => 'हटाना रद्द हुआ। आपका खाता चालू रहेगा।';
+
+  @override
+  String get accountDeleteFailed =>
+      'आपका अनुरोध अपडेट नहीं हो सका। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get accountDeleteFooter =>
+      'हम सलाह देते हैं कि पहले अपना डेटा एक्सपोर्ट करें।';
+
+  @override
+  String get accountPurgeRunning => 'आपका खाता हटाया जा रहा है...';
+
+  @override
+  String get accountPurgeRunningHint => 'जब तक यह पूरा न हो, ऐप खुला रखें।';
+
+  @override
+  String get accountPurgeNeedsLogin =>
+      'आपकी सुरक्षा के लिए, खाता हटाना पूरा करने के लिए दोबारा लॉग इन करें। अभी तक कुछ भी नहीं हटा है।';
+
+  @override
+  String get accountPurgeLoginButton => 'दोबारा लॉग इन करें';
+
+  @override
+  String get accountPurgeFailed =>
+      'हटाना पूरा नहीं हो सका। जो अब तक हट चुका है वह हटा रहेगा। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get accountPurgeRetry => 'दोबारा कोशिश करें';
+
+  @override
+  String get accountDeleteSummaryTitle => 'क्या हटाया जाएगा';
+
+  @override
+  String accountDeleteOthersLose(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count और लोगों की पहुँच खत्म होगी',
+      one: '1 और व्यक्ति की पहुँच खत्म होगी',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountDeleteMemberOf(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'आपको आपके साथ साझा की गई $count प्रोफ़ाइल से भी हटा दिया जाएगा। उनका डेटा उनके मालिकों के पास रहेगा।',
+      one: 'आपको आपके साथ साझा की गई 1 प्रोफ़ाइल से भी हटा दिया जाएगा। उसका डेटा उसके मालिक के पास रहेगा।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountDeleteSubscriptionNote =>
+      'खाता हटाने से सशुल्क सदस्यता रद्द नहीं होती। आगे के शुल्क से बचने के लिए उसे स्टोर में रद्द करें।';
+
+  @override
+  String get accountDeleteSubscriptionButton => 'सदस्यता प्रबंधित करें';
 
   @override
   String get dataExportLastExportNever => 'अंतिम निर्यात: कभी नहीं';
@@ -431,7 +548,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get helpSupportFeedbackThanks => 'आपकी प्रतिक्रिया के लिए धन्यवाद!';
 
   @override
-  String get helpSupportVersion => 'MedRemind v1.2.0 (बिल्ड 245)';
+  String helpSupportVersion(String version, String build) {
+    return 'MedRemind v$version (बिल्ड $build)';
+  }
 
   @override
   String get helpSupportCompliance =>
@@ -1798,4 +1917,83 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get legalReconsentError =>
       'आपका चुनाव सहेजा नहीं जा सका। कृपया फिर कोशिश करें।';
+
+  @override
+  String get supportRequestTitle => 'अनुरोध भेजें';
+
+  @override
+  String get supportRequestIntro =>
+      'हमें बताएँ क्या गड़बड़ हुई या आपको क्या चाहिए। हमारी टीम ईमेल से जवाब देगी।';
+
+  @override
+  String get supportRequestSubjectLabel => 'विषय';
+
+  @override
+  String get supportRequestSubjectHint => 'जैसे: रिमाइंडर नहीं बज रहे';
+
+  @override
+  String get supportRequestBodyLabel => 'विवरण';
+
+  @override
+  String get supportRequestBodyHint =>
+      'समस्या और आप क्या होने की उम्मीद कर रहे थे, बताएँ';
+
+  @override
+  String get supportRequestSend => 'अनुरोध भेजें';
+
+  @override
+  String get supportRequestSubjectRequired => 'कृपया विषय लिखें';
+
+  @override
+  String get supportRequestBodyRequired => 'कृपया अपना अनुरोध बताएँ';
+
+  @override
+  String get supportRequestSent =>
+      'अनुरोध भेज दिया गया। धन्यवाद, हम ईमेल से जवाब देंगे।';
+
+  @override
+  String get supportRequestQueued =>
+      'कनेक्शन नहीं है। आपका अनुरोध सहेजा गया है और ऑनलाइन होते ही अपने आप भेज दिया जाएगा।';
+
+  @override
+  String get supportRequestError =>
+      'आपका अनुरोध भेजा नहीं जा सका। कृपया फिर कोशिश करें।';
+
+  @override
+  String get supportRequestSignIn => 'अनुरोध भेजने के लिए कृपया साइन इन करें।';
+
+  @override
+  String helpSupportEmailOpenFailed(String email) {
+    return 'आपका ईमेल ऐप नहीं खुल सका। हमें $email पर लिखें';
+  }
+
+  @override
+  String get appLockTitle => 'MedRemind लॉक है';
+
+  @override
+  String get appLockSubtitle =>
+      'जारी रखने के लिए फिंगरप्रिंट, चेहरे या फ़ोन के PIN से अनलॉक करें।';
+
+  @override
+  String get appLockUnlock => 'अनलॉक करें';
+
+  @override
+  String get appLockSignOut => 'साइन आउट';
+
+  @override
+  String get appLockReasonUnlock => 'MedRemind अनलॉक करें';
+
+  @override
+  String get appLockReasonEnable => 'ऐप लॉक चालू करने के लिए पुष्टि करें';
+
+  @override
+  String get appLockReasonDisable => 'ऐप लॉक बंद करने के लिए पुष्टि करें';
+
+  @override
+  String get appLockUnsupported =>
+      'ऐप लॉक इस्तेमाल करने के लिए पहले इस फ़ोन में स्क्रीन लॉक या फिंगरप्रिंट सेट करें।';
+
+  @override
+  String get appLockNotVerified =>
+      'आपकी पहचान की पुष्टि नहीं हो सकी। कृपया फिर कोशिश करें।';
 }

@@ -1,11 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/app_info_service.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/faq_item.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
+import '../../repositories/faq_repository.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'help_support_data.dart';
+import 'submit_request_screen.dart';
 
 /// ============================================================
 /// HELP & SUPPORT SCREEN
@@ -48,6 +56,21 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
   /// Khule FAQ items ke indices (default: aakhri item khula hua).
   final Set<int> _expanded = {HelpSupportData.faqIds.length - 1};
 
+  /// FAQ from Firestore `config/faq` (M13 step 4). Empty/null -> the FAQ
+  /// bundled in the app (l10n) is shown instead.
+  List<FaqItem>? _remoteFaqs;
+
+  /// Language the remote FAQ was requested for (reload if it changes).
+  String? _faqLoadedFor;
+
+  /// True while waiting for the first server answer (and nothing cached):
+  /// a small spinner is shown instead of the bundled FAQ so the list does
+  /// not visibly change from 4 items to the server's items. Gives up after
+  /// [_faqPatience] and shows the bundled FAQ (e.g. offline).
+  bool _loadingFaq = false;
+  Timer? _faqPatienceTimer;
+  static const Duration _faqPatience = Duration(seconds: 2);
+
   /// Feedback diya gaya hai ya nahi.
   bool _feedbackGiven = false;
 
@@ -64,7 +87,69 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final code = Localizations.localeOf(context).languageCode;
+    if (code != _faqLoadedFor) {
+      _faqLoadedFor = code;
+      final cached = FaqRepository.instance.cached(code);
+      _faqPatienceTimer?.cancel();
+      if (cached != null) {
+        // Seen this session: show it right away, refresh quietly.
+        _remoteFaqs = cached;
+        _loadingFaq = false;
+      } else {
+        _remoteFaqs = null;
+        _loadingFaq = true;
+        _faqPatienceTimer = Timer(_faqPatience, () {
+          if (mounted && _loadingFaq) setState(() => _loadingFaq = false);
+        });
+      }
+      _loadRemoteFaq(code);
+    }
+  }
+
+  Future<void> _loadRemoteFaq(String languageCode) async {
+    final items = await FaqRepository.instance.getFaq(languageCode);
+    // Ignore a stale answer (language changed meanwhile) or a closed screen.
+    if (!mounted || languageCode != _faqLoadedFor) return;
+    _faqPatienceTimer?.cancel();
+    setState(() {
+      _loadingFaq = false;
+      _remoteFaqs = items.isEmpty ? null : items;
+      _expanded
+        ..clear()
+        ..add((_remoteFaqs?.length ?? HelpSupportData.faqIds.length) - 1);
+    });
+  }
+
+  /// FAQ to display: server list when available, else the bundled one.
+  List<FaqItem> _faqs(AppLocalizations l10n) {
+    final remote = _remoteFaqs;
+    if (remote != null && remote.isNotEmpty) return remote;
+    return [
+      for (final id in HelpSupportData.faqIds)
+        FaqItem(
+          id: id,
+          question: switch (id) {
+            'doseTime' => l10n.faqQ1,
+            'reminder' => l10n.faqQ2,
+            'caregiverAlerts' => l10n.faqQ3,
+            _ => l10n.faqQ4,
+          },
+          answer: switch (id) {
+            'doseTime' => l10n.faqA1,
+            'reminder' => l10n.faqA2,
+            'caregiverAlerts' => l10n.faqA3,
+            _ => l10n.faqA4,
+          },
+        ),
+    ];
+  }
+
+  @override
   void dispose() {
+    _faqPatienceTimer?.cancel();
     _pulseDotController.dispose();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
@@ -97,9 +182,39 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _onEmailTap(AppLocalizations l10n) {
-    // TODO Backend: url_launcher ke mailto: URI se email app open karna.
-    _showMessage(l10n.helpSupportEmailClipped(HelpSupportData.supportEmail));
+  /// Opens the user's email app with a prefilled message (app version and
+  /// device attached). If no email app can be opened, the address is copied
+  /// to the clipboard and shown.
+  Future<void> _onEmailTap(AppLocalizations l10n) async {
+    final info = AppInfoService.instance;
+    final subject = HelpSupportData.emailSubject(info.version);
+    final body =
+        '\n\n---\nMedRemind v${info.version} (build ${info.buildNumber}) · '
+        '${describeDevice()}';
+    final uri = Uri.parse(
+      'mailto:${HelpSupportData.supportEmail}'
+      '?subject=${Uri.encodeComponent(subject)}'
+      '&body=${Uri.encodeComponent(body)}',
+    );
+
+    var opened = false;
+    try {
+      opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      opened = false;
+    }
+    if (opened || !mounted) return;
+
+    await Clipboard.setData(
+      const ClipboardData(text: HelpSupportData.supportEmail),
+    );
+    if (!mounted) return;
+    _showMessage(l10n.helpSupportEmailOpenFailed(HelpSupportData.supportEmail));
+  }
+
+  void _onSubmitRequestTap() {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const SubmitRequestScreen()));
   }
 
   // ============================================================
@@ -328,14 +443,15 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
   // ============================================================
 
   List<int> _visibleFaqIndices(AppLocalizations l10n) {
+    final faqs = _faqs(l10n);
     if (_query.isEmpty) {
-      return [for (var i = 0; i < HelpSupportData.faqIds.length; i++) i];
+      return [for (var i = 0; i < faqs.length; i++) i];
     }
 
     return [
-      for (var i = 0; i < HelpSupportData.faqIds.length; i++)
-        if (_faqQuestion(l10n, i).toLowerCase().contains(_query) ||
-            _faqAnswer(l10n, i).toLowerCase().contains(_query))
+      for (var i = 0; i < faqs.length; i++)
+        if (faqs[i].question.toLowerCase().contains(_query) ||
+            faqs[i].answer.toLowerCase().contains(_query))
           i,
     ];
   }
@@ -363,18 +479,30 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
                     ),
                   ),
                 ),
-                Text(
-                  l10n.helpSupportFaqCount(HelpSupportData.faqIds.length),
-                  style: const TextStyle(
-                    color: AppColors.permissionsSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                if (!_loadingFaq)
+                  Text(
+                    l10n.helpSupportFaqCount(_faqs(l10n).length),
+                    style: const TextStyle(
+                      color: AppColors.permissionsSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
-          if (visible.isEmpty)
+          if (_loadingFaq)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 28),
+              child: Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+              ),
+            )
+          else if (visible.isEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
               child: Text(
@@ -409,10 +537,10 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
               children: [
                 Expanded(
                   child: Text(
-                    _faqQuestion(l10n, index),
+                    _faqs(l10n)[index].question,
                     style: const TextStyle(
                       color: AppColors.reportPrimary,
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -438,14 +566,15 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
           child: isOpen
               ? Container(
                   width: double.infinity,
-                  color: AppColors.permissionsChipFill,
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                  // Same white as the question row, with dark text (~10:1 contrast).
+                  color: AppColors.surface,
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                   child: Text(
-                    _faqAnswer(l10n, index),
+                    _faqs(l10n)[index].answer,
                     style: const TextStyle(
-                      color: AppColors.permissionsSecondary,
-                      fontSize: 13,
-                      height: 1.45,
+                      color: AppColors.permissionsHeader,
+                      fontSize: 14,
+                      height: 1.5,
                     ),
                   ),
                 )
@@ -453,24 +582,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
         ),
       ],
     );
-  }
-
-  String _faqQuestion(AppLocalizations l10n, int index) {
-    return switch (HelpSupportData.faqIds[index]) {
-      'doseTime' => l10n.faqQ1,
-      'reminder' => l10n.faqQ2,
-      'caregiverAlerts' => l10n.faqQ3,
-      _ => l10n.faqQ4,
-    };
-  }
-
-  String _faqAnswer(AppLocalizations l10n, int index) {
-    return switch (HelpSupportData.faqIds[index]) {
-      'doseTime' => l10n.faqA1,
-      'reminder' => l10n.faqA2,
-      'caregiverAlerts' => l10n.faqA3,
-      _ => l10n.faqA4,
-    };
   }
 
   // ============================================================
@@ -568,7 +679,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
               size: 20,
               color: AppColors.permissionsSecondary,
             ),
-            onTap: () => _onEmailTap(l10n),
+            onTap: _onSubmitRequestTap,
           ),
         ],
       ),
@@ -706,7 +817,10 @@ class _HelpSupportScreenState extends State<HelpSupportScreen>
     return Column(
       children: [
         Text(
-          l10n.helpSupportVersion,
+          l10n.helpSupportVersion(
+            AppInfoService.instance.version,
+            AppInfoService.instance.buildNumber,
+          ),
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: AppColors.permissionsSecondary,

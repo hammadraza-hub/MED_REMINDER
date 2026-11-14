@@ -444,6 +444,74 @@ service cloud.firestore {
         ]);
     }
 
+    // M14 step 4: account deletion request / cancel.
+    // The user may ONLY set deletionRequestedAt to the server time
+    // (request) or remove it (cancel), together with updatedAt.
+    // Nothing else may change in the same write.
+    function validDeletionChange() {
+      let data = request.resource.data;
+      let changed = data.diff(resource.data).affectedKeys();
+
+      return changed.hasOnly(['deletionRequestedAt', 'updatedAt'])
+        && changed.hasAny(['deletionRequestedAt'])
+        && (
+          !('deletionRequestedAt' in data)
+          || data.deletionRequestedAt == request.time
+        );
+    }
+
+    // M14 step 5: account purge. Data may be deleted by its owner only
+    // after the user asked for deletion AND the 7-day grace period is over
+    // (users/{uid}.deletionRequestedAt + 7 days <= request.time).
+    // Keep the 7 in sync with AccountDeletionPolicy.graceDays in the app.
+    function accountDeletionDue() {
+      let u = get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data;
+
+      return u.get('deletionRequestedAt', null) != null
+        && request.time >= u.deletionRequestedAt + duration.value(7, 'd');
+    }
+
+    function canPurgeProfile(profileId) {
+      return isOwner(profileId) && accountDeletionDue();
+    }
+
+    // M14 step 6: a member (not the owner) may remove THEIR OWN access from a
+    // profile — needed when they delete their account. Exactly their uid may
+    // disappear from memberUids / healthUids / roles / permissions; nothing
+    // else may change and nobody else's access is touched.
+    function validSelfLeave() {
+      let uid = request.auth.uid;
+      let before = resource.data;
+      let after = request.resource.data;
+      let changed = after.diff(before).affectedKeys();
+
+      return signedIn()
+        && uid in before.memberUids
+        && before.ownerUid != uid
+        && changed.hasOnly([
+          'memberUids', 'healthUids', 'roles', 'permissions', 'updatedAt'
+        ])
+        && changed.hasAny(['memberUids'])
+
+        && !(uid in after.memberUids)
+        && after.memberUids.hasOnly(before.memberUids)
+        && after.memberUids.size() == before.memberUids.size() - 1
+
+        && !(uid in after.healthUids)
+        && after.healthUids.hasOnly(before.healthUids)
+        && after.healthUids.size() >= before.healthUids.size() - 1
+
+        && !(uid in after.roles)
+        && after.roles.diff(before.roles).affectedKeys().hasOnly([uid])
+
+        && !(uid in after.permissions)
+        && after.permissions.diff(before.permissions).affectedKeys().hasOnly([uid])
+
+        && (!('updatedAt' in after) || after.updatedAt == request.time);
+    }
+
     // =====================================
     // USERS
     // =====================================
@@ -463,9 +531,12 @@ service cloud.firestore {
       // Sensitive fields (plan, role, deletionRequestedAt) are blocked
       allow update: if signedIn()
         && request.auth.uid == uid
-        && validUserUpdate();
+        && (validUserUpdate() || validDeletionChange());
 
-      allow delete: if false;
+      // M14 step 5: only after the grace period (accountDeletionDue)
+      allow delete: if signedIn()
+        && request.auth.uid == uid
+        && accountDeletionDue();
 
       match /devices/{deviceId} {
 
@@ -490,6 +561,56 @@ service cloud.firestore {
     }
 
     // =====================================
+    // CONFIG (M13 step 4 — FAQ and other remote content)
+    // =====================================
+
+    match /config/{docId} {
+
+      // Signed-in users can read app content such as config/faq.
+      allow read: if signedIn();
+
+      // Edited only from the Firebase console / Admin SDK.
+      allow write: if false;
+    }
+
+    // =====================================
+    // SUPPORT TICKETS (M13 step 5)
+    // =====================================
+
+    // A ticket may only be created by its owner, with exactly the expected
+    // fields and sane sizes. createdAt must be the server time.
+    function validTicketCreate() {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'uid', 'subject', 'body', 'appVersion', 'device',
+          'locale', 'status', 'createdAt'
+        ])
+        && d.keys().hasAll([
+          'uid', 'subject', 'body', 'appVersion', 'device',
+          'status', 'createdAt'
+        ])
+        && d.uid == request.auth.uid
+        && d.subject is string && d.subject.size() >= 1 && d.subject.size() <= 120
+        && d.body is string && d.body.size() >= 1 && d.body.size() <= 2000
+        && d.appVersion is string && d.appVersion.size() <= 40
+        && d.device is string && d.device.size() <= 120
+        && (!('locale' in d) || (d.locale is string && d.locale.size() <= 10))
+        && d.status == 'open'
+        && d.createdAt == request.time;
+    }
+
+    match /supportTickets/{ticketId} {
+
+      allow create: if signedIn() && validTicketCreate();
+
+      // Users can read only their own tickets (support staff use the console).
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+
+      // Tickets are immutable from the client.
+      allow update, delete: if false;
+    }
+
+    // =====================================
     // PATIENT PROFILES
     // =====================================
 
@@ -503,10 +624,12 @@ service cloud.firestore {
       allow get: if isMember(profileId);
       allow list: if signedIn();
 
-      allow update: if isOwner(profileId)
-        && validProfileUpdate();
+      allow update: if (isOwner(profileId)
+        && validProfileUpdate())
+        || validSelfLeave();
 
-      allow delete: if false;
+      // M14 step 5: owner purge after the grace period
+      allow delete: if canPurgeProfile(profileId);
 
       // =====================================
       // MEDICATIONS (M5)
@@ -532,7 +655,8 @@ service cloud.firestore {
 
         // M5: "Archive, never delete." — deletion not allowed
         // (use archiveMedication method to discontinue)
-        allow delete: if false;
+        // Exception (M14 step 5): account purge after the grace period.
+        allow delete: if canPurgeProfile(profileId);
 
         match /inventoryEvents/{eventId} {
 
@@ -541,7 +665,10 @@ service cloud.firestore {
           allow create:
             if canEditMedications(profileId);
 
-          allow update, delete: if false;
+          allow update: if false;
+
+          // M14 step 5: account purge only
+          allow delete: if canPurgeProfile(profileId);
         }
       }
 
@@ -550,7 +677,7 @@ service cloud.firestore {
         allow read: if isMember(profileId);
         allow create: if canEditMedications(profileId);
         allow update: if canEditMedications(profileId);
-        allow delete: if false;
+        allow delete: if canPurgeProfile(profileId);
       }
 
       // =====================================
@@ -575,8 +702,9 @@ service cloud.firestore {
 
         // M7: Delete — only canEditMedications, and only for pending doses
         // (logged history stays — never delete taken/skipped/missed)
-        allow delete: if canEditMedications(profileId)
-          && resource.data.status == 'pending';
+        allow delete: if (canEditMedications(profileId)
+          && resource.data.status == 'pending')
+          || canPurgeProfile(profileId);
       }
 
       // =====================================
@@ -588,6 +716,9 @@ service cloud.firestore {
         allow read: if isMember(profileId);
 
         allow write: if false;
+
+        // M14 step 5: account purge only
+        allow delete: if canPurgeProfile(profileId);
       }
 
       // =====================================
@@ -625,6 +756,19 @@ service cloud.firestore {
           ];
 
         allow write: if false;
+
+        // M14 step 5: account purge only
+        allow delete: if canPurgeProfile(profileId)
+          && collection in [
+            'allergies',
+            'safetyWarnings',
+            'vitals',
+            'vitalsDaily',
+            'symptoms',
+            'prescribers',
+            'appointments',
+            'doctorNotes'
+          ];
       }
     }
 

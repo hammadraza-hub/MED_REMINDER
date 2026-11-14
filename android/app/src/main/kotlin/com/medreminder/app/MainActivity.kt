@@ -1,6 +1,7 @@
 package com.medreminder.app
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// FragmentActivity is required by local_auth (biometric app lock, M13 step 6).
+class MainActivity : FlutterFragmentActivity()
 
