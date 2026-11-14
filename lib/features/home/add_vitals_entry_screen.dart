@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/profile/profile_controller.dart';
+import '../../core/vitals/vital_input.dart';
+import '../../core/vitals/vital_models.dart';
+import '../../core/vitals/vital_types.dart';
+import '../../l10n/app_localizations.dart';
+import '../../repositories/firebase_vitals_repository.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
@@ -24,11 +31,13 @@ import 'home_data.dart';
 /// Vitals List → + → Log Vitals
 /// Save → result return → Vitals List
 ///
-/// TODO Backend:
-/// - memberId/current user ke against Firestore entry create karna.
-/// - serverTimestamp / measurement timestamp save karna.
-/// - Vitals List ko realtime stream se refresh karna.
-/// - Caregiver/provider sync backend se karna.
+/// M15 step 4:
+/// Save writes a real reading to profiles/{memberId}/vitals through
+/// [FirebaseVitalsRepository] (rules validate it again). Nothing is
+/// pre-filled: the user must type the value, so a dummy number can never be
+/// saved by accident. "Last" shows the real latest reading, if any.
+///
+/// TODO (step 5): Vitals List / Chart still show dummy data.
 /// ============================================================
 class AddVitalsEntryScreen extends StatefulWidget {
   const AddVitalsEntryScreen({
@@ -55,6 +64,9 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
 
   bool _isSaving = false;
 
+  /// Latest saved reading of the selected type (null = none / not loaded).
+  VitalReading? _previous;
+
   @override
   void initState() {
     super.initState();
@@ -64,9 +76,10 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
 
     _primaryController = TextEditingController();
     _secondaryController = TextEditingController();
-    _pulseController = TextEditingController(text: '72');
+    _pulseController = TextEditingController();
 
     _applyDefaults();
+    _loadPrevious();
   }
 
   @override
@@ -81,10 +94,57 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
   // ================= DEFAULTS =================
 
   void _applyDefaults() {
-    _primaryController.text = AddVitalsEntryData.primaryDefault(_selectedType);
+    // Nothing is pre-filled: a health reading must be typed by the user.
+    _primaryController.clear();
+    _secondaryController.clear();
+    _pulseController.clear();
+  }
 
-    _secondaryController.text =
-        AddVitalsEntryData.secondaryDefault(_selectedType) ?? '';
+  VitalKind get _selectedKind => _kindFor(_selectedType);
+
+  static VitalKind _kindFor(AddVitalType type) {
+    switch (type) {
+      case AddVitalType.bloodPressure:
+        return VitalKind.bloodPressure;
+      case AddVitalType.glucose:
+        return VitalKind.glucose;
+      case AddVitalType.weight:
+        return VitalKind.weight;
+      case AddVitalType.heartRate:
+        return VitalKind.heartRate;
+    }
+  }
+
+  /// Loads the real latest reading for "Last: ..." (silent on failure).
+  Future<void> _loadPrevious() async {
+    final memberId = ProfileController.instance.memberId;
+    final kind = _selectedKind;
+    if (memberId == null || memberId.isEmpty) return;
+
+    VitalReading? latest;
+    try {
+      latest = await FirebaseVitalsRepository.instance.latest(memberId, kind);
+    } catch (e) {
+      debugPrint('Add vitals: could not load last reading — $e');
+    }
+    // The user may have switched type while this was loading.
+    if (!mounted || kind != _selectedKind) return;
+    setState(() => _previous = latest);
+  }
+
+  String? _previousText(AppLocalizations l10n) {
+    final prev = _previous;
+    if (prev == null) return null;
+
+    final value = prev.kind == VitalKind.bloodPressure && prev.value2 != null
+        ? '${VitalInput.formatNumber(prev.value)}/'
+              '${VitalInput.formatNumber(prev.value2!)}'
+        : VitalInput.formatNumber(prev.value);
+    return l10n.vitalsLast(
+      value,
+      prev.unit,
+      _formatPreviousTime(prev.measuredAt),
+    );
   }
 
   void _changeVitalType(AddVitalType type) {
@@ -92,8 +152,10 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
 
     setState(() {
       _selectedType = type;
+      _previous = null;
       _applyDefaults();
     });
+    _loadPrevious();
   }
 
   // ================= NAVIGATION =================
@@ -109,73 +171,88 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
 
   Future<void> _saveEntry() async {
     if (_isSaving) return;
+    final l10n = AppLocalizations.of(context);
 
-    final primary = double.tryParse(_primaryController.text.trim());
-
-    if (primary == null || primary <= 0) {
-      _showMessage(
-        'Please enter a valid ${AddVitalsEntryData.titleFor(_selectedType).toLowerCase()} value.',
-      );
+    final parsed = VitalInput.parse(
+      kind: _selectedKind,
+      primaryText: _primaryController.text,
+      secondaryText: _secondaryController.text,
+      pulseText: _pulseController.text,
+      measuredAt: _measurementTime,
+    );
+    final reading = parsed.reading;
+    if (reading == null) {
+      _showMessage(_issueMessage(l10n, parsed.issue!));
       return;
     }
 
-    double? secondary;
-
-    if (_selectedType == AddVitalType.bloodPressure) {
-      secondary = double.tryParse(_secondaryController.text.trim());
-
-      if (secondary == null || secondary <= 0) {
-        _showMessage('Please enter a valid diastolic value.');
-        return;
-      }
-    }
-
-    int? pulse;
-
-    if (_selectedType == AddVitalType.bloodPressure) {
-      pulse = int.tryParse(_pulseController.text.trim());
-
-      if (pulse == null || pulse <= 0) {
-        _showMessage('Please enter a valid pulse.');
-        return;
-      }
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) {
+      _showMessage(l10n.vitalsErrNoProfile);
+      return;
     }
 
     setState(() => _isSaving = true);
 
     try {
-      // TODO Backend:
-      // Firestore example architecture:
-      //
-      // users/{uid}/members/{memberId}/vitalEntries/{entryId}
-      //
-      // Fields:
-      // type
-      // primaryValue
-      // secondaryValue
-      // pulse
-      // measuredAt
-      // createdAt: serverTimestamp()
-      //
-      // memberId use karein, sirf userName nahi.
-
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-
+      final saved = await FirebaseVitalsRepository.instance.addManual(
+        memberId,
+        reading,
+      );
       if (!mounted) return;
 
-      final result = AddVitalsEntryResult(
-        type: _selectedType,
-        recordedAt: _measurementTime,
-        primaryValue: primary,
-        secondaryValue: secondary,
-        pulse: pulse,
+      Navigator.of(context).pop(
+        AddVitalsEntryResult(
+          type: _selectedType,
+          recordedAt: saved.measuredAt,
+          primaryValue: saved.value,
+          secondaryValue: saved.value2,
+          pulse: saved.pulse?.round(),
+        ),
       );
-
-      Navigator.of(context).pop(result);
+    } on AppException catch (e) {
+      debugPrint('Add vitals: save failed (${e.type}) — ${e.message}');
+      if (mounted) {
+        _showMessage(
+          e.type == AppExceptionType.permission
+              ? l10n.vitalsSavePermission
+              : l10n.vitalsSaveFailed,
+        );
+      }
+    } catch (e) {
+      debugPrint('Add vitals: save failed — $e');
+      if (mounted) _showMessage(l10n.vitalsSaveFailed);
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
       }
+    }
+  }
+
+  String _issueMessage(AppLocalizations l10n, VitalInputIssue issue) {
+    String n(double? v) => v == null ? '' : VitalInput.formatNumber(v);
+
+    switch (issue.problem) {
+      case VitalInputProblem.empty:
+        return l10n.vitalsErrEmpty;
+      case VitalInputProblem.notANumber:
+        return l10n.vitalsErrNotNumber;
+      case VitalInputProblem.range:
+        return l10n.vitalsErrRange(
+          n(issue.min),
+          n(issue.max),
+          AddVitalsEntryData.unitFor(_selectedType),
+        );
+      case VitalInputProblem.diastolicMissing:
+        return l10n.vitalsErrDiastolicMissing;
+      case VitalInputProblem.diastolicRange:
+        return l10n.vitalsErrDiastolicRange(n(issue.min), n(issue.max));
+      case VitalInputProblem.diastolicNotLower:
+        return l10n.vitalsErrDiastolicNotLower;
+      case VitalInputProblem.pulseRange:
+        return l10n.vitalsErrPulseRange(n(issue.min), n(issue.max));
+      case VitalInputProblem.timeInFuture:
+        return l10n.vitalsErrFuture;
     }
   }
 
@@ -422,7 +499,7 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
   // ================= VALUES =================
 
   Widget _buildValueSection() {
-    final previous = AddVitalsEntryData.previousReading(_selectedType);
+    final lastText = _previousText(AppLocalizations.of(context));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,16 +561,17 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
 
         Row(
           children: [
-            const Icon(
-              Icons.history_rounded,
-              color: AppColors.formAccent,
-              size: 15,
-            ),
-            const SizedBox(width: 5),
+            if (lastText != null) ...[
+              const Icon(
+                Icons.history_rounded,
+                color: AppColors.formAccent,
+                size: 15,
+              ),
+              const SizedBox(width: 5),
+            ],
             Expanded(
               child: Text(
-                'Last: ${previous.value} ${previous.unit} '
-                '(${_formatPreviousTime(previous.recordedAt)})',
+                lastText ?? '',
                 style: const TextStyle(
                   color: AppColors.formSubtitle,
                   fontSize: 11,
@@ -556,6 +634,7 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
                     border: InputBorder.none,
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
+                    hintText: '--',
                   ),
                   onChanged: (_) {
                     setState(() {});
@@ -691,6 +770,7 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
+                          hintText: '--',
                         ),
                       ),
                     ),
@@ -714,8 +794,8 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
               color: AppColors.successBackground,
               borderRadius: BorderRadius.circular(9),
             ),
-            child: const Text(
-              'Auto-filled',
+            child: Text(
+              AppLocalizations.of(context).vitalsOptional,
               style: TextStyle(
                 color: AppColors.success,
                 fontSize: 11,

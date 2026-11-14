@@ -908,6 +908,246 @@ abstract class AppLocalizations {
   /// **'Manage subscription'**
   String get accountDeleteSubscriptionButton;
 
+  /// No description provided for @vitalsErrEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a value.'**
+  String get vitalsErrEmpty;
+
+  /// No description provided for @vitalsErrNotNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid number.'**
+  String get vitalsErrNotNumber;
+
+  /// No description provided for @vitalsErrRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Value must be between {min} and {max} {unit}.'**
+  String vitalsErrRange(String min, String max, String unit);
+
+  /// No description provided for @vitalsErrDiastolicMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the diastolic (bottom) value.'**
+  String get vitalsErrDiastolicMissing;
+
+  /// No description provided for @vitalsErrDiastolicRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Diastolic must be between {min} and {max} mmHg.'**
+  String vitalsErrDiastolicRange(String min, String max);
+
+  /// No description provided for @vitalsErrDiastolicNotLower.
+  ///
+  /// In en, this message translates to:
+  /// **'Diastolic must be lower than systolic.'**
+  String get vitalsErrDiastolicNotLower;
+
+  /// No description provided for @vitalsErrPulseRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulse must be between {min} and {max} bpm.'**
+  String vitalsErrPulseRange(String min, String max);
+
+  /// No description provided for @vitalsErrFuture.
+  ///
+  /// In en, this message translates to:
+  /// **'The time cannot be in the future.'**
+  String get vitalsErrFuture;
+
+  /// No description provided for @vitalsErrNoProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'No profile is selected. Please go back and try again.'**
+  String get vitalsErrNoProfile;
+
+  /// No description provided for @vitalsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the reading. Check your connection and try again.'**
+  String get vitalsSaveFailed;
+
+  /// No description provided for @vitalsSavePermission.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have permission to add readings for this profile.'**
+  String get vitalsSavePermission;
+
+  /// No description provided for @vitalsOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get vitalsOptional;
+
+  /// No description provided for @vitalsLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Last: {value} {unit} ({when})'**
+  String vitalsLast(String value, String unit, String when);
+
+  /// No description provided for @vitalsNoReadings.
+  ///
+  /// In en, this message translates to:
+  /// **'No readings yet. Tap + to log your first one.'**
+  String get vitalsNoReadings;
+
+  /// No description provided for @vitalsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load readings. Check your connection and try again.'**
+  String get vitalsLoadFailed;
+
+  /// No description provided for @vitalsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get vitalsRetry;
+
+  /// No description provided for @vitalsLoggedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {total} metrics logged today'**
+  String vitalsLoggedToday(int count, int total);
+
+  /// No description provided for @symptomNoMedication.
+  ///
+  /// In en, this message translates to:
+  /// **'No medication linked'**
+  String get symptomNoMedication;
+
+  /// No description provided for @symptomPrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible only to people with health access to this profile'**
+  String get symptomPrivacyNote;
+
+  /// No description provided for @healthSyncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync health data'**
+  String get healthSyncTitle;
+
+  /// No description provided for @healthSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import blood pressure, glucose, weight and heart rate from {app}.'**
+  String healthSyncSubtitle(String app);
+
+  /// No description provided for @healthSyncButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get healthSyncButton;
+
+  /// No description provided for @healthSyncLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sync: {when}'**
+  String healthSyncLast(String when);
+
+  /// No description provided for @healthSyncNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Not synced yet'**
+  String get healthSyncNever;
+
+  /// No description provided for @healthSyncDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 new reading imported} other{{count} new readings imported}}'**
+  String healthSyncDone(int count);
+
+  /// No description provided for @healthSyncNothingNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Already up to date'**
+  String get healthSyncNothingNew;
+
+  /// No description provided for @healthSyncProOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Health sync is part of the Pro plan.'**
+  String get healthSyncProOnly;
+
+  /// No description provided for @healthSyncSeePlans.
+  ///
+  /// In en, this message translates to:
+  /// **'See plans'**
+  String get healthSyncSeePlans;
+
+  /// No description provided for @healthSyncDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission was not granted. You can allow access in {app}.'**
+  String healthSyncDenied(String app);
+
+  /// No description provided for @healthSyncUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{app} is not available on this device.'**
+  String healthSyncUnavailable(String app);
+
+  /// No description provided for @healthSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync failed. Check your connection and try again.'**
+  String get healthSyncFailed;
+
+  /// No description provided for @symptomSelectMedication.
+  ///
+  /// In en, this message translates to:
+  /// **'Select medication (optional)'**
+  String get symptomSelectMedication;
+
+  /// No description provided for @symptomNoMedicationsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No medications found for this profile.'**
+  String get symptomNoMedicationsFound;
+
+  /// No description provided for @symptomErrNameEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a symptom name.'**
+  String get symptomErrNameEmpty;
+
+  /// No description provided for @symptomErrNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'The symptom name is too long (max {max} characters).'**
+  String symptomErrNameTooLong(int max);
+
+  /// No description provided for @symptomErrNotesTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'The notes are too long (max {max} characters).'**
+  String symptomErrNotesTooLong(int max);
+
+  /// No description provided for @symptomSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the symptom. Check your connection and try again.'**
+  String get symptomSaveFailed;
+
+  /// No description provided for @symptomSavePermission.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have permission to add symptoms for this profile.'**
+  String get symptomSavePermission;
+
+  /// No description provided for @symptomRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Symptom recorded'**
+  String get symptomRecorded;
+
+  /// No description provided for @symptomRecordedFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Symptom recorded for {name}'**
+  String symptomRecordedFor(String name);
+
   /// No description provided for @dataExportLastExportNever.
   ///
   /// In en, this message translates to:

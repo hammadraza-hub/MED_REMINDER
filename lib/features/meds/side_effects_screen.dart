@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
+import '../../l10n/app_localizations.dart';
+import '../../repositories/medication_repository.dart';
+import '../../repositories/firebase_symptom_repository.dart';
 import '../../widgets/app_avatar.dart';
 import 'add_symptom_screen.dart';
 import 'side_effects_data.dart';
@@ -34,6 +37,9 @@ class SideEffectsScreen extends StatefulWidget {
 class _SideEffectsScreenState extends State<SideEffectsScreen> {
   List<SideEffectEntry> _entries = [];
 
+  bool _loading = true;
+  bool _loadFailed = false;
+
   @override
   void initState() {
     super.initState();
@@ -42,28 +48,57 @@ class _SideEffectsScreenState extends State<SideEffectsScreen> {
   }
 
   // ============================================================
-  // DATA
+  // DATA — profiles/{memberId}/symptoms (M15 step 6)
   // ============================================================
 
-  void _loadEntries() {
+  Future<void> _loadEntries() async {
     final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
 
-    setState(() {
-      _entries = SideEffectsData.entriesFor(memberId);
-    });
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _loadFailed = false;
+      });
+    }
+
+    try {
+      final symptoms = await FirebaseSymptomRepository.instance.list(memberId);
+
+      // Medication names are only labels: if they cannot be loaded the
+      // symptoms are still shown, just without the medication line.
+      final labels = <String, MedicationLabel>{};
+      try {
+        // Active and archived: a symptom may point at a discontinued one.
+        final meds = await MedicationRepository.instance
+            .watchAllMedications(memberId)
+            .first;
+        for (final m in meds) {
+          labels[m.id] = (name: m.name, strength: m.strength ?? '');
+        }
+      } catch (e) {
+        debugPrint('Side effects: could not load medication names — $e');
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _entries = SideEffectsData.fromSymptoms(symptoms, labels);
+        _loading = false;
+      });
+    } catch (e) {
+      debugPrint('Side effects: could not load symptoms — $e');
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadFailed = true;
+      });
+    }
   }
 
-  int get _entriesThisMonthCount {
-    final now = DateTime.now();
-
-    return _entries
-        .where(
-          (entry) =>
-              entry.recordedAt.year == now.year &&
-              entry.recordedAt.month == now.month,
-        )
-        .length;
-  }
+  int get _entriesThisMonthCount => SideEffectsData.countThisMonth(_entries);
 
   // ============================================================
   // ACTIONS
@@ -75,9 +110,9 @@ class _SideEffectsScreenState extends State<SideEffectsScreen> {
   }
 
   void _addSymptom() async {
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const AddSymptomScreen()),
-    );
+    final saved = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const AddSymptomScreen()));
 
     // Save toast ke baad screen pop(true) karti hai → list refresh.
     if (saved == true && mounted) {
@@ -183,7 +218,16 @@ class _SideEffectsScreenState extends State<SideEffectsScreen> {
 
           const SizedBox(height: 14),
 
-          if (_entries.isEmpty)
+          if (_loading && _entries.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 50),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.formAccent),
+              ),
+            )
+          else if (_loadFailed)
+            _buildLoadFailed()
+          else if (_entries.isEmpty)
             _buildEmptyState()
           else
             ..._entries.map(
@@ -304,7 +348,9 @@ class _SideEffectsScreenState extends State<SideEffectsScreen> {
                       const SizedBox(height: 3),
 
                       Text(
-                        '${entry.medicationName} ${entry.medicationStrength}',
+                        entry.medicationLabel.isEmpty
+                            ? AppLocalizations.of(context).symptomNoMedication
+                            : entry.medicationLabel,
                         style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 11.5,
@@ -546,9 +592,15 @@ class _SideEffectsScreenState extends State<SideEffectsScreen> {
 
             const SizedBox(width: 4),
 
-            Text(
-              'Private & encrypted on this device',
-              style: TextStyle(color: AppColors.fieldHint, fontSize: 10.5),
+            Flexible(
+              child: Text(
+                AppLocalizations.of(context).symptomPrivacyNote,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.fieldHint,
+                  fontSize: 10.5,
+                ),
+              ),
             ),
           ],
         ),
@@ -559,6 +611,31 @@ class _SideEffectsScreenState extends State<SideEffectsScreen> {
   // ============================================================
   // EMPTY STATE
   // ============================================================
+
+  Widget _buildLoadFailed() {
+    final l10n = AppLocalizations.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            l10n.vitalsLoadFailed,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(onPressed: _loadEntries, child: Text(l10n.vitalsRetry)),
+        ],
+      ),
+    );
+  }
 
   Widget _buildEmptyState() {
     return Container(

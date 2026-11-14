@@ -484,6 +484,170 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDeleteSubscriptionButton => 'Manage subscription';
 
   @override
+  String get vitalsErrEmpty => 'Please enter a value.';
+
+  @override
+  String get vitalsErrNotNumber => 'Please enter a valid number.';
+
+  @override
+  String vitalsErrRange(String min, String max, String unit) {
+    return 'Value must be between $min and $max $unit.';
+  }
+
+  @override
+  String get vitalsErrDiastolicMissing =>
+      'Please enter the diastolic (bottom) value.';
+
+  @override
+  String vitalsErrDiastolicRange(String min, String max) {
+    return 'Diastolic must be between $min and $max mmHg.';
+  }
+
+  @override
+  String get vitalsErrDiastolicNotLower =>
+      'Diastolic must be lower than systolic.';
+
+  @override
+  String vitalsErrPulseRange(String min, String max) {
+    return 'Pulse must be between $min and $max bpm.';
+  }
+
+  @override
+  String get vitalsErrFuture => 'The time cannot be in the future.';
+
+  @override
+  String get vitalsErrNoProfile =>
+      'No profile is selected. Please go back and try again.';
+
+  @override
+  String get vitalsSaveFailed =>
+      'Could not save the reading. Check your connection and try again.';
+
+  @override
+  String get vitalsSavePermission =>
+      'You do not have permission to add readings for this profile.';
+
+  @override
+  String get vitalsOptional => 'Optional';
+
+  @override
+  String vitalsLast(String value, String unit, String when) {
+    return 'Last: $value $unit ($when)';
+  }
+
+  @override
+  String get vitalsNoReadings =>
+      'No readings yet. Tap + to log your first one.';
+
+  @override
+  String get vitalsLoadFailed =>
+      'Could not load readings. Check your connection and try again.';
+
+  @override
+  String get vitalsRetry => 'Try Again';
+
+  @override
+  String vitalsLoggedToday(int count, int total) {
+    return '$count of $total metrics logged today';
+  }
+
+  @override
+  String get symptomNoMedication => 'No medication linked';
+
+  @override
+  String get symptomPrivacyNote =>
+      'Visible only to people with health access to this profile';
+
+  @override
+  String get healthSyncTitle => 'Sync health data';
+
+  @override
+  String healthSyncSubtitle(String app) {
+    return 'Import blood pressure, glucose, weight and heart rate from $app.';
+  }
+
+  @override
+  String get healthSyncButton => 'Sync now';
+
+  @override
+  String healthSyncLast(String when) {
+    return 'Last sync: $when';
+  }
+
+  @override
+  String get healthSyncNever => 'Not synced yet';
+
+  @override
+  String healthSyncDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new readings imported',
+      one: '1 new reading imported',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get healthSyncNothingNew => 'Already up to date';
+
+  @override
+  String get healthSyncProOnly => 'Health sync is part of the Pro plan.';
+
+  @override
+  String get healthSyncSeePlans => 'See plans';
+
+  @override
+  String healthSyncDenied(String app) {
+    return 'Permission was not granted. You can allow access in $app.';
+  }
+
+  @override
+  String healthSyncUnavailable(String app) {
+    return '$app is not available on this device.';
+  }
+
+  @override
+  String get healthSyncFailed =>
+      'Sync failed. Check your connection and try again.';
+
+  @override
+  String get symptomSelectMedication => 'Select medication (optional)';
+
+  @override
+  String get symptomNoMedicationsFound =>
+      'No medications found for this profile.';
+
+  @override
+  String get symptomErrNameEmpty => 'Please enter a symptom name.';
+
+  @override
+  String symptomErrNameTooLong(int max) {
+    return 'The symptom name is too long (max $max characters).';
+  }
+
+  @override
+  String symptomErrNotesTooLong(int max) {
+    return 'The notes are too long (max $max characters).';
+  }
+
+  @override
+  String get symptomSaveFailed =>
+      'Could not save the symptom. Check your connection and try again.';
+
+  @override
+  String get symptomSavePermission =>
+      'You do not have permission to add symptoms for this profile.';
+
+  @override
+  String get symptomRecorded => 'Symptom recorded';
+
+  @override
+  String symptomRecordedFor(String name) {
+    return 'Symptom recorded for $name';
+  }
+
+  @override
   String get dataExportLastExportNever => 'Last export: Never';
 
   @override

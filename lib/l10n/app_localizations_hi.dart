@@ -481,6 +481,170 @@ class AppLocalizationsHi extends AppLocalizations {
   String get accountDeleteSubscriptionButton => 'सदस्यता प्रबंधित करें';
 
   @override
+  String get vitalsErrEmpty => 'कृपया एक मान दर्ज करें।';
+
+  @override
+  String get vitalsErrNotNumber => 'कृपया सही संख्या दर्ज करें।';
+
+  @override
+  String vitalsErrRange(String min, String max, String unit) {
+    return 'मान $min और $max $unit के बीच होना चाहिए।';
+  }
+
+  @override
+  String get vitalsErrDiastolicMissing =>
+      'कृपया डायस्टोलिक (नीचे वाला) मान दर्ज करें।';
+
+  @override
+  String vitalsErrDiastolicRange(String min, String max) {
+    return 'डायस्टोलिक $min और $max mmHg के बीच होना चाहिए।';
+  }
+
+  @override
+  String get vitalsErrDiastolicNotLower =>
+      'डायस्टोलिक, सिस्टोलिक से कम होना चाहिए।';
+
+  @override
+  String vitalsErrPulseRange(String min, String max) {
+    return 'पल्स $min और $max bpm के बीच होनी चाहिए।';
+  }
+
+  @override
+  String get vitalsErrFuture => 'समय भविष्य का नहीं हो सकता।';
+
+  @override
+  String get vitalsErrNoProfile =>
+      'कोई प्रोफ़ाइल चुनी नहीं गई है। वापस जाकर दोबारा कोशिश करें।';
+
+  @override
+  String get vitalsSaveFailed =>
+      'रीडिंग सेव नहीं हो सकी। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get vitalsSavePermission =>
+      'इस प्रोफ़ाइल के लिए रीडिंग जोड़ने की आपको अनुमति नहीं है।';
+
+  @override
+  String get vitalsOptional => 'वैकल्पिक';
+
+  @override
+  String vitalsLast(String value, String unit, String when) {
+    return 'पिछली: $value $unit ($when)';
+  }
+
+  @override
+  String get vitalsNoReadings =>
+      'अभी कोई रीडिंग नहीं है। पहली रीडिंग जोड़ने के लिए + दबाएँ।';
+
+  @override
+  String get vitalsLoadFailed =>
+      'रीडिंग लोड नहीं हो सकीं। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get vitalsRetry => 'दोबारा कोशिश करें';
+
+  @override
+  String vitalsLoggedToday(int count, int total) {
+    return 'आज $total में से $count मेट्रिक दर्ज हुए';
+  }
+
+  @override
+  String get symptomNoMedication => 'कोई दवा लिंक नहीं है';
+
+  @override
+  String get symptomPrivacyNote =>
+      'केवल उन लोगों को दिखता है जिन्हें इस प्रोफ़ाइल के स्वास्थ्य डेटा की पहुँच है';
+
+  @override
+  String get healthSyncTitle => 'स्वास्थ्य डेटा सिंक करें';
+
+  @override
+  String healthSyncSubtitle(String app) {
+    return '$app से ब्लड प्रेशर, ग्लूकोज़, वज़न और हार्ट रेट इम्पोर्ट करें।';
+  }
+
+  @override
+  String get healthSyncButton => 'अभी सिंक करें';
+
+  @override
+  String healthSyncLast(String when) {
+    return 'पिछला सिंक: $when';
+  }
+
+  @override
+  String get healthSyncNever => 'अभी तक सिंक नहीं हुआ';
+
+  @override
+  String healthSyncDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count नई रीडिंग इम्पोर्ट हुईं',
+      one: '1 नई रीडिंग इम्पोर्ट हुई',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get healthSyncNothingNew => 'पहले से अप-टू-डेट';
+
+  @override
+  String get healthSyncProOnly => 'स्वास्थ्य सिंक Pro प्लान का हिस्सा है।';
+
+  @override
+  String get healthSyncSeePlans => 'प्लान देखें';
+
+  @override
+  String healthSyncDenied(String app) {
+    return 'अनुमति नहीं मिली। आप $app में एक्सेस की अनुमति दे सकते हैं।';
+  }
+
+  @override
+  String healthSyncUnavailable(String app) {
+    return '$app इस डिवाइस पर उपलब्ध नहीं है।';
+  }
+
+  @override
+  String get healthSyncFailed =>
+      'सिंक नहीं हो सका। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get symptomSelectMedication => 'दवा चुनें (वैकल्पिक)';
+
+  @override
+  String get symptomNoMedicationsFound =>
+      'इस प्रोफ़ाइल के लिए कोई दवा नहीं मिली।';
+
+  @override
+  String get symptomErrNameEmpty => 'कृपया लक्षण का नाम दर्ज करें।';
+
+  @override
+  String symptomErrNameTooLong(int max) {
+    return 'लक्षण का नाम बहुत लंबा है (अधिकतम $max अक्षर)।';
+  }
+
+  @override
+  String symptomErrNotesTooLong(int max) {
+    return 'नोट्स बहुत लंबे हैं (अधिकतम $max अक्षर)।';
+  }
+
+  @override
+  String get symptomSaveFailed =>
+      'लक्षण सेव नहीं हो सका। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get symptomSavePermission =>
+      'इस प्रोफ़ाइल के लिए लक्षण जोड़ने की आपको अनुमति नहीं है।';
+
+  @override
+  String get symptomRecorded => 'लक्षण दर्ज हुआ';
+
+  @override
+  String symptomRecordedFor(String name) {
+    return '$name के लिए लक्षण दर्ज हुआ';
+  }
+
+  @override
   String get dataExportLastExportNever => 'अंतिम निर्यात: कभी नहीं';
 
   @override

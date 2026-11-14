@@ -3,13 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
+import '../../core/vitals/symptom_entry.dart';
+import '../../core/vitals/symptom_validator.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
+import '../../models/medication.dart';
+import '../../repositories/medication_repository.dart';
+import '../../repositories/firebase_symptom_repository.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
-import 'meds_data.dart';
-import 'side_effects_data.dart';
 
 /// ============================================================
 /// ADD SYMPTOM — caregiver log entry form
@@ -73,7 +78,12 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
   int _severity = 3;
   int _notesLength = 0;
 
-  late Medicine _selectedMedication;
+  /// Active medications of the selected profile (real data) and the one the
+  /// symptom is linked to. The link is optional, so null is a valid choice.
+  List<Medication> _medications = const [];
+  Medication? _selectedMedication;
+
+  bool _saving = false;
 
   bool _toastVisible = false;
   Timer? _toastTimer;
@@ -90,7 +100,7 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
     _symptomController = TextEditingController(text: _selectedChip);
     _notesController = TextEditingController();
 
-    _selectedMedication = MedsData.medicines().first;
+    _loadMedications();
     _todayLabel = _buildTodayLabel();
 
     _pulseController = AnimationController(
@@ -195,29 +205,92 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _saveSymptom() {
-    final symptom = _symptomController.text.trim();
+  Future<void> _loadMedications() async {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) return;
 
-    if (symptom.isEmpty) {
-      _showMessage('Please enter a symptom name.');
+    try {
+      // Same source as the Meds screen (M5 `status == active`).
+      final meds = await MedicationRepository.instance
+          .watchActiveMedications(memberId)
+          .first;
+      meds.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      if (!mounted) return;
+      setState(() => _medications = meds);
+    } catch (e) {
+      // The link is optional: the screen still works without the list.
+      debugPrint('Add symptom: could not load medications — $e');
+    }
+  }
+
+  Future<void> _saveSymptom() async {
+    if (_saving || _toastVisible) return;
+    final l10n = AppLocalizations.of(context);
+
+    final symptom = _symptomController.text.trim();
+    final note = _notesController.text.trim();
+    final occurredAt = DateTime.now();
+
+    final check = SymptomValidator.validate(
+      name: symptom,
+      severity: _severity,
+      notes: note,
+      occurredAt: occurredAt,
+    );
+    if (!check.isValid) {
+      switch (check.error!) {
+        case SymptomError.nameEmpty:
+          _showMessage(l10n.symptomErrNameEmpty);
+        case SymptomError.nameTooLong:
+          _showMessage(
+            l10n.symptomErrNameTooLong(SymptomValidator.maxNameLength),
+          );
+        case SymptomError.notesTooLong:
+          _showMessage(
+            l10n.symptomErrNotesTooLong(SymptomValidator.maxNotesLength),
+          );
+        case SymptomError.severityOutOfRange:
+        case SymptomError.timeInFuture:
+          _showMessage(l10n.symptomSaveFailed);
+      }
       return;
     }
 
-    final note = _notesController.text.trim();
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) {
+      _showMessage(l10n.vitalsErrNoProfile);
+      return;
+    }
 
-    // TODO Backend:
-    // Firestore side_effects/{id} create with serverTimestamp().
-    // Abhi in-memory SideEffectsData layer mein save ho raha hai.
-    SideEffectsData.addEntry(
-      memberId: ProfileController.instance.memberId,
-      symptom: symptom,
-      medicationName: _selectedMedication.name,
-      medicationStrength: _selectedMedication.dose,
-      severity: _severity,
-      note: note.isEmpty ? null : note,
-    );
-
-    _showToast();
+    setState(() => _saving = true);
+    try {
+      await FirebaseSymptomRepository.instance.add(
+        memberId,
+        SymptomEntry(
+          symptom: symptom,
+          severity: _severity,
+          medicationId: _selectedMedication?.id,
+          occurredAt: occurredAt,
+          notes: note.isEmpty ? null : note,
+        ),
+      );
+      if (!mounted) return;
+      _showToast();
+    } on AppException catch (e) {
+      debugPrint('Add symptom: save failed (${e.type}) — ${e.message}');
+      if (mounted) {
+        _showMessage(
+          e.type == AppExceptionType.permission
+              ? l10n.symptomSavePermission
+              : l10n.symptomSaveFailed,
+        );
+      }
+    } catch (e) {
+      debugPrint('Add symptom: save failed — $e');
+      if (mounted) _showMessage(l10n.symptomSaveFailed);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   void _showToast() {
@@ -852,6 +925,9 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
   }
 
   Widget _buildMedicationCard() {
+    final l10n = AppLocalizations.of(context);
+    final med = _selectedMedication;
+
     return GestureDetector(
       onTap: _openMedicationPicker,
       child: Container(
@@ -871,7 +947,11 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
                 color: AppColors.cardFill,
                 shape: BoxShape.circle,
               ),
-              child: _buildMedicineImage(_selectedMedication),
+              child: const Icon(
+                Icons.medication_rounded,
+                size: 20,
+                color: AppColors.textTeal,
+              ),
             ),
 
             const SizedBox(width: 12),
@@ -884,8 +964,9 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
                     children: [
                       Flexible(
                         child: Text(
-                          '${_selectedMedication.name} '
-                          '${_selectedMedication.dose}',
+                          med == null
+                              ? l10n.symptomNoMedication
+                              : '${med.name} ${med.strength ?? ''}'.trim(),
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.textPrimary,
@@ -911,8 +992,9 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
                   const SizedBox(height: 2),
 
                   Text(
-                    '${_selectedMedication.typeLabel} · '
-                    '${_selectedMedication.frequency}',
+                    med == null
+                        ? l10n.symptomSelectMedication
+                        : (med.form ?? ''),
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.textTeal,
@@ -944,81 +1026,57 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
     );
   }
 
-  Widget _buildMedicineImage(Medicine medicine) {
-    final assetPath = medicine.typeImageAsset;
-
-    if (assetPath == null) {
-      return Icon(medicine.typeIcon, size: 20, color: AppColors.textTeal);
-    }
-
-    return Image.asset(
-      assetPath,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Icon(medicine.typeIcon, size: 20, color: AppColors.textTeal);
-      },
-    );
-  }
-
   // ============================================================
   // MEDICATION PICKER — modal sheet (MedsData se)
   // ============================================================
 
   void _openMedicationPicker() {
-    final medicines = MedsData.medicines();
+    final l10n = AppLocalizations.of(context);
+    final medicines = _medications;
 
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
       builder: (sheetContext) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 18, 20, 6),
-                child: Text(
-                  'Select Medication',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.7,
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+                  child: Text(
+                    l10n.symptomSelectMedication,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
 
-              for (final medicine in medicines)
+                // "No medication": the symptom is not linked to anything.
                 ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    clipBehavior: Clip.antiAlias,
-                    decoration: const BoxDecoration(
-                      color: AppColors.cardFill,
-                      shape: BoxShape.circle,
-                    ),
-                    child: _buildMedicineImage(medicine),
+                  leading: const Icon(
+                    Icons.link_off_rounded,
+                    color: AppColors.textTeal,
                   ),
                   title: Text(
-                    '${medicine.name} ${medicine.dose}',
+                    l10n.symptomNoMedication,
                     style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 14.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  subtitle: Text(
-                    '${medicine.typeLabel} · ${medicine.frequency}',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  trailing: medicine.name == _selectedMedication.name
+                  trailing: _selectedMedication == null
                       ? const Icon(
                           Icons.check_circle_rounded,
                           size: 22,
@@ -1026,14 +1084,62 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
                         )
                       : null,
                   onTap: () {
-                    setState(() => _selectedMedication = medicine);
-
+                    setState(() => _selectedMedication = null);
                     Navigator.of(sheetContext).pop();
                   },
                 ),
 
-              const SizedBox(height: 8),
-            ],
+                if (medicines.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                    child: Text(
+                      l10n.symptomNoMedicationsFound,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+
+                for (final medicine in medicines)
+                  ListTile(
+                    leading: const Icon(
+                      Icons.medication_rounded,
+                      color: AppColors.textTeal,
+                    ),
+                    title: Text(
+                      '${medicine.name} ${medicine.strength ?? ''}'.trim(),
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: (medicine.form ?? '').isEmpty
+                        ? null
+                        : Text(
+                            medicine.form!,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                    trailing: medicine.id == _selectedMedication?.id
+                        ? const Icon(
+                            Icons.check_circle_rounded,
+                            size: 22,
+                            color: AppColors.formAccent,
+                          )
+                        : null,
+                    onTap: () {
+                      setState(() => _selectedMedication = medicine);
+                      Navigator.of(sheetContext).pop();
+                    },
+                  ),
+
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         );
       },
@@ -1200,8 +1306,10 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
 
                   Expanded(
                     child: Text(
-                      'Symptom recorded for '
-                      '${_selectedMedication.name}',
+                      _selectedMedication == null
+                          ? AppLocalizations.of(context).symptomRecorded
+                          : AppLocalizations.of(context)
+                                .symptomRecordedFor(_selectedMedication!.name),
                       style: const TextStyle(
                         color: AppColors.surface,
                         fontSize: 13,

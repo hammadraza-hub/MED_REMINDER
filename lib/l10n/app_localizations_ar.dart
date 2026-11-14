@@ -478,6 +478,169 @@ class AppLocalizationsAr extends AppLocalizations {
   String get accountDeleteSubscriptionButton => 'إدارة الاشتراك';
 
   @override
+  String get vitalsErrEmpty => 'يرجى إدخال قيمة.';
+
+  @override
+  String get vitalsErrNotNumber => 'يرجى إدخال رقم صحيح.';
+
+  @override
+  String vitalsErrRange(String min, String max, String unit) {
+    return 'يجب أن تكون القيمة بين $min و$max $unit.';
+  }
+
+  @override
+  String get vitalsErrDiastolicMissing =>
+      'يرجى إدخال قيمة الانبساطي (الرقم السفلي).';
+
+  @override
+  String vitalsErrDiastolicRange(String min, String max) {
+    return 'يجب أن يكون الانبساطي بين $min و$max ملم زئبق.';
+  }
+
+  @override
+  String get vitalsErrDiastolicNotLower =>
+      'يجب أن يكون الانبساطي أقل من الانقباضي.';
+
+  @override
+  String vitalsErrPulseRange(String min, String max) {
+    return 'يجب أن يكون النبض بين $min و$max نبضة/د.';
+  }
+
+  @override
+  String get vitalsErrFuture => 'لا يمكن أن يكون الوقت في المستقبل.';
+
+  @override
+  String get vitalsErrNoProfile =>
+      'لم يتم اختيار ملف شخصي. ارجع وحاول مرة أخرى.';
+
+  @override
+  String get vitalsSaveFailed =>
+      'تعذّر حفظ القراءة. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get vitalsSavePermission =>
+      'ليس لديك صلاحية إضافة قراءات لهذا الملف الشخصي.';
+
+  @override
+  String get vitalsOptional => 'اختياري';
+
+  @override
+  String vitalsLast(String value, String unit, String when) {
+    return 'الأخيرة: $value $unit ($when)';
+  }
+
+  @override
+  String get vitalsNoReadings => 'لا توجد قراءات بعد. اضغط + لتسجيل أول قراءة.';
+
+  @override
+  String get vitalsLoadFailed =>
+      'تعذّر تحميل القراءات. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get vitalsRetry => 'إعادة المحاولة';
+
+  @override
+  String vitalsLoggedToday(int count, int total) {
+    return 'تم تسجيل $count من $total مؤشرات اليوم';
+  }
+
+  @override
+  String get symptomNoMedication => 'لا يوجد دواء مرتبط';
+
+  @override
+  String get symptomPrivacyNote =>
+      'مرئي فقط للأشخاص الذين لديهم صلاحية الوصول إلى البيانات الصحية لهذا الملف الشخصي';
+
+  @override
+  String get healthSyncTitle => 'مزامنة البيانات الصحية';
+
+  @override
+  String healthSyncSubtitle(String app) {
+    return 'استورد ضغط الدم والجلوكوز والوزن ومعدل ضربات القلب من $app.';
+  }
+
+  @override
+  String get healthSyncButton => 'مزامنة الآن';
+
+  @override
+  String healthSyncLast(String when) {
+    return 'آخر مزامنة: $when';
+  }
+
+  @override
+  String get healthSyncNever => 'لم تتم المزامنة بعد';
+
+  @override
+  String healthSyncDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تم استيراد $count قراءات جديدة',
+      one: 'تم استيراد قراءة جديدة واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get healthSyncNothingNew => 'محدّث بالفعل';
+
+  @override
+  String get healthSyncProOnly => 'مزامنة البيانات الصحية جزء من خطة Pro.';
+
+  @override
+  String get healthSyncSeePlans => 'عرض الخطط';
+
+  @override
+  String healthSyncDenied(String app) {
+    return 'لم يتم منح الإذن. يمكنك السماح بالوصول من $app.';
+  }
+
+  @override
+  String healthSyncUnavailable(String app) {
+    return '$app غير متاح على هذا الجهاز.';
+  }
+
+  @override
+  String get healthSyncFailed =>
+      'فشلت المزامنة. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get symptomSelectMedication => 'اختر الدواء (اختياري)';
+
+  @override
+  String get symptomNoMedicationsFound =>
+      'لم يتم العثور على أدوية لهذا الملف الشخصي.';
+
+  @override
+  String get symptomErrNameEmpty => 'يرجى إدخال اسم العرض.';
+
+  @override
+  String symptomErrNameTooLong(int max) {
+    return 'اسم العرض طويل جدًا (الحد الأقصى $max حرفًا).';
+  }
+
+  @override
+  String symptomErrNotesTooLong(int max) {
+    return 'الملاحظات طويلة جدًا (الحد الأقصى $max حرفًا).';
+  }
+
+  @override
+  String get symptomSaveFailed =>
+      'تعذّر حفظ العرض. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get symptomSavePermission =>
+      'ليس لديك صلاحية إضافة أعراض لهذا الملف الشخصي.';
+
+  @override
+  String get symptomRecorded => 'تم تسجيل العرض';
+
+  @override
+  String symptomRecordedFor(String name) {
+    return 'تم تسجيل العرض لـ $name';
+  }
+
+  @override
   String get dataExportLastExportNever => 'آخر تصدير: أبدًا';
 
   @override

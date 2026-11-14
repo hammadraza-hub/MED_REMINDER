@@ -1,14 +1,12 @@
+import '../../core/vitals/symptom_entry.dart';
+
 /// ============================================================
-/// SIDE EFFECTS DATA — backend-ready
+/// SIDE EFFECTS DATA
 ///
-/// Backend: Firestore side_effects collection — UI zero change!
-///
-/// Firestore document shape (future):
-/// {
-///   id, memberId, medicationId,
-///   symptom, severity (1..5),
-///   recordedAt, note?
-/// }
+/// M15 step 6: backed by `profiles/{memberId}/symptoms/{id}` (see
+/// FirebaseSymptomRepository). This file only maps stored [SymptomEntry]s to
+/// the entries the Side Effects screen draws; there is no in-memory or demo
+/// data any more.
 /// ============================================================
 
 enum SideEffectSeverityLevel { mild, moderate, severe }
@@ -22,9 +20,16 @@ class SideEffectEntry {
     required this.severity,
     required this.recordedAt,
     this.note,
+    this.medicationId,
   });
 
   final String id;
+
+  /// Medication this symptom is linked to (null = not linked to any).
+  final String? medicationId;
+
+  /// "Metformin 500mg", or empty when no medication is linked / known.
+  String get medicationLabel => '$medicationName $medicationStrength'.trim();
 
   /// Example: Nausea, Headache, Dizziness
   final String symptom;
@@ -73,100 +78,50 @@ class SideEffectEntry {
 /// ============================================================
 /// DATA PROVIDER — abhi in-memory, backend Firestore
 /// ============================================================
+/// A medication's display name and strength, for labelling symptoms.
+typedef MedicationLabel = ({String name, String strength});
+
 class SideEffectsData {
-  /// Is-session mein save ki gayi symptom entries (in-memory).
-  ///
-  /// TODO Backend:
-  /// Firestore side_effects/{id} create se replace hogi — UI same rahegi.
-  static final List<({String? memberId, SideEffectEntry entry})> _addedEntries =
-      [];
+  SideEffectsData._();
 
-  /// Naya symptom entry in-memory save karta hai.
-  static void addEntry({
-    required String? memberId,
-    required String symptom,
-    required String medicationName,
-    required String medicationStrength,
-    required int severity,
-    String? note,
-  }) {
-    _addedEntries.insert(0, (
-      memberId: memberId,
-      entry: SideEffectEntry(
-        id: 'se_local_${DateTime.now().microsecondsSinceEpoch}',
-        symptom: symptom,
-        medicationName: medicationName,
-        medicationStrength: medicationStrength,
-        severity: severity,
-        recordedAt: DateTime.now(),
-        note: note,
-      ),
-    ));
-  }
+  /// Maps stored symptoms to screen entries, newest first. [medicationsById]
+  /// resolves `medicationId` to a name and strength; an id that cannot be
+  /// resolved (deleted medication) is kept as an entry without a label.
+  static List<SideEffectEntry> fromSymptoms(
+    Iterable<SymptomEntry> symptoms,
+    Map<String, MedicationLabel> medicationsById,
+  ) {
+    final out = <SideEffectEntry>[];
+    for (final e in symptoms) {
+      final id = e.id;
+      if (id == null) continue;
 
-  /// Backend: side_effects collection filtered by memberId
-  ///
-  /// Saved entries kisi bhi selected member ko milti hain.
-  /// Member isolation: demo records sirf Sarah ke liye —
-  /// seed pattern jaisi. Mom/Jake ko demo entries nahi milengi.
-  static List<SideEffectEntry> entriesFor(String? memberId) {
-    final savedEntries = _addedEntries
-        .where((record) => record.memberId == memberId)
-        .map((record) => record.entry)
-        .toList();
-
-    if (memberId == null || memberId != 'local_sarah') {
-      return savedEntries;
+      final med = e.medicationId == null
+          ? null
+          : medicationsById[e.medicationId];
+      out.add(
+        SideEffectEntry(
+          id: id,
+          symptom: e.symptom,
+          medicationId: e.medicationId,
+          medicationName: med?.name ?? '',
+          medicationStrength: med?.strength ?? '',
+          severity: e.severity.clamp(1, 5),
+          recordedAt: e.occurredAt,
+          note: e.notes,
+        ),
+      );
     }
-
-    return [...savedEntries, ..._demoEntries()];
+    out.sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
+    return out;
   }
 
-  /// Demo records — sirf Sarah (seed pattern).
-  static List<SideEffectEntry> _demoEntries() {
-    final now = DateTime.now();
-
-    final todayMorning = DateTime(now.year, now.month, now.day, 9, 15);
-    final yesterday = now.subtract(const Duration(days: 1));
-    final twoDaysAgo = now.subtract(const Duration(days: 2));
-
-    return [
-      SideEffectEntry(
-        id: 'se_sarah_nausea_1',
-        symptom: 'Nausea',
-        medicationName: 'Metformin',
-        medicationStrength: '500mg',
-        severity: 3,
-        recordedAt: todayMorning.isBefore(now) ? todayMorning : now,
-      ),
-      SideEffectEntry(
-        id: 'se_sarah_headache_1',
-        symptom: 'Headache',
-        medicationName: 'Amlodipine',
-        medicationStrength: '5mg',
-        severity: 2,
-        recordedAt: DateTime(
-          yesterday.year,
-          yesterday.month,
-          yesterday.day,
-          8,
-          40,
-        ),
-      ),
-      SideEffectEntry(
-        id: 'se_sarah_dizziness_1',
-        symptom: 'Dizziness',
-        medicationName: 'Metformin',
-        medicationStrength: '500mg',
-        severity: 4,
-        recordedAt: DateTime(
-          twoDaysAgo.year,
-          twoDaysAgo.month,
-          twoDaysAgo.day,
-          14,
-          5,
-        ),
-      ),
-    ];
+  /// Entries recorded in the month of [now] (local time).
+  static int countThisMonth(List<SideEffectEntry> entries, {DateTime? now}) {
+    final n = now ?? DateTime.now();
+    return entries.where((e) {
+      final d = e.recordedAt.toLocal();
+      return d.year == n.year && d.month == n.month;
+    }).length;
   }
 }

@@ -1,3 +1,5 @@
+import '../../core/vitals/vital_models.dart';
+import '../../core/vitals/vital_summary.dart';
 import 'vitals_data.dart';
 
 /// ============================================================
@@ -151,135 +153,62 @@ class VitalsChartData {
     }
   }
 
-  /// Dummy frontend history.
-  ///
-  /// TODO Backend:
-  /// Is method ko Firestore query/stream se replace karna:
-  /// users/{uid}/members/{memberId}/vitalEntries
-  /// where(type == selectedType)
-  /// orderBy(measuredAt)
-  static List<VitalChartReading> history(VitalType type) {
-    final now = DateTime.now();
+  // ------------------------------------------------------------
+  // M15 step 5: real data -> chart points
+  // ------------------------------------------------------------
 
-    switch (type) {
-      case VitalType.bloodPressure:
-        return _buildBloodPressureHistory(now);
+  /// Raw readings (any order) -> chart points, oldest first.
+  static List<VitalChartReading> fromReadings(Iterable<VitalReading> readings) {
+    final list = readings.toList()
+      ..sort((a, b) => a.measuredAt.compareTo(b.measuredAt));
+    return [
+      for (final r in list)
+        VitalChartReading(
+          recordedAt: r.measuredAt,
+          primaryValue: r.value,
+          secondaryValue: r.value2,
+        ),
+    ];
+  }
 
-      case VitalType.bloodGlucose:
-        return _buildSingleValueHistory(
-          now: now,
-          base: 96,
-          variation: const [-4, 2, 5, -1, 3, -2, 0, 4, -3, 2, 1, -1],
-        );
-
-      case VitalType.weight:
-        return _buildSingleValueHistory(
-          now: now,
-          base: 72.4,
-          step: 0.1,
-          variation: const [6, 5, 5, 4, 3, 3, 2, 2, 1, 1, 0, 0],
-        );
-
-      case VitalType.heartRate:
-        return _buildSingleValueHistory(
-          now: now,
-          base: 74,
-          variation: const [-2, 3, -1, 2, 0, 4, -3, 1, 2, -2, 0, 1],
-        );
+  /// Daily summaries -> one chart point per day (the day's average, drawn at
+  /// local noon), oldest first. Used for the long (365 day) range so the chart
+  /// reads at most one small document per day.
+  static List<VitalChartReading> fromDaily(Iterable<VitalDaily> days) {
+    final out = <VitalChartReading>[];
+    for (final d in days) {
+      final bounds = VitalAnalysis.dayBounds(d.dayKey);
+      if (bounds == null) continue;
+      out.add(
+        VitalChartReading(
+          recordedAt: bounds.start.add(const Duration(hours: 12)),
+          primaryValue: d.avg,
+          secondaryValue: d.avg2,
+        ),
+      );
     }
+    out.sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+    return out;
   }
 
-  static List<VitalChartReading> _buildBloodPressureHistory(DateTime now) {
-    const systolic = [
-      122.0,
-      124.0,
-      121.0,
-      127.0,
-      125.0,
-      123.0,
-      126.0,
-      129.0,
-      124.0,
-      128.0,
-      126.0,
-      128.0,
-    ];
-
-    const diastolic = [
-      78.0,
-      80.0,
-      79.0,
-      83.0,
-      81.0,
-      80.0,
-      82.0,
-      84.0,
-      79.0,
-      82.0,
-      81.0,
-      82.0,
-    ];
-
-    return List.generate(systolic.length, (index) {
-      final daysAgo = (systolic.length - 1 - index) * 3;
-
-      return VitalChartReading(
-        recordedAt: DateTime(
-          now.year,
-          now.month,
-          now.day,
-          8,
-        ).subtract(Duration(days: daysAgo)),
-        primaryValue: systolic[index],
-        secondaryValue: diastolic[index],
-      );
-    });
+  /// First moment (local midnight) of the window shown for [range], counting
+  /// today as day 1: 7D = today and the 6 days before.
+  static DateTime windowStart(VitalChartRange range, DateTime now) {
+    final today = DateTime(now.year, now.month, now.day);
+    return DateTime(today.year, today.month, today.day - (daysFor(range) - 1));
   }
 
-  static List<VitalChartReading> _buildSingleValueHistory({
-    required DateTime now,
-    required double base,
-    required List<int> variation,
-    double step = 1,
-  }) {
-    return List.generate(variation.length, (index) {
-      final daysAgo = (variation.length - 1 - index) * 3;
-
-      return VitalChartReading(
-        recordedAt: DateTime(
-          now.year,
-          now.month,
-          now.day,
-          8,
-        ).subtract(Duration(days: daysAgo)),
-        primaryValue: base + (variation[index] * step),
-      );
-    });
-  }
-
+  /// Readings inside the window of [range] (anchored on [now], default today).
   static List<VitalChartReading> filteredHistory(
     List<VitalChartReading> history,
-    VitalChartRange range,
-  ) {
-    if (history.isEmpty) return [];
-
-    final latestDate = history.last.recordedAt;
-
-    final cutoff = latestDate.subtract(Duration(days: daysFor(range) - 1));
-
-    final filtered = history.where((reading) {
-      return !reading.recordedAt.isBefore(cutoff);
-    }).toList();
-
-    // Dummy dataset sparse hone ki wajah se 7D mein kam az kam
-    // useful recent readings chart par visible rakho.
-    if (range == VitalChartRange.days7 &&
-        filtered.length < 3 &&
-        history.length >= 3) {
-      return history.sublist(history.length - 3);
-    }
-
-    return filtered;
+    VitalChartRange range, {
+    DateTime? now,
+  }) {
+    final start = windowStart(range, now ?? DateTime.now());
+    return [
+      for (final r in history)
+        if (!r.recordedAt.isBefore(start)) r,
+    ];
   }
 
   static double averagePrimary(List<VitalChartReading> readings) {

@@ -486,6 +486,171 @@ class AppLocalizationsFr extends AppLocalizations {
   String get accountDeleteSubscriptionButton => 'Gérer l’abonnement';
 
   @override
+  String get vitalsErrEmpty => 'Veuillez saisir une valeur.';
+
+  @override
+  String get vitalsErrNotNumber => 'Veuillez saisir un nombre valide.';
+
+  @override
+  String vitalsErrRange(String min, String max, String unit) {
+    return 'La valeur doit être comprise entre $min et $max $unit.';
+  }
+
+  @override
+  String get vitalsErrDiastolicMissing =>
+      'Veuillez saisir la valeur diastolique (celle du bas).';
+
+  @override
+  String vitalsErrDiastolicRange(String min, String max) {
+    return 'La diastolique doit être comprise entre $min et $max mmHg.';
+  }
+
+  @override
+  String get vitalsErrDiastolicNotLower =>
+      'La diastolique doit être inférieure à la systolique.';
+
+  @override
+  String vitalsErrPulseRange(String min, String max) {
+    return 'Le pouls doit être compris entre $min et $max bpm.';
+  }
+
+  @override
+  String get vitalsErrFuture => 'L’heure ne peut pas être dans le futur.';
+
+  @override
+  String get vitalsErrNoProfile =>
+      'Aucun profil n’est sélectionné. Revenez en arrière et réessayez.';
+
+  @override
+  String get vitalsSaveFailed =>
+      'Impossible d’enregistrer la mesure. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get vitalsSavePermission =>
+      'Vous n’avez pas la permission d’ajouter des mesures pour ce profil.';
+
+  @override
+  String get vitalsOptional => 'Facultatif';
+
+  @override
+  String vitalsLast(String value, String unit, String when) {
+    return 'Dernière : $value $unit ($when)';
+  }
+
+  @override
+  String get vitalsNoReadings =>
+      'Aucune mesure pour l’instant. Appuyez sur + pour ajouter la première.';
+
+  @override
+  String get vitalsLoadFailed =>
+      'Impossible de charger les mesures. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get vitalsRetry => 'Réessayer';
+
+  @override
+  String vitalsLoggedToday(int count, int total) {
+    return '$count sur $total indicateurs enregistrés aujourd’hui';
+  }
+
+  @override
+  String get symptomNoMedication => 'Aucun médicament lié';
+
+  @override
+  String get symptomPrivacyNote =>
+      'Visible uniquement par les personnes ayant accès aux données de santé de ce profil';
+
+  @override
+  String get healthSyncTitle => 'Synchroniser les données de santé';
+
+  @override
+  String healthSyncSubtitle(String app) {
+    return 'Importez tension, glycémie, poids et fréquence cardiaque depuis $app.';
+  }
+
+  @override
+  String get healthSyncButton => 'Synchroniser';
+
+  @override
+  String healthSyncLast(String when) {
+    return 'Dernière synchronisation : $when';
+  }
+
+  @override
+  String get healthSyncNever => 'Pas encore synchronisé';
+
+  @override
+  String healthSyncDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nouvelles mesures importées',
+      one: '1 nouvelle mesure importée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get healthSyncNothingNew => 'Déjà à jour';
+
+  @override
+  String get healthSyncProOnly =>
+      'La synchronisation santé fait partie de l’offre Pro.';
+
+  @override
+  String get healthSyncSeePlans => 'Voir les offres';
+
+  @override
+  String healthSyncDenied(String app) {
+    return 'La permission n’a pas été accordée. Vous pouvez autoriser l’accès dans $app.';
+  }
+
+  @override
+  String healthSyncUnavailable(String app) {
+    return '$app n’est pas disponible sur cet appareil.';
+  }
+
+  @override
+  String get healthSyncFailed =>
+      'La synchronisation a échoué. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get symptomSelectMedication => 'Choisir un médicament (facultatif)';
+
+  @override
+  String get symptomNoMedicationsFound =>
+      'Aucun médicament trouvé pour ce profil.';
+
+  @override
+  String get symptomErrNameEmpty => 'Veuillez saisir le nom du symptôme.';
+
+  @override
+  String symptomErrNameTooLong(int max) {
+    return 'Le nom du symptôme est trop long (max. $max caractères).';
+  }
+
+  @override
+  String symptomErrNotesTooLong(int max) {
+    return 'Les notes sont trop longues (max. $max caractères).';
+  }
+
+  @override
+  String get symptomSaveFailed =>
+      'Impossible d’enregistrer le symptôme. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get symptomSavePermission =>
+      'Vous n’avez pas la permission d’ajouter des symptômes pour ce profil.';
+
+  @override
+  String get symptomRecorded => 'Symptôme enregistré';
+
+  @override
+  String symptomRecordedFor(String name) {
+    return 'Symptôme enregistré pour $name';
+  }
+
+  @override
   String get dataExportLastExportNever => 'Dernière exportation : Jamais';
 
   @override

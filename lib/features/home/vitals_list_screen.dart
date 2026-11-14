@@ -1,8 +1,16 @@
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/profile/profile_controller.dart';
+import '../../core/services/health_plugin_source.dart';
+import '../../core/services/health_sync_service.dart';
+import '../../core/vitals/vital_types.dart';
+import '../../l10n/app_localizations.dart';
+import '../../repositories/firebase_vitals_repository.dart';
+import '../settings/subscription_screen.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'vitals_data.dart';
@@ -52,15 +60,137 @@ class VitalsListScreen extends StatefulWidget {
 }
 
 class _VitalsListScreenState extends State<VitalsListScreen> {
-  late final List<VitalMetric> _metrics;
+  /// One card per vital type that has readings (M15 step 5: real data).
+  List<VitalMetric> _metrics = const [];
+
+  bool _loading = true;
+  bool _loadFailed = false;
+
+  // ---- health sync (M15 step 7) ----
+  late final HealthSyncService _healthSync = buildHealthSyncService();
+  bool _syncing = false;
+  DateTime? _lastSyncAt;
+
+  static String get _healthAppName =>
+      Platform.isIOS ? 'Apple Health' : 'Health Connect';
 
   @override
   void initState() {
     super.initState();
+    _load();
+    _loadLastSync();
+  }
 
-    // TODO Backend:
-    // Firestore/user-specific vitals stream se replace karna.
-    _metrics = VitalsData.metrics();
+  Future<void> _loadLastSync() async {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) return;
+    final at = await PrefsHealthSyncStateStore().lastSync(memberId);
+    if (mounted) setState(() => _lastSyncAt = at);
+  }
+
+  Future<void> _syncHealth() async {
+    if (_syncing) return;
+    final memberId = ProfileController.instance.memberId;
+    final l10n = AppLocalizations.of(context);
+    if (memberId == null || memberId.isEmpty) {
+      _snack(l10n.vitalsErrNoProfile);
+      return;
+    }
+
+    setState(() => _syncing = true);
+    final report = await _healthSync.syncNow(memberId);
+    if (!mounted) return;
+    setState(() => _syncing = false);
+
+    switch (report.outcome) {
+      case HealthSyncOutcome.success:
+        _snack(
+          report.imported > 0
+              ? l10n.healthSyncDone(report.imported)
+              : l10n.healthSyncNothingNew,
+        );
+        _loadLastSync();
+        if (report.imported > 0) _load();
+      case HealthSyncOutcome.notPro:
+        _showProDialog();
+      case HealthSyncOutcome.permissionDenied:
+        _snack(l10n.healthSyncDenied(_healthAppName));
+      case HealthSyncOutcome.unavailable:
+        _snack(l10n.healthSyncUnavailable(_healthAppName));
+      case HealthSyncOutcome.failed:
+        _snack(l10n.healthSyncFailed);
+    }
+  }
+
+  void _snack(String text) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  void _showProDialog() {
+    final l10n = AppLocalizations.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        content: Text(l10n.healthSyncProOnly),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+              );
+            },
+            child: Text(l10n.healthSyncSeePlans),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Loads each type's most recent readings for the selected profile.
+  Future<void> _load() async {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _loadFailed = false;
+      });
+    }
+
+    try {
+      final repo = FirebaseVitalsRepository.instance;
+      final kinds = VitalKind.values;
+      final results = await Future.wait([
+        for (final kind in kinds)
+          repo.list(memberId, kind, limit: VitalsData.sparklineReadings),
+      ]);
+      if (!mounted) return;
+
+      setState(() {
+        _metrics = VitalsData.fromReadings({
+          for (var i = 0; i < kinds.length; i++) kinds[i]: results[i],
+        });
+        _loading = false;
+      });
+    } catch (e) {
+      debugPrint('Vitals list: could not load readings — $e');
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadFailed = true;
+      });
+    }
   }
 
   // ================= NAVIGATION =================
@@ -72,8 +202,8 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
     );
   }
 
-  void _openVitalChart(VitalMetric metric) {
-    Navigator.of(context).push(
+  Future<void> _openVitalChart(VitalMetric metric) async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => VitalsChartScreen(
           userName: widget.userName,
@@ -81,6 +211,8 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
         ),
       ),
     );
+    // A reading may have been logged from the chart screen.
+    if (mounted) _load();
   }
 
   Future<void> _addVitalEntry() async {
@@ -92,9 +224,7 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
 
     if (!mounted || result == null) return;
 
-    // TODO Backend:
-    // Firebase/Firestore realtime stream lagne ke baad Vitals List
-    // automatically selected member ki latest entries se refresh hogi.
+    _load();
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -185,6 +315,8 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
   // ================= BODY =================
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 26),
       child: Column(
@@ -196,8 +328,25 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
           _buildMetricsSummary(),
           const SizedBox(height: 10),
 
-          _buildMorningStatus(),
-          const SizedBox(height: 12),
+          _buildHealthSyncCard(),
+          const SizedBox(height: 10),
+
+          if (_metrics.isNotEmpty) ...[
+            _buildMorningStatus(),
+            const SizedBox(height: 12),
+          ],
+
+          if (_loading && _metrics.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.formAccent),
+              ),
+            ),
+          if (!_loading && _loadFailed)
+            _buildInfoCard(l10n.vitalsLoadFailed, retry: true),
+          if (!_loading && !_loadFailed && _metrics.isEmpty)
+            _buildInfoCard(l10n.vitalsNoReadings),
 
           ..._metrics.map(
             (metric) => Padding(
@@ -209,8 +358,10 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
             ),
           ),
 
-          const SizedBox(height: 2),
-          _buildTrendFooter(),
+          if (_metrics.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            _buildTrendFooter(),
+          ],
         ],
       ),
     );
@@ -265,6 +416,111 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildHealthSyncCard() {
+    final l10n = AppLocalizations.of(context);
+    final last = _lastSyncAt;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.outline),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.sync_rounded, color: AppColors.formAccent, size: 26),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.healthSyncTitle,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.healthSyncSubtitle(_healthAppName),
+                  style: const TextStyle(
+                    color: AppColors.formSubtitle,
+                    fontSize: 11.5,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  last == null
+                      ? l10n.healthSyncNever
+                      : l10n.healthSyncLast(_formatRelativeDateTime(last)),
+                  style: const TextStyle(
+                    color: AppColors.formAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _syncing
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: AppColors.formAccent,
+                  ),
+                )
+              : FilledButton(
+                  onPressed: _syncHealth,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.formAccent,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                  ),
+                  child: Text(l10n.healthSyncButton),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String text, {bool retry = false}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.outline),
+      ),
+      child: Column(
+        children: [
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.formSubtitle,
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+          if (retry) ...[
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: _load,
+              child: Text(AppLocalizations.of(context).vitalsRetry),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -377,8 +633,7 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
   // ================= MORNING STATUS =================
 
   Widget _buildMorningStatus() {
-    final completed = VitalsData.completedMorningLogs(_metrics);
-    final percentage = VitalsData.morningLogPercentage(_metrics);
+    final logged = VitalsData.loggedToday(_metrics);
 
     return Container(
       constraints: const BoxConstraints(minHeight: 43),
@@ -397,22 +652,13 @@ class _VitalsListScreenState extends State<VitalsListScreen> {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              completed == _metrics.length && _metrics.isNotEmpty
-                  ? 'All morning logs completed'
-                  : '$completed of ${_metrics.length} morning logs completed',
+              AppLocalizations.of(context)
+                  .vitalsLoggedToday(logged, _metrics.length),
               style: const TextStyle(
                 color: AppColors.formSubtitle,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
-            ),
-          ),
-          Text(
-            '$percentage% On Schedule',
-            style: const TextStyle(
-              color: AppColors.formAccent,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
             ),
           ),
         ],

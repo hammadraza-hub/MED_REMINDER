@@ -21,3 +21,11 @@
 - 2026-11-14 — M14 step 4: account deletion request/cancel (rules validDeletionChange + 8 tests, AccountDeletionPolicy/Service, Account screen sheet + pending card, 16 l10n keys x5). Verified on emulator.
 - 2026-11-14 — M14 step 5: client-side account purge (rules accountDeletionDue/canPurgeProfile + 12 tests, AccountDeletionEngine, AccountPurgeService, purge screen, post-auth hook, 6 l10n keys x5). Verified on emulator end-to-end.
 - 2026-11-14 — M14 step 6: shared-profile handling (rules validSelfLeave + 10 tests, engine leaves other profiles first, DeletionSummary + sheet summary, subscription note + button, 5 l10n keys x5). Verified on emulator. M14 Spark-feasible scope complete.
+- 2026-11-14 — M15 step 1: pure vitals logic (VitalKind/VitalSource, VitalValidator, VitalUnits + document ids, VitalAnalysis trend/daily summary, SymptomValidator) + 53 tests.
+- 2026-11-14 — M15 step 2: Firestore write rules for vitals, symptoms and vitalsDaily (canWriteHealth, range/shape/id checks, note-only edits) + 28 rules tests (105 total).
+- 2026-11-14 — M15 step 3: VitalReading/SymptomEntry models + VitalSyncPlanner, FirebaseVitalsRepository + FirebaseSymptomRepository, vitals composite index, integration_test run against emulators (7 pass), 22 unit tests.
+- 2026-11-14 — M15 step 4: Add Vitals screen saves real readings (VitalInput parser + 16 tests, no pre-filled dummy values, real 'Last' reading, 13 localised error keys x5). Verified on emulator.
+- 2026-11-14 — M15 step 5: Vitals List + Chart on real data (VitalsData.fromReadings, chart fromReadings/fromDaily, 365D from vitalsDaily), dummy history removed, 4 l10n keys x5, 14 tests. Verified on emulator; full suite 246 pass / 3 old smoke tests fail.
+- 2026-11-14 — M15 step 6: Side Effects list + Add Symptom on real data (symptoms collection, real medication picker from the M5 repository, no demo data), honest privacy footer, 11 l10n keys x5, 8 tests. Verified on emulator.
+- 2026-11-14 — M15 step 7: health sync (health pkg; mapper + service + plugin adapter + Vitals List card, Pro gate, Android manifest/minSdk 26, iOS usage string), 26 tests, verified on Android emulator up to the Health Connect permission and read. M15 Spark scope complete.
+- 2026-11-14 — M15 final re-test of all 7 steps: unit 280 pass (3 old smoke fail), rules 105/105, integration 7/7, emulator UI pass OK.

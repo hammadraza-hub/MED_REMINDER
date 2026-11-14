@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>MedRemind reads your blood pressure, glucose, weight and heart rate from Apple Health, only when you tap Sync, so they appear in your vitals log.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>MedRemind uses Face ID to unlock the app and protect your health information.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>

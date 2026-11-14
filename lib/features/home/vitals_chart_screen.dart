@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/profile/profile_controller.dart';
+import '../../l10n/app_localizations.dart';
+import '../../repositories/firebase_vitals_repository.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
@@ -51,18 +54,71 @@ class VitalsChartScreen extends StatefulWidget {
 class _VitalsChartScreenState extends State<VitalsChartScreen> {
   VitalChartRange _selectedRange = VitalChartRange.days7;
 
-  late final List<VitalChartReading> _allReadings;
+  /// Points for the selected range (M15 step 5: real data). Raw readings for
+  /// 7D / 30D / 90D, one point per day (the day's average, from `vitalsDaily`)
+  /// for 365D so a year never reads thousands of documents.
+  List<VitalChartReading> _allReadings = const [];
+
+  bool _loading = true;
+  bool _loadFailed = false;
 
   VitalChartReading? _selectedReading;
 
   @override
   void initState() {
     super.initState();
+    _load();
+  }
 
-    // TODO Backend:
-    // widget.userName ki jagah memberId use karke
-    // Firestore vitals stream query karni hai.
-    _allReadings = VitalsChartData.history(widget.vitalType);
+  Future<void> _load() async {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+
+    final range = _selectedRange;
+    final kind = VitalsData.kindOf(widget.vitalType);
+
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _loadFailed = false;
+      });
+    }
+
+    try {
+      final repo = FirebaseVitalsRepository.instance;
+      final now = DateTime.now();
+      final start = VitalsChartData.windowStart(range, now);
+
+      final List<VitalChartReading> points;
+      if (range == VitalChartRange.days365) {
+        points = VitalsChartData.fromDaily(
+          await repo.dailySummaries(memberId, kind, from: start, to: now),
+        );
+      } else {
+        points = VitalsChartData.fromReadings(
+          await repo.list(memberId, kind, since: start, limit: 500),
+        );
+      }
+
+      // The user may have switched range while this was loading.
+      if (!mounted || range != _selectedRange) return;
+      setState(() {
+        _allReadings = points;
+        _selectedReading = null;
+        _loading = false;
+      });
+    } catch (e) {
+      debugPrint('Vitals chart: could not load readings — $e');
+      if (!mounted || range != _selectedRange) return;
+      setState(() {
+        _allReadings = const [];
+        _loading = false;
+        _loadFailed = true;
+      });
+    }
   }
 
   List<VitalChartReading> get _readings {
@@ -94,9 +150,7 @@ class _VitalsChartScreenState extends State<VitalsChartScreen> {
 
     if (!mounted || result == null) return;
 
-    // TODO Backend:
-    // Firestore stream lagne ke baad new reading automatically
-    // _allReadings / chart mein appear hogi.
+    _load();
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -263,10 +317,12 @@ class _VitalsChartScreenState extends State<VitalsChartScreen> {
 
     return GestureDetector(
       onTap: () {
+        if (_selectedRange == range) return;
         setState(() {
           _selectedRange = range;
           _selectedReading = null;
         });
+        _load();
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
@@ -350,7 +406,33 @@ class _VitalsChartScreenState extends State<VitalsChartScreen> {
 
           SizedBox(
             height: 190,
-            child: readings.isEmpty
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.formAccent,
+                    ),
+                  )
+                : _loadFailed
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context).vitalsLoadFailed,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.formSubtitle,
+                            fontSize: 13,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _load,
+                          child: Text(AppLocalizations.of(context).vitalsRetry),
+                        ),
+                      ],
+                    ),
+                  )
+                : readings.isEmpty
                 ? const Center(
                     child: Text(
                       'No readings available for this period.',

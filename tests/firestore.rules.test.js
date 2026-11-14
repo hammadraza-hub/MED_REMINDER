@@ -919,8 +919,9 @@ describe("Purge is blocked during the grace period — M14 step 5", () => {
     await assertFails(deleteDoc(doc(db, ...p, "doses", "dose2"))); // taken
     await assertFails(deleteDoc(doc(db, ...p, "pharmacies", "ph1")));
     await assertFails(deleteDoc(doc(db, ...p, "dailySummaries", "2026-11-01")));
-    await assertFails(deleteDoc(doc(db, ...p, "vitals", "v1")));
-    await assertFails(deleteDoc(doc(db, ...p, "symptoms", "s1")));
+    // vitals / symptoms: the owner may delete single entries at any time
+    // (M15), so they are not part of "blocked during the grace period".
+    await assertFails(deleteDoc(doc(db, ...p, "doctorNotes", "n1")));
     await assertFails(deleteDoc(doc(db, "profiles", "profile1")));
     await assertFails(deleteDoc(doc(db, "users", "owner123")));
   }
@@ -1078,6 +1079,300 @@ describe("Member leaves a profile (own access only) — M14 step 6", () => {
     await assertFails(
       updateDoc(ref(anon), { memberUids: arrayRemove("viewer123") })
     );
+  });
+});
+
+
+// ---------------------------------------------------------------
+// M15 step 2 — vitals, symptoms and daily summaries
+// ---------------------------------------------------------------
+
+describe("Vitals / symptoms rules — M15 step 2", () => {
+
+  // profile1: owner123 (owner), caregiver123 (caregiver, health access),
+  //           viewer123 (viewer, NO health access)
+  // profileHV: hv123 is a viewer WITH health access (read-only)
+  const ownerDb = () => testEnv.authenticatedContext("owner123").firestore();
+  const cgDb = () => testEnv.authenticatedContext("caregiver123").firestore();
+  const viewerDb = () => testEnv.authenticatedContext("viewer123").firestore();
+  const hvDb = () => testEnv.authenticatedContext("hv123").firestore();
+  const strangerDb = () => testEnv.authenticatedContext("stranger999").firestore();
+  const anonDb = () => testEnv.unauthenticatedContext().firestore();
+
+  const vit = (db, id, pid = "profile1") => doc(db, "profiles", pid, "vitals", id);
+  const sym = (db, id, pid = "profile1") => doc(db, "profiles", pid, "symptoms", id);
+  const day = (db, id, pid = "profile1") => doc(db, "profiles", pid, "vitalsDaily", id);
+
+  const bp = (uid = "owner123", extra = {}) => ({
+    type: "bloodPressure", value: 120, value2: 80, unit: "mmHg",
+    measuredAt: new Date(), source: "manual",
+    createdBy: uid, createdAt: serverTimestamp(), ...extra,
+  });
+  const single = (type, value, unit, uid = "owner123", extra = {}) => ({
+    type, value, unit, measuredAt: new Date(), source: "manual",
+    createdBy: uid, createdAt: serverTimestamp(), ...extra,
+  });
+  const symptom = (uid = "owner123", extra = {}) => ({
+    symptom: "Nausea", severity: 3, occurredAt: new Date(),
+    createdBy: uid, createdAt: serverTimestamp(), ...extra,
+  });
+  const daily = (extra = {}) => ({
+    type: "glucose", day: "2026-11-14", count: 3, avg: 100, min: 90, max: 110,
+    updatedAt: serverTimestamp(), ...extra,
+  });
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "profiles", "profileHV"), {
+        ownerUid: "owner123", kind: "self", name: "HV", timezone: "UTC",
+        roles: { owner123: "owner", hv123: "viewer" },
+        memberUids: ["owner123", "hv123"],
+        healthUids: ["owner123", "hv123"],
+        permissions: {},
+      });
+      await setDoc(vit(db, "ownerEntry"), { ...bp("owner123"), createdAt: new Date() });
+      await setDoc(vit(db, "cgEntry"), {
+        ...single("glucose", 100, "mg/dL", "caregiver123"), createdAt: new Date(),
+      });
+      await setDoc(sym(db, "ownerSym"), { ...symptom("owner123"), createdAt: new Date() });
+      await setDoc(sym(db, "cgSym"), { ...symptom("caregiver123"), createdAt: new Date() });
+      await setDoc(day(db, "glucose_2026-11-13"), { ...daily({ day: "2026-11-13" }), updatedAt: new Date() });
+      await setDoc(vit(db, "hvEntry", "profileHV"), { ...bp("owner123"), createdAt: new Date() });
+    });
+  });
+
+  // ---------------- who can write ----------------
+
+  test("Owner and caregiver can create vitals", async () => {
+    await assertSucceeds(setDoc(vit(ownerDb(), "n1"), bp("owner123")));
+    await assertSucceeds(setDoc(vit(cgDb(), "n2"), single("glucose", 95, "mg/dL", "caregiver123")));
+    await assertSucceeds(setDoc(vit(ownerDb(), "n3"), single("weight", 72.4, "kg")));
+    await assertSucceeds(setDoc(vit(ownerDb(), "n4"), single("heartRate", 74, "bpm")));
+    await assertSucceeds(setDoc(vit(ownerDb(), "n5"), bp("owner123", { pulse: 72, note: "after walk" })));
+  });
+
+  test("Viewers, strangers and anonymous users cannot create vitals", async () => {
+    await assertFails(setDoc(vit(viewerDb(), "x1"), bp("viewer123")));
+    await assertFails(setDoc(vit(hvDb(), "x2", "profileHV"), bp("hv123"))); // health access but read-only
+    await assertFails(setDoc(vit(strangerDb(), "x3"), bp("stranger999")));
+    await assertFails(setDoc(vit(anonDb(), "x4"), bp("owner123")));
+  });
+
+  test("Health readers can still read; viewers without health access cannot", async () => {
+    await assertSucceeds(getDoc(vit(ownerDb(), "ownerEntry")));
+    await assertSucceeds(getDoc(vit(cgDb(), "ownerEntry")));
+    await assertSucceeds(getDoc(vit(hvDb(), "hvEntry", "profileHV")));
+    await assertFails(getDoc(vit(viewerDb(), "ownerEntry")));
+    await assertFails(getDoc(vit(strangerDb(), "ownerEntry")));
+  });
+
+  // ---------------- value rules ----------------
+
+  test("Impossible blood pressure values are rejected", async () => {
+    await assertFails(setDoc(vit(ownerDb(), "a"), bp("owner123", { value: 500 })));
+    await assertFails(setDoc(vit(ownerDb(), "b"), bp("owner123", { value: 39 })));
+    await assertFails(setDoc(vit(ownerDb(), "c"), bp("owner123", { value2: 10 })));
+    await assertFails(setDoc(vit(ownerDb(), "d"), bp("owner123", { value2: 80, value: 80 }))); // not lower
+    await assertFails(setDoc(vit(ownerDb(), "e"), bp("owner123", { value2: 90, value: 80 })));
+    await assertFails(setDoc(vit(ownerDb(), "f"), bp("owner123", { pulse: 5 })));
+  });
+
+  test("Blood pressure limits are inclusive", async () => {
+    await assertSucceeds(setDoc(vit(ownerDb(), "lo"), bp("owner123", { value: 40, value2: 30 })));
+    await assertSucceeds(setDoc(vit(ownerDb(), "hi"), bp("owner123", { value: 300, value2: 200 })));
+  });
+
+  test("Blood pressure needs a diastolic value", async () => {
+    const d = bp("owner123");
+    delete d.value2;
+    await assertFails(setDoc(vit(ownerDb(), "nod"), d));
+  });
+
+  test("Glucose, weight and heart rate limits", async () => {
+    await assertSucceeds(setDoc(vit(ownerDb(), "g1"), single("glucose", 10, "mg/dL")));
+    await assertSucceeds(setDoc(vit(ownerDb(), "g2"), single("glucose", 1000, "mg/dL")));
+    await assertFails(setDoc(vit(ownerDb(), "g3"), single("glucose", 9, "mg/dL")));
+    await assertFails(setDoc(vit(ownerDb(), "g4"), single("glucose", 1001, "mg/dL")));
+    await assertFails(setDoc(vit(ownerDb(), "w1"), single("weight", 0, "kg")));
+    await assertFails(setDoc(vit(ownerDb(), "w2"), single("weight", 701, "kg")));
+    await assertSucceeds(setDoc(vit(ownerDb(), "w3"), single("weight", 700, "kg")));
+    await assertFails(setDoc(vit(ownerDb(), "h1"), single("heartRate", 19, "bpm")));
+    await assertFails(setDoc(vit(ownerDb(), "h2"), single("heartRate", 301, "bpm")));
+  });
+
+  test("Wrong unit, unknown type and non-numbers are rejected", async () => {
+    await assertFails(setDoc(vit(ownerDb(), "u1"), single("glucose", 5.5, "mmol/L")));
+    await assertFails(setDoc(vit(ownerDb(), "u2"), single("weight", 150, "lb")));
+    await assertFails(setDoc(vit(ownerDb(), "u3"), single("oxygen", 98, "%")));
+    await assertFails(setDoc(vit(ownerDb(), "u4"), single("weight", "70", "kg")));
+  });
+
+  test("Only blood pressure may carry value2 or pulse", async () => {
+    await assertFails(setDoc(vit(ownerDb(), "s1"), single("glucose", 95, "mg/dL", "owner123", { value2: 5 })));
+    await assertFails(setDoc(vit(ownerDb(), "s2"), single("weight", 70, "kg", "owner123", { pulse: 70 })));
+  });
+
+  // ---------------- shape / identity rules ----------------
+
+  test("Unknown fields and missing required fields are rejected", async () => {
+    await assertFails(setDoc(vit(ownerDb(), "e1"), bp("owner123", { plan: "pro" })));
+    const d = bp("owner123");
+    delete d.measuredAt;
+    await assertFails(setDoc(vit(ownerDb(), "e2"), d));
+  });
+
+  test("createdBy must be the writer and createdAt the server time", async () => {
+    await assertFails(setDoc(vit(cgDb(), "i1"), bp("owner123")));
+    await assertFails(setDoc(vit(ownerDb(), "i2"), bp("owner123", { createdAt: new Date("2020-01-01") })));
+  });
+
+  test("Readings from the future are rejected, small clock skew is fine", async () => {
+    await assertFails(setDoc(vit(ownerDb(), "t1"), bp("owner123", { measuredAt: new Date(Date.now() + 3600 * 1000) })));
+    await assertSucceeds(setDoc(vit(ownerDb(), "t2"), bp("owner123", { measuredAt: new Date(Date.now() + 2 * 60 * 1000) })));
+    await assertSucceeds(setDoc(vit(ownerDb(), "t3"), bp("owner123", { measuredAt: new Date("2020-05-05") })));
+  });
+
+  test("Notes are limited to 500 characters", async () => {
+    await assertSucceeds(setDoc(vit(ownerDb(), "nt1"), bp("owner123", { note: "n".repeat(500) })));
+    await assertFails(setDoc(vit(ownerDb(), "nt2"), bp("owner123", { note: "n".repeat(501) })));
+  });
+
+  // ---------------- manual vs synced ids ----------------
+
+  test("Synced readings need externalId and the {source}_{externalId} id", async () => {
+    const hk = bp("owner123", { source: "healthkit", externalId: "ABC-1" });
+    await assertSucceeds(setDoc(vit(ownerDb(), "healthkit_ABC-1"), hk));
+    const hc = bp("owner123", { source: "health_connect", externalId: "rec9" });
+    await assertSucceeds(setDoc(vit(ownerDb(), "health_connect_rec9"), hc));
+
+    await assertFails(setDoc(vit(ownerDb(), "randomid"), hk)); // id does not match source
+    await assertFails(setDoc(vit(ownerDb(), "health_connect_ABC-1"), hk)); // wrong source prefix
+    const noExt = bp("owner123", { source: "healthkit" });
+    await assertFails(setDoc(vit(ownerDb(), "healthkit_x"), noExt));
+    await assertFails(setDoc(vit(ownerDb(), "healthkit_x"), bp("owner123", { source: "healthkit", externalId: "" })));
+  });
+
+  test("Re-syncing the same reading cannot overwrite or duplicate it", async () => {
+    const hk = bp("owner123", { source: "healthkit", externalId: "ABC-1" });
+    await assertSucceeds(setDoc(vit(ownerDb(), "healthkit_ABC-1"), hk));
+    // second write of the same id is an update of a recorded reading -> denied
+    await assertFails(setDoc(vit(ownerDb(), "healthkit_ABC-1"), { ...hk, value: 130 }));
+  });
+
+  test("Manual readings cannot have an externalId or a synced-looking id", async () => {
+    await assertFails(setDoc(vit(ownerDb(), "m1"), bp("owner123", { externalId: "x" })));
+    await assertFails(setDoc(vit(ownerDb(), "healthkit_fake"), bp("owner123")));
+    await assertFails(setDoc(vit(ownerDb(), "health_connect_fake"), bp("owner123")));
+    await assertFails(setDoc(vit(ownerDb(), "z1"), bp("owner123", { source: "fitbit" })));
+  });
+
+  // ---------------- update / delete ----------------
+
+  test("Only the note of a reading can be edited", async () => {
+    await assertSucceeds(updateDoc(vit(ownerDb(), "ownerEntry"), { note: "felt dizzy" }));
+    await assertFails(updateDoc(vit(ownerDb(), "ownerEntry"), { value: 110 }));
+    await assertFails(updateDoc(vit(ownerDb(), "ownerEntry"), { measuredAt: new Date("2020-01-01") }));
+    await assertFails(updateDoc(vit(ownerDb(), "ownerEntry"), { note: "x", createdBy: "caregiver123" }));
+  });
+
+  test("Creator and owner can edit/delete an entry; other caregivers cannot", async () => {
+    await assertSucceeds(updateDoc(vit(cgDb(), "cgEntry"), { note: "mine" }));   // creator
+    await assertSucceeds(updateDoc(vit(ownerDb(), "cgEntry"), { note: "owner" })); // owner
+    await assertFails(updateDoc(vit(cgDb(), "ownerEntry"), { note: "not mine" }));
+    await assertFails(deleteDoc(vit(cgDb(), "ownerEntry")));
+    await assertSucceeds(deleteDoc(vit(cgDb(), "cgEntry")));
+    await assertSucceeds(deleteDoc(vit(ownerDb(), "ownerEntry")));
+  });
+
+  test("Viewers cannot edit or delete readings", async () => {
+    await assertFails(updateDoc(vit(hvDb(), "hvEntry", "profileHV"), { note: "x" }));
+    await assertFails(deleteDoc(vit(hvDb(), "hvEntry", "profileHV")));
+    await assertFails(deleteDoc(vit(viewerDb(), "ownerEntry")));
+    await assertFails(deleteDoc(vit(strangerDb(), "ownerEntry")));
+  });
+
+  // ---------------- symptoms ----------------
+
+  test("Owner and caregiver can log symptoms; viewers cannot", async () => {
+    await assertSucceeds(setDoc(sym(ownerDb(), "s1"), symptom("owner123")));
+    await assertSucceeds(setDoc(sym(cgDb(), "s2"), symptom("caregiver123", { notes: "after lunch" })));
+    await assertFails(setDoc(sym(hvDb(), "s3", "profileHV"), symptom("hv123")));
+    await assertFails(setDoc(sym(viewerDb(), "s4"), symptom("viewer123")));
+    await assertFails(setDoc(sym(anonDb(), "s5"), symptom("owner123")));
+  });
+
+  test("A symptom can link to an existing medication only", async () => {
+    await assertSucceeds(setDoc(sym(ownerDb(), "l1"), symptom("owner123", { medicationId: "med1" })));
+    await assertFails(setDoc(sym(ownerDb(), "l2"), symptom("owner123", { medicationId: "doesNotExist" })));
+    await assertFails(setDoc(sym(ownerDb(), "l3"), symptom("owner123", { medicationId: "" })));
+  });
+
+  test("Symptom severity, name, notes and time are validated", async () => {
+    await assertFails(setDoc(sym(ownerDb(), "v1"), symptom("owner123", { severity: 0 })));
+    await assertFails(setDoc(sym(ownerDb(), "v2"), symptom("owner123", { severity: 6 })));
+    await assertFails(setDoc(sym(ownerDb(), "v3"), symptom("owner123", { severity: 3.5 })));
+    await assertSucceeds(setDoc(sym(ownerDb(), "v4"), symptom("owner123", { severity: 1 })));
+    await assertSucceeds(setDoc(sym(ownerDb(), "v5"), symptom("owner123", { severity: 5 })));
+    await assertFails(setDoc(sym(ownerDb(), "n1"), symptom("owner123", { symptom: "" })));
+    await assertFails(setDoc(sym(ownerDb(), "n2"), symptom("owner123", { symptom: "a".repeat(101) })));
+    await assertSucceeds(setDoc(sym(ownerDb(), "n3"), symptom("owner123", { symptom: "a".repeat(100) })));
+    await assertFails(setDoc(sym(ownerDb(), "o1"), symptom("owner123", { notes: "n".repeat(501) })));
+    await assertFails(setDoc(sym(ownerDb(), "t1"), symptom("owner123", { occurredAt: new Date(Date.now() + 3600 * 1000) })));
+    await assertFails(setDoc(sym(ownerDb(), "x1"), symptom("owner123", { extra: 1 })));
+    await assertFails(setDoc(sym(cgDb(), "x2"), symptom("owner123"))); // createdBy mismatch
+  });
+
+  test("Symptom: only notes editable; creator or owner may delete", async () => {
+    await assertSucceeds(updateDoc(sym(cgDb(), "cgSym"), { notes: "updated" }));
+    await assertFails(updateDoc(sym(cgDb(), "cgSym"), { severity: 1 }));
+    await assertFails(updateDoc(sym(cgDb(), "ownerSym"), { notes: "no" }));
+    await assertFails(deleteDoc(sym(cgDb(), "ownerSym")));
+    await assertSucceeds(deleteDoc(sym(cgDb(), "cgSym")));
+    await assertSucceeds(deleteDoc(sym(ownerDb(), "ownerSym")));
+  });
+
+  // ---------------- vitalsDaily ----------------
+
+  test("Owner and caregiver can write a valid daily summary (and overwrite it)", async () => {
+    await assertSucceeds(setDoc(day(ownerDb(), "glucose_2026-11-14"), daily()));
+    await assertSucceeds(setDoc(day(cgDb(), "glucose_2026-11-14"), daily({ count: 4 })));
+    await assertSucceeds(setDoc(day(ownerDb(), "bloodPressure_2026-11-14"), daily({
+      type: "bloodPressure", avg: 125, min: 120, max: 130, avg2: 82, min2: 80, max2: 85,
+    })));
+  });
+
+  test("Daily summary id must be {type}_{day} and values must be consistent", async () => {
+    await assertFails(setDoc(day(ownerDb(), "glucose_2026-11-15"), daily())); // id/day mismatch
+    await assertFails(setDoc(day(ownerDb(), "x"), daily()));
+    await assertFails(setDoc(day(ownerDb(), "glucose_2026-11-14"), daily({ avg: 500 }))); // avg above max
+    await assertFails(setDoc(day(ownerDb(), "glucose_2026-11-14"), daily({ min: 120, max: 100 })));
+    await assertFails(setDoc(day(ownerDb(), "glucose_2026-11-14"), daily({ min: 5 }))); // below glucose limit
+    await assertFails(setDoc(day(ownerDb(), "glucose_2026-11-14"), daily({ count: 0 })));
+    await assertFails(setDoc(day(ownerDb(), "glucose_2026-11-14"), daily({ avg2: 80, min2: 70, max2: 90 }))); // glucose has no second value
+    await assertFails(setDoc(day(ownerDb(), "bloodPressure_2026-11-14"), daily({
+      type: "bloodPressure", avg: 125, min: 120, max: 130,
+    }))); // BP needs the second value
+    await assertFails(setDoc(day(ownerDb(), "glucose_2026-11-14"), daily({ updatedAt: new Date("2020-01-01") })));
+    await assertFails(setDoc(day(ownerDb(), "glucose_2026-11-14"), daily({ type: "oxygen" })));
+  });
+
+  test("Viewers and strangers cannot write or delete daily summaries", async () => {
+    await assertFails(setDoc(day(hvDb(), "glucose_2026-11-14", "profileHV"), daily()));
+    await assertFails(setDoc(day(viewerDb(), "glucose_2026-11-14"), daily()));
+    await assertFails(setDoc(day(strangerDb(), "glucose_2026-11-14"), daily()));
+    await assertFails(deleteDoc(day(viewerDb(), "glucose_2026-11-13")));
+    await assertSucceeds(deleteDoc(day(cgDb(), "glucose_2026-11-13")));
+  });
+
+  test("Daily summaries are readable by health readers only", async () => {
+    await assertSucceeds(getDoc(day(cgDb(), "glucose_2026-11-13")));
+    await assertFails(getDoc(day(viewerDb(), "glucose_2026-11-13")));
+  });
+
+  test("Other health collections stay read-only (no accidental write access)", async () => {
+    await assertFails(setDoc(doc(ownerDb(), "profiles", "profile1", "prescribers", "p1"), { name: "Dr X" }));
+    await assertFails(setDoc(doc(ownerDb(), "profiles", "profile1", "appointments", "a1"), { title: "x" }));
   });
 });
 

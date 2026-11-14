@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../core/vitals/vital_input.dart';
+import '../../core/vitals/vital_models.dart';
+import '../../core/vitals/vital_summary.dart';
+import '../../core/vitals/vital_types.dart';
+
 /// ============================================================
 /// VITALS DATA
 ///
@@ -78,19 +83,9 @@ class VitalMetric {
     }
   }
 
-  VitalTrend get calculatedTrend {
-    if (history.length < 2) return trend;
-
-    final previous = history[history.length - 2];
-    final latest = history.last;
-    final difference = latest - previous;
-
-    if (difference.abs() < 0.15) {
-      return VitalTrend.stable;
-    }
-
-    return difference > 0 ? VitalTrend.up : VitalTrend.down;
-  }
+  /// The trend is calculated when the metric is built (see
+  /// [VitalsData.fromReadings]), so the card and the chart agree.
+  VitalTrend get calculatedTrend => trend;
 
   IconData get trendIcon {
     switch (calculatedTrend) {
@@ -158,6 +153,130 @@ class VitalsData {
         detailText: 'Resting: 68 - 78 bpm',
       ),
     ];
+  }
+
+  // ------------------------------------------------------------
+  // M15 step 5: real data
+  // ------------------------------------------------------------
+
+  static VitalType typeOf(VitalKind kind) {
+    switch (kind) {
+      case VitalKind.bloodPressure:
+        return VitalType.bloodPressure;
+      case VitalKind.glucose:
+        return VitalType.bloodGlucose;
+      case VitalKind.weight:
+        return VitalType.weight;
+      case VitalKind.heartRate:
+        return VitalType.heartRate;
+    }
+  }
+
+  static VitalKind kindOf(VitalType type) {
+    switch (type) {
+      case VitalType.bloodPressure:
+        return VitalKind.bloodPressure;
+      case VitalType.bloodGlucose:
+        return VitalKind.glucose;
+      case VitalType.weight:
+        return VitalKind.weight;
+      case VitalType.heartRate:
+        return VitalKind.heartRate;
+    }
+  }
+
+  static String titleFor(VitalKind kind) {
+    switch (kind) {
+      case VitalKind.bloodPressure:
+        return 'Blood Pressure';
+      case VitalKind.glucose:
+        return 'Blood Glucose';
+      case VitalKind.weight:
+        return 'Weight';
+      case VitalKind.heartRate:
+        return 'Heart Rate';
+    }
+  }
+
+  static VitalTrend _trendOf(VitalTrendDirection d) {
+    switch (d) {
+      case VitalTrendDirection.up:
+        return VitalTrend.up;
+      case VitalTrendDirection.down:
+        return VitalTrend.down;
+      case VitalTrendDirection.stable:
+        return VitalTrend.stable;
+    }
+  }
+
+  /// How many recent readings feed a card's sparkline and trend.
+  static const int sparklineReadings = 10;
+
+  /// One card per kind that has readings, in a fixed order. [newestFirst]
+  /// holds each kind's latest readings, newest first (as the repository
+  /// returns them). Kinds without readings get no card.
+  static List<VitalMetric> fromReadings(
+    Map<VitalKind, List<VitalReading>> newestFirst,
+  ) {
+    final out = <VitalMetric>[];
+
+    for (final kind in VitalKind.values) {
+      final recent = newestFirst[kind];
+      if (recent == null || recent.isEmpty) continue;
+
+      final window = recent.take(sparklineReadings).toList();
+      final chronological = window.reversed.toList();
+      final latest = window.first;
+
+      final value = kind == VitalKind.bloodPressure && latest.value2 != null
+          ? '${VitalInput.formatNumber(latest.value)}/'
+                '${VitalInput.formatNumber(latest.value2!)}'
+          : VitalInput.formatNumber(latest.value);
+
+      out.add(
+        VitalMetric(
+          id: 'vital_${kind.wireName}',
+          type: typeOf(kind),
+          title: titleFor(kind),
+          value: value,
+          unit: latest.unit,
+          recordedAt: latest.measuredAt,
+          trend: _trendOf(
+            VitalAnalysis.trend([for (final r in chronological) r.toPoint()]),
+          ),
+          history: [for (final r in chronological) r.value],
+          detailText: _detailFor(kind, window),
+        ),
+      );
+    }
+    return out;
+  }
+
+  /// Short, honest sub-line for a card.
+  static String _detailFor(VitalKind kind, List<VitalReading> newestFirst) {
+    switch (kind) {
+      case VitalKind.bloodPressure:
+        return 'Target: <120/80';
+      case VitalKind.glucose:
+        return 'Reference: 70–140 mg/dL';
+      case VitalKind.heartRate:
+        return 'Resting: 60–100 bpm';
+      case VitalKind.weight:
+        if (newestFirst.length < 2) return 'First reading';
+        final change = newestFirst[0].value - newestFirst[1].value;
+        if (change.abs() < 0.05) return 'No change since last reading';
+        final sign = change > 0 ? '+' : '-';
+        return '$sign${VitalInput.formatNumber(double.parse(change.abs().toStringAsFixed(1)))} kg since last reading';
+    }
+  }
+
+  /// How many cards were last recorded today (local time).
+  static int loggedToday(List<VitalMetric> metrics, {DateTime? now}) {
+    final n = now ?? DateTime.now();
+    return metrics.where((m) {
+      final d = m.recordedAt.toLocal();
+      return d.year == n.year && d.month == n.month && d.day == n.day;
+    }).length;
   }
 
   static DateTime? latestUpdate(List<VitalMetric> metrics) {
