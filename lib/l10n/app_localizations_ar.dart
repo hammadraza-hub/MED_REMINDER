@@ -1217,6 +1217,408 @@ class AppLocalizationsAr extends AppLocalizations {
   String get doctorsNameRequired => 'يرجى إدخال الاسم الكامل للطبيب.';
 
   @override
+  String get doctorsErrNameTooLong => 'يجب ألا يتجاوز الاسم 80 حرفًا.';
+
+  @override
+  String get doctorsErrPhone => 'أدخل رقم هاتف صالحًا (من 7 إلى 15 رقمًا).';
+
+  @override
+  String get doctorsErrTooLong => 'أحد الحقول طويل جدًا.';
+
+  @override
+  String get doctorsFieldClinicOnly => 'العيادة (اختياري)';
+
+  @override
+  String get doctorsHintClinicOnly => 'أدخل اسم العيادة';
+
+  @override
+  String get doctorsFieldAddress => 'العنوان (اختياري)';
+
+  @override
+  String get doctorsHintAddress => 'أدخل العنوان';
+
+  @override
+  String get doctorsEditTitle => 'تعديل الطبيب';
+
+  @override
+  String get doctorsUpdated => 'تم تحديث الطبيب';
+
+  @override
+  String get doctorsSaveFailed =>
+      'تعذّر حفظ الطبيب. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get doctorsLoadFailed =>
+      'تعذّر تحميل الأطباء. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get doctorsRetry => 'حاول مرة أخرى';
+
+  @override
+  String get doctorsDeleteAction => 'حذف الطبيب';
+
+  @override
+  String get doctorsDeleteTitle => 'حذف هذا الطبيب؟';
+
+  @override
+  String doctorsDeleteBody(String name) {
+    return 'سيتم حذف $name. تبقى المواعيد والأدوية، لكنها لن تشير إلى هذا الطبيب بعد الآن.';
+  }
+
+  @override
+  String get doctorsDeleted => 'تم حذف الطبيب';
+
+  @override
+  String get doctorsDeleteFailed =>
+      'تعذّر حذف الطبيب. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get doctorsNoMeds => 'لا توجد أدوية نشطة للربط بعد.';
+
+  @override
+  String get doctorsMedsLoadFailed => 'تعذّر تحميل الأدوية.';
+
+  @override
+  String get doctorsNoMedsLinked => 'لا توجد أدوية مرتبطة';
+
+  @override
+  String get doctorsLinkFailed =>
+      'تم حفظ الطبيب، لكن تعذّر ربط الأدوية. افتح الطبيب للمحاولة مرة أخرى.';
+
+  @override
+  String get doctorsReplacesOtherDoctor =>
+      'ربط دواء هنا يستبدل الطبيب الذي كان مرتبطًا به من قبل.';
+
+  @override
+  String get apptTitle => 'المواعيد';
+
+  @override
+  String get apptUpcoming => 'القادمة';
+
+  @override
+  String get apptPast => 'السابقة';
+
+  @override
+  String get apptStatusUpcoming => 'قادم';
+
+  @override
+  String get apptStatusPast => 'سابق';
+
+  @override
+  String get apptNoUpcoming => 'لا توجد مواعيد قادمة';
+
+  @override
+  String get apptNoPast => 'لا توجد مواعيد سابقة';
+
+  @override
+  String get apptListHint => 'اضغط على موعد لعرضه أو تعديله';
+
+  @override
+  String get apptResources => 'موارد سريرية';
+
+  @override
+  String get apptMyPrescribers => 'أطبائي';
+
+  @override
+  String get apptQuestionsForDoctor => 'أسئلة لطبيبي';
+
+  @override
+  String get apptQuestionsSubtitle => 'احتفظ بقائمة لتسأل عنها في زيارتك';
+
+  @override
+  String get apptLoadFailed =>
+      'تعذّر تحميل المواعيد. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get apptRetry => 'حاول مرة أخرى';
+
+  @override
+  String get apptAddTitle => 'إضافة موعد';
+
+  @override
+  String get apptEditTitle => 'تعديل الموعد';
+
+  @override
+  String get apptDetailsSection => 'تفاصيل الموعد';
+
+  @override
+  String get apptDateTime => 'التاريخ والوقت';
+
+  @override
+  String get apptDateTimeHint => 'اضغط للتغيير';
+
+  @override
+  String get apptDoctor => 'الطبيب';
+
+  @override
+  String get apptSelectDoctor => 'اختر الطبيب';
+
+  @override
+  String get apptNoDoctor => 'بدون طبيب';
+
+  @override
+  String get apptPickDoctorTitle => 'اختر الطبيب';
+
+  @override
+  String get apptNoDoctorsOnFile =>
+      'لا يوجد أطباء بعد. يمكنك إضافة طبيب من قسم الأطباء.';
+
+  @override
+  String get apptType => 'نوع الموعد';
+
+  @override
+  String get apptTypeFollowUp => 'متابعة';
+
+  @override
+  String get apptTypeCheckup => 'فحص';
+
+  @override
+  String get apptTypeLabReview => 'مراجعة التحاليل';
+
+  @override
+  String get apptTypeOther => 'أخرى';
+
+  @override
+  String get apptLocation => 'المكان (اختياري)';
+
+  @override
+  String get apptLocationHint => 'مثال: عيادة سيتي كير، جناح 4';
+
+  @override
+  String get apptNotes => 'ملاحظات';
+
+  @override
+  String get apptOptional => 'اختياري';
+
+  @override
+  String get apptNotesHint =>
+      'مثال: إحضار آخر نتائج التحاليل، السؤال عن تغيير الجرعة...';
+
+  @override
+  String get apptRemindersTitle => 'التذكيرات';
+
+  @override
+  String get apptRemindersSubtitle =>
+      'احصل على إشعار على هذا الهاتف قبل الموعد.';
+
+  @override
+  String get apptOffsetWeek => 'قبل أسبوع';
+
+  @override
+  String get apptOffsetDay => 'قبل يوم';
+
+  @override
+  String get apptOffsetHours2 => 'قبل ساعتين';
+
+  @override
+  String get apptOffsetHour => 'قبل ساعة';
+
+  @override
+  String get apptOffsetMinutes30 => 'قبل 30 دقيقة';
+
+  @override
+  String apptOffsetCustom(int minutes) {
+    return 'قبل $minutes دقيقة';
+  }
+
+  @override
+  String get apptReminderNoteTitle => 'تذكيرات الهاتف';
+
+  @override
+  String get apptReminderNote =>
+      'تُضبط التذكيرات على هذا الهاتف، وتُضبط من جديد عند فتح التطبيق على هاتف جديد.';
+
+  @override
+  String get apptSave => 'حفظ الموعد';
+
+  @override
+  String get apptSaved => 'تمت إضافة الموعد';
+
+  @override
+  String get apptUpdated => 'تم تحديث الموعد';
+
+  @override
+  String get apptDeleted => 'تم حذف الموعد';
+
+  @override
+  String get apptSaveFailed =>
+      'تعذّر حفظ الموعد. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get apptDeleteFailed =>
+      'تعذّر حذف الموعد. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get apptDeleteTitle => 'حذف هذا الموعد؟';
+
+  @override
+  String get apptDeleteBody => 'سيتم حذف الموعد وتذكيراته.';
+
+  @override
+  String get apptDeleteAction => 'حذف الموعد';
+
+  @override
+  String get apptErrFuture => 'يرجى اختيار تاريخ ووقت في المستقبل.';
+
+  @override
+  String get apptErrTooLong => 'المكان أو الملاحظات طويلة جدًا.';
+
+  @override
+  String get apptErrReminders => 'يرجى اختيار 5 تذكيرات على الأكثر.';
+
+  @override
+  String apptNotifTitle(String doctor) {
+    return 'موعد مع $doctor';
+  }
+
+  @override
+  String get apptNotifTitleNoDoctor => 'موعد قادم';
+
+  @override
+  String apptNotifBody(String type, String when) {
+    return '$type · $when';
+  }
+
+  @override
+  String get apptChannelName => 'تذكيرات المواعيد';
+
+  @override
+  String get apptChannelDesc => 'تذكيرات بمواعيد الأطباء القادمة';
+
+  @override
+  String get notesTitle => 'ملاحظات للطبيب';
+
+  @override
+  String get notesBanner =>
+      'تنتقل هذه الملاحظات إلى موعدك القادم — ضع علامة عليها بعد مناقشتها.';
+
+  @override
+  String get notesAddHint => 'أضف سؤالاً أو ملاحظة...';
+
+  @override
+  String notesLinkSwitch(String when) {
+    return 'ربط بالموعد القادم ($when)';
+  }
+
+  @override
+  String notesLinkedTag(String when) {
+    return 'الموعد: $when';
+  }
+
+  @override
+  String get notesDiscussed => 'تمت المناقشة';
+
+  @override
+  String notesSummary(int open, int done) {
+    return '$open مفتوحة · $done تمت مناقشتها';
+  }
+
+  @override
+  String get notesClearDiscussed => 'مسح ما تمت مناقشته';
+
+  @override
+  String get notesClearTitle => 'مسح الملاحظات التي تمت مناقشتها؟';
+
+  @override
+  String notesClearBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'سيتم حذف $count ملاحظات تمت مناقشتها.',
+      one: 'سيتم حذف ملاحظة واحدة تمت مناقشتها.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notesCleared => 'تم مسح الملاحظات التي تمت مناقشتها';
+
+  @override
+  String get notesEditTitle => 'تعديل الملاحظة';
+
+  @override
+  String get notesEditHint => 'أدخل سؤالاً أو ملاحظة...';
+
+  @override
+  String get notesSave => 'حفظ';
+
+  @override
+  String get notesNextAppointment => 'الموعد القادم';
+
+  @override
+  String get notesEmptyTitle => 'لا توجد ملاحظات بعد';
+
+  @override
+  String get notesEmptySubtitle => 'أضف سؤالاً لمناقشته في موعدك القادم.';
+
+  @override
+  String get notesDeleted => 'تم حذف الملاحظة';
+
+  @override
+  String get notesDeleteTitle => 'حذف هذه الملاحظة؟';
+
+  @override
+  String get notesDeleteAction => 'حذف';
+
+  @override
+  String get notesErrEmpty => 'يرجى إدخال سؤال أو ملاحظة.';
+
+  @override
+  String get notesErrTooLong => 'يمكن أن تصل الملاحظة إلى 500 حرف.';
+
+  @override
+  String get notesSaveFailed =>
+      'تعذّر حفظ الملاحظة. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get notesLoadFailed =>
+      'تعذّر تحميل الملاحظات. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get notesRetry => 'حاول مرة أخرى';
+
+  @override
+  String notesToday(String time) {
+    return 'اليوم، $time';
+  }
+
+  @override
+  String notesYesterday(String time) {
+    return 'أمس · $time';
+  }
+
+  @override
+  String notesDateTime(String date, String time) {
+    return '$date · $time';
+  }
+
+  @override
+  String apptQuestionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count أسئلة مفتوحة',
+      one: 'سؤال مفتوح واحد',
+      zero: 'لا توجد أسئلة مفتوحة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get proGateTitle => 'ميزة Solo Pro';
+
+  @override
+  String get proGateBody =>
+      'الأطباء والمواعيد والملاحظات للطبيب جزء من خطة Solo Pro. ما حفظته سابقًا يبقى هنا ويمكنك عرضه أو حذفه.';
+
+  @override
+  String get proGateSeePlans => 'عرض الخطط';
+
+  @override
+  String get proReadOnlyBanner =>
+      'للقراءة فقط في الخطة المجانية. انتقل إلى Solo Pro للإضافة أو التعديل.';
+
+  @override
   String get medsTitle => 'الأدوية';
 
   @override

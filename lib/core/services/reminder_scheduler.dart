@@ -11,6 +11,8 @@ import 'package:timezone/timezone.dart' as tz;
 import '../profile/profile_controller.dart';
 import '../../models/dose.dart';
 import '../../repositories/dose_repository.dart';
+import '../doctors/appointment_reminder_service.dart';
+import 'appointment_reminders.dart';
 import 'reminder_action_queue.dart';
 import '../../repositories/settings_repository.dart';
 
@@ -246,8 +248,13 @@ class ReminderScheduler with WidgetsBindingObserver {
         .take(_maxScheduled)
         .toList();
 
-    // Simple + idempotent; also clears notifications left from a previous run.
-    await _plugin.cancelAll();
+    // Simple + idempotent; also clears dose notifications left from a previous
+    // run. Appointment reminders (M16) are kept: they have their own sync.
+    for (final pending in await _plugin.pendingNotificationRequests()) {
+      if (!AppointmentReminderService.isAppointmentPayload(pending.payload)) {
+        await _plugin.cancel(id: pending.id);
+      }
+    }
 
     final mode = await _scheduleMode();
     var alarms = 0;
@@ -259,6 +266,9 @@ class ReminderScheduler with WidgetsBindingObserver {
       'ReminderScheduler: ${upcoming.length} dose(s), $alarms alarm(s) '
       'for $profileId (${mode.name})',
     );
+
+    // Appointment reminders follow the same triggers (start, resume, profile).
+    await AppointmentReminders.instance.syncProfile(profileId);
   }
 
   /// Schedules the reminder plus escalation repeats for one dose.

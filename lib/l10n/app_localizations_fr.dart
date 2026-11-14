@@ -1237,6 +1237,416 @@ class AppLocalizationsFr extends AppLocalizations {
       'Veuillez saisir le nom complet du médecin.';
 
   @override
+  String get doctorsErrNameTooLong =>
+      'Le nom doit comporter 80 caractères maximum.';
+
+  @override
+  String get doctorsErrPhone =>
+      'Saisissez un numéro de téléphone valide (7 à 15 chiffres).';
+
+  @override
+  String get doctorsErrTooLong => 'Un des champs est trop long.';
+
+  @override
+  String get doctorsFieldClinicOnly => 'Clinique (facultatif)';
+
+  @override
+  String get doctorsHintClinicOnly => 'Saisissez le nom de la clinique';
+
+  @override
+  String get doctorsFieldAddress => 'Adresse (facultatif)';
+
+  @override
+  String get doctorsHintAddress => 'Saisissez l’adresse';
+
+  @override
+  String get doctorsEditTitle => 'Modifier le médecin';
+
+  @override
+  String get doctorsUpdated => 'Médecin mis à jour';
+
+  @override
+  String get doctorsSaveFailed =>
+      'Impossible d’enregistrer le médecin. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get doctorsLoadFailed =>
+      'Impossible de charger les médecins. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get doctorsRetry => 'Réessayer';
+
+  @override
+  String get doctorsDeleteAction => 'Supprimer le médecin';
+
+  @override
+  String get doctorsDeleteTitle => 'Supprimer ce médecin ?';
+
+  @override
+  String doctorsDeleteBody(String name) {
+    return '$name sera supprimé. Les rendez-vous et les médicaments sont conservés, mais ne mentionneront plus ce médecin.';
+  }
+
+  @override
+  String get doctorsDeleted => 'Médecin supprimé';
+
+  @override
+  String get doctorsDeleteFailed =>
+      'Impossible de supprimer le médecin. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get doctorsNoMeds =>
+      'Aucun médicament actif à associer pour le moment.';
+
+  @override
+  String get doctorsMedsLoadFailed => 'Impossible de charger les médicaments.';
+
+  @override
+  String get doctorsNoMedsLinked => 'Aucun médicament associé';
+
+  @override
+  String get doctorsLinkFailed =>
+      'Médecin enregistré, mais les médicaments n’ont pas pu être associés. Ouvrez le médecin pour réessayer.';
+
+  @override
+  String get doctorsReplacesOtherDoctor =>
+      'Associer un médicament ici remplace le médecin qu’il avait auparavant.';
+
+  @override
+  String get apptTitle => 'Rendez-vous';
+
+  @override
+  String get apptUpcoming => 'À venir';
+
+  @override
+  String get apptPast => 'Passés';
+
+  @override
+  String get apptStatusUpcoming => 'À VENIR';
+
+  @override
+  String get apptStatusPast => 'PASSÉ';
+
+  @override
+  String get apptNoUpcoming => 'Aucun rendez-vous à venir';
+
+  @override
+  String get apptNoPast => 'Aucun rendez-vous passé';
+
+  @override
+  String get apptListHint =>
+      'Touchez un rendez-vous pour l’afficher ou le modifier';
+
+  @override
+  String get apptResources => 'RESSOURCES CLINIQUES';
+
+  @override
+  String get apptMyPrescribers => 'Mes médecins';
+
+  @override
+  String get apptQuestionsForDoctor => 'Questions pour mon médecin';
+
+  @override
+  String get apptQuestionsSubtitle =>
+      'Gardez une liste à poser lors de votre visite';
+
+  @override
+  String get apptLoadFailed =>
+      'Impossible de charger les rendez-vous. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get apptRetry => 'Réessayer';
+
+  @override
+  String get apptAddTitle => 'Ajouter un rendez-vous';
+
+  @override
+  String get apptEditTitle => 'Modifier le rendez-vous';
+
+  @override
+  String get apptDetailsSection => 'DÉTAILS DU RENDEZ-VOUS';
+
+  @override
+  String get apptDateTime => 'Date et heure';
+
+  @override
+  String get apptDateTimeHint => 'Touchez pour modifier';
+
+  @override
+  String get apptDoctor => 'Médecin';
+
+  @override
+  String get apptSelectDoctor => 'Choisir un médecin';
+
+  @override
+  String get apptNoDoctor => 'Aucun médecin';
+
+  @override
+  String get apptPickDoctorTitle => 'Choisir un médecin';
+
+  @override
+  String get apptNoDoctorsOnFile =>
+      'Aucun médecin enregistré. Vous pouvez en ajouter un dans Médecins.';
+
+  @override
+  String get apptType => 'Type de rendez-vous';
+
+  @override
+  String get apptTypeFollowUp => 'Suivi';
+
+  @override
+  String get apptTypeCheckup => 'Bilan';
+
+  @override
+  String get apptTypeLabReview => 'Résultats d’analyses';
+
+  @override
+  String get apptTypeOther => 'Autre';
+
+  @override
+  String get apptLocation => 'Lieu (facultatif)';
+
+  @override
+  String get apptLocationHint => 'ex. Clinique City Care, cabinet 4';
+
+  @override
+  String get apptNotes => 'Notes';
+
+  @override
+  String get apptOptional => 'Facultatif';
+
+  @override
+  String get apptNotesHint =>
+      'ex. Apporter les derniers résultats, demander un changement de dose...';
+
+  @override
+  String get apptRemindersTitle => 'Rappels';
+
+  @override
+  String get apptRemindersSubtitle =>
+      'Recevez une notification sur ce téléphone avant le rendez-vous.';
+
+  @override
+  String get apptOffsetWeek => '1 semaine avant';
+
+  @override
+  String get apptOffsetDay => '1 jour avant';
+
+  @override
+  String get apptOffsetHours2 => '2 heures avant';
+
+  @override
+  String get apptOffsetHour => '1 heure avant';
+
+  @override
+  String get apptOffsetMinutes30 => '30 minutes avant';
+
+  @override
+  String apptOffsetCustom(int minutes) {
+    return '$minutes min avant';
+  }
+
+  @override
+  String get apptReminderNoteTitle => 'Rappels sur le téléphone';
+
+  @override
+  String get apptReminderNote =>
+      'Les rappels sont programmés sur ce téléphone. Ils sont reprogrammés quand vous ouvrez l’appli sur un nouveau téléphone.';
+
+  @override
+  String get apptSave => 'Enregistrer le rendez-vous';
+
+  @override
+  String get apptSaved => 'Rendez-vous ajouté';
+
+  @override
+  String get apptUpdated => 'Rendez-vous mis à jour';
+
+  @override
+  String get apptDeleted => 'Rendez-vous supprimé';
+
+  @override
+  String get apptSaveFailed =>
+      'Impossible d’enregistrer le rendez-vous. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get apptDeleteFailed =>
+      'Impossible de supprimer le rendez-vous. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get apptDeleteTitle => 'Supprimer ce rendez-vous ?';
+
+  @override
+  String get apptDeleteBody =>
+      'Le rendez-vous et ses rappels seront supprimés.';
+
+  @override
+  String get apptDeleteAction => 'Supprimer le rendez-vous';
+
+  @override
+  String get apptErrFuture => 'Veuillez choisir une date et une heure futures.';
+
+  @override
+  String get apptErrTooLong => 'Le lieu ou les notes sont trop longs.';
+
+  @override
+  String get apptErrReminders => 'Choisissez 5 rappels au maximum.';
+
+  @override
+  String apptNotifTitle(String doctor) {
+    return 'Rendez-vous avec $doctor';
+  }
+
+  @override
+  String get apptNotifTitleNoDoctor => 'Rendez-vous à venir';
+
+  @override
+  String apptNotifBody(String type, String when) {
+    return '$type · $when';
+  }
+
+  @override
+  String get apptChannelName => 'Rappels de rendez-vous';
+
+  @override
+  String get apptChannelDesc => 'Rappels des prochains rendez-vous médicaux';
+
+  @override
+  String get notesTitle => 'Notes pour le médecin';
+
+  @override
+  String get notesBanner =>
+      'Ces notes sont reportées à votre prochain rendez-vous : cochez-les une fois abordées.';
+
+  @override
+  String get notesAddHint => 'Ajoutez une question ou une note...';
+
+  @override
+  String notesLinkSwitch(String when) {
+    return 'Lier au prochain rendez-vous ($when)';
+  }
+
+  @override
+  String notesLinkedTag(String when) {
+    return 'Rendez-vous : $when';
+  }
+
+  @override
+  String get notesDiscussed => 'Abordée';
+
+  @override
+  String notesSummary(int open, int done) {
+    return '$open ouvertes · $done abordées';
+  }
+
+  @override
+  String get notesClearDiscussed => 'Effacer les notes abordées';
+
+  @override
+  String get notesClearTitle => 'Effacer les notes abordées ?';
+
+  @override
+  String notesClearBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notes abordées seront supprimées.',
+      one: '1 note abordée sera supprimée.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notesCleared => 'Notes abordées effacées';
+
+  @override
+  String get notesEditTitle => 'Modifier la note';
+
+  @override
+  String get notesEditHint => 'Saisissez une question ou une note...';
+
+  @override
+  String get notesSave => 'Enregistrer';
+
+  @override
+  String get notesNextAppointment => 'Prochain rendez-vous';
+
+  @override
+  String get notesEmptyTitle => 'Aucune note pour le moment';
+
+  @override
+  String get notesEmptySubtitle =>
+      'Ajoutez une question à aborder lors de votre prochain rendez-vous.';
+
+  @override
+  String get notesDeleted => 'Note supprimée';
+
+  @override
+  String get notesDeleteTitle => 'Supprimer cette note ?';
+
+  @override
+  String get notesDeleteAction => 'Supprimer';
+
+  @override
+  String get notesErrEmpty => 'Veuillez saisir une question ou une note.';
+
+  @override
+  String get notesErrTooLong =>
+      'Une note peut contenir jusqu’à 500 caractères.';
+
+  @override
+  String get notesSaveFailed =>
+      'Impossible d’enregistrer la note. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get notesLoadFailed =>
+      'Impossible de charger les notes. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get notesRetry => 'Réessayer';
+
+  @override
+  String notesToday(String time) {
+    return 'Aujourd’hui, $time';
+  }
+
+  @override
+  String notesYesterday(String time) {
+    return 'Hier · $time';
+  }
+
+  @override
+  String notesDateTime(String date, String time) {
+    return '$date · $time';
+  }
+
+  @override
+  String apptQuestionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count questions ouvertes',
+      one: '1 question ouverte',
+      zero: 'Aucune question ouverte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get proGateTitle => 'Fonction Solo Pro';
+
+  @override
+  String get proGateBody =>
+      'Les médecins, les rendez-vous et les notes pour le médecin font partie de l’offre Solo Pro. Ce que vous avez déjà enregistré reste ici et peut être consulté ou supprimé.';
+
+  @override
+  String get proGateSeePlans => 'Voir les offres';
+
+  @override
+  String get proReadOnlyBanner =>
+      'Lecture seule avec l’offre gratuite. Passez à Solo Pro pour ajouter ou modifier.';
+
+  @override
   String get medsTitle => 'Médicaments';
 
   @override

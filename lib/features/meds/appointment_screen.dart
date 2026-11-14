@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/doctors/appointment_models.dart';
 import '../../core/profile/profile_controller.dart';
+import '../../core/services/appointment_reminders.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
+import '../../repositories/firebase_appointment_repository.dart';
+import '../../repositories/firebase_doctor_note_repository.dart';
+import '../../repositories/firebase_prescriber_repository.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
-import 'appointments_data.dart';
-import '../../features/doctors/doctors_data.dart';
+import '../../widgets/pro_gate_widgets.dart';
+import '../../core/services/pro_access.dart';
 import '../../features/doctors/doctors_screen.dart';
 import 'add_appointment_screen.dart';
 import 'doctor_notes_screen.dart';
@@ -36,15 +43,13 @@ import 'doctor_notes_screen.dart';
 /// Shared AppBottomNavigation — baaki detail screens jaisa.
 /// Tab tap par shell ke us tab par wapas.
 ///
-/// DATA:
-/// UI → AppointmentsData.appointmentsFor(memberId)
+/// DATA (M16 step 5):
+/// FirebaseAppointmentRepository (profiles/{pid}/appointments) +
+/// FirebasePrescriberRepository for the doctor names.
 ///
 /// MEMBER ISOLATION:
 /// ProfileController.memberId se records filter hote hain —
 /// Sarah/Mom/Jake ke appointments alag-alag.
-///
-/// TODO Backend:
-/// Firestore appointments/{id} list with prescriber references.
 /// ============================================================
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -56,7 +61,13 @@ class AppointmentsScreen extends StatefulWidget {
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
   bool _showUpcoming = true;
 
-  List<AppointmentEntry> _appointments = [];
+  List<Appointment> _appointments = [];
+  Map<String, String> _doctorNames = {};
+  int _doctorCount = 0;
+  int _openNotes = 0;
+  bool _loading = true;
+  bool _failed = false;
+  bool _pro = true;
 
   @override
   void initState() {
@@ -69,12 +80,65 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   // DATA
   // ============================================================
 
-  void _loadAppointments() {
+  Future<void> _loadAppointments() async {
     final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) {
+      setState(() {
+        _loading = false;
+        _appointments = [];
+      });
+      return;
+    }
 
     setState(() {
-      _appointments = AppointmentsData.appointmentsFor(memberId);
+      _loading = true;
+      _failed = false;
     });
+
+    try {
+      final appointments = await FirebaseAppointmentRepository.instance.list(
+        memberId,
+      );
+
+      var names = <String, String>{};
+      var doctorCount = 0;
+      try {
+        final doctors = await FirebasePrescriberRepository.instance.list(
+          memberId,
+        );
+        names = {for (final d in doctors) d.id: d.name};
+        doctorCount = doctors.length;
+      } catch (_) {
+        // Appointments still show; the doctor name is just left out.
+      }
+
+      final pro = await ProAccess.gate.canWrite(memberId);
+
+      var openNotes = 0;
+      try {
+        openNotes = await FirebaseDoctorNoteRepository.instance.openCount(
+          memberId,
+        );
+      } catch (_) {
+        // Only the subtitle of the notes card; leave it at 0.
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _appointments = appointments;
+        _doctorNames = names;
+        _doctorCount = doctorCount;
+        _openNotes = openNotes;
+        _pro = pro;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _failed = true;
+      });
+    }
   }
 
   // ============================================================
@@ -105,15 +169,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   // appointment khud Upcoming se Past tab mein chala jayega.
   // ============================================================
 
-  List<AppointmentEntry> get _filteredAppointments {
+  List<Appointment> get _filteredAppointments {
     final items = _appointments
-        .where((appointment) => appointment.isUpcoming == _showUpcoming)
+        .where((appointment) => appointment.isUpcoming() == _showUpcoming)
         .toList();
 
     items.sort(
       (a, b) => _showUpcoming
-          ? a.scheduledAt.compareTo(b.scheduledAt)
-          : b.scheduledAt.compareTo(a.scheduledAt),
+          ? a.startsAt.compareTo(b.startsAt)
+          : b.startsAt.compareTo(a.startsAt),
     );
 
     return items;
@@ -188,10 +252,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
               const SizedBox(width: 2),
 
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Appointments',
-                  style: TextStyle(
+                  AppLocalizations.of(context).apptTitle,
+                  style: const TextStyle(
                     color: AppColors.surface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -221,11 +285,20 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!_loading && !_pro) const ProReadOnlyBanner(),
+
           _buildActionsRow(),
 
           const SizedBox(height: 12),
 
-          if (_filteredAppointments.isEmpty)
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_failed)
+            _buildErrorState()
+          else if (_filteredAppointments.isEmpty)
             _buildEmptyState()
           else
             for (final appointment in _filteredAppointments) ...[
@@ -239,10 +312,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
           const SizedBox(height: 20),
 
-          const Text(
-            'Tap an appointment to view location and details',
+          Text(
+            AppLocalizations.of(context).apptListHint,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.textTeal,
               fontSize: 10,
               fontWeight: FontWeight.w400,
@@ -261,7 +334,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     return Row(
       children: [
         _buildFilterButton(
-          title: 'Upcoming',
+          title: AppLocalizations.of(context).apptUpcoming,
           selected: _showUpcoming,
           onTap: () {
             setState(() {
@@ -273,7 +346,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         const SizedBox(width: 8),
 
         _buildFilterButton(
-          title: 'Past',
+          title: AppLocalizations.of(context).apptPast,
           selected: !_showUpcoming,
           onTap: () {
             setState(() {
@@ -338,7 +411,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   // APPOINTMENT CARD
   // ============================================================
 
-  Widget _buildAppointmentCard(AppointmentEntry appointment) {
+  Widget _buildAppointmentCard(Appointment appointment) {
+    final l10n = AppLocalizations.of(context);
+    final doctorName = _doctorNames[appointment.prescriberId];
+    final upcoming = appointment.isUpcoming();
+
     return GestureDetector(
       onTap: () {
         _openAppointment(appointment);
@@ -359,16 +436,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: appointment.isUpcoming
+                    color: upcoming
                         ? AppColors.upcomingBackground
                         : AppColors.successBackground,
                     borderRadius: BorderRadius.circular(9),
                   ),
                   child: Icon(
                     Icons.calendar_month_outlined,
-                    color: appointment.isUpcoming
-                        ? AppColors.textTeal
-                        : AppColors.primary,
+                    color: upcoming ? AppColors.textTeal : AppColors.primary,
                     size: 20,
                   ),
                 ),
@@ -380,7 +455,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        appointment.doctorName,
+                        doctorName ??
+                            AppointmentTexts.typeLabel(l10n, appointment.type),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -392,23 +468,24 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
                       const SizedBox(height: 3),
 
-                      Text(
-                        appointment.type,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textTeal,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w400,
+                      if (doctorName != null)
+                        Text(
+                          AppointmentTexts.typeLabel(l10n, appointment.type),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textTeal,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
 
                 const SizedBox(width: 8),
 
-                _buildStatusChip(appointment.isUpcoming),
+                _buildStatusChip(upcoming),
               ],
             ),
 
@@ -430,7 +507,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
                 Expanded(
                   child: Text(
-                    _formatDate(appointment.scheduledAt),
+                    _formatDate(appointment.startsAt),
                     style: const TextStyle(
                       color: AppColors.textTeal,
                       fontSize: 10,
@@ -460,7 +537,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        upcoming ? 'UPCOMING' : 'PAST',
+        upcoming
+            ? AppLocalizations.of(context).apptStatusUpcoming
+            : AppLocalizations.of(context).apptStatusPast,
         style: const TextStyle(
           color: AppColors.textTeal,
           fontSize: 8,
@@ -476,20 +555,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   // ============================================================
 
   Widget _buildResources() {
-    final doctorsCount = DoctorsData.allDoctorsFor(
-      ProfileController.instance.memberId,
-    ).length;
-
-    final doctorsLabel = doctorsCount == 1
-        ? '1 doctor on file'
-        : '$doctorsCount doctors on file';
+    final l10n = AppLocalizations.of(context);
+    final doctorsLabel = l10n.doctorsCountOnFile(_doctorCount);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'CLINICAL RESOURCES',
-          style: TextStyle(
+        Text(
+          l10n.apptResources,
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 10,
             fontWeight: FontWeight.w700,
@@ -501,7 +575,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
         _buildResourceCard(
           icon: Icons.medical_services_outlined,
-          title: 'My Prescribers',
+          title: l10n.apptMyPrescribers,
           subtitle: doctorsLabel,
           onTap: _openPrescribers,
         ),
@@ -510,8 +584,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
         _buildResourceCard(
           icon: Icons.description_outlined,
-          title: 'Questions for my Doctor',
-          subtitle: '3 notes',
+          title: l10n.apptQuestionsForDoctor,
+          subtitle: l10n.apptQuestionsCount(_openNotes),
           onTap: _openDoctorNotes,
         ),
       ],
@@ -585,6 +659,37 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   }
 
   // ============================================================
+  // ERROR STATE
+  // ============================================================
+
+  Widget _buildErrorState() {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.cloud_off_outlined,
+            color: AppColors.fieldHint,
+            size: 42,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            l10n.apptLoadFailed,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(onPressed: _loadAppointments, child: Text(l10n.apptRetry)),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
   // EMPTY STATE
   // ============================================================
 
@@ -607,7 +712,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           const SizedBox(height: 10),
 
           Text(
-            _showUpcoming ? 'No upcoming appointments' : 'No past appointments',
+            _showUpcoming
+                ? AppLocalizations.of(context).apptNoUpcoming
+                : AppLocalizations.of(context).apptNoPast,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppColors.textPrimary,
@@ -624,69 +731,56 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   // NAVIGATION
   // ============================================================
 
-  Future<void> _openAddAppointment() async {
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const AddAppointmentScreen()),
+  Future<void> _openAddAppointment() => _openForm();
+
+  Future<void> _openForm({Appointment? existing}) async {
+    // Adding is a Solo Pro feature; opening an existing appointment is always
+    // fine (its Save is checked again on the form).
+    if (existing == null) {
+      final memberId = ProfileController.instance.memberId;
+      if (memberId != null && memberId.isNotEmpty) {
+        if (!await ensureProForWrite(context, memberId)) return;
+      }
+      if (!mounted) return;
+    }
+
+    final result = await Navigator.of(context).push<AppointmentFormResult>(
+      MaterialPageRoute(
+        builder: (_) => AddAppointmentScreen(existing: existing),
+      ),
     );
 
-    if (result == true && mounted) {
-      _loadAppointments();
-    }
+    if (result == null || !mounted) return;
+
+    final l10n = AppLocalizations.of(context);
+    _showMessage(switch (result) {
+      AppointmentFormResult.added => l10n.apptSaved,
+      AppointmentFormResult.updated => l10n.apptUpdated,
+      AppointmentFormResult.deleted => l10n.apptDeleted,
+    });
+    _loadAppointments();
   }
 
-  void _openAppointment(AppointmentEntry appointment) {
-    // TODO: Appointment detail/edit screen — reference UI pending.
-    _showMessage('${appointment.doctorName} — ${appointment.type}');
-  }
+  void _openAppointment(Appointment appointment) =>
+      _openForm(existing: appointment);
 
   void _openPrescribers() {
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const DoctorsScreen()));
   }
 
-  void _openDoctorNotes() {
-    Navigator.of(context)
+  Future<void> _openDoctorNotes() async {
+    await Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const NotesForDoctorScreen()));
+    if (mounted) _loadAppointments(); // the open-notes count may have changed
   }
 
   // ============================================================
   // DATE FORMAT
   // ============================================================
 
-  String _formatDate(DateTime date) {
-    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
-    final weekday = weekdays[date.weekday - 1];
-    final month = months[date.month - 1];
-
-    final hour = date.hour > 12
-        ? date.hour - 12
-        : date.hour == 0
-        ? 12
-        : date.hour;
-
-    final minute = date.minute.toString().padLeft(2, '0');
-
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-
-    final day = date.day.toString().padLeft(2, '0');
-
-    return '$weekday, $day $month ${date.year} · '
-        '$hour:$minute $period';
-  }
+  String _formatDate(DateTime date) =>
+      DateFormat.yMMMEd(AppLocalizations.of(context).localeName)
+          .add_jm()
+          .format(date);
 }

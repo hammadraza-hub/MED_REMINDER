@@ -5,11 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../repositories/firebase_subscription_repository.dart';
 import '../../repositories/firebase_vitals_repository.dart';
 import '../vitals/health_sync_mapper.dart';
 import '../vitals/vital_types.dart';
 import 'health_sync_service.dart';
+import 'pro_access.dart';
 
 /// ============================================================
 /// HEALTH PLUGIN SOURCE — M15 step 7
@@ -140,28 +140,10 @@ class PrefsHealthSyncStateStore implements HealthSyncStateStore {
   }
 }
 
-/// Debug builds only: `--dart-define=HEALTH_SYNC_DEBUG_UNLOCK=true` skips the
-/// Pro check so the feature can be tried without a subscription. It is a
-/// compile-time constant guarded by [kDebugMode], so it can never be active in
-/// a release build.
-const bool _debugUnlock = bool.fromEnvironment('HEALTH_SYNC_DEBUG_UNLOCK');
-
-Future<bool> _isPro() async {
-  if (kDebugMode && _debugUnlock) return true;
-
-  final uid = FirebaseAuth.instance.currentUser?.uid;
-  if (uid == null) return false;
-  try {
-    return await FirebaseSubscriptionRepository.instance.hasPremiumAccess(uid);
-  } catch (_) {
-    return false; // fail closed
-  }
-}
-
 /// The real wiring used by the app.
 HealthSyncService buildHealthSyncService() => HealthSyncService(
   source: PluginHealthDataSource(),
   store: PrefsHealthSyncStateStore(),
-  isPro: _isPro,
+  isPro: ProAccess.gate.isPro,
   importer: FirebaseVitalsRepository.instance.importSynced,
 );

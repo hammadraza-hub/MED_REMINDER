@@ -1227,6 +1227,410 @@ class AppLocalizationsEn extends AppLocalizations {
   String get doctorsNameRequired => 'Please enter the doctor\'s full name.';
 
   @override
+  String get doctorsErrNameTooLong => 'Name must be 80 characters or fewer.';
+
+  @override
+  String get doctorsErrPhone => 'Enter a valid phone number (7 to 15 digits).';
+
+  @override
+  String get doctorsErrTooLong => 'One of the fields is too long.';
+
+  @override
+  String get doctorsFieldClinicOnly => 'Clinic (optional)';
+
+  @override
+  String get doctorsHintClinicOnly => 'Enter clinic name';
+
+  @override
+  String get doctorsFieldAddress => 'Address (optional)';
+
+  @override
+  String get doctorsHintAddress => 'Enter address';
+
+  @override
+  String get doctorsEditTitle => 'Edit Doctor';
+
+  @override
+  String get doctorsUpdated => 'Doctor updated';
+
+  @override
+  String get doctorsSaveFailed =>
+      'Could not save the doctor. Check your connection and try again.';
+
+  @override
+  String get doctorsLoadFailed =>
+      'Could not load doctors. Check your connection and try again.';
+
+  @override
+  String get doctorsRetry => 'Try Again';
+
+  @override
+  String get doctorsDeleteAction => 'Delete doctor';
+
+  @override
+  String get doctorsDeleteTitle => 'Delete this doctor?';
+
+  @override
+  String doctorsDeleteBody(String name) {
+    return '$name will be removed. Appointments and medications stay, but will no longer name this doctor.';
+  }
+
+  @override
+  String get doctorsDeleted => 'Doctor deleted';
+
+  @override
+  String get doctorsDeleteFailed =>
+      'Could not delete the doctor. Check your connection and try again.';
+
+  @override
+  String get doctorsNoMeds => 'No active medications to link yet.';
+
+  @override
+  String get doctorsMedsLoadFailed => 'Could not load medications.';
+
+  @override
+  String get doctorsNoMedsLinked => 'No medications linked';
+
+  @override
+  String get doctorsLinkFailed =>
+      'Doctor saved, but the medications could not be linked. Open the doctor to try again.';
+
+  @override
+  String get doctorsReplacesOtherDoctor =>
+      'Linking a medication here replaces the doctor it had before.';
+
+  @override
+  String get apptTitle => 'Appointments';
+
+  @override
+  String get apptUpcoming => 'Upcoming';
+
+  @override
+  String get apptPast => 'Past';
+
+  @override
+  String get apptStatusUpcoming => 'UPCOMING';
+
+  @override
+  String get apptStatusPast => 'PAST';
+
+  @override
+  String get apptNoUpcoming => 'No upcoming appointments';
+
+  @override
+  String get apptNoPast => 'No past appointments';
+
+  @override
+  String get apptListHint => 'Tap an appointment to view or edit it';
+
+  @override
+  String get apptResources => 'CLINICAL RESOURCES';
+
+  @override
+  String get apptMyPrescribers => 'My Prescribers';
+
+  @override
+  String get apptQuestionsForDoctor => 'Questions for my Doctor';
+
+  @override
+  String get apptQuestionsSubtitle => 'Keep a list to ask at your visit';
+
+  @override
+  String get apptLoadFailed =>
+      'Could not load appointments. Check your connection and try again.';
+
+  @override
+  String get apptRetry => 'Try Again';
+
+  @override
+  String get apptAddTitle => 'Add Appointment';
+
+  @override
+  String get apptEditTitle => 'Edit Appointment';
+
+  @override
+  String get apptDetailsSection => 'APPOINTMENT DETAILS';
+
+  @override
+  String get apptDateTime => 'Date & Time';
+
+  @override
+  String get apptDateTimeHint => 'Tap to change';
+
+  @override
+  String get apptDoctor => 'Doctor';
+
+  @override
+  String get apptSelectDoctor => 'Select doctor';
+
+  @override
+  String get apptNoDoctor => 'No doctor';
+
+  @override
+  String get apptPickDoctorTitle => 'Select Doctor';
+
+  @override
+  String get apptNoDoctorsOnFile =>
+      'No doctors on file yet. You can add one from Doctors.';
+
+  @override
+  String get apptType => 'Appointment Type';
+
+  @override
+  String get apptTypeFollowUp => 'Follow-up';
+
+  @override
+  String get apptTypeCheckup => 'Checkup';
+
+  @override
+  String get apptTypeLabReview => 'Lab Review';
+
+  @override
+  String get apptTypeOther => 'Other';
+
+  @override
+  String get apptLocation => 'Location (optional)';
+
+  @override
+  String get apptLocationHint => 'e.g. City Care Clinic, Suite 4';
+
+  @override
+  String get apptNotes => 'Notes';
+
+  @override
+  String get apptOptional => 'Optional';
+
+  @override
+  String get apptNotesHint =>
+      'e.g. Bring last blood test reports, ask about dosage changes...';
+
+  @override
+  String get apptRemindersTitle => 'Reminders';
+
+  @override
+  String get apptRemindersSubtitle =>
+      'Get a notification on this phone before the appointment.';
+
+  @override
+  String get apptOffsetWeek => '1 week before';
+
+  @override
+  String get apptOffsetDay => '1 day before';
+
+  @override
+  String get apptOffsetHours2 => '2 hours before';
+
+  @override
+  String get apptOffsetHour => '1 hour before';
+
+  @override
+  String get apptOffsetMinutes30 => '30 minutes before';
+
+  @override
+  String apptOffsetCustom(int minutes) {
+    return '$minutes min before';
+  }
+
+  @override
+  String get apptReminderNoteTitle => 'Phone reminders';
+
+  @override
+  String get apptReminderNote =>
+      'Reminders are set on this phone. They are set again when you open the app on a new phone.';
+
+  @override
+  String get apptSave => 'Save Appointment';
+
+  @override
+  String get apptSaved => 'Appointment added';
+
+  @override
+  String get apptUpdated => 'Appointment updated';
+
+  @override
+  String get apptDeleted => 'Appointment deleted';
+
+  @override
+  String get apptSaveFailed =>
+      'Could not save the appointment. Check your connection and try again.';
+
+  @override
+  String get apptDeleteFailed =>
+      'Could not delete the appointment. Check your connection and try again.';
+
+  @override
+  String get apptDeleteTitle => 'Delete this appointment?';
+
+  @override
+  String get apptDeleteBody =>
+      'The appointment and its reminders will be removed.';
+
+  @override
+  String get apptDeleteAction => 'Delete appointment';
+
+  @override
+  String get apptErrFuture => 'Please select a future date and time.';
+
+  @override
+  String get apptErrTooLong => 'Location or notes are too long.';
+
+  @override
+  String get apptErrReminders => 'Please choose at most 5 reminders.';
+
+  @override
+  String apptNotifTitle(String doctor) {
+    return 'Appointment with $doctor';
+  }
+
+  @override
+  String get apptNotifTitleNoDoctor => 'Upcoming appointment';
+
+  @override
+  String apptNotifBody(String type, String when) {
+    return '$type · $when';
+  }
+
+  @override
+  String get apptChannelName => 'Appointment reminders';
+
+  @override
+  String get apptChannelDesc => 'Reminders for upcoming doctor appointments';
+
+  @override
+  String get notesTitle => 'Notes for Doctor';
+
+  @override
+  String get notesBanner =>
+      'These notes carry into your next appointment — check off after discussing.';
+
+  @override
+  String get notesAddHint => 'Add a question or note...';
+
+  @override
+  String notesLinkSwitch(String when) {
+    return 'Link to next appointment ($when)';
+  }
+
+  @override
+  String notesLinkedTag(String when) {
+    return 'Appointment: $when';
+  }
+
+  @override
+  String get notesDiscussed => 'Discussed';
+
+  @override
+  String notesSummary(int open, int done) {
+    return '$open open · $done discussed';
+  }
+
+  @override
+  String get notesClearDiscussed => 'Clear discussed';
+
+  @override
+  String get notesClearTitle => 'Clear discussed notes?';
+
+  @override
+  String notesClearBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count discussed notes will be removed.',
+      one: '1 discussed note will be removed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notesCleared => 'Discussed notes cleared';
+
+  @override
+  String get notesEditTitle => 'Edit Note';
+
+  @override
+  String get notesEditHint => 'Enter a question or note...';
+
+  @override
+  String get notesSave => 'Save';
+
+  @override
+  String get notesNextAppointment => 'Next Appointment';
+
+  @override
+  String get notesEmptyTitle => 'No notes yet';
+
+  @override
+  String get notesEmptySubtitle =>
+      'Add a question to discuss at your next appointment.';
+
+  @override
+  String get notesDeleted => 'Note deleted';
+
+  @override
+  String get notesDeleteTitle => 'Delete this note?';
+
+  @override
+  String get notesDeleteAction => 'Delete';
+
+  @override
+  String get notesErrEmpty => 'Please enter a question or note.';
+
+  @override
+  String get notesErrTooLong => 'A note can have up to 500 characters.';
+
+  @override
+  String get notesSaveFailed =>
+      'Could not save the note. Check your connection and try again.';
+
+  @override
+  String get notesLoadFailed =>
+      'Could not load notes. Check your connection and try again.';
+
+  @override
+  String get notesRetry => 'Try Again';
+
+  @override
+  String notesToday(String time) {
+    return 'Today, $time';
+  }
+
+  @override
+  String notesYesterday(String time) {
+    return 'Yesterday · $time';
+  }
+
+  @override
+  String notesDateTime(String date, String time) {
+    return '$date · $time';
+  }
+
+  @override
+  String apptQuestionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count open questions',
+      one: '1 open question',
+      zero: 'No open questions',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get proGateTitle => 'Solo Pro feature';
+
+  @override
+  String get proGateBody =>
+      'Doctors, appointments and notes for your doctor are part of the Solo Pro plan. What you already saved stays here and can still be viewed or deleted.';
+
+  @override
+  String get proGateSeePlans => 'See plans';
+
+  @override
+  String get proReadOnlyBanner =>
+      'Read-only on the free plan. Upgrade to Solo Pro to add or change.';
+
+  @override
   String get medsTitle => 'Medications';
 
   @override

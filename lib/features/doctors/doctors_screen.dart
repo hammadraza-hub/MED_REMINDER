@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/doctors/prescriber_models.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/medication.dart';
+import '../../repositories/firebase_appointment_repository.dart';
+import '../../repositories/firebase_prescriber_repository.dart';
+import '../../repositories/medication_repository.dart';
 import '../../widgets/app_avatar.dart';
+import '../../widgets/pro_gate_widgets.dart';
+import '../../core/services/pro_access.dart';
 import 'add_doctor_screen.dart';
-import 'doctors_data.dart';
 import '../../features/meds/appointment_screen.dart';
 
 /// ============================================================
@@ -23,8 +29,9 @@ import '../../features/meds/appointment_screen.dart';
 /// Bottom navigation sirf MedRemindShell (main 5 tabs) mein hai.
 /// Back arrow se previous screen par wapas.
 ///
-/// DATA:
-/// UI → DoctorsData.allDoctorsFor(memberId)
+/// DATA (M16 step 4):
+/// FirebasePrescriberRepository (profiles/{pid}/prescribers) + the profile's
+/// active medications, grouped by medication.prescriberId.
 ///
 /// MEMBER ISOLATION:
 /// ProfileController.memberId se records filter hote hain —
@@ -35,9 +42,6 @@ import '../../features/meds/appointment_screen.dart';
 ///
 /// COLORS:
 /// Sirf AppColors — koi hardcoded hex nahi.
-///
-/// TODO Backend:
-/// Firestore prescribers/{id} list with linked medication names.
 /// ============================================================
 class DoctorsScreen extends StatefulWidget {
   const DoctorsScreen({super.key});
@@ -46,13 +50,115 @@ class DoctorsScreen extends StatefulWidget {
   State<DoctorsScreen> createState() => _DoctorsScreenState();
 }
 
+/// One doctor plus the names of the active medications that name them.
+class _DoctorCard {
+  const _DoctorCard(this.doctor, this.medNames);
+
+  final Prescriber doctor;
+  final List<String> medNames;
+}
+
 class _DoctorsScreenState extends State<DoctorsScreen> {
-  late List<PrescriberDoctor> _doctors;
+  List<_DoctorCard> _doctors = const [];
+  int _upcomingCount = 0;
+  bool _loading = true;
+  bool _failed = false;
+  bool _pro = true;
 
   @override
   void initState() {
     super.initState();
-    _doctors = DoctorsData.allDoctorsFor(ProfileController.instance.memberId);
+    _load();
+  }
+
+  Future<void> _load() async {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) {
+      setState(() {
+        _loading = false;
+        _doctors = const [];
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _failed = false;
+    });
+
+    try {
+      final doctors = await FirebasePrescriberRepository.instance.list(
+        memberId,
+      );
+      final pro = await ProAccess.gate.canWrite(memberId);
+      final meds = await MedicationRepository.instance
+          .watchActiveMedications(memberId)
+          .first;
+
+      var upcoming = 0;
+      try {
+        upcoming = (await FirebaseAppointmentRepository.instance.list(
+          memberId,
+          from: DateTime.now(),
+        )).length;
+      } catch (_) {
+        // The banner count is a nice-to-have; the doctors still show.
+      }
+
+      final byDoctor = <String, List<String>>{};
+      for (final m in meds) {
+        final id = m.prescriberId;
+        if (id == null || id.isEmpty) continue;
+        byDoctor.putIfAbsent(id, () => []).add(_medLabel(m));
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _doctors = [
+          for (final d in doctors) _DoctorCard(d, byDoctor[d.id] ?? const []),
+        ];
+        _upcomingCount = upcoming;
+        _pro = pro;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _failed = true;
+      });
+    }
+  }
+
+  static String _medLabel(Medication m) {
+    final strength = m.strength?.trim() ?? '';
+    return strength.isEmpty ? m.name : '${m.name} $strength';
+  }
+
+  Future<void> _openForm({Prescriber? existing}) async {
+    // Adding is a Solo Pro feature; opening an existing doctor is always fine
+    // (its Save is checked again on the form).
+    if (existing == null) {
+      final memberId = ProfileController.instance.memberId;
+      if (memberId != null && memberId.isNotEmpty) {
+        if (!await ensureProForWrite(context, memberId)) return;
+      }
+      if (!mounted) return;
+    }
+
+    final result = await Navigator.of(context).push<DoctorFormResult>(
+      MaterialPageRoute(builder: (_) => AddDoctorScreen(existing: existing)),
+    );
+
+    if (!mounted || result == null) return;
+
+    final l10n = AppLocalizations.of(context);
+    _showMessage(switch (result) {
+      DoctorFormResult.added => l10n.doctorsAdded,
+      DoctorFormResult.updated => l10n.doctorsUpdated,
+      DoctorFormResult.deleted => l10n.doctorsDeleted,
+    });
+    _load();
   }
 
   // ============================================================
@@ -60,7 +166,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
   // ============================================================
 
   String _countLabel(AppLocalizations l10n) =>
-      l10n.doctorsCountOnFile(_doctors.length);
+      _loading ? '' : l10n.doctorsCountOnFile(_doctors.length);
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
@@ -177,15 +283,24 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!_loading && !_pro) const ProReadOnlyBanner(),
+
           _buildTopRow(),
 
           const SizedBox(height: 16),
 
-          if (_doctors.isEmpty)
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_failed)
+            _buildErrorState()
+          else if (_doctors.isEmpty)
             _buildEmptyState()
           else
-            for (final doctor in _doctors) ...[
-              _buildDoctorCard(doctor),
+            for (final card in _doctors) ...[
+              _buildDoctorCard(card),
 
               const SizedBox(height: 16),
             ],
@@ -219,23 +334,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
         ),
 
         GestureDetector(
-          onTap: () async {
-            final result = await Navigator.of(context).push<bool>(
-              MaterialPageRoute(builder: (_) => const AddDoctorScreen()),
-            );
-
-            if (!mounted) return;
-
-            if (result == true) {
-              setState(() {
-                _doctors = DoctorsData.allDoctorsFor(
-                  ProfileController.instance.memberId,
-                );
-              });
-
-              _showMessage(AppLocalizations.of(context).doctorsAdded);
-            }
-          },
+          onTap: () => _openForm(),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
             decoration: BoxDecoration(
@@ -274,6 +373,37 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
   }
 
   // ============================================================
+  // ERROR STATE
+  // ============================================================
+
+  Widget _buildErrorState() {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.cloud_off_outlined,
+            color: AppColors.fieldHint,
+            size: 42,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            l10n.doctorsLoadFailed,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(onPressed: _load, child: Text(l10n.doctorsRetry)),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
   // EMPTY STATE
   // ============================================================
 
@@ -306,7 +436,10 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
 
           Text(
             l10n.doctorsEmptySubtitle,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -317,12 +450,10 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
   // PRESCRIBER CARD
   // ============================================================
 
-  Widget _buildDoctorCard(PrescriberDoctor doctor) {
+  Widget _buildDoctorCard(_DoctorCard card) {
+    final doctor = card.doctor;
     return GestureDetector(
-      onTap: () {
-        // TODO: Doctor detail/edit screen — reference UI pending.
-        _showMessage(AppLocalizations.of(context).comingSoon(doctor.name));
-      },
+      onTap: () => _openForm(existing: doctor),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -376,7 +507,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                       const SizedBox(height: 2),
 
                       Text(
-                        doctor.specialty,
+                        doctor.specialty ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -405,7 +536,9 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                     ),
                   ),
                   child: Text(
-                    doctor.chipLabel(AppLocalizations.of(context)).toUpperCase(),
+                    AppLocalizations.of(context)
+                        .doctorsMedCount(card.medNames.length)
+                        .toUpperCase(),
                     style: const TextStyle(
                       color: AppColors.textTeal,
                       fontSize: 10,
@@ -417,14 +550,14 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
               ],
             ),
 
-            _buildLinkedMedsFooter(doctor),
+            _buildLinkedMedsFooter(card),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLinkedMedsFooter(PrescriberDoctor doctor) {
+  Widget _buildLinkedMedsFooter(_DoctorCard card) {
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.only(top: 10),
@@ -443,7 +576,9 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
 
           Expanded(
             child: Text(
-              doctor.medsSummary,
+              card.medNames.isEmpty
+                  ? AppLocalizations.of(context).doctorsNoMedsLinked
+                  : card.medNames.join(', '),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -514,7 +649,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  l10n.doctorsAppointmentsScheduled(2),
+                  l10n.doctorsAppointmentsScheduled(_upcomingCount),
                   style: const TextStyle(
                     color: AppColors.textTeal,
                     fontSize: 10,

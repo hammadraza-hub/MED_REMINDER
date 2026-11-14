@@ -2174,6 +2174,702 @@ abstract class AppLocalizations {
   /// **'Please enter the doctor\'s full name.'**
   String get doctorsNameRequired;
 
+  /// No description provided for @doctorsErrNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Name must be 80 characters or fewer.'**
+  String get doctorsErrNameTooLong;
+
+  /// No description provided for @doctorsErrPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number (7 to 15 digits).'**
+  String get doctorsErrPhone;
+
+  /// No description provided for @doctorsErrTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'One of the fields is too long.'**
+  String get doctorsErrTooLong;
+
+  /// No description provided for @doctorsFieldClinicOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinic (optional)'**
+  String get doctorsFieldClinicOnly;
+
+  /// No description provided for @doctorsHintClinicOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter clinic name'**
+  String get doctorsHintClinicOnly;
+
+  /// No description provided for @doctorsFieldAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address (optional)'**
+  String get doctorsFieldAddress;
+
+  /// No description provided for @doctorsHintAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter address'**
+  String get doctorsHintAddress;
+
+  /// No description provided for @doctorsEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Doctor'**
+  String get doctorsEditTitle;
+
+  /// No description provided for @doctorsUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor updated'**
+  String get doctorsUpdated;
+
+  /// No description provided for @doctorsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the doctor. Check your connection and try again.'**
+  String get doctorsSaveFailed;
+
+  /// No description provided for @doctorsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load doctors. Check your connection and try again.'**
+  String get doctorsLoadFailed;
+
+  /// No description provided for @doctorsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get doctorsRetry;
+
+  /// No description provided for @doctorsDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete doctor'**
+  String get doctorsDeleteAction;
+
+  /// No description provided for @doctorsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this doctor?'**
+  String get doctorsDeleteTitle;
+
+  /// No description provided for @doctorsDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will be removed. Appointments and medications stay, but will no longer name this doctor.'**
+  String doctorsDeleteBody(String name);
+
+  /// No description provided for @doctorsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor deleted'**
+  String get doctorsDeleted;
+
+  /// No description provided for @doctorsDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the doctor. Check your connection and try again.'**
+  String get doctorsDeleteFailed;
+
+  /// No description provided for @doctorsNoMeds.
+  ///
+  /// In en, this message translates to:
+  /// **'No active medications to link yet.'**
+  String get doctorsNoMeds;
+
+  /// No description provided for @doctorsMedsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load medications.'**
+  String get doctorsMedsLoadFailed;
+
+  /// No description provided for @doctorsNoMedsLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'No medications linked'**
+  String get doctorsNoMedsLinked;
+
+  /// No description provided for @doctorsLinkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor saved, but the medications could not be linked. Open the doctor to try again.'**
+  String get doctorsLinkFailed;
+
+  /// No description provided for @doctorsReplacesOtherDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Linking a medication here replaces the doctor it had before.'**
+  String get doctorsReplacesOtherDoctor;
+
+  /// No description provided for @apptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointments'**
+  String get apptTitle;
+
+  /// No description provided for @apptUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get apptUpcoming;
+
+  /// No description provided for @apptPast.
+  ///
+  /// In en, this message translates to:
+  /// **'Past'**
+  String get apptPast;
+
+  /// No description provided for @apptStatusUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'UPCOMING'**
+  String get apptStatusUpcoming;
+
+  /// No description provided for @apptStatusPast.
+  ///
+  /// In en, this message translates to:
+  /// **'PAST'**
+  String get apptStatusPast;
+
+  /// No description provided for @apptNoUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming appointments'**
+  String get apptNoUpcoming;
+
+  /// No description provided for @apptNoPast.
+  ///
+  /// In en, this message translates to:
+  /// **'No past appointments'**
+  String get apptNoPast;
+
+  /// No description provided for @apptListHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an appointment to view or edit it'**
+  String get apptListHint;
+
+  /// No description provided for @apptResources.
+  ///
+  /// In en, this message translates to:
+  /// **'CLINICAL RESOURCES'**
+  String get apptResources;
+
+  /// No description provided for @apptMyPrescribers.
+  ///
+  /// In en, this message translates to:
+  /// **'My Prescribers'**
+  String get apptMyPrescribers;
+
+  /// No description provided for @apptQuestionsForDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions for my Doctor'**
+  String get apptQuestionsForDoctor;
+
+  /// No description provided for @apptQuestionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep a list to ask at your visit'**
+  String get apptQuestionsSubtitle;
+
+  /// No description provided for @apptLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load appointments. Check your connection and try again.'**
+  String get apptLoadFailed;
+
+  /// No description provided for @apptRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get apptRetry;
+
+  /// No description provided for @apptAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Appointment'**
+  String get apptAddTitle;
+
+  /// No description provided for @apptEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Appointment'**
+  String get apptEditTitle;
+
+  /// No description provided for @apptDetailsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'APPOINTMENT DETAILS'**
+  String get apptDetailsSection;
+
+  /// No description provided for @apptDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & Time'**
+  String get apptDateTime;
+
+  /// No description provided for @apptDateTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to change'**
+  String get apptDateTimeHint;
+
+  /// No description provided for @apptDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctor'**
+  String get apptDoctor;
+
+  /// No description provided for @apptSelectDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Select doctor'**
+  String get apptSelectDoctor;
+
+  /// No description provided for @apptNoDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'No doctor'**
+  String get apptNoDoctor;
+
+  /// No description provided for @apptPickDoctorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Doctor'**
+  String get apptPickDoctorTitle;
+
+  /// No description provided for @apptNoDoctorsOnFile.
+  ///
+  /// In en, this message translates to:
+  /// **'No doctors on file yet. You can add one from Doctors.'**
+  String get apptNoDoctorsOnFile;
+
+  /// No description provided for @apptType.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment Type'**
+  String get apptType;
+
+  /// No description provided for @apptTypeFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up'**
+  String get apptTypeFollowUp;
+
+  /// No description provided for @apptTypeCheckup.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkup'**
+  String get apptTypeCheckup;
+
+  /// No description provided for @apptTypeLabReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab Review'**
+  String get apptTypeLabReview;
+
+  /// No description provided for @apptTypeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get apptTypeOther;
+
+  /// No description provided for @apptLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location (optional)'**
+  String get apptLocation;
+
+  /// No description provided for @apptLocationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. City Care Clinic, Suite 4'**
+  String get apptLocationHint;
+
+  /// No description provided for @apptNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get apptNotes;
+
+  /// No description provided for @apptOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get apptOptional;
+
+  /// No description provided for @apptNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Bring last blood test reports, ask about dosage changes...'**
+  String get apptNotesHint;
+
+  /// No description provided for @apptRemindersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get apptRemindersTitle;
+
+  /// No description provided for @apptRemindersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a notification on this phone before the appointment.'**
+  String get apptRemindersSubtitle;
+
+  /// No description provided for @apptOffsetWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'1 week before'**
+  String get apptOffsetWeek;
+
+  /// No description provided for @apptOffsetDay.
+  ///
+  /// In en, this message translates to:
+  /// **'1 day before'**
+  String get apptOffsetDay;
+
+  /// No description provided for @apptOffsetHours2.
+  ///
+  /// In en, this message translates to:
+  /// **'2 hours before'**
+  String get apptOffsetHours2;
+
+  /// No description provided for @apptOffsetHour.
+  ///
+  /// In en, this message translates to:
+  /// **'1 hour before'**
+  String get apptOffsetHour;
+
+  /// No description provided for @apptOffsetMinutes30.
+  ///
+  /// In en, this message translates to:
+  /// **'30 minutes before'**
+  String get apptOffsetMinutes30;
+
+  /// No description provided for @apptOffsetCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min before'**
+  String apptOffsetCustom(int minutes);
+
+  /// No description provided for @apptReminderNoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone reminders'**
+  String get apptReminderNoteTitle;
+
+  /// No description provided for @apptReminderNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders are set on this phone. They are set again when you open the app on a new phone.'**
+  String get apptReminderNote;
+
+  /// No description provided for @apptSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Appointment'**
+  String get apptSave;
+
+  /// No description provided for @apptSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment added'**
+  String get apptSaved;
+
+  /// No description provided for @apptUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment updated'**
+  String get apptUpdated;
+
+  /// No description provided for @apptDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment deleted'**
+  String get apptDeleted;
+
+  /// No description provided for @apptSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the appointment. Check your connection and try again.'**
+  String get apptSaveFailed;
+
+  /// No description provided for @apptDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the appointment. Check your connection and try again.'**
+  String get apptDeleteFailed;
+
+  /// No description provided for @apptDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this appointment?'**
+  String get apptDeleteTitle;
+
+  /// No description provided for @apptDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The appointment and its reminders will be removed.'**
+  String get apptDeleteBody;
+
+  /// No description provided for @apptDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete appointment'**
+  String get apptDeleteAction;
+
+  /// No description provided for @apptErrFuture.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a future date and time.'**
+  String get apptErrFuture;
+
+  /// No description provided for @apptErrTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Location or notes are too long.'**
+  String get apptErrTooLong;
+
+  /// No description provided for @apptErrReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose at most 5 reminders.'**
+  String get apptErrReminders;
+
+  /// No description provided for @apptNotifTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment with {doctor}'**
+  String apptNotifTitle(String doctor);
+
+  /// No description provided for @apptNotifTitleNoDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming appointment'**
+  String get apptNotifTitleNoDoctor;
+
+  /// No description provided for @apptNotifBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{type} · {when}'**
+  String apptNotifBody(String type, String when);
+
+  /// No description provided for @apptChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment reminders'**
+  String get apptChannelName;
+
+  /// No description provided for @apptChannelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders for upcoming doctor appointments'**
+  String get apptChannelDesc;
+
+  /// No description provided for @notesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes for Doctor'**
+  String get notesTitle;
+
+  /// No description provided for @notesBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'These notes carry into your next appointment — check off after discussing.'**
+  String get notesBanner;
+
+  /// No description provided for @notesAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a question or note...'**
+  String get notesAddHint;
+
+  /// No description provided for @notesLinkSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to next appointment ({when})'**
+  String notesLinkSwitch(String when);
+
+  /// No description provided for @notesLinkedTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment: {when}'**
+  String notesLinkedTag(String when);
+
+  /// No description provided for @notesDiscussed.
+  ///
+  /// In en, this message translates to:
+  /// **'Discussed'**
+  String get notesDiscussed;
+
+  /// No description provided for @notesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{open} open · {done} discussed'**
+  String notesSummary(int open, int done);
+
+  /// No description provided for @notesClearDiscussed.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear discussed'**
+  String get notesClearDiscussed;
+
+  /// No description provided for @notesClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear discussed notes?'**
+  String get notesClearTitle;
+
+  /// No description provided for @notesClearBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 discussed note will be removed.} other{{count} discussed notes will be removed.}}'**
+  String notesClearBody(int count);
+
+  /// No description provided for @notesCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Discussed notes cleared'**
+  String get notesCleared;
+
+  /// No description provided for @notesEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Note'**
+  String get notesEditTitle;
+
+  /// No description provided for @notesEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a question or note...'**
+  String get notesEditHint;
+
+  /// No description provided for @notesSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get notesSave;
+
+  /// No description provided for @notesNextAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Appointment'**
+  String get notesNextAppointment;
+
+  /// No description provided for @notesEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes yet'**
+  String get notesEmptyTitle;
+
+  /// No description provided for @notesEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a question to discuss at your next appointment.'**
+  String get notesEmptySubtitle;
+
+  /// No description provided for @notesDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Note deleted'**
+  String get notesDeleted;
+
+  /// No description provided for @notesDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this note?'**
+  String get notesDeleteTitle;
+
+  /// No description provided for @notesDeleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get notesDeleteAction;
+
+  /// No description provided for @notesErrEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a question or note.'**
+  String get notesErrEmpty;
+
+  /// No description provided for @notesErrTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'A note can have up to 500 characters.'**
+  String get notesErrTooLong;
+
+  /// No description provided for @notesSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the note. Check your connection and try again.'**
+  String get notesSaveFailed;
+
+  /// No description provided for @notesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load notes. Check your connection and try again.'**
+  String get notesLoadFailed;
+
+  /// No description provided for @notesRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get notesRetry;
+
+  /// No description provided for @notesToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today, {time}'**
+  String notesToday(String time);
+
+  /// No description provided for @notesYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday · {time}'**
+  String notesYesterday(String time);
+
+  /// No description provided for @notesDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'{date} · {time}'**
+  String notesDateTime(String date, String time);
+
+  /// No description provided for @apptQuestionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No open questions} =1{1 open question} other{{count} open questions}}'**
+  String apptQuestionsCount(int count);
+
+  /// No description provided for @proGateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Solo Pro feature'**
+  String get proGateTitle;
+
+  /// No description provided for @proGateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Doctors, appointments and notes for your doctor are part of the Solo Pro plan. What you already saved stays here and can still be viewed or deleted.'**
+  String get proGateBody;
+
+  /// No description provided for @proGateSeePlans.
+  ///
+  /// In en, this message translates to:
+  /// **'See plans'**
+  String get proGateSeePlans;
+
+  /// No description provided for @proReadOnlyBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only on the free plan. Upgrade to Solo Pro to add or change.'**
+  String get proReadOnlyBanner;
+
   /// No description provided for @medsTitle.
   ///
   /// In en, this message translates to:

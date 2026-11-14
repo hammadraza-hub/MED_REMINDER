@@ -1225,6 +1225,410 @@ class AppLocalizationsHi extends AppLocalizations {
   String get doctorsNameRequired => 'कृपया डॉक्टर का पूरा नाम दर्ज करें।';
 
   @override
+  String get doctorsErrNameTooLong =>
+      'नाम 80 अक्षरों या उससे कम का होना चाहिए।';
+
+  @override
+  String get doctorsErrPhone => 'मान्य फ़ोन नंबर दर्ज करें (7 से 15 अंक)।';
+
+  @override
+  String get doctorsErrTooLong => 'कोई एक फ़ील्ड बहुत लंबा है।';
+
+  @override
+  String get doctorsFieldClinicOnly => 'क्लिनिक (वैकल्पिक)';
+
+  @override
+  String get doctorsHintClinicOnly => 'क्लिनिक का नाम दर्ज करें';
+
+  @override
+  String get doctorsFieldAddress => 'पता (वैकल्पिक)';
+
+  @override
+  String get doctorsHintAddress => 'पता दर्ज करें';
+
+  @override
+  String get doctorsEditTitle => 'डॉक्टर संपादित करें';
+
+  @override
+  String get doctorsUpdated => 'डॉक्टर अपडेट हो गए';
+
+  @override
+  String get doctorsSaveFailed =>
+      'डॉक्टर सेव नहीं हो सके। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get doctorsLoadFailed =>
+      'डॉक्टर लोड नहीं हो सके। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get doctorsRetry => 'दोबारा कोशिश करें';
+
+  @override
+  String get doctorsDeleteAction => 'डॉक्टर हटाएँ';
+
+  @override
+  String get doctorsDeleteTitle => 'इस डॉक्टर को हटाएँ?';
+
+  @override
+  String doctorsDeleteBody(String name) {
+    return '$name हटा दिए जाएँगे। अपॉइंटमेंट और दवाइयाँ बनी रहेंगी, लेकिन उनमें इस डॉक्टर का नाम नहीं रहेगा।';
+  }
+
+  @override
+  String get doctorsDeleted => 'डॉक्टर हटा दिए गए';
+
+  @override
+  String get doctorsDeleteFailed =>
+      'डॉक्टर हटाए नहीं जा सके। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get doctorsNoMeds => 'जोड़ने के लिए अभी कोई सक्रिय दवा नहीं है।';
+
+  @override
+  String get doctorsMedsLoadFailed => 'दवाइयाँ लोड नहीं हो सकीं।';
+
+  @override
+  String get doctorsNoMedsLinked => 'कोई दवा जुड़ी नहीं है';
+
+  @override
+  String get doctorsLinkFailed =>
+      'डॉक्टर सेव हो गए, लेकिन दवाइयाँ जुड़ नहीं सकीं। दोबारा कोशिश करने के लिए डॉक्टर खोलें।';
+
+  @override
+  String get doctorsReplacesOtherDoctor =>
+      'यहाँ दवा जोड़ने पर उसका पिछला डॉक्टर बदल जाएगा।';
+
+  @override
+  String get apptTitle => 'अपॉइंटमेंट';
+
+  @override
+  String get apptUpcoming => 'आने वाले';
+
+  @override
+  String get apptPast => 'पिछले';
+
+  @override
+  String get apptStatusUpcoming => 'आगामी';
+
+  @override
+  String get apptStatusPast => 'पिछला';
+
+  @override
+  String get apptNoUpcoming => 'कोई आगामी अपॉइंटमेंट नहीं';
+
+  @override
+  String get apptNoPast => 'कोई पिछला अपॉइंटमेंट नहीं';
+
+  @override
+  String get apptListHint => 'देखने या बदलने के लिए अपॉइंटमेंट पर टैप करें';
+
+  @override
+  String get apptResources => 'क्लिनिकल संसाधन';
+
+  @override
+  String get apptMyPrescribers => 'मेरे डॉक्टर';
+
+  @override
+  String get apptQuestionsForDoctor => 'डॉक्टर के लिए सवाल';
+
+  @override
+  String get apptQuestionsSubtitle => 'मुलाक़ात में पूछने के लिए सूची रखें';
+
+  @override
+  String get apptLoadFailed =>
+      'अपॉइंटमेंट लोड नहीं हो सके। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get apptRetry => 'दोबारा कोशिश करें';
+
+  @override
+  String get apptAddTitle => 'अपॉइंटमेंट जोड़ें';
+
+  @override
+  String get apptEditTitle => 'अपॉइंटमेंट संपादित करें';
+
+  @override
+  String get apptDetailsSection => 'अपॉइंटमेंट विवरण';
+
+  @override
+  String get apptDateTime => 'तारीख़ और समय';
+
+  @override
+  String get apptDateTimeHint => 'बदलने के लिए टैप करें';
+
+  @override
+  String get apptDoctor => 'डॉक्टर';
+
+  @override
+  String get apptSelectDoctor => 'डॉक्टर चुनें';
+
+  @override
+  String get apptNoDoctor => 'कोई डॉक्टर नहीं';
+
+  @override
+  String get apptPickDoctorTitle => 'डॉक्टर चुनें';
+
+  @override
+  String get apptNoDoctorsOnFile =>
+      'अभी कोई डॉक्टर नहीं है। आप डॉक्टर्स से जोड़ सकते हैं।';
+
+  @override
+  String get apptType => 'अपॉइंटमेंट का प्रकार';
+
+  @override
+  String get apptTypeFollowUp => 'फ़ॉलो-अप';
+
+  @override
+  String get apptTypeCheckup => 'चेकअप';
+
+  @override
+  String get apptTypeLabReview => 'लैब रिपोर्ट समीक्षा';
+
+  @override
+  String get apptTypeOther => 'अन्य';
+
+  @override
+  String get apptLocation => 'स्थान (वैकल्पिक)';
+
+  @override
+  String get apptLocationHint => 'जैसे सिटी केयर क्लिनिक, सुइट 4';
+
+  @override
+  String get apptNotes => 'नोट्स';
+
+  @override
+  String get apptOptional => 'वैकल्पिक';
+
+  @override
+  String get apptNotesHint =>
+      'जैसे पिछली ब्लड टेस्ट रिपोर्ट लाएँ, खुराक बदलने के बारे में पूछें...';
+
+  @override
+  String get apptRemindersTitle => 'रिमाइंडर';
+
+  @override
+  String get apptRemindersSubtitle =>
+      'अपॉइंटमेंट से पहले इस फ़ोन पर सूचना पाएँ।';
+
+  @override
+  String get apptOffsetWeek => '1 हफ़्ते पहले';
+
+  @override
+  String get apptOffsetDay => '1 दिन पहले';
+
+  @override
+  String get apptOffsetHours2 => '2 घंटे पहले';
+
+  @override
+  String get apptOffsetHour => '1 घंटे पहले';
+
+  @override
+  String get apptOffsetMinutes30 => '30 मिनट पहले';
+
+  @override
+  String apptOffsetCustom(int minutes) {
+    return '$minutes मिनट पहले';
+  }
+
+  @override
+  String get apptReminderNoteTitle => 'फ़ोन रिमाइंडर';
+
+  @override
+  String get apptReminderNote =>
+      'रिमाइंडर इसी फ़ोन पर सेट होते हैं। नए फ़ोन पर ऐप खोलने पर वे दोबारा सेट हो जाते हैं।';
+
+  @override
+  String get apptSave => 'अपॉइंटमेंट सेव करें';
+
+  @override
+  String get apptSaved => 'अपॉइंटमेंट जोड़ा गया';
+
+  @override
+  String get apptUpdated => 'अपॉइंटमेंट अपडेट हुआ';
+
+  @override
+  String get apptDeleted => 'अपॉइंटमेंट हटाया गया';
+
+  @override
+  String get apptSaveFailed =>
+      'अपॉइंटमेंट सेव नहीं हो सका। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get apptDeleteFailed =>
+      'अपॉइंटमेंट हटाया नहीं जा सका। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get apptDeleteTitle => 'यह अपॉइंटमेंट हटाएँ?';
+
+  @override
+  String get apptDeleteBody => 'अपॉइंटमेंट और उसके रिमाइंडर हटा दिए जाएँगे।';
+
+  @override
+  String get apptDeleteAction => 'अपॉइंटमेंट हटाएँ';
+
+  @override
+  String get apptErrFuture => 'कृपया भविष्य की तारीख़ और समय चुनें।';
+
+  @override
+  String get apptErrTooLong => 'स्थान या नोट्स बहुत लंबे हैं।';
+
+  @override
+  String get apptErrReminders => 'कृपया अधिकतम 5 रिमाइंडर चुनें।';
+
+  @override
+  String apptNotifTitle(String doctor) {
+    return '$doctor के साथ अपॉइंटमेंट';
+  }
+
+  @override
+  String get apptNotifTitleNoDoctor => 'आगामी अपॉइंटमेंट';
+
+  @override
+  String apptNotifBody(String type, String when) {
+    return '$type · $when';
+  }
+
+  @override
+  String get apptChannelName => 'अपॉइंटमेंट रिमाइंडर';
+
+  @override
+  String get apptChannelDesc => 'डॉक्टर के आगामी अपॉइंटमेंट के रिमाइंडर';
+
+  @override
+  String get notesTitle => 'डॉक्टर के लिए नोट्स';
+
+  @override
+  String get notesBanner =>
+      'ये नोट्स आपके अगले अपॉइंटमेंट में साथ जाते हैं — चर्चा के बाद टिक करें।';
+
+  @override
+  String get notesAddHint => 'सवाल या नोट जोड़ें...';
+
+  @override
+  String notesLinkSwitch(String when) {
+    return 'अगले अपॉइंटमेंट से जोड़ें ($when)';
+  }
+
+  @override
+  String notesLinkedTag(String when) {
+    return 'अपॉइंटमेंट: $when';
+  }
+
+  @override
+  String get notesDiscussed => 'चर्चा हो गई';
+
+  @override
+  String notesSummary(int open, int done) {
+    return '$open खुले · $done चर्चा हुई';
+  }
+
+  @override
+  String get notesClearDiscussed => 'चर्चा वाले हटाएँ';
+
+  @override
+  String get notesClearTitle => 'चर्चा वाले नोट्स हटाएँ?';
+
+  @override
+  String notesClearBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count चर्चा वाले नोट्स हटा दिए जाएँगे।',
+      one: '1 चर्चा वाला नोट हटा दिया जाएगा।',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notesCleared => 'चर्चा वाले नोट्स हटा दिए गए';
+
+  @override
+  String get notesEditTitle => 'नोट संपादित करें';
+
+  @override
+  String get notesEditHint => 'सवाल या नोट लिखें...';
+
+  @override
+  String get notesSave => 'सेव करें';
+
+  @override
+  String get notesNextAppointment => 'अगला अपॉइंटमेंट';
+
+  @override
+  String get notesEmptyTitle => 'अभी कोई नोट नहीं';
+
+  @override
+  String get notesEmptySubtitle =>
+      'अपने अगले अपॉइंटमेंट में चर्चा के लिए सवाल जोड़ें।';
+
+  @override
+  String get notesDeleted => 'नोट हटा दिया गया';
+
+  @override
+  String get notesDeleteTitle => 'यह नोट हटाएँ?';
+
+  @override
+  String get notesDeleteAction => 'हटाएँ';
+
+  @override
+  String get notesErrEmpty => 'कृपया सवाल या नोट लिखें।';
+
+  @override
+  String get notesErrTooLong => 'एक नोट में अधिकतम 500 अक्षर हो सकते हैं।';
+
+  @override
+  String get notesSaveFailed =>
+      'नोट सेव नहीं हो सका। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get notesLoadFailed =>
+      'नोट्स लोड नहीं हो सके। कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get notesRetry => 'दोबारा कोशिश करें';
+
+  @override
+  String notesToday(String time) {
+    return 'आज, $time';
+  }
+
+  @override
+  String notesYesterday(String time) {
+    return 'कल · $time';
+  }
+
+  @override
+  String notesDateTime(String date, String time) {
+    return '$date · $time';
+  }
+
+  @override
+  String apptQuestionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count खुले सवाल',
+      one: '1 खुला सवाल',
+      zero: 'कोई खुला सवाल नहीं',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get proGateTitle => 'Solo Pro सुविधा';
+
+  @override
+  String get proGateBody =>
+      'डॉक्टर, अपॉइंटमेंट और डॉक्टर के लिए नोट्स Solo Pro प्लान का हिस्सा हैं। जो आपने पहले सेव किया है वह यहीं रहेगा और देखा या हटाया जा सकता है।';
+
+  @override
+  String get proGateSeePlans => 'प्लान देखें';
+
+  @override
+  String get proReadOnlyBanner =>
+      'फ़्री प्लान में केवल देखने के लिए। जोड़ने या बदलने के लिए Solo Pro लें।';
+
+  @override
   String get medsTitle => 'दवाइयाँ';
 
   @override

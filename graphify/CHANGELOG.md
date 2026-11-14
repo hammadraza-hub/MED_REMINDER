@@ -29,3 +29,10 @@
 - 2026-11-14 — M15 step 6: Side Effects list + Add Symptom on real data (symptoms collection, real medication picker from the M5 repository, no demo data), honest privacy footer, 11 l10n keys x5, 8 tests. Verified on emulator.
 - 2026-11-14 — M15 step 7: health sync (health pkg; mapper + service + plugin adapter + Vitals List card, Pro gate, Android manifest/minSdk 26, iOS usage string), 26 tests, verified on Android emulator up to the Health Connect permission and read. M15 Spark scope complete.
 - 2026-11-14 — M15 final re-test of all 7 steps: unit 280 pass (3 old smoke fail), rules 105/105, integration 7/7, emulator UI pass OK.
+- 2026-11-14 — M16 step 1: lib/core/doctors (prescriber/appointment/doctor-note validators + models, ReminderPlanner), 25 unit tests.
+- 2026-11-14 — M16 step 2: write rules for prescribers/appointments/doctorNotes + 21 rules tests (125 total green).
+- 2026-11-14 — M16 step 3: prescriber/appointment/doctor-note repositories + 9 emulator integration tests; rules deployed to staging.
+- 2026-11-14 — M16 step 4: Doctors list / Add / Edit / Delete on Firestore, real linked medications, 22 l10n keys, link-diff helper + tests; verified on emulator.
+- 2026-11-14 — M16 step 5: appointments on Firestore (list/add/edit/delete), phone reminders via flutter_local_notifications with sync, dose scheduler no longer cancels appointment reminders, 60 l10n keys, dummy data files removed; verified on emulator.
+- 2026-11-14 — M16 step 6: Notes for Doctor on Firestore (add/tick/edit/delete/clear, optional link to next appointment), real open-notes count, note_day helper + tests, edit-dialog crash fixed; verified on emulator.
+- 2026-11-14 — M16 step 7: Solo Pro gate for prescribers/appointments/notes (rules read customers/{ownerUid}; reads+deletes stay open), app gate + banner + dialog, 8 rules tests (133), 6 gate tests, free-plan integration test; rules deployed to staging. M16 complete on Spark except real Pro users (needs M12 webhook / Blaze).

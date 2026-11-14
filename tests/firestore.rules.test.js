@@ -920,8 +920,8 @@ describe("Purge is blocked during the grace period — M14 step 5", () => {
     await assertFails(deleteDoc(doc(db, ...p, "pharmacies", "ph1")));
     await assertFails(deleteDoc(doc(db, ...p, "dailySummaries", "2026-11-01")));
     // vitals / symptoms: the owner may delete single entries at any time
-    // (M15), so they are not part of "blocked during the grace period".
-    await assertFails(deleteDoc(doc(db, ...p, "doctorNotes", "n1")));
+    // (M15), and so may doctors, appointments and notes (M16), so none of
+    // them are part of "blocked during the grace period".
     await assertFails(deleteDoc(doc(db, "profiles", "profile1")));
     await assertFails(deleteDoc(doc(db, "users", "owner123")));
   }
@@ -1370,9 +1370,374 @@ describe("Vitals / symptoms rules — M15 step 2", () => {
     await assertFails(getDoc(day(viewerDb(), "glucose_2026-11-13")));
   });
 
-  test("Other health collections stay read-only (no accidental write access)", async () => {
-    await assertFails(setDoc(doc(ownerDb(), "profiles", "profile1", "prescribers", "p1"), { name: "Dr X" }));
-    await assertFails(setDoc(doc(ownerDb(), "profiles", "profile1", "appointments", "a1"), { title: "x" }));
+});
+
+
+describe("Prescribers / appointments / doctor notes rules — M16 step 2", () => {
+  const ownerDb = () => testEnv.authenticatedContext("owner123").firestore();
+  const cgDb = () => testEnv.authenticatedContext("caregiver123").firestore();
+  const viewerDb = () => testEnv.authenticatedContext("viewer123").firestore();
+  const hvDb = () => testEnv.authenticatedContext("hv123").firestore();
+  const strangerDb = () => testEnv.authenticatedContext("stranger999").firestore();
+
+  const pres = (db, id, pid = "profile1") => doc(db, "profiles", pid, "prescribers", id);
+  const apt = (db, id, pid = "profile1") => doc(db, "profiles", pid, "appointments", id);
+  const note = (db, id, pid = "profile1") => doc(db, "profiles", pid, "doctorNotes", id);
+
+  const prescriber = (extra = {}) => ({
+    name: "Dr. Ahmed Khan", createdAt: serverTimestamp(), updatedAt: serverTimestamp(), ...extra,
+  });
+  const future = () => new Date(Date.now() + 7 * 24 * 3600 * 1000);
+  const appt = (extra = {}) => ({
+    startsAt: future(), type: "follow_up", reminderOffsets: [1440, 120],
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp(), ...extra,
+  });
+  const noteDoc = (extra = {}) => ({
+    body: "Ask about the dose", createdAt: serverTimestamp(), doneAt: null, ...extra,
+  });
+  const old = new Date("2026-11-01T10:00:00Z");
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "profiles", "profileHV"), {
+        ownerUid: "owner123", kind: "self", name: "HV", timezone: "UTC",
+        roles: { owner123: "owner", hv123: "viewer" },
+        memberUids: ["owner123", "hv123"],
+        healthUids: ["owner123", "hv123"],
+        permissions: {},
+      });
+      // Solo Pro owner (M16 step 7 gates writes on the owner's subscription)
+      await setDoc(doc(db, "customers", "owner123"), {
+        activePlan: "annual_premium", status: "active",
+      });
+      await setDoc(pres(db, "p1"), { name: "Dr Old", createdAt: old, updatedAt: old });
+      await setDoc(apt(db, "a1"), {
+        startsAt: future(), type: "checkup", reminderOffsets: [1440, 120],
+        createdAt: old, updatedAt: old,
+      });
+      await setDoc(note(db, "n1"), { body: "Old question", createdAt: old, doneAt: null });
+    });
+  });
+
+  // ---------------- who can write ----------------
+
+  test("Owner and caregiver can create all three", async () => {
+    await assertSucceeds(setDoc(pres(ownerDb(), "x1"), prescriber()));
+    await assertSucceeds(setDoc(pres(cgDb(), "x2"), prescriber()));
+    await assertSucceeds(setDoc(apt(ownerDb(), "x1"), appt()));
+    await assertSucceeds(setDoc(apt(cgDb(), "x2"), appt()));
+    await assertSucceeds(setDoc(note(ownerDb(), "x1"), noteDoc()));
+    await assertSucceeds(setDoc(note(cgDb(), "x2"), noteDoc()));
+  });
+
+  test("Viewers (with or without health access) and strangers cannot write", async () => {
+    await assertFails(setDoc(pres(viewerDb(), "v1"), prescriber()));
+    await assertFails(setDoc(pres(hvDb(), "v2", "profileHV"), prescriber()));
+    await assertFails(setDoc(apt(hvDb(), "v3", "profileHV"), appt()));
+    await assertFails(setDoc(note(hvDb(), "v4", "profileHV"), noteDoc()));
+    await assertFails(setDoc(pres(strangerDb(), "v5"), prescriber()));
+    await assertFails(setDoc(apt(strangerDb(), "v6"), appt()));
+    await assertFails(setDoc(note(strangerDb(), "v7"), noteDoc()));
+    await assertFails(updateDoc(pres(viewerDb(), "p1"), { name: "x" }));
+    await assertFails(deleteDoc(pres(viewerDb(), "p1")));
+    await assertFails(deleteDoc(apt(strangerDb(), "a1")));
+  });
+
+  test("Health readers can read, others cannot", async () => {
+    await assertSucceeds(getDoc(pres(cgDb(), "p1")));
+    await assertSucceeds(getDoc(apt(ownerDb(), "a1")));
+    await assertSucceeds(getDoc(note(ownerDb(), "n1")));
+    await assertFails(getDoc(pres(viewerDb(), "p1")));
+    await assertFails(getDoc(note(strangerDb(), "n1")));
+  });
+
+  // ---------------- prescribers ----------------
+
+  test("Prescriber with every optional field", async () => {
+    await assertSucceeds(setDoc(pres(ownerDb(), "full"), prescriber({
+      specialty: "GP", phone: "+1 (555) 987-6543", clinic: "City Care", address: "Maple Street",
+    })));
+  });
+
+  test("Prescriber name rules", async () => {
+    await assertFails(setDoc(pres(ownerDb(), "a"), prescriber({ name: "" })));
+    await assertFails(setDoc(pres(ownerDb(), "b"), prescriber({ name: "a".repeat(81) })));
+    await assertSucceeds(setDoc(pres(ownerDb(), "c"), prescriber({ name: "a".repeat(80) })));
+    await assertFails(setDoc(pres(ownerDb(), "d"), prescriber({ name: 5 })));
+    const d = prescriber();
+    delete d.name;
+    await assertFails(setDoc(pres(ownerDb(), "e"), d));
+  });
+
+  test("Prescriber phone rules", async () => {
+    await assertSucceeds(setDoc(pres(ownerDb(), "p1x"), prescriber({ phone: "0300 1234567" })));
+    await assertFails(setDoc(pres(ownerDb(), "p2x"), prescriber({ phone: "12345" })));
+    await assertFails(setDoc(pres(ownerDb(), "p3x"), prescriber({ phone: "1".repeat(16) })));
+    await assertSucceeds(setDoc(pres(ownerDb(), "p4x"), prescriber({ phone: "1".repeat(15) })));
+    await assertFails(setDoc(pres(ownerDb(), "p5x"), prescriber({ phone: "abc1234567" })));
+    await assertFails(setDoc(pres(ownerDb(), "p6x"), prescriber({ phone: 1234567 })));
+  });
+
+  test("Prescriber optional text limits and extra fields", async () => {
+    await assertFails(setDoc(pres(ownerDb(), "l1"), prescriber({ specialty: "a".repeat(61) })));
+    await assertFails(setDoc(pres(ownerDb(), "l2"), prescriber({ clinic: "a".repeat(81) })));
+    await assertFails(setDoc(pres(ownerDb(), "l3"), prescriber({ address: "a".repeat(201) })));
+    await assertFails(setDoc(pres(ownerDb(), "l4"), prescriber({ isAdmin: true })));
+  });
+
+  test("Prescriber timestamps are server-controlled", async () => {
+    await assertFails(setDoc(pres(ownerDb(), "t1"), prescriber({ createdAt: new Date("2020-01-01") })));
+    await assertFails(setDoc(pres(ownerDb(), "t2"), prescriber({ updatedAt: new Date("2020-01-01") })));
+  });
+
+  test("Prescriber update keeps createdAt, refreshes updatedAt", async () => {
+    await assertSucceeds(setDoc(pres(ownerDb(), "p1"), {
+      name: "Dr New", createdAt: old, updatedAt: serverTimestamp(),
+    }));
+    await assertFails(setDoc(pres(ownerDb(), "p1"), {
+      name: "Dr New", createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    }));
+    await assertFails(setDoc(pres(ownerDb(), "p1"), { name: "Dr New", createdAt: old, updatedAt: old }));
+  });
+
+  test("Caregiver can delete a prescriber", async () => {
+    await assertSucceeds(deleteDoc(pres(cgDb(), "p1")));
+  });
+
+  // ---------------- appointments ----------------
+
+  test("Appointment: each type and optional fields", async () => {
+    for (const type of ["follow_up", "checkup", "lab_review", "other"]) {
+      await assertSucceeds(setDoc(apt(ownerDb(), "t_" + type), appt({ type })));
+    }
+    await assertSucceeds(setDoc(apt(ownerDb(), "full"), appt({
+      prescriberId: "p1", location: "City Care", notes: "Bring reports",
+    })));
+  });
+
+  test("Appointment type, time and shape", async () => {
+    await assertFails(setDoc(apt(ownerDb(), "a"), appt({ type: "surgery" })));
+    await assertFails(setDoc(apt(ownerDb(), "b"), appt({ startsAt: "tomorrow" })));
+    await assertFails(setDoc(apt(ownerDb(), "c"), appt({ extra: 1 })));
+    const d = appt();
+    delete d.startsAt;
+    await assertFails(setDoc(apt(ownerDb(), "d"), d));
+    const e = appt();
+    delete e.reminderOffsets;
+    await assertFails(setDoc(apt(ownerDb(), "e"), e));
+  });
+
+  test("Appointment text limits", async () => {
+    await assertFails(setDoc(apt(ownerDb(), "a"), appt({ location: "a".repeat(201) })));
+    await assertSucceeds(setDoc(apt(ownerDb(), "b"), appt({ location: "a".repeat(200) })));
+    await assertFails(setDoc(apt(ownerDb(), "c"), appt({ notes: "a".repeat(501) })));
+    await assertSucceeds(setDoc(apt(ownerDb(), "d"), appt({ notes: "a".repeat(500) })));
+  });
+
+  test("Appointment reminder offsets", async () => {
+    await assertSucceeds(setDoc(apt(ownerDb(), "o0"), appt({ reminderOffsets: [] })));
+    await assertSucceeds(setDoc(apt(ownerDb(), "o1"), appt({ reminderOffsets: [43200, 1440, 120, 30, 1] })));
+    await assertFails(setDoc(apt(ownerDb(), "o2"), appt({ reminderOffsets: [60, 50, 40, 30, 20, 10] })));
+    await assertFails(setDoc(apt(ownerDb(), "o3"), appt({ reminderOffsets: [0] })));
+    await assertFails(setDoc(apt(ownerDb(), "o4"), appt({ reminderOffsets: [-5] })));
+    await assertFails(setDoc(apt(ownerDb(), "o5"), appt({ reminderOffsets: [43201] })));
+    await assertFails(setDoc(apt(ownerDb(), "o6"), appt({ reminderOffsets: [60, 60] })));
+    await assertFails(setDoc(apt(ownerDb(), "o7"), appt({ reminderOffsets: [120, 1440] })));
+    await assertFails(setDoc(apt(ownerDb(), "o8"), appt({ reminderOffsets: ["60"] })));
+    await assertFails(setDoc(apt(ownerDb(), "o9"), appt({ reminderOffsets: 60 })));
+    await assertFails(setDoc(apt(ownerDb(), "oA"), appt({ reminderOffsets: [60.5] })));
+  });
+
+  test("Appointment prescriber must exist in the same profile", async () => {
+    await assertSucceeds(setDoc(apt(ownerDb(), "ok"), appt({ prescriberId: "p1" })));
+    await assertFails(setDoc(apt(ownerDb(), "bad"), appt({ prescriberId: "ghost" })));
+    await assertFails(setDoc(apt(ownerDb(), "empty"), appt({ prescriberId: "" })));
+    await assertFails(setDoc(apt(ownerDb(), "num"), appt({ prescriberId: 5 })));
+  });
+
+  test("Appointment edit keeps createdAt and can move the time", async () => {
+    await assertSucceeds(setDoc(apt(ownerDb(), "a1"), {
+      startsAt: future(), type: "lab_review", reminderOffsets: [60],
+      createdAt: old, updatedAt: serverTimestamp(),
+    }));
+    await assertFails(setDoc(apt(ownerDb(), "a1"), {
+      startsAt: future(), type: "lab_review", reminderOffsets: [60],
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    }));
+  });
+
+  test("Caregiver can delete an appointment", async () => {
+    await assertSucceeds(deleteDoc(apt(cgDb(), "a1")));
+  });
+
+  // ---------------- doctor notes ----------------
+
+  test("Doctor note create rules", async () => {
+    await assertSucceeds(setDoc(note(ownerDb(), "n2"), noteDoc({ appointmentId: "a1" })));
+    await assertFails(setDoc(note(ownerDb(), "b1"), noteDoc({ body: "" })));
+    await assertFails(setDoc(note(ownerDb(), "b2"), noteDoc({ body: "a".repeat(501) })));
+    await assertSucceeds(setDoc(note(ownerDb(), "b3"), noteDoc({ body: "a".repeat(500) })));
+    await assertFails(setDoc(note(ownerDb(), "b4"), noteDoc({ body: 5 })));
+    await assertFails(setDoc(note(ownerDb(), "b5"), noteDoc({ extra: 1 })));
+    await assertFails(setDoc(note(ownerDb(), "b6"), noteDoc({ appointmentId: "" })));
+    await assertFails(setDoc(note(ownerDb(), "b7"), noteDoc({ createdAt: new Date("2020-01-01") })));
+    await assertFails(setDoc(note(ownerDb(), "b8"), noteDoc({ doneAt: serverTimestamp() })));
+    const d = noteDoc();
+    delete d.doneAt;
+    await assertFails(setDoc(note(ownerDb(), "b9"), d));
+  });
+
+  test("Doctor note can be ticked off, reopened and edited", async () => {
+    await assertSucceeds(updateDoc(note(ownerDb(), "n1"), { doneAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(note(cgDb(), "n1"), { doneAt: null }));
+    await assertSucceeds(updateDoc(note(ownerDb(), "n1"), { body: "Edited question" }));
+  });
+
+  test("Doctor note edits are limited", async () => {
+    await assertFails(updateDoc(note(ownerDb(), "n1"), { doneAt: new Date("2020-01-01") }));
+    await assertFails(updateDoc(note(ownerDb(), "n1"), { body: "" }));
+    await assertFails(updateDoc(note(ownerDb(), "n1"), { body: "a".repeat(501) }));
+    await assertFails(updateDoc(note(ownerDb(), "n1"), { createdAt: serverTimestamp() }));
+    await assertFails(updateDoc(note(ownerDb(), "n1"), { appointmentId: "a1" }));
+    await assertFails(updateDoc(note(ownerDb(), "n1"), { extra: 1 }));
+    await assertFails(updateDoc(note(hvDb(), "n1", "profileHV"), { doneAt: serverTimestamp() }));
+  });
+
+  test("Caregiver can delete a doctor note", async () => {
+    await assertSucceeds(deleteDoc(note(cgDb(), "n1")));
   });
 });
 
+describe("Solo Pro gate for prescribers / appointments / notes — M16 step 7", () => {
+  const ownerDb = () => testEnv.authenticatedContext("owner123").firestore();
+  const cgDb = () => testEnv.authenticatedContext("caregiver123").firestore();
+
+  const pres = (db, id) => doc(db, "profiles", "profile1", "prescribers", id);
+  const apt = (db, id) => doc(db, "profiles", "profile1", "appointments", id);
+  const note = (db, id) => doc(db, "profiles", "profile1", "doctorNotes", id);
+
+  const prescriber = () => ({
+    name: "Dr. Gate", createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  });
+  const appt = () => ({
+    startsAt: new Date(Date.now() + 86400000), type: "checkup", reminderOffsets: [60],
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  });
+  const noteDoc = () => ({ body: "Question", createdAt: serverTimestamp(), doneAt: null });
+
+  const old = new Date("2026-11-01T10:00:00Z");
+  const hour = 3600 * 1000;
+
+  async function setCustomer(uid, data) {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "customers", uid), data);
+    });
+  }
+
+  async function writesAllowed() {
+    // one create on each collection, with fresh ids
+    const id = "g" + Math.random().toString(36).slice(2, 8);
+    try {
+      await assertSucceeds(setDoc(pres(ownerDb(), id), prescriber()));
+      await assertSucceeds(setDoc(apt(ownerDb(), id), appt()));
+      await assertSucceeds(setDoc(note(ownerDb(), id), noteDoc()));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(pres(db, "p1"), { name: "Dr Old", createdAt: old, updatedAt: old });
+      await setDoc(apt(db, "a1"), {
+        startsAt: new Date(Date.now() + 86400000), type: "checkup", reminderOffsets: [60],
+        createdAt: old, updatedAt: old,
+      });
+      await setDoc(note(db, "n1"), { body: "Old", createdAt: old, doneAt: null });
+    });
+  });
+
+  test("Owner without a subscription record cannot create or update", async () => {
+    await assertFails(setDoc(pres(ownerDb(), "x"), prescriber()));
+    await assertFails(setDoc(apt(ownerDb(), "x"), appt()));
+    await assertFails(setDoc(note(ownerDb(), "x"), noteDoc()));
+    await assertFails(updateDoc(pres(ownerDb(), "p1"), { name: "New", updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(note(ownerDb(), "n1"), { doneAt: serverTimestamp() }));
+    await assertFails(updateDoc(note(ownerDb(), "n1"), { body: "Edited" }));
+  });
+
+  test("On the free plan existing data can still be read and deleted", async () => {
+    await assertSucceeds(getDoc(pres(ownerDb(), "p1")));
+    await assertSucceeds(getDoc(apt(ownerDb(), "a1")));
+    await assertSucceeds(getDoc(note(ownerDb(), "n1")));
+    await assertSucceeds(deleteDoc(pres(ownerDb(), "p1")));
+    await assertSucceeds(deleteDoc(apt(ownerDb(), "a1")));
+    await assertSucceeds(deleteDoc(note(ownerDb(), "n1")));
+  });
+
+  test("Active, trial and grace-period subscriptions can write", async () => {
+    for (const status of ["active", "trial", "grace_period"]) {
+      await setCustomer("owner123", { activePlan: "monthly_premium", status });
+      expect(await writesAllowed()).toBe(true);
+    }
+  });
+
+  test("An expired subscription cannot write", async () => {
+    await setCustomer("owner123", { activePlan: "monthly_premium", status: "expired" });
+    expect(await writesAllowed()).toBe(false);
+  });
+
+  test("Canceled but still inside the paid period can write; after it, cannot", async () => {
+    await setCustomer("owner123", {
+      activePlan: "monthly_premium", status: "canceled",
+      expiresAt: new Date(Date.now() + 5 * 24 * hour),
+    });
+    expect(await writesAllowed()).toBe(true);
+
+    await setCustomer("owner123", {
+      activePlan: "monthly_premium", status: "canceled",
+      expiresAt: new Date(Date.now() - 5 * 24 * hour),
+    });
+    expect(await writesAllowed()).toBe(false);
+
+    await setCustomer("owner123", { activePlan: "monthly_premium", status: "canceled" });
+    expect(await writesAllowed()).toBe(false); // no end date: not trusted
+  });
+
+  test("Updates are gated too, and work again after upgrading", async () => {
+    await setCustomer("owner123", { activePlan: "monthly_premium", status: "expired" });
+    await assertFails(updateDoc(apt(ownerDb(), "a1"), { notes: "x", updatedAt: serverTimestamp() }));
+
+    await setCustomer("owner123", { activePlan: "annual_premium", status: "active" });
+    await assertSucceeds(updateDoc(apt(ownerDb(), "a1"), { notes: "x", updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(note(ownerDb(), "n1"), { doneAt: serverTimestamp() }));
+  });
+
+  test("The profile OWNER's plan counts, not the caregiver's", async () => {
+    // caregiver has Pro but the owner is free: denied
+    await setCustomer("caregiver123", { activePlan: "monthly_premium", status: "active" });
+    await assertFails(setDoc(note(cgDb(), "cg1"), noteDoc()));
+
+    // owner is Pro, caregiver is free: allowed
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "customers", "owner123"), {
+        activePlan: "family_plan", status: "active",
+      });
+      await setDoc(doc(context.firestore(), "customers", "caregiver123"), {
+        activePlan: "free", status: "expired",
+      });
+    });
+    await assertSucceeds(setDoc(note(cgDb(), "cg2"), noteDoc()));
+    await assertSucceeds(setDoc(apt(cgDb(), "cg2"), appt()));
+  });
+
+  test("A client can never grant itself Pro", async () => {
+    await assertFails(setDoc(doc(ownerDb(), "customers", "owner123"), {
+      activePlan: "annual_premium", status: "active",
+    }));
+    await assertFails(setDoc(note(ownerDb(), "still-blocked"), noteDoc()));
+  });
+});

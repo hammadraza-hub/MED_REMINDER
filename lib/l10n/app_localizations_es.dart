@@ -1235,6 +1235,412 @@ class AppLocalizationsEs extends AppLocalizations {
   String get doctorsNameRequired => 'Ingresa el nombre completo del médico.';
 
   @override
+  String get doctorsErrNameTooLong =>
+      'El nombre debe tener 80 caracteres o menos.';
+
+  @override
+  String get doctorsErrPhone =>
+      'Introduce un número de teléfono válido (de 7 a 15 dígitos).';
+
+  @override
+  String get doctorsErrTooLong => 'Uno de los campos es demasiado largo.';
+
+  @override
+  String get doctorsFieldClinicOnly => 'Clínica (opcional)';
+
+  @override
+  String get doctorsHintClinicOnly => 'Introduce el nombre de la clínica';
+
+  @override
+  String get doctorsFieldAddress => 'Dirección (opcional)';
+
+  @override
+  String get doctorsHintAddress => 'Introduce la dirección';
+
+  @override
+  String get doctorsEditTitle => 'Editar médico';
+
+  @override
+  String get doctorsUpdated => 'Médico actualizado';
+
+  @override
+  String get doctorsSaveFailed =>
+      'No se pudo guardar el médico. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get doctorsLoadFailed =>
+      'No se pudieron cargar los médicos. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get doctorsRetry => 'Reintentar';
+
+  @override
+  String get doctorsDeleteAction => 'Eliminar médico';
+
+  @override
+  String get doctorsDeleteTitle => '¿Eliminar este médico?';
+
+  @override
+  String doctorsDeleteBody(String name) {
+    return 'Se eliminará a $name. Las citas y los medicamentos se conservan, pero ya no indicarán a este médico.';
+  }
+
+  @override
+  String get doctorsDeleted => 'Médico eliminado';
+
+  @override
+  String get doctorsDeleteFailed =>
+      'No se pudo eliminar el médico. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get doctorsNoMeds => 'Aún no hay medicamentos activos para vincular.';
+
+  @override
+  String get doctorsMedsLoadFailed => 'No se pudieron cargar los medicamentos.';
+
+  @override
+  String get doctorsNoMedsLinked => 'Sin medicamentos vinculados';
+
+  @override
+  String get doctorsLinkFailed =>
+      'Médico guardado, pero no se pudieron vincular los medicamentos. Abre el médico para intentarlo de nuevo.';
+
+  @override
+  String get doctorsReplacesOtherDoctor =>
+      'Al vincular un medicamento aquí se reemplaza el médico que tenía antes.';
+
+  @override
+  String get apptTitle => 'Citas';
+
+  @override
+  String get apptUpcoming => 'Próximas';
+
+  @override
+  String get apptPast => 'Pasadas';
+
+  @override
+  String get apptStatusUpcoming => 'PRÓXIMA';
+
+  @override
+  String get apptStatusPast => 'PASADA';
+
+  @override
+  String get apptNoUpcoming => 'No hay citas próximas';
+
+  @override
+  String get apptNoPast => 'No hay citas pasadas';
+
+  @override
+  String get apptListHint => 'Toca una cita para verla o editarla';
+
+  @override
+  String get apptResources => 'RECURSOS CLÍNICOS';
+
+  @override
+  String get apptMyPrescribers => 'Mis médicos';
+
+  @override
+  String get apptQuestionsForDoctor => 'Preguntas para mi médico';
+
+  @override
+  String get apptQuestionsSubtitle =>
+      'Guarda una lista para preguntar en tu visita';
+
+  @override
+  String get apptLoadFailed =>
+      'No se pudieron cargar las citas. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get apptRetry => 'Reintentar';
+
+  @override
+  String get apptAddTitle => 'Añadir cita';
+
+  @override
+  String get apptEditTitle => 'Editar cita';
+
+  @override
+  String get apptDetailsSection => 'DETALLES DE LA CITA';
+
+  @override
+  String get apptDateTime => 'Fecha y hora';
+
+  @override
+  String get apptDateTimeHint => 'Toca para cambiar';
+
+  @override
+  String get apptDoctor => 'Médico';
+
+  @override
+  String get apptSelectDoctor => 'Seleccionar médico';
+
+  @override
+  String get apptNoDoctor => 'Sin médico';
+
+  @override
+  String get apptPickDoctorTitle => 'Seleccionar médico';
+
+  @override
+  String get apptNoDoctorsOnFile =>
+      'Aún no hay médicos. Puedes añadir uno en Médicos.';
+
+  @override
+  String get apptType => 'Tipo de cita';
+
+  @override
+  String get apptTypeFollowUp => 'Seguimiento';
+
+  @override
+  String get apptTypeCheckup => 'Chequeo';
+
+  @override
+  String get apptTypeLabReview => 'Revisión de análisis';
+
+  @override
+  String get apptTypeOther => 'Otro';
+
+  @override
+  String get apptLocation => 'Lugar (opcional)';
+
+  @override
+  String get apptLocationHint => 'p. ej. Clínica City Care, Consultorio 4';
+
+  @override
+  String get apptNotes => 'Notas';
+
+  @override
+  String get apptOptional => 'Opcional';
+
+  @override
+  String get apptNotesHint =>
+      'p. ej. Llevar los últimos análisis, preguntar por cambios de dosis...';
+
+  @override
+  String get apptRemindersTitle => 'Recordatorios';
+
+  @override
+  String get apptRemindersSubtitle =>
+      'Recibe una notificación en este teléfono antes de la cita.';
+
+  @override
+  String get apptOffsetWeek => '1 semana antes';
+
+  @override
+  String get apptOffsetDay => '1 día antes';
+
+  @override
+  String get apptOffsetHours2 => '2 horas antes';
+
+  @override
+  String get apptOffsetHour => '1 hora antes';
+
+  @override
+  String get apptOffsetMinutes30 => '30 minutos antes';
+
+  @override
+  String apptOffsetCustom(int minutes) {
+    return '$minutes min antes';
+  }
+
+  @override
+  String get apptReminderNoteTitle => 'Recordatorios en el teléfono';
+
+  @override
+  String get apptReminderNote =>
+      'Los recordatorios se programan en este teléfono. Se vuelven a programar al abrir la app en un teléfono nuevo.';
+
+  @override
+  String get apptSave => 'Guardar cita';
+
+  @override
+  String get apptSaved => 'Cita añadida';
+
+  @override
+  String get apptUpdated => 'Cita actualizada';
+
+  @override
+  String get apptDeleted => 'Cita eliminada';
+
+  @override
+  String get apptSaveFailed =>
+      'No se pudo guardar la cita. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get apptDeleteFailed =>
+      'No se pudo eliminar la cita. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get apptDeleteTitle => '¿Eliminar esta cita?';
+
+  @override
+  String get apptDeleteBody => 'Se eliminarán la cita y sus recordatorios.';
+
+  @override
+  String get apptDeleteAction => 'Eliminar cita';
+
+  @override
+  String get apptErrFuture => 'Selecciona una fecha y hora futuras.';
+
+  @override
+  String get apptErrTooLong => 'El lugar o las notas son demasiado largos.';
+
+  @override
+  String get apptErrReminders => 'Elige como máximo 5 recordatorios.';
+
+  @override
+  String apptNotifTitle(String doctor) {
+    return 'Cita con $doctor';
+  }
+
+  @override
+  String get apptNotifTitleNoDoctor => 'Próxima cita';
+
+  @override
+  String apptNotifBody(String type, String when) {
+    return '$type · $when';
+  }
+
+  @override
+  String get apptChannelName => 'Recordatorios de citas';
+
+  @override
+  String get apptChannelDesc => 'Recordatorios de próximas citas médicas';
+
+  @override
+  String get notesTitle => 'Notas para el médico';
+
+  @override
+  String get notesBanner =>
+      'Estas notas pasan a tu próxima cita: márcalas cuando las hayas tratado.';
+
+  @override
+  String get notesAddHint => 'Añade una pregunta o nota...';
+
+  @override
+  String notesLinkSwitch(String when) {
+    return 'Vincular a la próxima cita ($when)';
+  }
+
+  @override
+  String notesLinkedTag(String when) {
+    return 'Cita: $when';
+  }
+
+  @override
+  String get notesDiscussed => 'Tratada';
+
+  @override
+  String notesSummary(int open, int done) {
+    return '$open abiertas · $done tratadas';
+  }
+
+  @override
+  String get notesClearDiscussed => 'Borrar tratadas';
+
+  @override
+  String get notesClearTitle => '¿Borrar las notas tratadas?';
+
+  @override
+  String notesClearBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se eliminarán $count notas tratadas.',
+      one: 'Se eliminará 1 nota tratada.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notesCleared => 'Notas tratadas borradas';
+
+  @override
+  String get notesEditTitle => 'Editar nota';
+
+  @override
+  String get notesEditHint => 'Escribe una pregunta o nota...';
+
+  @override
+  String get notesSave => 'Guardar';
+
+  @override
+  String get notesNextAppointment => 'Próxima cita';
+
+  @override
+  String get notesEmptyTitle => 'Aún no hay notas';
+
+  @override
+  String get notesEmptySubtitle =>
+      'Añade una pregunta para tratar en tu próxima cita.';
+
+  @override
+  String get notesDeleted => 'Nota eliminada';
+
+  @override
+  String get notesDeleteTitle => '¿Eliminar esta nota?';
+
+  @override
+  String get notesDeleteAction => 'Eliminar';
+
+  @override
+  String get notesErrEmpty => 'Escribe una pregunta o nota.';
+
+  @override
+  String get notesErrTooLong => 'Una nota puede tener hasta 500 caracteres.';
+
+  @override
+  String get notesSaveFailed =>
+      'No se pudo guardar la nota. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get notesLoadFailed =>
+      'No se pudieron cargar las notas. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get notesRetry => 'Reintentar';
+
+  @override
+  String notesToday(String time) {
+    return 'Hoy, $time';
+  }
+
+  @override
+  String notesYesterday(String time) {
+    return 'Ayer · $time';
+  }
+
+  @override
+  String notesDateTime(String date, String time) {
+    return '$date · $time';
+  }
+
+  @override
+  String apptQuestionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count preguntas abiertas',
+      one: '1 pregunta abierta',
+      zero: 'Sin preguntas abiertas',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get proGateTitle => 'Función de Solo Pro';
+
+  @override
+  String get proGateBody =>
+      'Los médicos, las citas y las notas para el médico forman parte del plan Solo Pro. Lo que ya guardaste sigue aquí y puedes verlo o eliminarlo.';
+
+  @override
+  String get proGateSeePlans => 'Ver planes';
+
+  @override
+  String get proReadOnlyBanner =>
+      'Solo lectura en el plan gratuito. Pasa a Solo Pro para añadir o cambiar.';
+
+  @override
   String get medsTitle => 'Medicamentos';
 
   @override

@@ -575,6 +575,158 @@ service cloud.firestore {
     }
 
     // =====================================
+    // PRESCRIBERS, APPOINTMENTS, DOCTOR NOTES (M16 step 2)
+    //
+    // Limits must match lib/core/doctors/*_validator.dart. Reads stay in the
+    // generic health-records block (canViewHealth); this section only adds
+    // WRITE rules. Owner or caregiver (canWriteHealth) may write.
+    // =====================================
+
+    // M16 step 7: prescribers, appointments and doctor notes are Solo Pro.
+    // The entitlement is the PROFILE OWNER's (a family plan covers every
+    // profile its owner has), read from customers/{ownerUid}, which only the
+    // server can write (M12). Same rule as the app's hasPremiumAccess:
+    // active / trial / grace period, or canceled but still inside the paid
+    // period. Only create and update are gated: reads and deletes stay open,
+    // so after a downgrade the data is read-only but never lost or stuck.
+    function ownerIsPro(profileId) {
+      let path = /databases/$(database)/documents/customers/$(profile(profileId).ownerUid);
+
+      return exists(path)
+        && (
+          get(path).data.get('status', '') in ['active', 'trial', 'grace_period']
+          || (
+            get(path).data.get('status', '') == 'canceled'
+            && get(path).data.get('expiresAt', null) is timestamp
+            && get(path).data.expiresAt > request.time
+          )
+        );
+    }
+
+    function optStrMax(d, key, max) {
+      return !(key in d) || (d[key] is string && d[key].size() <= max);
+    }
+
+    // Offsets are stored largest first, no duplicates (the app normalises),
+    // so "strictly descending" also rules out duplicates. Rules have no loops,
+    // hence the explicit positions (max 5 offsets).
+    function offsetAt(l, i) {
+      return l.size() <= i
+        || (l[i] is int && l[i] >= 1 && l[i] <= 43200);
+    }
+
+    function offsetOrder(l, i) {
+      return l.size() <= i + 1 || l[i] > l[i + 1];
+    }
+
+    function validOffsets(l) {
+      return l is list
+        && l.size() <= 5
+        && offsetAt(l, 0) && offsetAt(l, 1) && offsetAt(l, 2)
+        && offsetAt(l, 3) && offsetAt(l, 4)
+        && offsetOrder(l, 0) && offsetOrder(l, 1)
+        && offsetOrder(l, 2) && offsetOrder(l, 3);
+    }
+
+    function validPrescriberShape() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly([
+          'name', 'specialty', 'phone', 'clinic', 'address',
+          'createdAt', 'updatedAt'
+        ])
+        && d.keys().hasAll(['name', 'createdAt', 'updatedAt'])
+        && d.name is string
+        && d.name.size() >= 1 && d.name.size() <= 80
+        && optStrMax(d, 'specialty', 60)
+        && optStrMax(d, 'clinic', 80)
+        && optStrMax(d, 'address', 200)
+        && (
+          !('phone' in d)
+          || (d.phone is string
+              && d.phone.matches('\\+?[0-9 ()\\-]+')
+              && d.phone.matches('[^0-9]*([0-9][^0-9]*){7,15}'))
+        )
+        && d.updatedAt == request.time;
+    }
+
+    function validPrescriberCreate() {
+      return validPrescriberShape()
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function validPrescriberUpdate() {
+      return validPrescriberShape()
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function validAppointmentShape(profileId) {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly([
+          'startsAt', 'prescriberId', 'type', 'location', 'notes',
+          'reminderOffsets', 'createdAt', 'updatedAt'
+        ])
+        && d.keys().hasAll([
+          'startsAt', 'type', 'reminderOffsets', 'createdAt', 'updatedAt'
+        ])
+        && d.startsAt is timestamp
+        && d.type in ['follow_up', 'checkup', 'lab_review', 'other']
+        && optStrMax(d, 'location', 200)
+        && optStrMax(d, 'notes', 500)
+        && validOffsets(d.reminderOffsets)
+        && (
+          !('prescriberId' in d)
+          || (
+            d.prescriberId is string
+            && d.prescriberId.size() > 0
+            && exists(
+              /databases/$(database)/documents/profiles/$(profileId)/prescribers/$(d.prescriberId)
+            )
+          )
+        )
+        && d.updatedAt == request.time;
+    }
+
+    function validAppointmentCreate(profileId) {
+      return validAppointmentShape(profileId)
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function validAppointmentUpdate(profileId) {
+      return validAppointmentShape(profileId)
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function validDoctorNoteCreate() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly(['body', 'createdAt', 'doneAt', 'appointmentId'])
+        && d.keys().hasAll(['body', 'createdAt', 'doneAt'])
+        && d.body is string
+        && d.body.size() >= 1 && d.body.size() <= 500
+        && d.createdAt == request.time
+        && d.doneAt == null
+        && (
+          !('appointmentId' in d)
+          || (d.appointmentId is string
+              && d.appointmentId.size() > 0
+              && d.appointmentId.size() <= 100)
+        );
+    }
+
+    // Only the text and the done flag may change; doneAt is null (open again)
+    // or the time of the change.
+    function validDoctorNoteUpdate() {
+      let d = request.resource.data;
+
+      return d.diff(resource.data).affectedKeys().hasOnly(['body', 'doneAt'])
+        && d.body is string
+        && d.body.size() >= 1 && d.body.size() <= 500
+        && (d.doneAt == null || d.doneAt == request.time);
+    }
+
+    // =====================================
     // USER UPDATE SECURITY (M2)
     // =====================================
 
@@ -945,6 +1097,47 @@ service cloud.firestore {
       match /vitalsDaily/{dailyId} {
         allow create, update: if canWriteHealth(profileId)
           && validVitalDaily(dailyId);
+
+        allow delete: if canWriteHealth(profileId);
+      }
+
+      // =====================================
+      // PRESCRIBERS, APPOINTMENTS, DOCTOR NOTES (M16 step 2)
+      // Reads and purge deletes: generic health block below.
+      // =====================================
+
+      match /prescribers/{prescriberId} {
+        allow create: if canWriteHealth(profileId)
+          && ownerIsPro(profileId)
+          && validPrescriberCreate();
+
+        allow update: if canWriteHealth(profileId)
+          && ownerIsPro(profileId)
+          && validPrescriberUpdate();
+
+        allow delete: if canWriteHealth(profileId);
+      }
+
+      match /appointments/{appointmentId} {
+        allow create: if canWriteHealth(profileId)
+          && ownerIsPro(profileId)
+          && validAppointmentCreate(profileId);
+
+        allow update: if canWriteHealth(profileId)
+          && ownerIsPro(profileId)
+          && validAppointmentUpdate(profileId);
+
+        allow delete: if canWriteHealth(profileId);
+      }
+
+      match /doctorNotes/{noteId} {
+        allow create: if canWriteHealth(profileId)
+          && ownerIsPro(profileId)
+          && validDoctorNoteCreate();
+
+        allow update: if canWriteHealth(profileId)
+          && ownerIsPro(profileId)
+          && validDoctorNoteUpdate();
 
         allow delete: if canWriteHealth(profileId);
       }
