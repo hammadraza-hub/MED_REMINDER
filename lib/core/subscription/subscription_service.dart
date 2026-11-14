@@ -60,9 +60,7 @@ class SubscriptionService {
       await Purchases.setLogLevel(LogLevel.debug);
     }
 
-    await Purchases.configure(
-      PurchasesConfiguration(apiKey),
-    );
+    await Purchases.configure(PurchasesConfiguration(apiKey));
 
     _initialized = true;
     debugPrint('M12: RevenueCat SDK initialized');

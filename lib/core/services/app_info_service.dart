@@ -30,7 +30,9 @@ class AppInfoService {
     try {
       final info = await PackageInfo.fromPlatform();
       version = info.version.isNotEmpty ? info.version : version;
-      buildNumber = info.buildNumber.isNotEmpty ? info.buildNumber : buildNumber;
+      buildNumber = info.buildNumber.isNotEmpty
+          ? info.buildNumber
+          : buildNumber;
       packageName = info.packageName;
       debugPrint('AppInfoService: v$version+$buildNumber ($packageName)');
     } catch (e) {

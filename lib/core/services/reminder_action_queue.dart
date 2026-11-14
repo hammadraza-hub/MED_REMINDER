@@ -77,7 +77,9 @@ class ReminderActionQueue {
         final entry = jsonDecode(raw) as Map<String, dynamic>;
         final attempts = (entry['attempts'] as int? ?? 0) + 1;
         if (attempts >= _maxAttempts) {
-          debugPrint('ReminderActionQueue: dropping $raw after $_maxAttempts attempts');
+          debugPrint(
+            'ReminderActionQueue: dropping $raw after $_maxAttempts attempts',
+          );
           continue;
         }
         entry['attempts'] = attempts;

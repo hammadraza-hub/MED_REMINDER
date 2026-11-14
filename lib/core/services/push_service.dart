@@ -59,7 +59,8 @@ class LocalOnlyPushService implements PushService {
         uid: uid,
         token: token,
         platform: Platform.operatingSystem, // 'android'
-        appVersion: '1.0.0', // keep constant; package_info dep avoided per YAGNI
+        appVersion:
+            '1.0.0', // keep constant; package_info dep avoided per YAGNI
         timezone: DateTime.now().timeZoneName,
       );
 

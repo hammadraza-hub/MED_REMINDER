@@ -115,11 +115,19 @@ class AccessibilityController extends ChangeNotifier {
     }
   }
 
-  Future<void> setHighContrast(bool value) =>
-      _setBool(value, _highContrast, _highContrastKey, (v) => _highContrast = v);
+  Future<void> setHighContrast(bool value) => _setBool(
+    value,
+    _highContrast,
+    _highContrastKey,
+    (v) => _highContrast = v,
+  );
 
   Future<void> setSimplifiedMode(bool value) => _setBool(
-      value, _simplifiedMode, _simplifiedKey, (v) => _simplifiedMode = v);
+    value,
+    _simplifiedMode,
+    _simplifiedKey,
+    (v) => _simplifiedMode = v,
+  );
 
   Future<void> setVoiceInput(bool value) =>
       _setBool(value, _voiceInput, _voiceInputKey, (v) => _voiceInput = v);

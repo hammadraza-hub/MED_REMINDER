@@ -55,25 +55,22 @@ class PreferencesSyncService {
   /// Start following the signed-in user. Call once at startup, after
   /// Firebase is initialised.
   void start() {
-    _authSub ??= AuthRepository.instance.authStateChanges.listen(
-      (user) {
-        if (user == null) {
-          _detach();
-        } else if (user.uid != _uid) {
-          unawaited(_attach(user.uid));
-        }
-      },
-      onError: (Object e) => debugPrint('PreferencesSync: auth error — $e'),
-    );
+    _authSub ??= AuthRepository.instance.authStateChanges.listen((user) {
+      if (user == null) {
+        _detach();
+      } else if (user.uid != _uid) {
+        unawaited(_attach(user.uid));
+      }
+    }, onError: (Object e) => debugPrint('PreferencesSync: auth error — $e'));
   }
 
   AppPreferences _readLocal() => AppPreferences(
-        language: LocaleController.instance.localeCode,
-        textSizeIndex: AccessibilityController.instance.textSizeIndex,
-        highContrast: AccessibilityController.instance.highContrast,
-        simplifiedMode: AccessibilityController.instance.simplifiedMode,
-        voiceInput: AccessibilityController.instance.voiceInput,
-      );
+    language: LocaleController.instance.localeCode,
+    textSizeIndex: AccessibilityController.instance.textSizeIndex,
+    highContrast: AccessibilityController.instance.highContrast,
+    simplifiedMode: AccessibilityController.instance.simplifiedMode,
+    voiceInput: AccessibilityController.instance.voiceInput,
+  );
 
   Future<void> _attach(String uid) async {
     _detach();

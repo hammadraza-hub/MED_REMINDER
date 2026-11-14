@@ -66,7 +66,9 @@ class AiService {
 
   bool get isConfigured {
     final key = _apiKey;
-    return key != null && key.isNotEmpty && key != 'PASTE_YOUR_GEMINI_API_KEY_HERE';
+    return key != null &&
+        key.isNotEmpty &&
+        key != 'PASTE_YOUR_GEMINI_API_KEY_HERE';
   }
 
   String? get _apiKey {
@@ -125,9 +127,9 @@ class AiService {
     final systemText = (context == null || context.trim().isEmpty)
         ? systemInstruction
         : '$systemInstruction\n\n'
-            '--- USER DATA (authoritative, use these exact values) ---\n'
-            '${context.trim()}\n'
-            '--- END USER DATA ---';
+              '--- USER DATA (authoritative, use these exact values) ---\n'
+              '${context.trim()}\n'
+              '--- END USER DATA ---';
 
     final body = jsonEncode({
       'systemInstruction': {
@@ -136,10 +138,7 @@ class AiService {
         ],
       },
       'contents': contents,
-      'generationConfig': {
-        'temperature': 0.5,
-        'maxOutputTokens': 300,
-      },
+      'generationConfig': {'temperature': 0.5, 'maxOutputTokens': 300},
     });
 
     AiServiceException? lastError;

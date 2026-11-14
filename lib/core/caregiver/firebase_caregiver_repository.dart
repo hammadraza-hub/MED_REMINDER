@@ -16,7 +16,8 @@ import '../../core/caregiver/caregiver_repository.dart';
 
 class FirebaseCaregiverRepository implements CaregiverRepository {
   FirebaseCaregiverRepository._();
-  static final FirebaseCaregiverRepository instance = FirebaseCaregiverRepository._();
+  static final FirebaseCaregiverRepository instance =
+      FirebaseCaregiverRepository._();
 
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
@@ -33,9 +34,11 @@ class FirebaseCaregiverRepository implements CaregiverRepository {
         .where('profileId', isEqualTo: profileId)
         .where('status', isEqualTo: 'pending')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => _inviteFromMap(doc.id, doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _inviteFromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   /// Watch invitations received by current user (by their email).
@@ -48,9 +51,11 @@ class FirebaseCaregiverRepository implements CaregiverRepository {
         .where('inviteeEmail', isEqualTo: userEmail)
         .where('status', isEqualTo: 'pending')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => _inviteFromMap(doc.id, doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _inviteFromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   // ============================================================
@@ -96,7 +101,9 @@ class FirebaseCaregiverRepository implements CaregiverRepository {
     required String caregiverUid,
     required CaregiverPermissions permissions,
   }) {
-    throw UnimplementedError('updateCaregiverPermissions requires Blaze Cloud Function');
+    throw UnimplementedError(
+      'updateCaregiverPermissions requires Blaze Cloud Function',
+    );
   }
 
   // ============================================================
@@ -110,7 +117,9 @@ class FirebaseCaregiverRepository implements CaregiverRepository {
       ownerUid: data['ownerUid'] as String? ?? '',
       inviteeEmail: data['inviteeEmail'] as String? ?? '',
       role: CaregiverRoleX.fromString(data['role'] as String?),
-      permissions: CaregiverPermissions.fromMap(data['permissions'] as Map<String, dynamic>?),
+      permissions: CaregiverPermissions.fromMap(
+        data['permissions'] as Map<String, dynamic>?,
+      ),
       status: InviteStatusX.fromString(data['status'] as String?),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       expiresAt: (data['expiresAt'] as Timestamp?)?.toDate(),

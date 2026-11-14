@@ -79,8 +79,8 @@ class ReminderScheduler with WidgetsBindingObserver {
     iOS: const DarwinNotificationDetails(),
   );
 
-  AndroidFlutterLocalNotificationsPlugin? get _android =>
-      _plugin.resolvePlatformSpecificImplementation<
+  AndroidFlutterLocalNotificationsPlugin? get _android => _plugin
+      .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin
       >();
 
@@ -153,7 +153,9 @@ class ReminderScheduler with WidgetsBindingObserver {
       tz.setLocalLocation(tz.getLocation(info.identifier));
     } catch (e) {
       // Keeps UTC; reminders still fire, just at the wrong wall-clock time.
-      debugPrint('ReminderScheduler: timezone fallback to ${tz.local.name} ($e)');
+      debugPrint(
+        'ReminderScheduler: timezone fallback to ${tz.local.name} ($e)',
+      );
     }
   }
 
