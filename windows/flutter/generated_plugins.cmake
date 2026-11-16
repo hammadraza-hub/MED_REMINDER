@@ -11,6 +11,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_remote_config
   flutter_timezone
   local_auth_windows
+  printing
   share_plus
   url_launcher_windows
 )

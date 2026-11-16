@@ -1,3 +1,5 @@
+import '../../core/reports/report_range.dart';
+
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -376,8 +378,13 @@ class _AdherenceDetailScreenState extends State<AdherenceDetailScreen> {
     // Reports export/save flow mein persist karni hai.
     // Abhi export CONFIG screen khulti hai
     // (options select → generate → PDF preview).
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const ReportPreviewScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ReportPreviewScreen(
+          initialRange: ReportRange.custom(_startDate, _effectiveEndDate),
+        ),
+      ),
+    );
   }
 
   // ============================================================

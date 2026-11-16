@@ -2595,4 +2595,349 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get appLockNotVerified =>
       'Impossible de vérifier votre identité. Veuillez réessayer.';
+
+  @override
+  String get rptTitle => 'Créer un rapport';
+
+  @override
+  String get rptProfile => 'PROFIL';
+
+  @override
+  String get rptProfileHelp => 'Le rapport concerne le profil affiché.';
+
+  @override
+  String get rptDateRange => 'PÉRIODE';
+
+  @override
+  String rptDaysTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours',
+      one: '1 jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptPreset7 => '7 derniers jours';
+
+  @override
+  String get rptPreset30 => '30 derniers jours';
+
+  @override
+  String get rptPreset90 => '90 derniers jours';
+
+  @override
+  String get rptPresetCustom => 'Personnalisé';
+
+  @override
+  String get rptFrom => 'DU';
+
+  @override
+  String get rptTo => 'AU';
+
+  @override
+  String get rptErrFromAfterTo =>
+      'La date de début doit précéder la date de fin.';
+
+  @override
+  String get rptErrTooLong => 'Un rapport peut couvrir au maximum 365 jours.';
+
+  @override
+  String get rptErrFuture => 'La date de fin ne peut pas être dans le futur.';
+
+  @override
+  String get rptData => 'DONNÉES À INCLURE';
+
+  @override
+  String rptSelectedCount(int count) {
+    return '$count sélectionnés';
+  }
+
+  @override
+  String get rptOptAdherence => 'Observance';
+
+  @override
+  String get rptOptVitals => 'Signes vitaux';
+
+  @override
+  String get rptOptSideEffects => 'Effets secondaires';
+
+  @override
+  String get rptOptAdherenceDesc =>
+      'Prises, oublis et doses sautées par jour et par médicament';
+
+  @override
+  String get rptOptVitalsDesc =>
+      'Tension, glycémie, poids et fréquence cardiaque';
+
+  @override
+  String get rptOptSideEffectsDesc => 'Symptômes, intensité et notes';
+
+  @override
+  String get rptHealthAccessNote =>
+      'Les signes vitaux et les effets secondaires nécessitent l’accès santé à ce profil.';
+
+  @override
+  String get rptSelectOne => 'Sélectionnez au moins un type de données.';
+
+  @override
+  String get rptSummaryTitle => 'Votre rapport contiendra';
+
+  @override
+  String get rptLargeNote =>
+      'Une longue période peut demander un peu plus de temps.';
+
+  @override
+  String get rptGenerate => 'Générer le rapport';
+
+  @override
+  String get rptLoadingData => 'Chargement de vos données…';
+
+  @override
+  String get rptBuilding => 'Préparation du PDF et du CSV…';
+
+  @override
+  String get rptPrivacyNote =>
+      'Le rapport est créé sur ce téléphone. Rien n’est envoyé à un serveur.';
+
+  @override
+  String get rptReadyTitle => 'Rapport prêt';
+
+  @override
+  String rptSectionNotIncluded(String section) {
+    return 'Non inclus : $section';
+  }
+
+  @override
+  String rptSectionTruncated(String section) {
+    return 'Seules les entrées les plus récentes sont incluses : $section';
+  }
+
+  @override
+  String rptFileInfo(String pdf, String csv) {
+    return 'PDF $pdf · CSV $csv';
+  }
+
+  @override
+  String get rptNoDataTitle => 'Aucune donnée sur cette période';
+
+  @override
+  String get rptNoDataBody =>
+      'Rien à signaler pour ces dates. Essayez une période plus longue.';
+
+  @override
+  String get rptTooLargeTitle => 'Cette période est trop grande';
+
+  @override
+  String get rptTooLargeBody =>
+      'Choisissez une période plus courte et réessayez.';
+
+  @override
+  String get rptErrorTitle => 'Impossible de créer le rapport';
+
+  @override
+  String get rptErrorBody => 'Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get rptTryAgain => 'Réessayer';
+
+  @override
+  String get rptChangeOptions => 'Modifier la période ou les options';
+
+  @override
+  String get rptLTitle => 'Rapport de santé MedRemind';
+
+  @override
+  String get rptLSubtitle => 'Rapport d’observance des médicaments';
+
+  @override
+  String get rptLProfile => 'Profil';
+
+  @override
+  String get rptLDateRange => 'Période';
+
+  @override
+  String get rptLGeneratedAt => 'Généré le';
+
+  @override
+  String get rptLDisclaimerLabel => 'Avertissement';
+
+  @override
+  String get rptLDisclaimer =>
+      'Ce rapport est établi à partir des informations saisies dans l’appli. Ce n’est pas un diagnostic médical. Parlez-en à votre médecin.';
+
+  @override
+  String get rptLAdherenceSummary => 'Résumé de l’observance';
+
+  @override
+  String get rptLAdherenceByDay => 'Observance par jour';
+
+  @override
+  String get rptLAdherenceByMedication => 'Observance par médicament';
+
+  @override
+  String get rptLMissedReasons => 'Doses oubliées et sautées par motif';
+
+  @override
+  String get rptLVitals => 'Signes vitaux (résumé quotidien)';
+
+  @override
+  String get rptLSideEffects => 'Effets secondaires';
+
+  @override
+  String get rptLDate => 'Date';
+
+  @override
+  String get rptLDateTime => 'Date et heure';
+
+  @override
+  String get rptLMedication => 'Médicament';
+
+  @override
+  String get rptLTaken => 'Prises';
+
+  @override
+  String get rptLMissed => 'Oubliées';
+
+  @override
+  String get rptLSkipped => 'Sautées';
+
+  @override
+  String get rptLPending => 'En attente';
+
+  @override
+  String get rptLAdherencePercent => 'Observance %';
+
+  @override
+  String get rptLReason => 'Motif';
+
+  @override
+  String get rptLCount => 'Nombre';
+
+  @override
+  String get rptLType => 'Type';
+
+  @override
+  String get rptLReadings => 'Mesures';
+
+  @override
+  String get rptLAverage => 'Moyenne';
+
+  @override
+  String get rptLMin => 'Min';
+
+  @override
+  String get rptLMax => 'Max';
+
+  @override
+  String get rptLUnit => 'Unité';
+
+  @override
+  String get rptLSymptom => 'Symptôme';
+
+  @override
+  String get rptLSeverity => 'Intensité (1-5)';
+
+  @override
+  String get rptLNotes => 'Notes';
+
+  @override
+  String get rptLReasonForgot => 'Oubli';
+
+  @override
+  String get rptLReasonSideEffect => 'Effet secondaire';
+
+  @override
+  String get rptLReasonRanOut => 'Plus de stock';
+
+  @override
+  String get rptLReasonOther => 'Autre';
+
+  @override
+  String get rptLReasonUnspecified => 'Aucun motif indiqué';
+
+  @override
+  String get rptLVitalBloodPressure => 'Tension artérielle';
+
+  @override
+  String get rptLVitalGlucose => 'Glycémie';
+
+  @override
+  String get rptLVitalWeight => 'Poids';
+
+  @override
+  String get rptLVitalHeartRate => 'Fréquence cardiaque';
+
+  @override
+  String get rptLNoData => 'Aucune donnée sur cette période';
+
+  @override
+  String get rptLNotAvailable =>
+      'Non disponible (pas d’accès, ou chargement impossible)';
+
+  @override
+  String get rptLTruncated =>
+      'Seules les entrées les plus récentes sont affichées (limite atteinte)';
+
+  @override
+  String get rptLOverallAdherence => 'Observance globale';
+
+  @override
+  String get rptLDecidedDoses => 'doses avec un résultat';
+
+  @override
+  String get rptLDayOverview => 'Jour par jour';
+
+  @override
+  String get rptLLegendAllTaken => 'Toutes prises';
+
+  @override
+  String get rptLLegendMissed => 'Oubliées';
+
+  @override
+  String get rptLLegendSkipped => 'Sautées';
+
+  @override
+  String get rptLLegendPending => 'En attente';
+
+  @override
+  String get rptLLegendNoDoses => 'Aucune dose';
+
+  @override
+  String rptLPage(int page, int pages) {
+    return 'Page $page sur $pages';
+  }
+
+  @override
+  String get rptPreviewPdf => 'Aperçu du PDF';
+
+  @override
+  String get rptSharePdf => 'Partager le PDF';
+
+  @override
+  String get rptShareCsv => 'Partager le CSV';
+
+  @override
+  String get rptShareFailed => 'Impossible de partager le fichier. Réessayez.';
+
+  @override
+  String get rptViewerTitle => 'Aperçu du PDF';
+
+  @override
+  String get rptShareSubject => 'Rapport de santé MedRemind';
+
+  @override
+  String get rptViewerError => 'Impossible d’afficher le PDF.';
+
+  @override
+  String get rptProTitle => 'Les rapports plus longs sont une fonction Pro';
+
+  @override
+  String get rptProBody =>
+      'Les rapports gratuits couvrent les 7 derniers jours. Avec Solo Pro, vous pouvez faire un rapport sur 30 jours, 90 jours ou toute période jusqu’à un an.';
+
+  @override
+  String get rptProBadge => 'Pro';
 }

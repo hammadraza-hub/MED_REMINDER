@@ -2564,4 +2564,348 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get appLockNotVerified =>
       'आपकी पहचान की पुष्टि नहीं हो सकी। कृपया फिर कोशिश करें।';
+
+  @override
+  String get rptTitle => 'रिपोर्ट बनाएँ';
+
+  @override
+  String get rptProfile => 'प्रोफ़ाइल';
+
+  @override
+  String get rptProfileHelp =>
+      'रिपोर्ट उसी प्रोफ़ाइल की बनती है जिसे आप देख रहे हैं।';
+
+  @override
+  String get rptDateRange => 'अवधि';
+
+  @override
+  String rptDaysTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count दिन',
+      one: '1 दिन',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptPreset7 => 'पिछले 7 दिन';
+
+  @override
+  String get rptPreset30 => 'पिछले 30 दिन';
+
+  @override
+  String get rptPreset90 => 'पिछले 90 दिन';
+
+  @override
+  String get rptPresetCustom => 'कस्टम';
+
+  @override
+  String get rptFrom => 'से';
+
+  @override
+  String get rptTo => 'तक';
+
+  @override
+  String get rptErrFromAfterTo =>
+      'शुरू की तारीख़ अंत की तारीख़ से पहले होनी चाहिए।';
+
+  @override
+  String get rptErrTooLong => 'एक रिपोर्ट अधिकतम 365 दिनों की हो सकती है।';
+
+  @override
+  String get rptErrFuture => 'अंत की तारीख़ भविष्य में नहीं हो सकती।';
+
+  @override
+  String get rptData => 'शामिल करने वाला डेटा';
+
+  @override
+  String rptSelectedCount(int count) {
+    return '$count चुने गए';
+  }
+
+  @override
+  String get rptOptAdherence => 'दवा नियमितता';
+
+  @override
+  String get rptOptVitals => 'वाइटल्स';
+
+  @override
+  String get rptOptSideEffects => 'साइड इफ़ेक्ट';
+
+  @override
+  String get rptOptAdherenceDesc =>
+      'दिन और दवा के हिसाब से ली गई, छूटी और छोड़ी गई खुराकें';
+
+  @override
+  String get rptOptVitalsDesc => 'ब्लड प्रेशर, ग्लूकोज़, वज़न और हार्ट रेट';
+
+  @override
+  String get rptOptSideEffectsDesc => 'लक्षण, गंभीरता और नोट्स';
+
+  @override
+  String get rptHealthAccessNote =>
+      'वाइटल्स और साइड इफ़ेक्ट के लिए इस प्रोफ़ाइल की हेल्थ एक्सेस चाहिए।';
+
+  @override
+  String get rptSelectOne => 'कम से कम एक डेटा प्रकार चुनें।';
+
+  @override
+  String get rptSummaryTitle => 'आपकी रिपोर्ट में होगा';
+
+  @override
+  String get rptLargeNote =>
+      'लंबी अवधि की रिपोर्ट बनने में थोड़ा ज़्यादा समय लग सकता है।';
+
+  @override
+  String get rptGenerate => 'रिपोर्ट बनाएँ';
+
+  @override
+  String get rptLoadingData => 'आपका डेटा लोड हो रहा है…';
+
+  @override
+  String get rptBuilding => 'PDF और CSV तैयार हो रहे हैं…';
+
+  @override
+  String get rptPrivacyNote =>
+      'रिपोर्ट इसी फ़ोन पर बनती है। सर्वर पर कुछ नहीं भेजा जाता।';
+
+  @override
+  String get rptReadyTitle => 'रिपोर्ट तैयार है';
+
+  @override
+  String rptSectionNotIncluded(String section) {
+    return 'शामिल नहीं: $section';
+  }
+
+  @override
+  String rptSectionTruncated(String section) {
+    return 'सिर्फ़ सबसे नई प्रविष्टियाँ शामिल हैं: $section';
+  }
+
+  @override
+  String rptFileInfo(String pdf, String csv) {
+    return 'PDF $pdf · CSV $csv';
+  }
+
+  @override
+  String get rptNoDataTitle => 'इस अवधि में कोई डेटा नहीं';
+
+  @override
+  String get rptNoDataBody =>
+      'इन तारीख़ों के लिए रिपोर्ट करने को कुछ नहीं है। लंबी अवधि आज़माएँ।';
+
+  @override
+  String get rptTooLargeTitle => 'यह अवधि बहुत बड़ी है';
+
+  @override
+  String get rptTooLargeBody => 'कृपया छोटी अवधि चुनें और दोबारा कोशिश करें।';
+
+  @override
+  String get rptErrorTitle => 'रिपोर्ट नहीं बन सकी';
+
+  @override
+  String get rptErrorBody => 'कनेक्शन जाँचें और दोबारा कोशिश करें।';
+
+  @override
+  String get rptTryAgain => 'दोबारा कोशिश करें';
+
+  @override
+  String get rptChangeOptions => 'अवधि या विकल्प बदलें';
+
+  @override
+  String get rptLTitle => 'MedRemind स्वास्थ्य रिपोर्ट';
+
+  @override
+  String get rptLSubtitle => 'दवा नियमितता रिपोर्ट';
+
+  @override
+  String get rptLProfile => 'प्रोफ़ाइल';
+
+  @override
+  String get rptLDateRange => 'अवधि';
+
+  @override
+  String get rptLGeneratedAt => 'बनाया गया';
+
+  @override
+  String get rptLDisclaimerLabel => 'अस्वीकरण';
+
+  @override
+  String get rptLDisclaimer =>
+      'यह रिपोर्ट ऐप में दर्ज जानकारी से बनी है। यह चिकित्सीय निदान नहीं है। कृपया इसे अपने डॉक्टर से साझा करें।';
+
+  @override
+  String get rptLAdherenceSummary => 'नियमितता का सार';
+
+  @override
+  String get rptLAdherenceByDay => 'दिन के हिसाब से नियमितता';
+
+  @override
+  String get rptLAdherenceByMedication => 'दवा के हिसाब से नियमितता';
+
+  @override
+  String get rptLMissedReasons => 'कारण के हिसाब से छूटी और छोड़ी गई खुराकें';
+
+  @override
+  String get rptLVitals => 'वाइटल्स (दैनिक सार)';
+
+  @override
+  String get rptLSideEffects => 'साइड इफ़ेक्ट';
+
+  @override
+  String get rptLDate => 'तारीख़';
+
+  @override
+  String get rptLDateTime => 'तारीख़ और समय';
+
+  @override
+  String get rptLMedication => 'दवा';
+
+  @override
+  String get rptLTaken => 'ली गईं';
+
+  @override
+  String get rptLMissed => 'छूटीं';
+
+  @override
+  String get rptLSkipped => 'छोड़ी गईं';
+
+  @override
+  String get rptLPending => 'लंबित';
+
+  @override
+  String get rptLAdherencePercent => 'नियमितता %';
+
+  @override
+  String get rptLReason => 'कारण';
+
+  @override
+  String get rptLCount => 'संख्या';
+
+  @override
+  String get rptLType => 'प्रकार';
+
+  @override
+  String get rptLReadings => 'रीडिंग';
+
+  @override
+  String get rptLAverage => 'औसत';
+
+  @override
+  String get rptLMin => 'न्यूनतम';
+
+  @override
+  String get rptLMax => 'अधिकतम';
+
+  @override
+  String get rptLUnit => 'इकाई';
+
+  @override
+  String get rptLSymptom => 'लक्षण';
+
+  @override
+  String get rptLSeverity => 'गंभीरता (1-5)';
+
+  @override
+  String get rptLNotes => 'नोट्स';
+
+  @override
+  String get rptLReasonForgot => 'भूल गया';
+
+  @override
+  String get rptLReasonSideEffect => 'साइड इफ़ेक्ट';
+
+  @override
+  String get rptLReasonRanOut => 'दवा खत्म हो गई';
+
+  @override
+  String get rptLReasonOther => 'अन्य';
+
+  @override
+  String get rptLReasonUnspecified => 'कोई कारण नहीं बताया';
+
+  @override
+  String get rptLVitalBloodPressure => 'ब्लड प्रेशर';
+
+  @override
+  String get rptLVitalGlucose => 'ग्लूकोज़';
+
+  @override
+  String get rptLVitalWeight => 'वज़न';
+
+  @override
+  String get rptLVitalHeartRate => 'हार्ट रेट';
+
+  @override
+  String get rptLNoData => 'इस अवधि में कोई डेटा नहीं';
+
+  @override
+  String get rptLNotAvailable =>
+      'उपलब्ध नहीं (एक्सेस नहीं, या लोड नहीं हो सका)';
+
+  @override
+  String get rptLTruncated =>
+      'सिर्फ़ सबसे नई प्रविष्टियाँ दिखाई गई हैं (सीमा पूरी)';
+
+  @override
+  String get rptLOverallAdherence => 'कुल नियमितता';
+
+  @override
+  String get rptLDecidedDoses => 'खुराकें जिनका नतीजा तय है';
+
+  @override
+  String get rptLDayOverview => 'दिन-ब-दिन';
+
+  @override
+  String get rptLLegendAllTaken => 'सब ली गईं';
+
+  @override
+  String get rptLLegendMissed => 'छूटीं';
+
+  @override
+  String get rptLLegendSkipped => 'छोड़ी गईं';
+
+  @override
+  String get rptLLegendPending => 'लंबित';
+
+  @override
+  String get rptLLegendNoDoses => 'कोई खुराक नहीं';
+
+  @override
+  String rptLPage(int page, int pages) {
+    return 'पृष्ठ $page / $pages';
+  }
+
+  @override
+  String get rptPreviewPdf => 'PDF पूर्वावलोकन';
+
+  @override
+  String get rptSharePdf => 'PDF साझा करें';
+
+  @override
+  String get rptShareCsv => 'CSV साझा करें';
+
+  @override
+  String get rptShareFailed => 'फ़ाइल साझा नहीं हो सकी। कृपया फिर कोशिश करें।';
+
+  @override
+  String get rptViewerTitle => 'PDF पूर्वावलोकन';
+
+  @override
+  String get rptShareSubject => 'MedRemind स्वास्थ्य रिपोर्ट';
+
+  @override
+  String get rptViewerError => 'PDF नहीं दिखाई जा सकी।';
+
+  @override
+  String get rptProTitle => 'लंबी रिपोर्ट Pro सुविधा है';
+
+  @override
+  String get rptProBody =>
+      'मुफ़्त रिपोर्ट पिछले 7 दिनों को कवर करती है। Solo Pro के साथ आप 30 दिन, 90 दिन या एक साल तक की कोई भी अवधि चुन सकते हैं।';
+
+  @override
+  String get rptProBadge => 'Pro';
 }

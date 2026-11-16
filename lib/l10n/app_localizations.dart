@@ -4393,6 +4393,636 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t verify it\'s you. Please try again.'**
   String get appLockNotVerified;
+
+  /// No description provided for @rptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Build Report'**
+  String get rptTitle;
+
+  /// No description provided for @rptProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'PROFILE'**
+  String get rptProfile;
+
+  /// No description provided for @rptProfileHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The report is made for the profile you are viewing.'**
+  String get rptProfileHelp;
+
+  /// No description provided for @rptDateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'DATE RANGE'**
+  String get rptDateRange;
+
+  /// No description provided for @rptDaysTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String rptDaysTotal(int count);
+
+  /// No description provided for @rptPreset7.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get rptPreset7;
+
+  /// No description provided for @rptPreset30.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get rptPreset30;
+
+  /// No description provided for @rptPreset90.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 90 days'**
+  String get rptPreset90;
+
+  /// No description provided for @rptPresetCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get rptPresetCustom;
+
+  /// No description provided for @rptFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'FROM'**
+  String get rptFrom;
+
+  /// No description provided for @rptTo.
+  ///
+  /// In en, this message translates to:
+  /// **'TO'**
+  String get rptTo;
+
+  /// No description provided for @rptErrFromAfterTo.
+  ///
+  /// In en, this message translates to:
+  /// **'The start date must be before the end date.'**
+  String get rptErrFromAfterTo;
+
+  /// No description provided for @rptErrTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'A report can cover at most 365 days.'**
+  String get rptErrTooLong;
+
+  /// No description provided for @rptErrFuture.
+  ///
+  /// In en, this message translates to:
+  /// **'The end date cannot be in the future.'**
+  String get rptErrFuture;
+
+  /// No description provided for @rptData.
+  ///
+  /// In en, this message translates to:
+  /// **'DATA TO INCLUDE'**
+  String get rptData;
+
+  /// No description provided for @rptSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String rptSelectedCount(int count);
+
+  /// No description provided for @rptOptAdherence.
+  ///
+  /// In en, this message translates to:
+  /// **'Adherence'**
+  String get rptOptAdherence;
+
+  /// No description provided for @rptOptVitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals'**
+  String get rptOptVitals;
+
+  /// No description provided for @rptOptSideEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'Side effects'**
+  String get rptOptSideEffects;
+
+  /// No description provided for @rptOptAdherenceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken, missed and skipped doses by day and medicine'**
+  String get rptOptAdherenceDesc;
+
+  /// No description provided for @rptOptVitalsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Blood pressure, glucose, weight and heart rate'**
+  String get rptOptVitalsDesc;
+
+  /// No description provided for @rptOptSideEffectsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Symptoms, severity and notes'**
+  String get rptOptSideEffectsDesc;
+
+  /// No description provided for @rptHealthAccessNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals and side effects need health access to this profile.'**
+  String get rptHealthAccessNote;
+
+  /// No description provided for @rptSelectOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one data type.'**
+  String get rptSelectOne;
+
+  /// No description provided for @rptSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your report will contain'**
+  String get rptSummaryTitle;
+
+  /// No description provided for @rptLargeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A long range can take a little longer to prepare.'**
+  String get rptLargeNote;
+
+  /// No description provided for @rptGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Report'**
+  String get rptGenerate;
+
+  /// No description provided for @rptLoadingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading your data…'**
+  String get rptLoadingData;
+
+  /// No description provided for @rptBuilding.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing PDF and CSV…'**
+  String get rptBuilding;
+
+  /// No description provided for @rptPrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The report is made on this phone. Nothing is sent to a server.'**
+  String get rptPrivacyNote;
+
+  /// No description provided for @rptReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report ready'**
+  String get rptReadyTitle;
+
+  /// No description provided for @rptSectionNotIncluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Not included: {section}'**
+  String rptSectionNotIncluded(String section);
+
+  /// No description provided for @rptSectionTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the newest entries are included: {section}'**
+  String rptSectionTruncated(String section);
+
+  /// No description provided for @rptFileInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF {pdf} · CSV {csv}'**
+  String rptFileInfo(String pdf, String csv);
+
+  /// No description provided for @rptNoDataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No data in this range'**
+  String get rptNoDataTitle;
+
+  /// No description provided for @rptNoDataBody.
+  ///
+  /// In en, this message translates to:
+  /// **'There is nothing to report for these dates. Try a longer range.'**
+  String get rptNoDataBody;
+
+  /// No description provided for @rptTooLargeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This range is too big'**
+  String get rptTooLargeTitle;
+
+  /// No description provided for @rptTooLargeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a shorter range and try again.'**
+  String get rptTooLargeBody;
+
+  /// No description provided for @rptErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the report'**
+  String get rptErrorTitle;
+
+  /// No description provided for @rptErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get rptErrorBody;
+
+  /// No description provided for @rptTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get rptTryAgain;
+
+  /// No description provided for @rptChangeOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Change range or options'**
+  String get rptChangeOptions;
+
+  /// No description provided for @rptLTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MedRemind health report'**
+  String get rptLTitle;
+
+  /// No description provided for @rptLSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication adherence report'**
+  String get rptLSubtitle;
+
+  /// No description provided for @rptLProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get rptLProfile;
+
+  /// No description provided for @rptLDateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get rptLDateRange;
+
+  /// No description provided for @rptLGeneratedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated at'**
+  String get rptLGeneratedAt;
+
+  /// No description provided for @rptLDisclaimerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Disclaimer'**
+  String get rptLDisclaimerLabel;
+
+  /// No description provided for @rptLDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'This report is made from information entered in the app. It is not a medical diagnosis. Please discuss it with your doctor.'**
+  String get rptLDisclaimer;
+
+  /// No description provided for @rptLAdherenceSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Adherence summary'**
+  String get rptLAdherenceSummary;
+
+  /// No description provided for @rptLAdherenceByDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Adherence by day'**
+  String get rptLAdherenceByDay;
+
+  /// No description provided for @rptLAdherenceByMedication.
+  ///
+  /// In en, this message translates to:
+  /// **'Adherence by medication'**
+  String get rptLAdherenceByMedication;
+
+  /// No description provided for @rptLMissedReasons.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed and skipped doses by reason'**
+  String get rptLMissedReasons;
+
+  /// No description provided for @rptLVitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals (daily summary)'**
+  String get rptLVitals;
+
+  /// No description provided for @rptLSideEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'Side effects'**
+  String get rptLSideEffects;
+
+  /// No description provided for @rptLDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get rptLDate;
+
+  /// No description provided for @rptLDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Date and time'**
+  String get rptLDateTime;
+
+  /// No description provided for @rptLMedication.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication'**
+  String get rptLMedication;
+
+  /// No description provided for @rptLTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken'**
+  String get rptLTaken;
+
+  /// No description provided for @rptLMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get rptLMissed;
+
+  /// No description provided for @rptLSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get rptLSkipped;
+
+  /// No description provided for @rptLPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get rptLPending;
+
+  /// No description provided for @rptLAdherencePercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Adherence %'**
+  String get rptLAdherencePercent;
+
+  /// No description provided for @rptLReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get rptLReason;
+
+  /// No description provided for @rptLCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get rptLCount;
+
+  /// No description provided for @rptLType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get rptLType;
+
+  /// No description provided for @rptLReadings.
+  ///
+  /// In en, this message translates to:
+  /// **'Readings'**
+  String get rptLReadings;
+
+  /// No description provided for @rptLAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Average'**
+  String get rptLAverage;
+
+  /// No description provided for @rptLMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Min'**
+  String get rptLMin;
+
+  /// No description provided for @rptLMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Max'**
+  String get rptLMax;
+
+  /// No description provided for @rptLUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get rptLUnit;
+
+  /// No description provided for @rptLSymptom.
+  ///
+  /// In en, this message translates to:
+  /// **'Symptom'**
+  String get rptLSymptom;
+
+  /// No description provided for @rptLSeverity.
+  ///
+  /// In en, this message translates to:
+  /// **'Severity (1-5)'**
+  String get rptLSeverity;
+
+  /// No description provided for @rptLNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get rptLNotes;
+
+  /// No description provided for @rptLReasonForgot.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot'**
+  String get rptLReasonForgot;
+
+  /// No description provided for @rptLReasonSideEffect.
+  ///
+  /// In en, this message translates to:
+  /// **'Side effect'**
+  String get rptLReasonSideEffect;
+
+  /// No description provided for @rptLReasonRanOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Ran out'**
+  String get rptLReasonRanOut;
+
+  /// No description provided for @rptLReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get rptLReasonOther;
+
+  /// No description provided for @rptLReasonUnspecified.
+  ///
+  /// In en, this message translates to:
+  /// **'No reason given'**
+  String get rptLReasonUnspecified;
+
+  /// No description provided for @rptLVitalBloodPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Blood pressure'**
+  String get rptLVitalBloodPressure;
+
+  /// No description provided for @rptLVitalGlucose.
+  ///
+  /// In en, this message translates to:
+  /// **'Glucose'**
+  String get rptLVitalGlucose;
+
+  /// No description provided for @rptLVitalWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get rptLVitalWeight;
+
+  /// No description provided for @rptLVitalHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart rate'**
+  String get rptLVitalHeartRate;
+
+  /// No description provided for @rptLNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data in this range'**
+  String get rptLNoData;
+
+  /// No description provided for @rptLNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available (no access, or it could not be loaded)'**
+  String get rptLNotAvailable;
+
+  /// No description provided for @rptLTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the newest entries are shown (limit reached)'**
+  String get rptLTruncated;
+
+  /// No description provided for @rptLOverallAdherence.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall adherence'**
+  String get rptLOverallAdherence;
+
+  /// No description provided for @rptLDecidedDoses.
+  ///
+  /// In en, this message translates to:
+  /// **'doses with an outcome'**
+  String get rptLDecidedDoses;
+
+  /// No description provided for @rptLDayOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Day by day'**
+  String get rptLDayOverview;
+
+  /// No description provided for @rptLLegendAllTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'All taken'**
+  String get rptLLegendAllTaken;
+
+  /// No description provided for @rptLLegendMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get rptLLegendMissed;
+
+  /// No description provided for @rptLLegendSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get rptLLegendSkipped;
+
+  /// No description provided for @rptLLegendPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get rptLLegendPending;
+
+  /// No description provided for @rptLLegendNoDoses.
+  ///
+  /// In en, this message translates to:
+  /// **'No doses'**
+  String get rptLLegendNoDoses;
+
+  /// No description provided for @rptLPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} of {pages}'**
+  String rptLPage(int page, int pages);
+
+  /// No description provided for @rptPreviewPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview PDF'**
+  String get rptPreviewPdf;
+
+  /// No description provided for @rptSharePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Share PDF'**
+  String get rptSharePdf;
+
+  /// No description provided for @rptShareCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Share CSV'**
+  String get rptShareCsv;
+
+  /// No description provided for @rptShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not share the file. Please try again.'**
+  String get rptShareFailed;
+
+  /// No description provided for @rptViewerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF preview'**
+  String get rptViewerTitle;
+
+  /// No description provided for @rptShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'MedRemind health report'**
+  String get rptShareSubject;
+
+  /// No description provided for @rptViewerError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not show the PDF.'**
+  String get rptViewerError;
+
+  /// No description provided for @rptProTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Longer reports are a Pro feature'**
+  String get rptProTitle;
+
+  /// No description provided for @rptProBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Free reports cover the last 7 days. With Solo Pro you can report on 30 days, 90 days or any range up to a year.'**
+  String get rptProBody;
+
+  /// No description provided for @rptProBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro'**
+  String get rptProBadge;
 }
 
 class _AppLocalizationsDelegate

@@ -1,264 +1,261 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../core/constants/app_colors.dart';
+import '../../core/profile/profile_controller.dart';
+import '../../core/reports/report_builder_controller.dart';
+import '../../core/reports/report_options.dart';
+import '../../core/reports/report_pro_rule.dart';
+import '../../core/reports/report_range.dart';
+import '../../core/reports/report_sharer.dart';
+import '../../core/services/pro_access.dart';
+import '../../core/services/report_service.dart';
+import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
-import 'report_preview_data.dart';
+import '../settings/subscription_screen.dart';
+import 'report_pdf_viewer_screen.dart';
 
 /// ============================================================
-/// REPORT PREVIEW SCREEN (Export → PDF Preview)
+/// REPORT BUILDER — M17 step 5
 ///
-/// PURPOSE:
-/// Custom export configure karna (date range, data types,
-/// profile) aur generate karke paginated PDF preview dekhna.
+/// Pick a profile's date range and what to include, then Generate: the data is
+/// read from Firestore and the PDF + CSV are made on the phone (no server).
+/// Preview and sharing of the finished files come in step 6.
 ///
-/// FLOW (requirement):
-/// Adherence Detail → Export → [CONFIG FORM]
-///   • Date range picker
-///   • Checkboxes: Adherence / Vitals / Side effects
-///   • Profile selector
-///   • Generate Report (dummy 1.2s delay)
-/// → [PDF PREVIEW] (Prev/Next pages, share sheet).
-/// "Regenerate with different options" wapas config par.
+/// All the logic lives in [ReportBuilderController]; this screen only draws it.
 ///
-/// NOTE:
-/// Design mein bottom bar hai (Reports tab active) —
-/// shared AppBottomNavigation use hota hai.
-///
-/// TODO Backend:
-/// Range/profile/options ke hisaab se dossier generate,
-/// share (physician contacts / encrypted device save)
-/// Firestore + Cloud Functions se.
+/// FLOW: Adherence Detail → Export → this screen (the range chosen there is
+/// carried over).
 /// ============================================================
 class ReportPreviewScreen extends StatefulWidget {
-  const ReportPreviewScreen({super.key});
+  const ReportPreviewScreen({
+    super.key,
+    this.initialRange,
+    this.controller,
+    this.sharer,
+    this.proCheck,
+  });
+
+  /// The range of the screen we came from (ignored when it is not valid).
+  final ReportRange? initialRange;
+
+  /// For tests: a controller with fake loading.
+  @visibleForTesting
+  final ReportBuilderController? controller;
+
+  @visibleForTesting
+  final ReportSharer? sharer;
+
+  /// For tests: replaces the real "is this user Pro?" check.
+  @visibleForTesting
+  final Future<bool> Function()? proCheck;
 
   @override
   State<ReportPreviewScreen> createState() => _ReportPreviewScreenState();
 }
 
 class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
-  int _currentPage = 1;
+  late final ReportBuilderController _c;
+  late final bool _ownsController;
+  final ScrollController _scroll = ScrollController();
 
-  /// true = config form, false = generated PDF preview.
-  bool _isConfiguring = true;
-  bool _isGenerating = false;
+  late final ReportSharer _sharer =
+      widget.sharer ??
+      ReportSharer(
+        tempDir: getTemporaryDirectory,
+        share: (path, mime, subject) async {
+          await SharePlus.instance.share(
+            ShareParams(
+              files: [XFile(path, mimeType: mime)],
+              subject: subject,
+            ),
+          );
+        },
+      );
+  bool _sharing = false;
 
-  /// Generate ke baad chhoti success state ("Report Generated!").
-  bool _showGenerated = false;
+  /// null until the first check has answered.
+  bool? _isPro;
 
-  // ---- Export options (config form state) ----
-  DateTimeRange _dateRange = DateTimeRange(
-    start: ReportPreviewData.exportRangeStart,
-    end: ReportPreviewData.exportRangeEnd,
-  );
-  String _profileName = ReportPreviewData.defaultProfile;
-  final Set<ReportExportOption> _selectedOptions = {
-    ReportExportOption.adherence,
-    ReportExportOption.vitals,
-  };
+  Future<bool> _checkPro() async {
+    final check = widget.proCheck ?? ProAccess.gate.isPro;
+    bool pro;
+    try {
+      pro = await check();
+    } catch (_) {
+      pro = false; // fail closed
+    }
+    if (mounted) setState(() => _isPro = pro);
+    return pro;
+  }
 
-  final ScrollController _scrollController = ScrollController();
+  /// True when a report of [days] days may be made; otherwise the upgrade
+  /// dialog has been shown.
+  Future<bool> _allowDays(int days) async {
+    if (!ReportProRule.needsPro(days)) return true;
+    if (await _checkPro()) return true;
+    if (mounted) await _showProDialog();
+    return false;
+  }
+
+  Future<void> _showProDialog() {
+    final l10n = AppLocalizations.of(context);
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.rptProTitle),
+        content: Text(l10n.rptProBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+              );
+            },
+            child: Text(l10n.proGateSeePlans),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectPreset(int days) async {
+    if (!await _allowDays(days)) return;
+    _c.selectPreset(days);
+  }
+
+  AppLocalizations? _l10nAtGenerate;
+  bool _rtlAtGenerate = false;
+
+  String? get _memberId {
+    final id = ProfileController.instance.memberId;
+    return (id == null || id.isEmpty) ? null : id;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ownsController = widget.controller == null;
+    _c =
+        widget.controller ??
+        ReportBuilderController(
+          initialRange: widget.initialRange,
+          loadData: (range, options) {
+            final memberId = _memberId;
+            if (memberId == null) {
+              throw StateError('No profile selected');
+            }
+            final name = ProfileController.instance.displayName.trim();
+            return ReportService.instance.load(
+              memberId: memberId,
+              profileName: name.isEmpty ? null : name,
+              range: range,
+              options: options,
+            );
+          },
+          buildFiles: (data) => ReportService.instance.buildFiles(
+            data: data,
+            l10n: _l10nAtGenerate!,
+            rtl: _rtlAtGenerate,
+          ),
+        );
+    _c.addListener(_onChanged);
+    _checkPro();
+  }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _c.removeListener(_onChanged);
+    if (_ownsController) _c.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  /// Range label HTML jaisa: "11–17 Sep 2026".
-  String get _dateRangeLabel {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    final DateTime start = _dateRange.start;
-    final DateTime end = _dateRange.end;
-
-    if (start.year == end.year && start.month == end.month) {
-      return '${start.day}–${end.day} ${months[end.month - 1]} ${end.year}';
-    }
-    if (start.year == end.year) {
-      return '${start.day} ${months[start.month - 1]}'
-          ' – ${end.day} ${months[end.month - 1]} ${end.year}';
-    }
-    return '${start.day} ${months[start.month - 1]} ${start.year}'
-        ' – ${end.day} ${months[end.month - 1]} ${end.year}';
+  void _onChanged() {
+    if (mounted) setState(() {});
   }
 
-  /// Single date label HTML jaisa: "11 Sep 2026".
-  String _formatDateShort(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  // ------------------------------------------------------------
+  // actions
+  // ------------------------------------------------------------
+
+  Future<void> _generate() async {
+    if (!await _allowDays(_c.dayCount)) return;
+    if (!mounted) return;
+    _l10nAtGenerate = AppLocalizations.of(context);
+    _rtlAtGenerate = Directionality.of(context) == TextDirection.rtl;
+    await _c.generate();
+    if (mounted && _scroll.hasClients) _scroll.jumpTo(0);
   }
 
-  /// Selected range ke total din ("7 Days Total" pill).
-  int get _totalDays => _dateRange.end.difference(_dateRange.start).inDays + 1;
-
-  /// Active quick-range chip — null = custom range.
-  ReportRangePreset? get _activePreset {
-    for (final ReportRangePreset preset in ReportPreviewData.rangePresets) {
-      if (preset.days == null) continue;
-      if (_totalDays == preset.days &&
-          _dateRange.end == ReportPreviewData.exportRangeEnd) {
-        return preset;
+  Future<void> _share({required bool pdf}) async {
+    final files = _c.files;
+    if (files == null || _sharing) return;
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _sharing = true);
+    try {
+      final subject = l10n.rptShareSubject;
+      if (pdf) {
+        await _sharer.sharePdf(
+          files.pdf,
+          fileName: ReportSharer.pdfName(files.csv.fileName),
+          subject: subject,
+        );
+      } else {
+        await _sharer.shareCsv(
+          files.csv.bytes,
+          fileName: files.csv.fileName,
+          subject: subject,
+        );
       }
+    } catch (e) {
+      debugPrint('share failed: $e');
+      messenger.showSnackBar(SnackBar(content: Text(l10n.rptShareFailed)));
+    } finally {
+      if (mounted) setState(() => _sharing = false);
     }
-    return null;
   }
 
-  /// Chip tap → naya range; Custom → date picker.
-  void _applyPreset(ReportRangePreset preset) {
-    if (preset.days == null) {
-      _pickDateRange();
-      return;
-    }
-
-    final DateTime end = ReportPreviewData.exportRangeEnd;
-    setState(() {
-      _dateRange = DateTimeRange(
-        start: end.subtract(Duration(days: preset.days! - 1)),
-        end: end,
-      );
-    });
-  }
-
-  // ============================================================
-  // PAGINATION (HTML JS: sirf indicator + button states)
-  // ============================================================
-
-  void _goToPrevPage() {
-    if (_currentPage <= 1) return;
-    setState(() => _currentPage--);
-  }
-
-  void _goToNextPage() {
-    if (_currentPage >= ReportPreviewData.totalPages) return;
-    setState(() => _currentPage++);
-  }
-
-  // ============================================================
-  // GENERATE (requirement: select options → generate)
-  // ============================================================
-
-  void _generateReport() {
-    if (_selectedOptions.isEmpty || _isGenerating) return;
-    setState(() => _isGenerating = true);
-
-    // TODO Backend:
-    // Selected range + profile + data types se naya dossier
-    // generate karna hai (Firestore/Cloud Function), phir preview.
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (!mounted) return;
-      setState(() {
-        _isGenerating = false;
-        _showGenerated = true;
-      });
-
-      // HTML jaisa chhota success feedback, phir preview.
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        if (!mounted) return;
-        setState(() {
-          _showGenerated = false;
-          _isConfiguring = false;
-        });
-
-        if (_scrollController.hasClients) _scrollController.jumpTo(0);
-
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('Report generated')));
-      });
-    });
-  }
-
-  /// "Regenerate with different options" → wapas config form.
-  void _regenerate() {
-    setState(() => _isConfiguring = true);
-    if (_scrollController.hasClients) _scrollController.jumpTo(0);
-  }
-
-  // ============================================================
-  // DATE RANGE PICKER
-  // ============================================================
-
-  Future<void> _pickDateRange() async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2024, 1, 1),
-      lastDate: DateTime(2027, 12, 31),
-      initialDateRange: _dateRange,
-    );
-
-    if (picked != null) setState(() => _dateRange = picked);
-  }
-
-  // ============================================================
-  // DATA TYPE CHECKBOXES
-  // ============================================================
-
-  void _toggleOption(ReportExportOption option) {
-    setState(() {
-      if (!_selectedOptions.remove(option)) {
-        _selectedOptions.add(option);
-      }
-    });
-  }
-
-  // ============================================================
-  // SHARE
-  // ============================================================
-
-  Future<void> _openShareSheet() {
-    return showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: AppColors.permissionsHeader.withValues(alpha: 0.55),
-      isScrollControlled: true,
-      builder: (context) => _buildShareSheet(),
+  void _openPreview() {
+    final files = _c.files;
+    if (files == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ReportPdfViewerScreen(
+          pdf: files.pdf,
+          onShare: () => _share(pdf: true),
+        ),
+      ),
     );
   }
 
-  /// Sheet ka koi bhi action (tile/row/Share Now) — pop + snackbar.
-  void _completeShare(String action) {
-    Navigator.of(context).pop();
-
-    // TODO Backend:
-    // Email/Print/Files/AirDrop, CSV/Documents export aur
-    // Share Now — platform share API + file export backend se.
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$action — pending backend')));
+  Future<void> _pickRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year, now.month, now.day),
+      initialDateRange: DateTimeRange(
+        start: _c.from.isAfter(_c.to) ? _c.to : _c.from,
+        end: _c.to,
+      ),
+    );
+    if (picked == null) return;
+    final days = ReportRange.custom(picked.start, picked.end).dayCount;
+    if (!await _allowDays(days)) return;
+    _c.setCustomRange(picked.start, picked.end);
   }
-
-  // ============================================================
-  // BOTTOM NAVIGATION (Reports tab active = index 3)
-  // ============================================================
 
   void _onBottomNavigationTap(int index) {
     Navigator.of(context).pushAndRemoveUntil(
@@ -267,12 +264,9 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
     );
   }
 
-  // ============================================================
-  // BUILD
-  //
-  // AnnotatedRegion:
-  // Status bar style sirf ISI screen par scoped hai.
-  // ============================================================
+  // ------------------------------------------------------------
+  // build
+  // ------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -287,18 +281,17 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
         body: Column(
           children: [
             _buildHeader(),
-
             Expanded(
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 480),
                   child: SingleChildScrollView(
-                    controller: _scrollController,
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    controller: _scroll,
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    child: _buildContent(),
+                    child: _c.phase == ReportBuilderPhase.ready
+                        ? _buildReady()
+                        : _buildForm(),
                   ),
                 ),
               ),
@@ -313,14 +306,8 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
     );
   }
 
-  // ============================================================
-  // HEADER
-  // ============================================================
-
   Widget _buildHeader() {
-    // HTML mein "MedRemind" wordmark sm (640px+) breakpoint par hi dikhta hai.
-    final bool showWordmark = MediaQuery.sizeOf(context).width >= 640;
-
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -341,21 +328,19 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
           child: Row(
             children: [
               IconButton(
-                onPressed: () {
-                  Navigator.of(context).maybePop();
-                },
+                onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(
                   Icons.arrow_back_rounded,
                   color: AppColors.surface,
                   size: 24,
                 ),
               ),
-
               const SizedBox(width: 2),
-
               Expanded(
                 child: Text(
-                  _isConfiguring ? 'Build Report' : 'Report Preview',
+                  _c.phase == ReportBuilderPhase.ready
+                      ? l10n.rptReadyTitle
+                      : l10n.rptTitle,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.surface,
@@ -364,20 +349,6 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
                   ),
                 ),
               ),
-
-              if (showWordmark)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Text(
-                    'MedRemind',
-                    style: TextStyle(
-                      color: AppColors.surface.withValues(alpha: 0.9),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-
               const AppAvatar(
                 size: 32,
                 ringColor: AppColors.surface,
@@ -390,106 +361,23 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
     );
   }
 
-  // ============================================================
-  // CONTENT (config form OR generated preview)
-  // ============================================================
+  // ------------------------------------------------------------
+  // the form
+  // ------------------------------------------------------------
 
-  Widget _buildContent() {
-    if (_isConfiguring) return _buildConfigContent();
-    return _buildPreviewContent();
-  }
-
-  // ============================================================
-  // CONFIG FORM
-  // (requirement: date range, checkboxes, profile, generate)
-  // ============================================================
-
-  Widget _buildConfigContent() {
+  Widget _buildForm() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildProfileSection(),
-
-        const SizedBox(height: 16),
-
-        _buildDateRangeSection(),
-
-        const SizedBox(height: 16),
-
-        _buildDataSection(),
-
-        const SizedBox(height: 20),
-
-        _buildPdfStatusCard(),
-
-        const SizedBox(height: 20),
-
-        _buildGenerateButton(),
-      ],
-    );
-  }
-
-  // ============================================================
-  // PREVIEW CONTENT
-  // ============================================================
-
-  Widget _buildPreviewContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // ======================================================
-        // 1. PAGE NAVIGATION (Prev / indicator / Next)
-        // ======================================================
-
-        _buildPageNavigator(),
-
-        const SizedBox(height: 8),
-
-        // ======================================================
-        // 2. DOCUMENT PREVIEW (clinical sheet)
-        // ======================================================
-        _buildDocumentCard(),
-
-        const SizedBox(height: 4),
-
-        // ======================================================
-        // 3. REGENERATE LINK
-        // ======================================================
-        _buildRegenerateButton(),
-
-        const SizedBox(height: 8),
-
-        // ======================================================
-        // 4. SHARE REPORT
-        // ======================================================
-        _buildShareSection(),
-      ],
-    );
-  }
-
-  // ============================================================
-  // PROFILE SECTION (card → profile picker sheet)
-  // ============================================================
-
-  Widget _buildProfileSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: _buildFieldLabel('PROFILE'),
-        ),
-
+        _label(l10n.rptProfile),
         const SizedBox(height: 6),
-
-        _buildProfileCard(),
-
+        _profileCard(),
         const SizedBox(height: 6),
-
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
-            ReportPreviewData.profileHelp,
+            l10n.rptProfileHelp,
             style: const TextStyle(
               fontSize: 11,
               height: 1.3,
@@ -497,175 +385,99 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        _rangeSection(),
+        const SizedBox(height: 16),
+        _dataSection(),
+        const SizedBox(height: 16),
+        _summaryCard(),
+        const SizedBox(height: 16),
+        _phaseMessage(),
+        _generateButton(),
       ],
     );
   }
 
-  Widget _buildProfileCard() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.reportConfigShadow,
-            blurRadius: 20,
-            offset: Offset(0, 4),
-            spreadRadius: -2,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
-        child: Material(
-          color: AppColors.surface,
-          child: InkWell(
-            onTap: _openProfilePicker,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  AppAvatar(
-                    size: 36,
-                    ringColor: AppColors.reportChipHigh.withValues(alpha: 0.4),
-                    ringWidth: 1,
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _profileName.split(' ').first,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.reportPrimary,
-                          ),
-                        ),
-                        Text(
-                          ReportPreviewData.profileCaptionFor(_profileName),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            height: 1.2,
-                            color: AppColors.permissionsSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 20,
-                    color: AppColors.permissionsSecondary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Profile card tap → profile chooser bottom sheet.
-  Future<void> _openProfilePicker() {
-    return showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 16),
-
-              const Text(
-                'Select Profile',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.permissionsHeader,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              for (final String name in ReportPreviewData.exportProfiles)
-                ListTile(
-                  dense: true,
-                  title: Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.reportPrimary,
-                    ),
-                  ),
-                  trailing: name == _profileName
-                      ? const Icon(
-                          Icons.check_circle_rounded,
-                          size: 20,
-                          color: AppColors.permissionsGreen,
-                        )
-                      : null,
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    if (name != _profileName) {
-                      setState(() => _profileName = name);
-                    }
-                  },
-                ),
-
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildFieldLabel(String label) {
-    return Text(
-      label,
+  Widget _label(String t) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 2),
+    child: Text(
+      t,
       style: const TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.66,
         color: AppColors.permissionsSecondary,
       ),
+    ),
+  );
+
+  BoxDecoration get _cardDecoration => const BoxDecoration(
+    color: AppColors.surface,
+    borderRadius: BorderRadius.all(Radius.circular(12)),
+    boxShadow: [
+      BoxShadow(
+        color: AppColors.reportConfigShadow,
+        blurRadius: 20,
+        offset: Offset(0, 4),
+        spreadRadius: -2,
+      ),
+    ],
+  );
+
+  Widget _profileCard() {
+    final name = ProfileController.instance.displayName.trim();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _cardDecoration,
+      child: Row(
+        children: [
+          AppAvatar(
+            size: 36,
+            ringColor: AppColors.reportChipHigh.withValues(alpha: 0.4),
+            ringWidth: 1,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              name.isEmpty ? '—' : name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.reportPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  // ============================================================
-  // DATE RANGE SECTION (quick chips + From/To cards)
-  // ============================================================
+  // ---- range ----
 
-  Widget _buildDateRangeSection() {
+  String _date(DateTime d) =>
+      DateFormat.yMMMd(AppLocalizations.of(context).localeName).format(d);
+
+  Widget _rangeSection() {
+    final l10n = AppLocalizations.of(context);
+    final errors = _c.rangeErrors;
+    final String? error = errors.contains(ReportRangeError.fromAfterTo)
+        ? l10n.rptErrFromAfterTo
+        : errors.contains(ReportRangeError.tooLong)
+        ? l10n.rptErrTooLong
+        : errors.contains(ReportRangeError.inFuture)
+        ? l10n.rptErrFuture
+        : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Row(
-            children: [
-              _buildFieldLabel('DATE RANGE'),
-              const Spacer(),
+        Row(
+          children: [
+            _label(l10n.rptDateRange),
+            const Spacer(),
+            if (_c.dayCount > 0)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
@@ -675,7 +487,7 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
                   borderRadius: const BorderRadius.all(Radius.circular(999)),
                 ),
                 child: Text(
-                  '$_totalDays ${ReportPreviewData.daysTotalSuffix}',
+                  l10n.rptDaysTotal(_c.dayCount),
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -683,62 +495,93 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
                   ),
                 ),
               ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 36,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _chip(
+                l10n.rptPreset7,
+                _c.activePreset == 7,
+                () => _selectPreset(7),
+              ),
+              const SizedBox(width: 8),
+              _chip(
+                l10n.rptPreset30,
+                _c.activePreset == 30,
+                () => _selectPreset(30),
+                locked: _isPro == false,
+              ),
+              const SizedBox(width: 8),
+              _chip(
+                l10n.rptPreset90,
+                _c.activePreset == 90,
+                () => _selectPreset(90),
+                locked: _isPro == false,
+              ),
+              const SizedBox(width: 8),
+              _chip(
+                l10n.rptPresetCustom,
+                _c.activePreset == null,
+                _pickRange,
+                locked: _isPro == false,
+              ),
             ],
           ),
         ),
-
-        const SizedBox(height: 8),
-
-        SizedBox(
-          height: 36,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: ReportPreviewData.rangePresets.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, index) =>
-                _buildRangeChip(ReportPreviewData.rangePresets[index]),
-          ),
-        ),
-
         const SizedBox(height: 12),
-
         Row(
           children: [
             Expanded(
-              child: _buildDateCard(
-                label: ReportPreviewData.fromLabel,
-                value: _formatDateShort(_dateRange.start),
-                icon: Icons.calendar_today_outlined,
-                onTap: _pickDateRange,
+              child: _dateCard(
+                l10n.rptFrom,
+                _date(_c.from),
+                Icons.calendar_today_outlined,
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _buildDateCard(
-                label: ReportPreviewData.toLabel,
-                value: _formatDateShort(_dateRange.end),
-                icon: Icons.calendar_month_outlined,
-                onTap: _pickDateRange,
+              child: _dateCard(
+                l10n.rptTo,
+                _date(_c.to),
+                Icons.calendar_month_outlined,
               ),
             ),
           ],
         ),
+        if (error != null) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              error,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.permissionsErrorText,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildRangeChip(ReportRangePreset preset) {
-    final bool isActive = preset.days != null
-        ? _activePreset == preset
-        : _activePreset == null;
-
+  Widget _chip(
+    String label,
+    bool active,
+    VoidCallback onTap, {
+    bool locked = false,
+  }) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => _applyPreset(preset),
+      onTap: _c.isBusy ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primary : AppColors.surface,
+          color: active ? AppColors.primary : AppColors.surface,
           borderRadius: const BorderRadius.all(Radius.circular(8)),
           boxShadow: const [
             BoxShadow(
@@ -748,43 +591,43 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
             ),
           ],
         ),
-        child: Text(
-          preset.label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isActive
-                ? AppColors.surface
-                : AppColors.permissionsSecondary,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: active
+                    ? AppColors.surface
+                    : AppColors.permissionsSecondary,
+              ),
+            ),
+            if (locked) ...[
+              const SizedBox(width: 6),
+              Icon(
+                Icons.lock_outline_rounded,
+                key: const Key('report-pro-lock'),
+                size: 14,
+                color: active
+                    ? AppColors.surface
+                    : AppColors.permissionsSecondary,
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDateCard({
-    required String label,
-    required String value,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+  Widget _dateCard(String label, String value, IconData icon) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap,
+      onTap: _c.isBusy ? null : _pickRange,
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.reportConfigShadow,
-              blurRadius: 16,
-              offset: Offset(0, 4),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
+        decoration: _cardDecoration,
         child: Row(
           children: [
             Expanded(
@@ -822,111 +665,124 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
     );
   }
 
-  // ============================================================
-  // DATA TO INCLUDE (icon tiles + custom checkboxes)
-  // ============================================================
+  // ---- sections ----
 
-  Widget _buildDataSection() {
+  String _sectionName(ReportSection s) {
+    final l10n = AppLocalizations.of(context);
+    switch (s) {
+      case ReportSection.adherence:
+        return l10n.rptOptAdherence;
+      case ReportSection.vitals:
+        return l10n.rptOptVitals;
+      case ReportSection.sideEffects:
+        return l10n.rptOptSideEffects;
+    }
+  }
+
+  Widget _dataSection() {
+    final l10n = AppLocalizations.of(context);
+    final info = <ReportSection, (String, IconData, Color, Color)>{
+      ReportSection.adherence: (
+        l10n.rptOptAdherenceDesc,
+        Icons.verified,
+        AppColors.permissionsBadgeBackground.withValues(alpha: 0.3),
+        AppColors.permissionsGreen,
+      ),
+      ReportSection.vitals: (
+        l10n.rptOptVitalsDesc,
+        Icons.monitor_heart,
+        AppColors.reportVitalsTile.withValues(alpha: 0.4),
+        AppColors.permissionsSecondary,
+      ),
+      ReportSection.sideEffects: (
+        l10n.rptOptSideEffectsDesc,
+        Icons.healing_outlined,
+        AppColors.reportSurfaceContainer,
+        AppColors.permissionsSecondary,
+      ),
+    };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Row(
-            children: [
-              _buildFieldLabel('DATA TO INCLUDE'),
-              const Spacer(),
-              Text(
-                '${_selectedOptions.length} '
-                '${ReportPreviewData.selectedSuffix}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.permissionsSecondary,
-                ),
+        Row(
+          children: [
+            _label(l10n.rptData),
+            const Spacer(),
+            Text(
+              l10n.rptSelectedCount(_c.options.sections.length),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: AppColors.permissionsSecondary,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-
         const SizedBox(height: 8),
-
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.reportConfigShadow,
-                blurRadius: 20,
-                offset: Offset(0, 4),
-                spreadRadius: -2,
-              ),
-            ],
-          ),
+          decoration: _cardDecoration,
           child: Column(
             children: [
-              for (int i = 0; i < ReportExportOption.values.length; i++) ...[
-                if (i > 0) _buildOptionDivider(),
-                _buildOptionRow(ReportExportOption.values[i]),
+              for (final s in ReportSection.values) ...[
+                if (s != ReportSection.values.first)
+                  Container(
+                    height: 1,
+                    margin: const EdgeInsets.symmetric(vertical: 14),
+                    color: AppColors.permissionsInactiveFill,
+                  ),
+                _optionRow(s, info[s]!),
               ],
             ],
           ),
         ),
+        if (_c.options.needsHealthAccess) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              l10n.rptHealthAccessNote,
+              style: const TextStyle(
+                fontSize: 11,
+                height: 1.3,
+                color: AppColors.permissionsSecondary,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildOptionDivider() {
-    return Container(
-      height: 1,
-      margin: const EdgeInsets.symmetric(vertical: 14),
-      color: AppColors.permissionsInactiveFill,
-    );
-  }
-
-  // ---- Checkbox row (data type) ----
-
-  Widget _buildOptionRow(ReportExportOption option) {
-    final bool isSelected = _selectedOptions.contains(option);
-
+  Widget _optionRow(ReportSection s, (String, IconData, Color, Color) info) {
+    final selected = _c.options.sections.contains(s);
     return Semantics(
-      checked: isSelected,
-      label: option.label,
+      checked: selected,
+      label: _sectionName(s),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () {
-          _toggleOption(option);
-        },
+        onTap: () => _c.toggleSection(s),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
             children: [
-              // ---- Icon tile ----
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _optionTileColor(option),
+                  color: info.$3,
                   borderRadius: const BorderRadius.all(Radius.circular(12)),
                 ),
-                child: Icon(
-                  option.icon,
-                  size: 20,
-                  color: _optionIconColor(option),
-                ),
+                child: Icon(info.$2, size: 20, color: info.$4),
               ),
-
               const SizedBox(width: 12),
-
-              // ---- Label + description ----
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      option.label,
+                      _sectionName(s),
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -934,7 +790,7 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
                       ),
                     ),
                     Text(
-                      option.description,
+                      info.$1,
                       style: const TextStyle(
                         fontSize: 11,
                         height: 1.25,
@@ -944,16 +800,13 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(width: 12),
-
-              // ---- Custom checkbox (HTML design jaisa) ----
               AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: isSelected
+                  color: selected
                       ? AppColors.permissionsGreen
                       : AppColors.permissionsInactiveFill,
                   borderRadius: const BorderRadius.all(Radius.circular(8)),
@@ -961,7 +814,7 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
                 child: Icon(
                   Icons.check_rounded,
                   size: 16,
-                  color: isSelected ? AppColors.surface : AppColors.transparent,
+                  color: selected ? AppColors.surface : AppColors.transparent,
                 ),
               ),
             ],
@@ -971,32 +824,15 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
     );
   }
 
-  /// Icon tile ka background (HTML ke pastel tints).
-  Color _optionTileColor(ReportExportOption option) {
-    return switch (option) {
-      ReportExportOption.adherence =>
-        AppColors.permissionsBadgeBackground.withValues(alpha: 0.3),
-      ReportExportOption.vitals => AppColors.reportVitalsTile.withValues(
-        alpha: 0.4,
-      ),
-      ReportExportOption.sideEffects => AppColors.reportSurfaceContainer,
-    };
-  }
+  // ---- summary ----
 
-  /// Icon ka color per option.
-  Color _optionIconColor(ReportExportOption option) {
-    return switch (option) {
-      ReportExportOption.adherence => AppColors.permissionsGreen,
-      ReportExportOption.vitals => AppColors.permissionsSecondary,
-      ReportExportOption.sideEffects => AppColors.permissionsSecondary,
-    };
-  }
+  Widget _summaryCard() {
+    final l10n = AppLocalizations.of(context);
+    final names = [
+      for (final s in ReportSection.values)
+        if (_c.options.sections.contains(s)) _sectionName(s),
+    ];
 
-  // ============================================================
-  // PDF STATUS CARD (gradient strip + Ready pill)
-  // ============================================================
-
-  Widget _buildPdfStatusCard() {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1011,6 +847,7 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 32,
@@ -1025,50 +862,43 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
               color: AppColors.surface,
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  ReportPreviewData.pdfCardTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  l10n.rptSummaryTitle,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: AppColors.reportPrimary,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  ReportPreviewData.pdfCardSubtitle,
+                  [
+                    if (_c.dayCount > 0) l10n.rptDaysTotal(_c.dayCount),
+                    ...names,
+                  ].join(' · '),
                   style: const TextStyle(
                     fontSize: 11,
-                    height: 1.25,
+                    height: 1.3,
                     color: AppColors.permissionsSecondary,
                   ),
                 ),
+                if (_c.isLargeRange) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.rptLargeNote,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      height: 1.3,
+                      color: AppColors.permissionsSecondary,
+                    ),
+                  ),
+                ],
               ],
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: const BoxDecoration(
-              color: AppColors.permissionsBadgeBackground,
-              borderRadius: BorderRadius.all(Radius.circular(6)),
-            ),
-            child: Text(
-              ReportPreviewData.pdfReadyLabel,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.permissionsGreen,
-              ),
             ),
           ),
         ],
@@ -1076,61 +906,118 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
     );
   }
 
-  // ============================================================
-  // GENERATE BUTTON
-  // ============================================================
+  // ---- result messages + button ----
 
-  Widget _buildGenerateButton() {
-    final bool isBusy = _isGenerating || _showGenerated;
-    final bool canGenerate = _selectedOptions.isNotEmpty && !isBusy;
+  Widget _phaseMessage() {
+    final l10n = AppLocalizations.of(context);
+    String? title;
+    String? body;
+    IconData icon = Icons.info_outline_rounded;
+    var retry = false;
 
-    // HTML states: idle = tertiary-container green,
-    // success = secondary blue, empty = chip fill (disabled).
-    final Color bgColor = _showGenerated
-        ? AppColors.permissionsSecondary
-        : _selectedOptions.isEmpty
-        ? AppColors.permissionsChipFill
-        : AppColors.permissionsGreen;
-    final Color fgColor = _selectedOptions.isEmpty && !_showGenerated
-        ? AppColors.permissionsSecondary
-        : AppColors.surface;
-
-    late final Widget buttonChild;
-    if (_isGenerating) {
-      buttonChild = const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppColors.surface,
-            ),
-          ),
-          SizedBox(width: 10),
-          Flexible(child: Text(ReportPreviewData.compilingLabel)),
-        ],
-      );
-    } else if (_showGenerated) {
-      buttonChild = const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.check_circle, size: 20),
-          SizedBox(width: 8),
-          Flexible(child: Text(ReportPreviewData.generatedLabel)),
-        ],
-      );
-    } else {
-      buttonChild = const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.description, size: 22),
-          SizedBox(width: 10),
-          Flexible(child: Text('Generate Report')),
-        ],
-      );
+    switch (_c.phase) {
+      case ReportBuilderPhase.empty:
+        title = l10n.rptNoDataTitle;
+        body = l10n.rptNoDataBody;
+        icon = Icons.event_busy_outlined;
+      case ReportBuilderPhase.tooLarge:
+        title = l10n.rptTooLargeTitle;
+        body = l10n.rptTooLargeBody;
+        icon = Icons.unfold_more_double_outlined;
+      case ReportBuilderPhase.failed:
+        title = l10n.rptErrorTitle;
+        body = l10n.rptErrorBody;
+        icon = Icons.cloud_off_outlined;
+        retry = true;
+      case ReportBuilderPhase.editing:
+      case ReportBuilderPhase.loading:
+      case ReportBuilderPhase.building:
+      case ReportBuilderPhase.ready:
+        return const SizedBox.shrink();
     }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: _cardDecoration,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 22, color: AppColors.permissionsSecondary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.reportPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    body,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.3,
+                      color: AppColors.permissionsSecondary,
+                    ),
+                  ),
+                  if (retry)
+                    TextButton(
+                      onPressed: _c.canGenerate ? _generate : null,
+                      child: Text(l10n.rptTryAgain),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _generateButton() {
+    final l10n = AppLocalizations.of(context);
+    final busy = _c.isBusy;
+    final noSection = !_c.options.isValid;
+    final noProfile = _memberId == null && widget.controller == null;
+    final enabled = _c.canGenerate && !noProfile;
+
+    final Widget child = busy
+        ? Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.surface,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  _c.phase == ReportBuilderPhase.loading
+                      ? l10n.rptLoadingData
+                      : l10n.rptBuilding,
+                ),
+              ),
+            ],
+          )
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.description, size: 22),
+              const SizedBox(width: 10),
+              Flexible(child: Text(l10n.rptGenerate)),
+            ],
+          );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1138,12 +1025,16 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
         SizedBox(
           height: 56,
           child: ElevatedButton(
-            onPressed: canGenerate ? _generateReport : null,
+            onPressed: enabled ? _generate : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: bgColor,
-              foregroundColor: fgColor,
-              disabledBackgroundColor: bgColor,
-              disabledForegroundColor: fgColor,
+              backgroundColor: AppColors.permissionsGreen,
+              foregroundColor: AppColors.surface,
+              disabledBackgroundColor: busy
+                  ? AppColors.permissionsGreen
+                  : AppColors.permissionsChipFill,
+              disabledForegroundColor: busy
+                  ? AppColors.surface
+                  : AppColors.permissionsSecondary,
               elevation: 4,
               shadowColor: AppColors.reportGenerateShadow,
               shape: const RoundedRectangleBorder(
@@ -1154,35 +1045,46 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            child: buttonChild,
+            child: child,
           ),
         ),
-
-        if (_selectedOptions.isEmpty) ...[
+        if (noSection) ...[
           const SizedBox(height: 6),
-          const Text(
-            'Select at least one data type.',
+          Text(
+            l10n.rptSelectOne,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               color: AppColors.permissionsErrorText,
             ),
           ),
         ],
-
+        if (noProfile) ...[
+          const SizedBox(height: 6),
+          Text(
+            l10n.vitalsErrNoProfile,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.permissionsErrorText,
+            ),
+          ),
+        ],
         const SizedBox(height: 10),
-
-        // ---- AES note (HTML CTA ke neeche) ----
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.lock, size: 14, color: AppColors.permissionsSecondary),
-            SizedBox(width: 6),
+            const Icon(
+              Icons.lock,
+              size: 14,
+              color: AppColors.permissionsSecondary,
+            ),
+            const SizedBox(width: 6),
             Flexible(
               child: Text(
-                ReportPreviewData.lockNote,
+                l10n.rptPrivacyNote,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.2,
@@ -1196,1115 +1098,281 @@ class _ReportPreviewScreenState extends State<ReportPreviewScreen> {
     );
   }
 
-  // ============================================================
-  // PAGE NAVIGATOR
-  // ============================================================
+  // ------------------------------------------------------------
+  // the finished report (preview and sharing arrive in step 6)
+  // ------------------------------------------------------------
 
-  Widget _buildPageNavigator() {
-    final bool canGoPrev = _currentPage > 1;
-    final bool canGoNext = _currentPage < ReportPreviewData.totalPages;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // ---- PREV ----
-          Opacity(
-            opacity: canGoPrev ? 1 : 0.4,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: canGoPrev ? _goToPrevPage : null,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.chevron_left_rounded,
-                    size: 18,
-                    color: AppColors.permissionsSecondary,
-                  ),
-                  const SizedBox(width: 2),
-                  const Text(
-                    'Prev',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.permissionsSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ---- PAGE INDICATOR PILL ----
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: const BoxDecoration(
-              color: AppColors.permissionsInactiveFill,
-              borderRadius: BorderRadius.all(Radius.circular(999)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.article_outlined,
-                  size: 14,
-                  color: AppColors.permissionsHeader,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'PAGE $_currentPage OF ${ReportPreviewData.totalPages}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                    color: AppColors.permissionsHeader,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ---- NEXT ----
-          Opacity(
-            opacity: canGoNext ? 1 : 0.4,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: canGoNext ? _goToNextPage : null,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Next',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.permissionsGreen,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: AppColors.permissionsGreen,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _size(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  // ============================================================
-  // DOCUMENT CARD (skeuomorphic clinical sheet)
-  // ============================================================
+  Widget _buildReady() {
+    final l10n = AppLocalizations.of(context);
+    final data = _c.data!;
+    final files = _c.files!;
+    final a = data.adherence;
+    final range = data.range;
 
-  Widget _buildDocumentCard() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.reportCardShadow,
-            blurRadius: 30,
-            offset: Offset(0, 8),
-            spreadRadius: -4,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
-        // NOTE: HTML ka bottom-right watermark emblem intentionally
-        // REMOVE kiya — translucent footer ke peeche AES ke paas
-        // chupke se show ho raha tha.
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildReportBranding(),
-
-                  _buildDivider(),
-
-                  // ---- Selected data types ke hisaab se sections ----
-                  if (_selectedOptions.contains(
-                    ReportExportOption.adherence,
-                  )) ...[
-                    _buildComplianceMetric(),
-                    _buildWeekCalendar(),
-                  ],
-
-                  if (_selectedOptions.contains(ReportExportOption.vitals))
-                    _buildVitalsPanel(),
-
-                  if (_selectedOptions.contains(ReportExportOption.sideEffects))
-                    _buildSideEffectsPanel(),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            _buildPdfFooter(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---- Report branding / header ----
-
-  Widget _buildReportBranding() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                ReportPreviewData.clinicalLabel,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                  color: AppColors.permissionsSecondary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              const Text(
-                ReportPreviewData.reportTitle,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
-                  color: AppColors.permissionsHeader,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: _profileName,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.reportPrimary,
-                      ),
-                    ),
-                    const TextSpan(
-                      text: ' · ',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.permissionsSecondary,
-                      ),
-                    ),
-                    TextSpan(
-                      text: _dateRangeLabel,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.permissionsSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(width: 8),
-
-        Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            color: AppColors.reportSurfaceContainer,
-            borderRadius: BorderRadius.all(Radius.circular(8)),
-          ),
-          child: const Icon(
-            Icons.medical_services_outlined,
-            size: 22,
-            color: AppColors.permissionsHeader,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(
-      height: 2,
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      decoration: const BoxDecoration(
-        color: AppColors.reportSurfaceContainer,
-        borderRadius: BorderRadius.all(Radius.circular(999)),
-      ),
-    );
-  }
-
-  // ---- Summary compliance metric ----
-
-  Widget _buildComplianceMetric() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: AppColors.permissionsChipFill,
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-      ),
+    Widget stat(String label, int n, Color color) => Expanded(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      ReportPreviewData.adherenceLabel,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                        color: AppColors.permissionsGreen,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      ReportPreviewData.dosesConfirmed,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.permissionsSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ---- "Target met" chip ----
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: const BoxDecoration(
-                  color: AppColors.permissionsBadgeBackground,
-                  borderRadius: BorderRadius.all(Radius.circular(999)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.trending_up_rounded,
-                      size: 14,
-                      color: AppColors.reportTargetText,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      ReportPreviewData.targetChipLabel,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.reportTargetText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // ---- Adherence progress gauge ----
-          Container(
-            width: double.infinity,
-            height: 10,
-            padding: const EdgeInsets.all(2),
-            decoration: const BoxDecoration(
-              color: AppColors.permissionsInactiveFill,
-              borderRadius: BorderRadius.all(Radius.circular(999)),
-            ),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: FractionallySizedBox(
-                widthFactor: ReportPreviewData.adherencePercent / 100,
-                child: Container(
-                  height: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: AppColors.permissionsGreen,
-                    borderRadius: BorderRadius.all(Radius.circular(999)),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---- Mini week compliance calendar ----
-
-  Widget _buildWeekCalendar() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                ReportPreviewData.dailySectionLabel,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.66,
-                  color: AppColors.permissionsHeader,
-                ),
-              ),
-              const Text(
-                ReportPreviewData.weekLabel,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.permissionsSecondary,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: ReportPreviewData.weekDays.map(_buildWeekDay).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeekDay(ReportDay day) {
-    Color circleBackground;
-    IconData statusIcon;
-    Color iconColor;
-
-    switch (day.status) {
-      case ReportDayStatus.taken:
-        circleBackground = AppColors.permissionsGreen;
-        statusIcon = Icons.check_rounded;
-        iconColor = AppColors.surface;
-      case ReportDayStatus.missed:
-        circleBackground = AppColors.permissionsErrorContainer;
-        statusIcon = Icons.priority_high_rounded;
-        iconColor = AppColors.permissionsErrorText;
-      case ReportDayStatus.pending:
-        circleBackground = AppColors.permissionsInactiveFill;
-        statusIcon = Icons.horizontal_rule_rounded;
-        iconColor = AppColors.permissionsSecondary;
-    }
-
-    final bool isMissed = day.status == ReportDayStatus.missed;
-
-    return Column(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: circleBackground,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(statusIcon, size: 16, color: iconColor),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          day.letter,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: isMissed
-                ? AppColors.permissionsErrorIcon
-                : AppColors.permissionsSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ---- Logged vitals panel ----
-
-  Widget _buildVitalsPanel() {
-    return Container(
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: AppColors.permissionsChipFill,
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.monitor_heart_outlined,
-                size: 16,
-                color: AppColors.permissionsSecondary,
-              ),
-              SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  ReportPreviewData.vitalsLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1,
-                    color: AppColors.permissionsHeader,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-
-          for (int i = 0; i < ReportPreviewData.vitals.length; i++) ...[
-            if (i > 0) const SizedBox(height: 8),
-            _buildVitalRow(ReportPreviewData.vitals[i]),
-          ],
-
-          const SizedBox(height: 10),
-
-          const Text(
-            ReportPreviewData.syncNote,
-            textAlign: TextAlign.center,
+          Text(
+            '$n',
             style: TextStyle(
-              fontSize: 13,
-              fontStyle: FontStyle.italic,
-              color: AppColors.permissionsSecondary,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: color,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVitalRow(ReportVitalRow vital) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.all(Radius.circular(8)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
           Text(
-            vital.label,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.permissionsSecondary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: vital.value,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.permissionsHeader,
-                  ),
-                ),
-                TextSpan(
-                  text: ' ${vital.unit}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.permissionsSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---- Reported side effects panel ----
-
-  Widget _buildSideEffectsPanel() {
-    return Container(
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: AppColors.permissionsChipFill,
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.warning_amber_outlined,
-                size: 16,
-                color: AppColors.permissionsSecondary,
-              ),
-              SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  ReportPreviewData.sideEffectsLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1,
-                    color: AppColors.permissionsHeader,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-
-          for (int i = 0; i < ReportPreviewData.sideEffects.length; i++) ...[
-            if (i > 0) const SizedBox(height: 8),
-            _buildSideEffectRow(ReportPreviewData.sideEffects[i]),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSideEffectRow(ReportSideEffectRow row) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.all(Radius.circular(8)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  row.medication,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.permissionsHeader,
-                  ),
-                ),
-                Text(
-                  row.effect,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.permissionsSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: _severityBackground(row.severity),
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-            ),
-            child: Text(
-              row.severity.label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: _severityTextColor(row.severity),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _severityBackground(ReportSeverity severity) {
-    switch (severity) {
-      case ReportSeverity.low:
-        return AppColors.successBackground;
-      case ReportSeverity.medium:
-        return AppColors.pendingBackground;
-      case ReportSeverity.high:
-        return AppColors.permissionsErrorContainer;
-    }
-  }
-
-  Color _severityTextColor(ReportSeverity severity) {
-    switch (severity) {
-      case ReportSeverity.low:
-        return AppColors.success;
-      case ReportSeverity.medium:
-        return AppColors.statusPendingText;
-      case ReportSeverity.high:
-        return AppColors.permissionsErrorText;
-    }
-  }
-
-  // ---- PDF stamp & footer ----
-
-  Widget _buildPdfFooter() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-      decoration: BoxDecoration(
-        color: AppColors.permissionsChipFill.withValues(alpha: 0.5),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // ---- Verified badge (narrow screens par ellipsis) ----
-          Flexible(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.verified_user_outlined,
-                  size: 13,
-                  color: AppColors.permissionsSecondary,
-                ),
-                const SizedBox(width: 4),
-                const Flexible(
-                  child: Text(
-                    ReportPreviewData.verifiedLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.permissionsSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ---- Page number ----
-          Text(
-            'Page $_currentPage / ${ReportPreviewData.totalPages}',
+            label,
             style: const TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w700,
               color: AppColors.permissionsSecondary,
             ),
-          ),
-
-          // ---- Encryption ----
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.lock_rounded,
-                size: 13,
-                color: AppColors.permissionsSecondary,
-              ),
-              const SizedBox(width: 4),
-              const Text(
-                ReportPreviewData.aesLabel,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.permissionsSecondary,
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
-  }
 
-  // ============================================================
-  // REGENERATE LINK (wapas config form)
-  // ============================================================
+    final notes = <String>[
+      for (final s in data.unavailable)
+        l10n.rptSectionNotIncluded(_sectionName(s)),
+      for (final s in data.truncated) l10n.rptSectionTruncated(_sectionName(s)),
+    ];
 
-  Widget _buildRegenerateButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Center(
-        child: TextButton(
-          onPressed: _regenerate,
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.sync_rounded,
-                size: 16,
-                color: AppColors.permissionsGreen,
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  ReportPreviewData.regenerateLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.permissionsGreen,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ============================================================
-  // SHARE SECTION
-  // ============================================================
-
-  Widget _buildShareSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          height: 56,
-          child: ElevatedButton(
-            onPressed: _openShareSheet,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.permissionsGreen,
-              foregroundColor: AppColors.surface,
-              elevation: 6,
-              shadowColor: AppColors.reportShareShadow,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: _cardDecoration,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.check_circle,
+                    color: AppColors.permissionsGreen,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.rptReadyTitle,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.reportPrimary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              textStyle: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: 6),
+              Text(
+                '${_date(range.from)} – ${_date(range.to)} · '
+                '${l10n.rptDaysTotal(range.dayCount)}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.permissionsSecondary,
+                ),
               ),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.ios_share_rounded, size: 20),
-                SizedBox(width: 10),
-                Text(ReportPreviewData.shareButtonLabel),
+              if (a != null && a.total.hasData) ...[
+                const SizedBox(height: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      a.total.decided == 0 ? '–' : '${a.total.percent}%',
+                      key: const Key('report-percent'),
+                      style: const TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.permissionsGreen,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          '${l10n.rptLOverallAdherence}\n'
+                          '${a.total.decided} ${l10n.rptLDecidedDoses}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            height: 1.3,
+                            color: AppColors.permissionsSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    stat(
+                      l10n.rptLTaken,
+                      a.total.taken,
+                      AppColors.permissionsGreen,
+                    ),
+                    stat(l10n.rptLMissed, a.total.missed, AppColors.error),
+                    stat(
+                      l10n.rptLSkipped,
+                      a.total.skipped,
+                      const Color(0xFFE67E22),
+                    ),
+                    stat(
+                      l10n.rptLPending,
+                      a.total.pending,
+                      AppColors.permissionsSecondary,
+                    ),
+                  ],
+                ),
               ],
-            ),
+              for (final n in notes) ...[
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: AppColors.permissionsSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        n,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.3,
+                          color: AppColors.permissionsSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 14),
+              Text(
+                l10n.rptFileInfo(
+                  _size(files.pdf.length),
+                  _size(files.csv.bytes.length),
+                ),
+                key: const Key('report-file-info'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.reportPrimary,
+                ),
+              ),
+            ],
           ),
         ),
-
-        const SizedBox(height: 8),
-
-        const Text(
-          ReportPreviewData.shareCaption,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            height: 1.45,
-            color: AppColors.permissionsSecondary,
+        const SizedBox(height: 16),
+        _actionButton(
+          key: const Key('report-preview'),
+          icon: Icons.picture_as_pdf_outlined,
+          label: l10n.rptPreviewPdf,
+          filled: true,
+          onTap: _sharing ? null : _openPreview,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _actionButton(
+                key: const Key('report-share-pdf'),
+                icon: Icons.share_outlined,
+                label: l10n.rptSharePdf,
+                onTap: _sharing ? null : () => _share(pdf: true),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _actionButton(
+                key: const Key('report-share-csv'),
+                icon: Icons.table_chart_outlined,
+                label: l10n.rptShareCsv,
+                onTap: _sharing ? null : () => _share(pdf: false),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton(
+          onPressed: _c.edit,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            side: const BorderSide(color: AppColors.permissionsSecondary),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
+          ),
+          child: Text(
+            l10n.rptChangeOptions,
+            style: const TextStyle(
+              color: AppColors.permissionsSecondary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],
     );
   }
 
-  // ============================================================
-  // SHARE SHEET (share options bottom sheet)
-  // ============================================================
-
-  Widget _buildShareSheet() {
-    final String firstName = _profileName.split(' ').first;
-
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shareSheetShadow,
-            blurRadius: 40,
-            offset: Offset(0, -8),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ---- 1. Handle bar ----
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: const BoxDecoration(
-                    color: AppColors.shareBorder,
-                    borderRadius: BorderRadius.all(Radius.circular(999)),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              // ---- 2. Title ----
-              const Text(
-                ReportPreviewData.shareSheetTitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                  height: 1.25,
-                  color: AppColors.permissionsHeader,
-                ),
-              ),
-
-              const SizedBox(height: 2),
-
-              // ---- 3. Subtitle ----
-              Text(
-                ReportPreviewData.shareSheetSubtitle(firstName),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.shareSecondaryText,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ---- 4. Share options grid (4 tiles) ----
-              Row(
-                children: [
-                  for (
-                    int i = 0;
-                    i < ReportPreviewData.shareTiles.length;
-                    i++
-                  ) ...[
-                    if (i > 0) const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildShareTile(ReportPreviewData.shareTiles[i]),
-                    ),
-                  ],
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // ---- 5. Divider ----
-              Container(height: 1, color: AppColors.shareDivider),
-
-              const SizedBox(height: 16),
-
-              // ---- 6. Secondary actions ----
-              for (
-                int i = 0;
-                i < ReportPreviewData.shareRowActions.length;
-                i++
-              ) ...[
-                if (i > 0) const SizedBox(height: 8),
-                _buildShareActionRow(ReportPreviewData.shareRowActions[i]),
-              ],
-
-              const SizedBox(height: 16),
-
-              // ---- 7. Share Now ----
-              SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () =>
-                      _completeShare(ReportPreviewData.shareNowLabel),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.shareActionGreen,
-                    foregroundColor: AppColors.surface,
-                    elevation: 4,
-                    shadowColor: AppColors.shareButtonShadow,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(14)),
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.ios_share_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text(ReportPreviewData.shareNowLabel),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // ---- 8. Cancel (underlined) ----
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text(
-                    ReportPreviewData.cancelLabel,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      decoration: TextDecoration.underline,
-                      color: AppColors.shareSecondaryText,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // ---- 9. Home indicator ----
-              Center(
-                child: Container(
-                  width: 128,
-                  height: 4,
-                  decoration: const BoxDecoration(
-                    color: AppColors.shareBorder,
-                    borderRadius: BorderRadius.all(Radius.circular(999)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ---- Grid tile (Email / Print / Save to Files / AirDrop) ----
-
-  Widget _buildShareTile(ReportShareTile tile) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        _completeShare(tile.label);
-      },
-      child: Column(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.shareTileFill,
-              border: Border.all(color: AppColors.shareBorder),
-              borderRadius: const BorderRadius.all(Radius.circular(14)),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.permissionsCardShadow,
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-            child: Icon(tile.icon, size: 24, color: AppColors.shareActionGreen),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            tile.label,
-            maxLines: 1,
+  Widget _actionButton({
+    required Key key,
+    required IconData icon,
+    required String label,
+    required VoidCallback? onTap,
+    bool filled = false,
+  }) {
+    final child = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 20),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            label,
             overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: AppColors.shareSecondaryText,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
-        ],
-      ),
+        ),
+      ],
     );
-  }
-
-  // ---- Secondary row (Save as CSV / Save to Documents) ----
-
-  Widget _buildShareActionRow(ReportShareRowAction action) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        _completeShare(action.label);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.shareTileFill,
-          border: Border.all(
-            color: AppColors.shareBorder.withValues(alpha: 0.8),
-          ),
-          borderRadius: const BorderRadius.all(Radius.circular(12)),
+    const shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(12)),
+    );
+    if (filled) {
+      return ElevatedButton(
+        key: key,
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.permissionsGreen,
+          foregroundColor: AppColors.surface,
+          minimumSize: const Size.fromHeight(52),
+          shape: shape,
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.all(Radius.circular(8)),
-              ),
-              child: Icon(
-                action.icon,
-                size: 16,
-                color: AppColors.shareActionGreen,
-              ),
-            ),
-
-            const SizedBox(width: 10),
-
-            Expanded(
-              child: Text(
-                action.label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.shareActionGreen,
-                ),
-              ),
-            ),
-
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 16,
-              color: AppColors.shareSecondaryText,
-            ),
-          ],
-        ),
+        child: child,
+      );
+    }
+    return OutlinedButton(
+      key: key,
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.permissionsGreen,
+        minimumSize: const Size.fromHeight(48),
+        side: const BorderSide(color: AppColors.permissionsGreen),
+        shape: shape,
       ),
+      child: child,
     );
   }
 }

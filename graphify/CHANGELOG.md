@@ -36,3 +36,13 @@
 - 2026-11-14 — M16 step 5: appointments on Firestore (list/add/edit/delete), phone reminders via flutter_local_notifications with sync, dose scheduler no longer cancels appointment reminders, 60 l10n keys, dummy data files removed; verified on emulator.
 - 2026-11-14 — M16 step 6: Notes for Doctor on Firestore (add/tick/edit/delete/clear, optional link to next appointment), real open-notes count, note_day helper + tests, edit-dialog crash fixed; verified on emulator.
 - 2026-11-14 — M16 step 7: Solo Pro gate for prescribers/appointments/notes (rules read customers/{ownerUid}; reads+deletes stay open), app gate + banner + dialog, 8 rules tests (133), 6 gate tests, free-plan integration test; rules deployed to staging. M16 complete on Spark except real Pro users (needs M12 webhook / Blaze).
+- 2026-11-16 — M17 step 1: lib/core/reports (range validator, options, models, adherence calculator), 30 unit tests.
+- 2026-11-16 — M17 step 2: report data source (dose mapper with the screen's rules, injected reads, per-section failure handling, read stats), repository wiring, 24 unit tests + 5 emulator integration tests.
+- 2026-11-16 — M17 step 3: CSV report builder (single file with sections, BOM, CRLF, CSV-injection guard, labels for translation), csv package added, 24 unit tests.
+- 2026-11-16 — M17 step 4: PDF report builder (pdf package, bundled Noto fonts, day strip, charts, tables, multi-page, RTL), shared ReportFormat, 14 tests. Visual check of Hindi/Arabic pending.
+
+- M17 Step 5: Report Builder screen on real data (range, sections, Generate → PDF+CSV built on phone), controller + widget tests; dummy report data removed.
+
+- M17 Step 6: PDF preview (printing) and PDF/CSV share via share sheet with temp-file cleanup; 7 l10n keys; tests.
+
+- M17 Step 7: Free users limited to a 7-day report, longer ranges need Pro (app-side gate, upgrade dialog, lock icons); 3 l10n keys; tests. M17 complete on Spark.

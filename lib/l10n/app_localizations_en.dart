@@ -2566,4 +2566,348 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appLockNotVerified =>
       'Couldn\'t verify it\'s you. Please try again.';
+
+  @override
+  String get rptTitle => 'Build Report';
+
+  @override
+  String get rptProfile => 'PROFILE';
+
+  @override
+  String get rptProfileHelp =>
+      'The report is made for the profile you are viewing.';
+
+  @override
+  String get rptDateRange => 'DATE RANGE';
+
+  @override
+  String rptDaysTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptPreset7 => 'Last 7 days';
+
+  @override
+  String get rptPreset30 => 'Last 30 days';
+
+  @override
+  String get rptPreset90 => 'Last 90 days';
+
+  @override
+  String get rptPresetCustom => 'Custom';
+
+  @override
+  String get rptFrom => 'FROM';
+
+  @override
+  String get rptTo => 'TO';
+
+  @override
+  String get rptErrFromAfterTo => 'The start date must be before the end date.';
+
+  @override
+  String get rptErrTooLong => 'A report can cover at most 365 days.';
+
+  @override
+  String get rptErrFuture => 'The end date cannot be in the future.';
+
+  @override
+  String get rptData => 'DATA TO INCLUDE';
+
+  @override
+  String rptSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get rptOptAdherence => 'Adherence';
+
+  @override
+  String get rptOptVitals => 'Vitals';
+
+  @override
+  String get rptOptSideEffects => 'Side effects';
+
+  @override
+  String get rptOptAdherenceDesc =>
+      'Taken, missed and skipped doses by day and medicine';
+
+  @override
+  String get rptOptVitalsDesc =>
+      'Blood pressure, glucose, weight and heart rate';
+
+  @override
+  String get rptOptSideEffectsDesc => 'Symptoms, severity and notes';
+
+  @override
+  String get rptHealthAccessNote =>
+      'Vitals and side effects need health access to this profile.';
+
+  @override
+  String get rptSelectOne => 'Select at least one data type.';
+
+  @override
+  String get rptSummaryTitle => 'Your report will contain';
+
+  @override
+  String get rptLargeNote =>
+      'A long range can take a little longer to prepare.';
+
+  @override
+  String get rptGenerate => 'Generate Report';
+
+  @override
+  String get rptLoadingData => 'Loading your data…';
+
+  @override
+  String get rptBuilding => 'Preparing PDF and CSV…';
+
+  @override
+  String get rptPrivacyNote =>
+      'The report is made on this phone. Nothing is sent to a server.';
+
+  @override
+  String get rptReadyTitle => 'Report ready';
+
+  @override
+  String rptSectionNotIncluded(String section) {
+    return 'Not included: $section';
+  }
+
+  @override
+  String rptSectionTruncated(String section) {
+    return 'Only the newest entries are included: $section';
+  }
+
+  @override
+  String rptFileInfo(String pdf, String csv) {
+    return 'PDF $pdf · CSV $csv';
+  }
+
+  @override
+  String get rptNoDataTitle => 'No data in this range';
+
+  @override
+  String get rptNoDataBody =>
+      'There is nothing to report for these dates. Try a longer range.';
+
+  @override
+  String get rptTooLargeTitle => 'This range is too big';
+
+  @override
+  String get rptTooLargeBody => 'Please choose a shorter range and try again.';
+
+  @override
+  String get rptErrorTitle => 'Could not create the report';
+
+  @override
+  String get rptErrorBody => 'Check your connection and try again.';
+
+  @override
+  String get rptTryAgain => 'Try Again';
+
+  @override
+  String get rptChangeOptions => 'Change range or options';
+
+  @override
+  String get rptLTitle => 'MedRemind health report';
+
+  @override
+  String get rptLSubtitle => 'Medication adherence report';
+
+  @override
+  String get rptLProfile => 'Profile';
+
+  @override
+  String get rptLDateRange => 'Date range';
+
+  @override
+  String get rptLGeneratedAt => 'Generated at';
+
+  @override
+  String get rptLDisclaimerLabel => 'Disclaimer';
+
+  @override
+  String get rptLDisclaimer =>
+      'This report is made from information entered in the app. It is not a medical diagnosis. Please discuss it with your doctor.';
+
+  @override
+  String get rptLAdherenceSummary => 'Adherence summary';
+
+  @override
+  String get rptLAdherenceByDay => 'Adherence by day';
+
+  @override
+  String get rptLAdherenceByMedication => 'Adherence by medication';
+
+  @override
+  String get rptLMissedReasons => 'Missed and skipped doses by reason';
+
+  @override
+  String get rptLVitals => 'Vitals (daily summary)';
+
+  @override
+  String get rptLSideEffects => 'Side effects';
+
+  @override
+  String get rptLDate => 'Date';
+
+  @override
+  String get rptLDateTime => 'Date and time';
+
+  @override
+  String get rptLMedication => 'Medication';
+
+  @override
+  String get rptLTaken => 'Taken';
+
+  @override
+  String get rptLMissed => 'Missed';
+
+  @override
+  String get rptLSkipped => 'Skipped';
+
+  @override
+  String get rptLPending => 'Pending';
+
+  @override
+  String get rptLAdherencePercent => 'Adherence %';
+
+  @override
+  String get rptLReason => 'Reason';
+
+  @override
+  String get rptLCount => 'Count';
+
+  @override
+  String get rptLType => 'Type';
+
+  @override
+  String get rptLReadings => 'Readings';
+
+  @override
+  String get rptLAverage => 'Average';
+
+  @override
+  String get rptLMin => 'Min';
+
+  @override
+  String get rptLMax => 'Max';
+
+  @override
+  String get rptLUnit => 'Unit';
+
+  @override
+  String get rptLSymptom => 'Symptom';
+
+  @override
+  String get rptLSeverity => 'Severity (1-5)';
+
+  @override
+  String get rptLNotes => 'Notes';
+
+  @override
+  String get rptLReasonForgot => 'Forgot';
+
+  @override
+  String get rptLReasonSideEffect => 'Side effect';
+
+  @override
+  String get rptLReasonRanOut => 'Ran out';
+
+  @override
+  String get rptLReasonOther => 'Other';
+
+  @override
+  String get rptLReasonUnspecified => 'No reason given';
+
+  @override
+  String get rptLVitalBloodPressure => 'Blood pressure';
+
+  @override
+  String get rptLVitalGlucose => 'Glucose';
+
+  @override
+  String get rptLVitalWeight => 'Weight';
+
+  @override
+  String get rptLVitalHeartRate => 'Heart rate';
+
+  @override
+  String get rptLNoData => 'No data in this range';
+
+  @override
+  String get rptLNotAvailable =>
+      'Not available (no access, or it could not be loaded)';
+
+  @override
+  String get rptLTruncated =>
+      'Only the newest entries are shown (limit reached)';
+
+  @override
+  String get rptLOverallAdherence => 'Overall adherence';
+
+  @override
+  String get rptLDecidedDoses => 'doses with an outcome';
+
+  @override
+  String get rptLDayOverview => 'Day by day';
+
+  @override
+  String get rptLLegendAllTaken => 'All taken';
+
+  @override
+  String get rptLLegendMissed => 'Missed';
+
+  @override
+  String get rptLLegendSkipped => 'Skipped';
+
+  @override
+  String get rptLLegendPending => 'Pending';
+
+  @override
+  String get rptLLegendNoDoses => 'No doses';
+
+  @override
+  String rptLPage(int page, int pages) {
+    return 'Page $page of $pages';
+  }
+
+  @override
+  String get rptPreviewPdf => 'Preview PDF';
+
+  @override
+  String get rptSharePdf => 'Share PDF';
+
+  @override
+  String get rptShareCsv => 'Share CSV';
+
+  @override
+  String get rptShareFailed => 'Could not share the file. Please try again.';
+
+  @override
+  String get rptViewerTitle => 'PDF preview';
+
+  @override
+  String get rptShareSubject => 'MedRemind health report';
+
+  @override
+  String get rptViewerError => 'Could not show the PDF.';
+
+  @override
+  String get rptProTitle => 'Longer reports are a Pro feature';
+
+  @override
+  String get rptProBody =>
+      'Free reports cover the last 7 days. With Solo Pro you can report on 30 days, 90 days or any range up to a year.';
+
+  @override
+  String get rptProBadge => 'Pro';
 }

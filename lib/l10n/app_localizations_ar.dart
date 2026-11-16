@@ -2548,4 +2548,345 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get appLockNotVerified =>
       'تعذّر التحقق من هويتك. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get rptTitle => 'إنشاء تقرير';
+
+  @override
+  String get rptProfile => 'الملف الشخصي';
+
+  @override
+  String get rptProfileHelp => 'التقرير خاص بالملف الشخصي الذي تعرضه.';
+
+  @override
+  String get rptDateRange => 'الفترة';
+
+  @override
+  String rptDaysTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count أيام',
+      one: 'يوم واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rptPreset7 => 'آخر 7 أيام';
+
+  @override
+  String get rptPreset30 => 'آخر 30 يومًا';
+
+  @override
+  String get rptPreset90 => 'آخر 90 يومًا';
+
+  @override
+  String get rptPresetCustom => 'مخصص';
+
+  @override
+  String get rptFrom => 'من';
+
+  @override
+  String get rptTo => 'إلى';
+
+  @override
+  String get rptErrFromAfterTo =>
+      'يجب أن يكون تاريخ البداية قبل تاريخ النهاية.';
+
+  @override
+  String get rptErrTooLong => 'يمكن أن يغطي التقرير 365 يومًا كحد أقصى.';
+
+  @override
+  String get rptErrFuture => 'لا يمكن أن يكون تاريخ النهاية في المستقبل.';
+
+  @override
+  String get rptData => 'البيانات المراد تضمينها';
+
+  @override
+  String rptSelectedCount(int count) {
+    return 'تم اختيار $count';
+  }
+
+  @override
+  String get rptOptAdherence => 'الالتزام بالدواء';
+
+  @override
+  String get rptOptVitals => 'العلامات الحيوية';
+
+  @override
+  String get rptOptSideEffects => 'الآثار الجانبية';
+
+  @override
+  String get rptOptAdherenceDesc =>
+      'الجرعات المأخوذة والفائتة والمتخطاة حسب اليوم والدواء';
+
+  @override
+  String get rptOptVitalsDesc => 'ضغط الدم والجلوكوز والوزن ومعدل ضربات القلب';
+
+  @override
+  String get rptOptSideEffectsDesc => 'الأعراض وشدتها والملاحظات';
+
+  @override
+  String get rptHealthAccessNote =>
+      'العلامات الحيوية والآثار الجانبية تتطلب صلاحية الاطلاع على الصحة لهذا الملف.';
+
+  @override
+  String get rptSelectOne => 'اختر نوعًا واحدًا على الأقل من البيانات.';
+
+  @override
+  String get rptSummaryTitle => 'سيحتوي تقريرك على';
+
+  @override
+  String get rptLargeNote =>
+      'قد تستغرق الفترة الطويلة وقتًا أطول قليلًا للتحضير.';
+
+  @override
+  String get rptGenerate => 'إنشاء التقرير';
+
+  @override
+  String get rptLoadingData => 'جارٍ تحميل بياناتك…';
+
+  @override
+  String get rptBuilding => 'جارٍ تجهيز ملفي PDF وCSV…';
+
+  @override
+  String get rptPrivacyNote =>
+      'يتم إنشاء التقرير على هذا الهاتف. لا يُرسل شيء إلى خادم.';
+
+  @override
+  String get rptReadyTitle => 'التقرير جاهز';
+
+  @override
+  String rptSectionNotIncluded(String section) {
+    return 'غير مضمّن: $section';
+  }
+
+  @override
+  String rptSectionTruncated(String section) {
+    return 'تم تضمين أحدث الإدخالات فقط: $section';
+  }
+
+  @override
+  String rptFileInfo(String pdf, String csv) {
+    return 'PDF $pdf · CSV $csv';
+  }
+
+  @override
+  String get rptNoDataTitle => 'لا توجد بيانات في هذه الفترة';
+
+  @override
+  String get rptNoDataBody =>
+      'لا يوجد ما يمكن الإبلاغ عنه في هذه التواريخ. جرّب فترة أطول.';
+
+  @override
+  String get rptTooLargeTitle => 'هذه الفترة كبيرة جدًا';
+
+  @override
+  String get rptTooLargeBody => 'يرجى اختيار فترة أقصر والمحاولة مرة أخرى.';
+
+  @override
+  String get rptErrorTitle => 'تعذّر إنشاء التقرير';
+
+  @override
+  String get rptErrorBody => 'تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
+  String get rptTryAgain => 'حاول مرة أخرى';
+
+  @override
+  String get rptChangeOptions => 'تغيير الفترة أو الخيارات';
+
+  @override
+  String get rptLTitle => 'تقرير MedRemind الصحي';
+
+  @override
+  String get rptLSubtitle => 'تقرير الالتزام بالأدوية';
+
+  @override
+  String get rptLProfile => 'الملف الشخصي';
+
+  @override
+  String get rptLDateRange => 'الفترة';
+
+  @override
+  String get rptLGeneratedAt => 'تاريخ الإنشاء';
+
+  @override
+  String get rptLDisclaimerLabel => 'إخلاء مسؤولية';
+
+  @override
+  String get rptLDisclaimer =>
+      'تم إنشاء هذا التقرير من المعلومات المُدخلة في التطبيق. وهو ليس تشخيصًا طبيًا. يرجى مناقشته مع طبيبك.';
+
+  @override
+  String get rptLAdherenceSummary => 'ملخص الالتزام';
+
+  @override
+  String get rptLAdherenceByDay => 'الالتزام حسب اليوم';
+
+  @override
+  String get rptLAdherenceByMedication => 'الالتزام حسب الدواء';
+
+  @override
+  String get rptLMissedReasons => 'الجرعات الفائتة والمتخطاة حسب السبب';
+
+  @override
+  String get rptLVitals => 'العلامات الحيوية (ملخص يومي)';
+
+  @override
+  String get rptLSideEffects => 'الآثار الجانبية';
+
+  @override
+  String get rptLDate => 'التاريخ';
+
+  @override
+  String get rptLDateTime => 'التاريخ والوقت';
+
+  @override
+  String get rptLMedication => 'الدواء';
+
+  @override
+  String get rptLTaken => 'مأخوذة';
+
+  @override
+  String get rptLMissed => 'فائتة';
+
+  @override
+  String get rptLSkipped => 'متخطاة';
+
+  @override
+  String get rptLPending => 'قيد الانتظار';
+
+  @override
+  String get rptLAdherencePercent => 'نسبة الالتزام %';
+
+  @override
+  String get rptLReason => 'السبب';
+
+  @override
+  String get rptLCount => 'العدد';
+
+  @override
+  String get rptLType => 'النوع';
+
+  @override
+  String get rptLReadings => 'القراءات';
+
+  @override
+  String get rptLAverage => 'المتوسط';
+
+  @override
+  String get rptLMin => 'الأدنى';
+
+  @override
+  String get rptLMax => 'الأعلى';
+
+  @override
+  String get rptLUnit => 'الوحدة';
+
+  @override
+  String get rptLSymptom => 'العرض';
+
+  @override
+  String get rptLSeverity => 'الشدة (1-5)';
+
+  @override
+  String get rptLNotes => 'ملاحظات';
+
+  @override
+  String get rptLReasonForgot => 'نسيت';
+
+  @override
+  String get rptLReasonSideEffect => 'أثر جانبي';
+
+  @override
+  String get rptLReasonRanOut => 'نفد الدواء';
+
+  @override
+  String get rptLReasonOther => 'أخرى';
+
+  @override
+  String get rptLReasonUnspecified => 'لم يُذكر سبب';
+
+  @override
+  String get rptLVitalBloodPressure => 'ضغط الدم';
+
+  @override
+  String get rptLVitalGlucose => 'الجلوكوز';
+
+  @override
+  String get rptLVitalWeight => 'الوزن';
+
+  @override
+  String get rptLVitalHeartRate => 'معدل ضربات القلب';
+
+  @override
+  String get rptLNoData => 'لا توجد بيانات في هذه الفترة';
+
+  @override
+  String get rptLNotAvailable => 'غير متاح (لا توجد صلاحية، أو تعذّر التحميل)';
+
+  @override
+  String get rptLTruncated => 'تُعرض أحدث الإدخالات فقط (تم بلوغ الحد)';
+
+  @override
+  String get rptLOverallAdherence => 'الالتزام العام';
+
+  @override
+  String get rptLDecidedDoses => 'جرعات لها نتيجة';
+
+  @override
+  String get rptLDayOverview => 'يومًا بيوم';
+
+  @override
+  String get rptLLegendAllTaken => 'كلها مأخوذة';
+
+  @override
+  String get rptLLegendMissed => 'فائتة';
+
+  @override
+  String get rptLLegendSkipped => 'متخطاة';
+
+  @override
+  String get rptLLegendPending => 'قيد الانتظار';
+
+  @override
+  String get rptLLegendNoDoses => 'لا جرعات';
+
+  @override
+  String rptLPage(int page, int pages) {
+    return 'صفحة $page من $pages';
+  }
+
+  @override
+  String get rptPreviewPdf => 'معاينة PDF';
+
+  @override
+  String get rptSharePdf => 'مشاركة PDF';
+
+  @override
+  String get rptShareCsv => 'مشاركة CSV';
+
+  @override
+  String get rptShareFailed => 'تعذرت مشاركة الملف. حاول مرة أخرى.';
+
+  @override
+  String get rptViewerTitle => 'معاينة PDF';
+
+  @override
+  String get rptShareSubject => 'تقرير MedRemind الصحي';
+
+  @override
+  String get rptViewerError => 'تعذر عرض ملف PDF.';
+
+  @override
+  String get rptProTitle => 'التقارير الأطول ميزة Pro';
+
+  @override
+  String get rptProBody =>
+      'التقارير المجانية تغطي آخر 7 أيام. مع Solo Pro يمكنك إنشاء تقرير لمدة 30 يومًا أو 90 يومًا أو أي نطاق حتى سنة.';
+
+  @override
+  String get rptProBadge => 'Pro';
 }
