@@ -77,14 +77,54 @@ class ExportCollector {
       );
     }
 
+    final chats = await _readChats(uid, notes);
+
     return ExportBundle(
       generatedAt: (now ?? DateTime.now()).toUtc(),
       appVersion: appVersion,
       userId: uid,
       userData: user,
       profiles: profiles,
+      chats: chats,
       notes: notes,
     );
+  }
+
+  /// AI chats: `users/{uid}/chatThreads/{id}` with their messages. A failure
+  /// is noted, never fatal.
+  Future<List<ExportDoc>> _readChats(String uid, List<String> notes) async {
+    final out = <ExportDoc>[];
+    try {
+      final threads = await _source.readCollection(
+        'users/$uid/chatThreads',
+        maxDocs: maxDocsPerCollection,
+      );
+      for (final t in threads.docs) {
+        List<RawDoc> messages = const [];
+        try {
+          messages = (await _source.readCollection(
+            'users/$uid/chatThreads/${t.id}/messages',
+            maxDocs: maxDocsPerCollection,
+          )).docs;
+        } catch (e) {
+          notes.add('Chat ${t.id}: messages could not be read ($e).');
+        }
+        out.add(
+          ExportDoc(
+            path: 'chatThreads/${t.id}',
+            data: {
+              ...t.data,
+              'messages': [
+                for (final m in messages) {'id': m.id, ...m.data},
+              ],
+            },
+          ),
+        );
+      }
+    } catch (e) {
+      notes.add('AI chats could not be read ($e).');
+    }
+    return out;
   }
 
   Future<List<RawDoc>> _read(

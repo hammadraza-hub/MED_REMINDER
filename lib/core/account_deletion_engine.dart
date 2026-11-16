@@ -99,6 +99,9 @@ class AccountDeletionEngine {
       await _purgeProfile(id, onProgress);
     }
 
+    onProgress?.call('chats');
+    await _purgeChatThreads(uid);
+
     onProgress?.call('account');
     await _purgeCollection('users/$uid/devices');
     await _delete('users/$uid');
@@ -138,6 +141,24 @@ class AccountDeletionEngine {
 
     // The profile document must go last: rules look it up for every child.
     await _delete(base);
+  }
+
+  /// AI chats (M18 step 4): each thread's messages first, then the thread.
+  Future<void> _purgeChatThreads(String uid) async {
+    final base = 'users/$uid/chatThreads';
+    String? lastBatchKey;
+    while (true) {
+      final threads = await _store.listIds(base);
+      if (threads.isEmpty) return;
+      final key = threads.join(',');
+      if (key == lastBatchKey) throw PurgeStalledException(base);
+      lastBatchKey = key;
+
+      for (final id in threads) {
+        await _purgeCollection('$base/$id/messages');
+        await _delete('$base/$id');
+      }
+    }
   }
 
   Future<void> _purgeCollection(String path) async {

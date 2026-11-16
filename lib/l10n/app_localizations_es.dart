@@ -2931,4 +2931,186 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get rptProBadge => 'Pro';
+
+  @override
+  String get aiConsentTitle => 'Antes de usar el asistente de IA';
+
+  @override
+  String get aiConsentIntro =>
+      'El asistente responde preguntas generales sobre tus medicamentos. Para ello, tus preguntas y un pequeño resumen de la información de tus medicamentos se envían a un servicio de IA cuando chateas.';
+
+  @override
+  String get aiConsentSentTitle => 'Qué se comparte';
+
+  @override
+  String get aiConsentSentBody =>
+      'Tus medicamentos activos y sus horarios, tu adherencia de los últimos 30 días, tus alergias y la pregunta que escribes.';
+
+  @override
+  String get aiConsentNeverTitle => 'Qué nunca se comparte';
+
+  @override
+  String get aiConsentNeverBody =>
+      'Tu nombre, fecha de nacimiento, correo, teléfono ni ningún otro dato de contacto.';
+
+  @override
+  String get aiConsentLimits =>
+      'El asistente no es un médico. Nunca cambia tus dosis, nunca diagnostica y siempre dirige las preguntas médicas a tu médico o farmacéutico. Puedes desactivarlo en cualquier momento en Ajustes > Privacidad y seguridad.';
+
+  @override
+  String get aiConsentAgree => 'Acepto';
+
+  @override
+  String get aiConsentNotNow => 'Ahora no';
+
+  @override
+  String get aiConsentSaveFailed =>
+      'No se pudo guardar tu elección. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get aiSettingTitle => 'Asistente de IA';
+
+  @override
+  String get aiSettingSubtitle =>
+      'Permitir que el asistente use un resumen de tus medicamentos';
+
+  @override
+  String get aiSettingWithdrawn => 'El asistente de IA está desactivado';
+
+  @override
+  String get aiSafetyEmergency =>
+      'Esto podría ser una emergencia. Llama ahora al número de emergencias de tu zona o pide ayuda a alguien cercano. No puedo ayudar en emergencias.';
+
+  @override
+  String get aiSafetyDoseChange =>
+      'No puedo aconsejar sobre cambiar, saltar, dejar o tomar de más ningún medicamento. Tu médico o farmacéutico es quien debe decidirlo. Consúltalo primero.';
+
+  @override
+  String get aiSafetyDiagnosis =>
+      'No puedo diagnosticar síntomas ni explicar qué significa una erupción, un dolor o un resultado. Consulta a un médico que pueda examinarte.';
+
+  @override
+  String get aiReplyBlocked =>
+      'No puedo responder eso de forma segura. Pregunta a tu médico o farmacéutico.';
+
+  @override
+  String get aiDisclaimer => 'Solo información general, no es consejo médico.';
+
+  @override
+  String get aiConsentFdaNote =>
+      'Para mostrar datos oficiales de las etiquetas de los medicamentos, los nombres de tus medicamentos se consultan en el servicio público de etiquetas de la FDA (openFDA). No se envía nada sobre ti.';
+
+  @override
+  String get aiChatTitle => 'Asistente de IA';
+
+  @override
+  String get aiChatStatus =>
+      'Datos oficiales de etiquetas y orientación segura';
+
+  @override
+  String get aiChatInputHint => 'Pregunta sobre tu medicamento...';
+
+  @override
+  String get aiChatFooter =>
+      'No es consejo médico. Consulta siempre a tu médico o farmacéutico.';
+
+  @override
+  String get aiChatCaution =>
+      'Las respuestas usan tu lista de medicamentos y las etiquetas oficiales de la FDA.';
+
+  @override
+  String get aiChatUnavailable =>
+      'Las respuestas escritas por IA aún no están disponibles. Aun así puedes preguntar para qué sirve uno de tus medicamentos, o sobre sus efectos secundarios, advertencias o interacciones, y te mostraré la etiqueta oficial de la FDA.';
+
+  @override
+  String aiChatLabelNotFound(String name) {
+    return 'No encontré una etiqueta oficial de la FDA para $name. Pregunta a tu farmacéutico.';
+  }
+
+  @override
+  String get aiChatLabelUnavailable =>
+      'No pude cargar la etiqueta de la FDA ahora. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get aiChatSaveFailed =>
+      'No se pudo guardar este mensaje en tu historial.';
+
+  @override
+  String get aiChatFull => 'Este chat está lleno. Empieza un chat nuevo.';
+
+  @override
+  String get aiChatNewChat => 'Chat nuevo';
+
+  @override
+  String get aiChatLoadFailed => 'No se pudo abrir este chat.';
+
+  @override
+  String aiChatAskSideEffects(String name) {
+    return '¿Cuáles son los efectos secundarios de $name?';
+  }
+
+  @override
+  String aiChatAskUsedFor(String name) {
+    return '¿Para qué sirve $name?';
+  }
+
+  @override
+  String aiChatAskWarnings(String name) {
+    return '¿Cuáles son las advertencias de $name?';
+  }
+
+  @override
+  String get aiChatSuggested => 'Preguntas sugeridas';
+
+  @override
+  String get aiChatEmptyHint =>
+      'Pregunta sobre uno de tus medicamentos. Puedo mostrarte su etiqueta oficial de la FDA.';
+
+  @override
+  String get aiHistoryTitle => 'Historial de chats';
+
+  @override
+  String get aiHistoryNew => 'Empezar un chat nuevo';
+
+  @override
+  String get aiHistoryPast => 'Conversaciones anteriores';
+
+  @override
+  String get aiHistoryHint => 'Toca una conversación para continuarla';
+
+  @override
+  String get aiHistorySaved =>
+      'Los chats se guardan en tu cuenta. Puedes eliminarlos en cualquier momento.';
+
+  @override
+  String get aiHistoryEmpty => 'Aún no hay conversaciones';
+
+  @override
+  String get aiHistoryEmptyBody =>
+      'Tus chats con el asistente aparecerán aquí.';
+
+  @override
+  String get aiHistoryError => 'No se pudieron cargar tus chats.';
+
+  @override
+  String get aiHistoryDeleteTitle => '¿Eliminar este chat?';
+
+  @override
+  String get aiHistoryDeleteBody =>
+      'Se eliminarán la conversación y todos sus mensajes. No se puede deshacer.';
+
+  @override
+  String get aiHistoryDelete => 'Eliminar';
+
+  @override
+  String get aiHistoryDeleted => 'Chat eliminado';
+
+  @override
+  String get aiHistoryDeleteFailed => 'No se pudo eliminar el chat.';
+
+  @override
+  String get aiHistoryToday => 'Hoy';
+
+  @override
+  String get aiHistoryYesterday => 'Ayer';
 }

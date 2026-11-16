@@ -2910,4 +2910,185 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rptProBadge => 'Pro';
+
+  @override
+  String get aiConsentTitle => 'Before you use the AI assistant';
+
+  @override
+  String get aiConsentIntro =>
+      'The assistant answers general questions about your medicines. To do that, your questions and a small summary of your medicine information are sent to an AI service when you chat.';
+
+  @override
+  String get aiConsentSentTitle => 'What is shared';
+
+  @override
+  String get aiConsentSentBody =>
+      'Your active medicines and their schedules, your adherence over the last 30 days, your allergies, and the question you type.';
+
+  @override
+  String get aiConsentNeverTitle => 'What is never shared';
+
+  @override
+  String get aiConsentNeverBody =>
+      'Your name, date of birth, email, phone number or any other contact details.';
+
+  @override
+  String get aiConsentLimits =>
+      'The assistant is not a doctor. It never changes your doses, never diagnoses, and always sends medical questions to your doctor or pharmacist. You can turn it off at any time in Settings > Privacy & Security.';
+
+  @override
+  String get aiConsentAgree => 'I agree';
+
+  @override
+  String get aiConsentNotNow => 'Not now';
+
+  @override
+  String get aiConsentSaveFailed =>
+      'Could not save your choice. Please check your connection and try again.';
+
+  @override
+  String get aiSettingTitle => 'AI assistant';
+
+  @override
+  String get aiSettingSubtitle =>
+      'Allow the assistant to use a summary of your medicines';
+
+  @override
+  String get aiSettingWithdrawn => 'AI assistant is turned off';
+
+  @override
+  String get aiSafetyEmergency =>
+      'This sounds like it could be an emergency. Please call your local emergency number now, or ask someone nearby to help you. I cannot help with emergencies.';
+
+  @override
+  String get aiSafetyDoseChange =>
+      'I cannot advise on changing, skipping, stopping or taking extra of any medicine. Your doctor or pharmacist is the right person to decide this. Please check with them first.';
+
+  @override
+  String get aiSafetyDiagnosis =>
+      'I cannot diagnose symptoms or explain what a rash, pain or test result means. Please see a doctor, who can examine you properly.';
+
+  @override
+  String get aiReplyBlocked =>
+      'I cannot answer that safely. Please ask your doctor or pharmacist.';
+
+  @override
+  String get aiDisclaimer => 'General information only, not medical advice.';
+
+  @override
+  String get aiConsentFdaNote =>
+      'To show official drug label facts, the names of your medicines are looked up on the public FDA label service (openFDA). Nothing about you is sent there.';
+
+  @override
+  String get aiChatTitle => 'AI assistant';
+
+  @override
+  String get aiChatStatus => 'Official label facts and safe guidance';
+
+  @override
+  String get aiChatInputHint => 'Ask about your medicine...';
+
+  @override
+  String get aiChatFooter =>
+      'Not medical advice. Always ask your doctor or pharmacist.';
+
+  @override
+  String get aiChatCaution =>
+      'Answers use your medicine list and official FDA drug labels.';
+
+  @override
+  String get aiChatUnavailable =>
+      'AI-written answers are not available yet. You can still ask what one of your medicines is used for, or about its side effects, warnings or interactions, and I will show the official FDA label.';
+
+  @override
+  String aiChatLabelNotFound(String name) {
+    return 'I could not find an official FDA label for $name. Please ask your pharmacist.';
+  }
+
+  @override
+  String get aiChatLabelUnavailable =>
+      'I could not load the FDA label right now. Please check your connection and try again.';
+
+  @override
+  String get aiChatSaveFailed =>
+      'This message could not be saved to your history.';
+
+  @override
+  String get aiChatFull => 'This chat is full. Please start a new chat.';
+
+  @override
+  String get aiChatNewChat => 'New chat';
+
+  @override
+  String get aiChatLoadFailed => 'Could not open this chat.';
+
+  @override
+  String aiChatAskSideEffects(String name) {
+    return 'What are the side effects of $name?';
+  }
+
+  @override
+  String aiChatAskUsedFor(String name) {
+    return 'What is $name used for?';
+  }
+
+  @override
+  String aiChatAskWarnings(String name) {
+    return 'What are the warnings for $name?';
+  }
+
+  @override
+  String get aiChatSuggested => 'Suggested questions';
+
+  @override
+  String get aiChatEmptyHint =>
+      'Ask about one of your medicines. I can show its official FDA label.';
+
+  @override
+  String get aiHistoryTitle => 'Chat history';
+
+  @override
+  String get aiHistoryNew => 'Start new chat';
+
+  @override
+  String get aiHistoryPast => 'Past conversations';
+
+  @override
+  String get aiHistoryHint => 'Tap a conversation to continue it';
+
+  @override
+  String get aiHistorySaved =>
+      'Chats are saved in your account. You can delete them at any time.';
+
+  @override
+  String get aiHistoryEmpty => 'No conversations yet';
+
+  @override
+  String get aiHistoryEmptyBody =>
+      'Your chats with the assistant will appear here.';
+
+  @override
+  String get aiHistoryError => 'Could not load your chats.';
+
+  @override
+  String get aiHistoryDeleteTitle => 'Delete this chat?';
+
+  @override
+  String get aiHistoryDeleteBody =>
+      'The conversation and all its messages will be deleted. This cannot be undone.';
+
+  @override
+  String get aiHistoryDelete => 'Delete';
+
+  @override
+  String get aiHistoryDeleted => 'Chat deleted';
+
+  @override
+  String get aiHistoryDeleteFailed => 'Could not delete the chat.';
+
+  @override
+  String get aiHistoryToday => 'Today';
+
+  @override
+  String get aiHistoryYesterday => 'Yesterday';
 }

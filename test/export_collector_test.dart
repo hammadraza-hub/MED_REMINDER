@@ -113,6 +113,39 @@ void main() {
       expect(bundle.notes, isEmpty);
     });
 
+    test('exports AI chats with their messages', () async {
+      final source = FakeSource(
+        collections: {
+          'users/u1/chatThreads': [
+            const RawDoc(id: 'c1', data: {'title': 'Metformin', 'profileId': 'p1'}),
+          ],
+          'users/u1/chatThreads/c1/messages': [
+            const RawDoc(id: 'm1', data: {'role': 'user', 'text': 'hi'}),
+            const RawDoc(id: 'm2', data: {'role': 'assistant', 'text': 'hello'}),
+          ],
+        },
+      );
+      final bundle = await ExportCollector(
+        source,
+      ).collect(uid: 'u1', appVersion: '1.0.0+1');
+
+      expect(bundle.chats.length, 1);
+      expect(bundle.chats.first.path, 'chatThreads/c1');
+      expect(bundle.chats.first.data['title'], 'Metformin');
+      final messages = bundle.chats.first.data['messages'] as List;
+      expect(messages.length, 2);
+      expect((messages.first as Map)['text'], 'hi');
+    });
+
+    test('a chat that cannot be read is noted, the export still works', () async {
+      final source = FakeSource(failing: {'users/u1/chatThreads'});
+      final bundle = await ExportCollector(
+        source,
+      ).collect(uid: 'u1', appVersion: '1.0.0+1');
+      expect(bundle.chats, isEmpty);
+      expect(bundle.notes.any((n) => n.contains('AI chats')), isTrue);
+    });
+
     test('reads nested inventoryEvents per medication', () async {
       final src = FakeSource(
         profiles: owned,

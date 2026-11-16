@@ -13,7 +13,7 @@ import '../../repositories/auth_repository.dart';
 import '../../repositories/dose_repository.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_photo_picker.dart';
-import '../assistant/assistant_chat_screen.dart';
+import '../assistant/assistant_gate.dart';
 import '../doctors/doctors_screen.dart';
 import '../meds/meds_screen.dart';
 import '../../features/profile/profiles_screen.dart';
@@ -567,8 +567,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openAssistant() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const AssistantChatScreen()));
+    openAssistant(context);
   }
 
   // ============================================================

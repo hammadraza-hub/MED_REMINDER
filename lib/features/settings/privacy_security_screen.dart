@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/ai_consent_service.dart';
 import '../../core/services/app_lock_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_toggle_switch.dart';
+import '../assistant/ai_consent_screen.dart';
 import 'privacy_security_data.dart';
 
 /// ============================================================
@@ -41,6 +43,9 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
 
   late bool _biometricLock;
 
+  /// null while the saved choice is being read.
+  bool? _aiConsent;
+
   /// Sign out kiye gaye remote sessions ke indices.
   final Set<int> _signedOut = {};
 
@@ -50,6 +55,34 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
 
     // Real, device-only setting (M13 step 6). Off until the user turns it on.
     _biometricLock = AppLockService.instance.enabled;
+    _loadAiConsent();
+  }
+
+  Future<void> _loadAiConsent() async {
+    final given = await AiConsentService.instance.ensure();
+    if (mounted) setState(() => _aiConsent = given);
+  }
+
+  /// Turning the assistant on shows the consent screen; turning it off takes
+  /// consent back (M18 step 1).
+  Future<void> _toggleAiConsent(bool value) async {
+    final l10n = AppLocalizations.of(context);
+    if (value) {
+      final agreed = await Navigator.of(
+        context,
+      ).push<bool>(MaterialPageRoute(builder: (_) => const AiConsentScreen()));
+      if (!mounted) return;
+      setState(() => _aiConsent = agreed == true);
+    } else {
+      try {
+        await AiConsentService.instance.withdraw();
+        if (!mounted) return;
+        setState(() => _aiConsent = false);
+        _showMessage(l10n.aiSettingWithdrawn);
+      } catch (_) {
+        if (mounted) _showMessage(l10n.aiConsentSaveFailed);
+      }
+    }
   }
 
   // ============================================================
@@ -124,6 +157,8 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _buildAppLockCard(),
+                        const SizedBox(height: 16),
+                        _buildAiCard(),
                         const SizedBox(height: 16),
                         _buildSessionsCard(),
                         const SizedBox(height: 16),
@@ -230,9 +265,59 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
             ),
           ),
           const SizedBox(width: 8),
+          AppToggleSwitch(value: _biometricLock, onChanged: _toggleAppLock),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // AI ASSISTANT CARD (M18 step 1)
+  // ============================================================
+
+  Widget _buildAiCard() {
+    final l10n = AppLocalizations.of(context);
+
+    return _card(
+      child: Row(
+        children: [
+          _iconBox(
+            icon: Icons.auto_awesome_rounded,
+            size: 40,
+            color: AppColors.formAccent,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.aiSettingTitle,
+                  style: const TextStyle(
+                    color: AppColors.permissionsHeader,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.aiSettingSubtitle,
+                  style: const TextStyle(
+                    color: AppColors.permissionsSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
           AppToggleSwitch(
-            value: _biometricLock,
-            onChanged: _toggleAppLock,
+            key: const Key('ai-consent-switch'),
+            value: _aiConsent ?? false,
+            onChanged: (v) {
+              if (_aiConsent != null) _toggleAiConsent(v);
+            },
           ),
         ],
       ),

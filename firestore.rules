@@ -752,6 +752,67 @@ service cloud.firestore {
       ]);
     }
 
+    // M18 step 1: AI consent. aiConsentAt may only be null (not given /
+    // withdrawn) or the server time of the write — never a client-chosen
+    // date. On update it is checked only when the field is being changed,
+    // so later edits of other fields keep an old, valid consent time.
+    function aiConsentValueOk() {
+      let v = request.resource.data.aiConsentAt;
+      return v == null || v == request.time;
+    }
+
+    function aiConsentOkOnCreate() {
+      return !('aiConsentAt' in request.resource.data) || aiConsentValueOk();
+    }
+
+    function aiConsentOkOnUpdate() {
+      return !request.resource.data.diff(resource.data)
+        .affectedKeys().hasAny(['aiConsentAt'])
+        || aiConsentValueOk();
+    }
+
+    // M18 step 4: AI chat storage (users/{uid}/chatThreads/{id}/messages).
+    // Only the owner can touch it. A thread can only be started with consent
+    // and for a profile the user belongs to; messages cannot be edited.
+    function aiConsentGiven(uid) {
+      return get(/databases/$(database)/documents/users/$(uid))
+        .data.get('aiConsentAt', null) != null;
+    }
+
+    function validChatThreadCreate() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly(['profileId', 'title', 'createdAt', 'updatedAt'])
+        && d.keys().hasAll(['profileId', 'title', 'createdAt', 'updatedAt'])
+        && d.profileId is string
+        && d.profileId.size() > 0 && d.profileId.size() <= 100
+        && d.title is string
+        && d.title.size() >= 1 && d.title.size() <= 80
+        && d.createdAt == request.time
+        && d.updatedAt == request.time;
+    }
+
+    // Only the title and the last-activity time may change.
+    function validChatThreadUpdate() {
+      let d = request.resource.data;
+
+      return d.diff(resource.data).affectedKeys().hasOnly(['title', 'updatedAt'])
+        && d.title is string
+        && d.title.size() >= 1 && d.title.size() <= 80
+        && d.updatedAt == request.time;
+    }
+
+    function validChatMessageCreate() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly(['role', 'text', 'createdAt'])
+        && d.keys().hasAll(['role', 'text', 'createdAt'])
+        && d.role in ['user', 'assistant']
+        && d.text is string
+        && d.text.size() >= 1 && d.text.size() <= 4000
+        && d.createdAt == request.time;
+    }
+
     // M2: User can update their own document but ONLY
     // non-sensitive fields. hasOnly() already blocks
     // plan, role, deletionRequestedAt — they're not in the list.
@@ -856,13 +917,15 @@ service cloud.firestore {
       // M2: User can create their own document (with validation)
       allow create: if signedIn()
         && request.auth.uid == uid
-        && validUserCreate();
+        && validUserCreate()
+        && aiConsentOkOnCreate();
 
       // M2: User can update their own document (with validation)
       // Sensitive fields (plan, role, deletionRequestedAt) are blocked
       allow update: if signedIn()
         && request.auth.uid == uid
-        && (validUserUpdate() || validDeletionChange());
+        && ((validUserUpdate() && aiConsentOkOnUpdate())
+            || validDeletionChange());
 
       // M14 step 5: only after the grace period (accountDeletionDue)
       allow delete: if signedIn()
@@ -873,6 +936,48 @@ service cloud.firestore {
 
         allow read, write: if signedIn()
           && request.auth.uid == uid;
+      }
+
+      // M18 step 4: AI chat history
+      match /chatThreads/{threadId} {
+
+        allow read: if signedIn()
+          && request.auth.uid == uid;
+
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && validChatThreadCreate()
+          && aiConsentGiven(uid)
+          && isMember(request.resource.data.profileId);
+
+        allow update: if signedIn()
+          && request.auth.uid == uid
+          && validChatThreadUpdate();
+
+        // The app deletes the messages first, then the thread
+        // (also used by the account purge).
+        allow delete: if signedIn()
+          && request.auth.uid == uid;
+
+        match /messages/{messageId} {
+
+          allow read: if signedIn()
+            && request.auth.uid == uid;
+
+          allow create: if signedIn()
+            && request.auth.uid == uid
+            && validChatMessageCreate()
+            && aiConsentGiven(uid)
+            && existsAfter(
+              /databases/$(database)/documents/users/$(uid)/chatThreads/$(threadId)
+            );
+
+          // Messages are never edited.
+          allow update: if false;
+
+          allow delete: if signedIn()
+            && request.auth.uid == uid;
+        }
       }
     }
 

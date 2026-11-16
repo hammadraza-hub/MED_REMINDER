@@ -4,7 +4,6 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'features/onboarding/splash_screen.dart';
 
@@ -128,15 +127,6 @@ Future<void> main() async {
   // Installed version first: the force-update check compares against it.
   await AppInfoService.instance.initialize();
   await RemoteConfigService.instance.initialize();
-
-  // ───────────────────────────────────────────────────────────
-  // STEP 3: .env Load (AI assistant keys — optional)
-  // ───────────────────────────────────────────────────────────
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (_) {
-    // .env missing — AI features gracefully disabled.
-  }
 
   // ───────────────────────────────────────────────────────────
   // STEP 4: Persisted Profile / Member Selection Restore

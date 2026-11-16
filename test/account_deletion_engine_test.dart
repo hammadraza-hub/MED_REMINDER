@@ -61,6 +61,13 @@ void main() {
     'users/u1/devices/d1',
     'users/u1/devices/d2',
     'users/u1/devices/d3',
+    // M18 step 4: AI chats
+    'users/u1/chatThreads/c1',
+    'users/u1/chatThreads/c2',
+    'users/u1/chatThreads/c1/messages/m1',
+    'users/u1/chatThreads/c1/messages/m2',
+    'users/u1/chatThreads/c1/messages/m3',
+    'users/u1/chatThreads/c2/messages/m9',
     'profiles/p1',
     'profiles/p1/medications/m1',
     'profiles/p1/medications/m2',
@@ -110,6 +117,22 @@ void main() {
     expect(order.last, 'users/u1');
     // devices before the user document
     expect(at('users/u1/devices/d3'), lessThan(at('users/u1')));
+  });
+
+  test('AI chats: messages go before their thread, threads before the user', () async {
+    final store = FakeStore(data, owned: ['p1', 'p2'], pageSize: 2);
+    await AccountDeletionEngine(store).purge('u1');
+    final order = store.deleteOrder;
+    int at(String p) => order.indexOf(p);
+
+    for (final m in ['m1', 'm2', 'm3']) {
+      expect(at('users/u1/chatThreads/c1/messages/$m'),
+          lessThan(at('users/u1/chatThreads/c1')));
+    }
+    expect(at('users/u1/chatThreads/c2/messages/m9'),
+        lessThan(at('users/u1/chatThreads/c2')));
+    expect(at('users/u1/chatThreads/c1'), lessThan(at('users/u1')));
+    expect(store.docs.where((d) => d.contains('chatThreads')), isEmpty);
   });
 
   test('works for a user with no profiles', () async {

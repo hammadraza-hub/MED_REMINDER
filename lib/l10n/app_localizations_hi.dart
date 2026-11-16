@@ -2908,4 +2908,183 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get rptProBadge => 'Pro';
+
+  @override
+  String get aiConsentTitle => 'AI सहायक इस्तेमाल करने से पहले';
+
+  @override
+  String get aiConsentIntro =>
+      'सहायक आपकी दवाओं के बारे में सामान्य सवालों के जवाब देता है। इसके लिए चैट करते समय आपके सवाल और आपकी दवाओं की जानकारी का एक छोटा सार एक AI सेवा को भेजा जाता है।';
+
+  @override
+  String get aiConsentSentTitle => 'क्या साझा होता है';
+
+  @override
+  String get aiConsentSentBody =>
+      'आपकी चालू दवाएँ और उनके समय, पिछले 30 दिनों की नियमितता, आपकी एलर्जी और आपका लिखा सवाल।';
+
+  @override
+  String get aiConsentNeverTitle => 'क्या कभी साझा नहीं होता';
+
+  @override
+  String get aiConsentNeverBody =>
+      'आपका नाम, जन्म तिथि, ईमेल, फ़ोन नंबर या कोई और संपर्क जानकारी।';
+
+  @override
+  String get aiConsentLimits =>
+      'सहायक डॉक्टर नहीं है। यह आपकी खुराक कभी नहीं बदलता, निदान नहीं करता, और चिकित्सा से जुड़े सवाल हमेशा आपके डॉक्टर या फ़ार्मासिस्ट के पास भेजता है। आप इसे कभी भी सेटिंग्स > गोपनीयता और सुरक्षा में बंद कर सकते हैं।';
+
+  @override
+  String get aiConsentAgree => 'मैं सहमत हूँ';
+
+  @override
+  String get aiConsentNotNow => 'अभी नहीं';
+
+  @override
+  String get aiConsentSaveFailed =>
+      'आपकी पसंद सहेजी नहीं जा सकी। कृपया कनेक्शन जाँचें और फिर कोशिश करें।';
+
+  @override
+  String get aiSettingTitle => 'AI सहायक';
+
+  @override
+  String get aiSettingSubtitle =>
+      'सहायक को आपकी दवाओं का सार इस्तेमाल करने दें';
+
+  @override
+  String get aiSettingWithdrawn => 'AI सहायक बंद कर दिया गया';
+
+  @override
+  String get aiSafetyEmergency =>
+      'यह आपात स्थिति हो सकती है। कृपया अभी अपने देश का आपातकालीन नंबर मिलाएँ या पास के किसी व्यक्ति से मदद लें। मैं आपात स्थिति में मदद नहीं कर सकता।';
+
+  @override
+  String get aiSafetyDoseChange =>
+      'मैं किसी भी दवा को बदलने, छोड़ने, बंद करने या ज़्यादा लेने की सलाह नहीं दे सकता। यह फ़ैसला आपके डॉक्टर या फ़ार्मासिस्ट का है। कृपया पहले उनसे पूछें।';
+
+  @override
+  String get aiSafetyDiagnosis =>
+      'मैं लक्षणों का निदान नहीं कर सकता और न बता सकता हूँ कि कोई दाना, दर्द या रिपोर्ट क्या दर्शाती है। कृपया किसी डॉक्टर को दिखाएँ।';
+
+  @override
+  String get aiReplyBlocked =>
+      'मैं इसका जवाब सुरक्षित रूप से नहीं दे सकता। कृपया अपने डॉक्टर या फ़ार्मासिस्ट से पूछें।';
+
+  @override
+  String get aiDisclaimer => 'केवल सामान्य जानकारी, चिकित्सा सलाह नहीं।';
+
+  @override
+  String get aiConsentFdaNote =>
+      'दवा के आधिकारिक लेबल की जानकारी दिखाने के लिए आपकी दवाओं के नाम FDA की सार्वजनिक लेबल सेवा (openFDA) पर खोजे जाते हैं। आपके बारे में कुछ भी वहाँ नहीं भेजा जाता।';
+
+  @override
+  String get aiChatTitle => 'AI सहायक';
+
+  @override
+  String get aiChatStatus => 'आधिकारिक लेबल की जानकारी और सुरक्षित मार्गदर्शन';
+
+  @override
+  String get aiChatInputHint => 'अपनी दवा के बारे में पूछें...';
+
+  @override
+  String get aiChatFooter =>
+      'यह चिकित्सा सलाह नहीं है। हमेशा अपने डॉक्टर या फ़ार्मासिस्ट से पूछें।';
+
+  @override
+  String get aiChatCaution =>
+      'जवाब आपकी दवाओं की सूची और FDA के आधिकारिक दवा लेबल पर आधारित हैं।';
+
+  @override
+  String get aiChatUnavailable =>
+      'AI से लिखे जवाब अभी उपलब्ध नहीं हैं। फिर भी आप पूछ सकते हैं कि आपकी कोई दवा किस लिए इस्तेमाल होती है, या उसके दुष्प्रभाव, चेतावनियाँ और परस्पर क्रियाएँ क्या हैं, और मैं FDA का आधिकारिक लेबल दिखाऊँगा।';
+
+  @override
+  String aiChatLabelNotFound(String name) {
+    return '$name के लिए मुझे FDA का आधिकारिक लेबल नहीं मिला। कृपया अपने फ़ार्मासिस्ट से पूछें।';
+  }
+
+  @override
+  String get aiChatLabelUnavailable =>
+      'अभी FDA लेबल लोड नहीं हो सका। कृपया कनेक्शन जाँचें और फिर कोशिश करें।';
+
+  @override
+  String get aiChatSaveFailed => 'यह संदेश आपके इतिहास में सहेजा नहीं जा सका।';
+
+  @override
+  String get aiChatFull => 'यह चैट भर गई है। कृपया नई चैट शुरू करें।';
+
+  @override
+  String get aiChatNewChat => 'नई चैट';
+
+  @override
+  String get aiChatLoadFailed => 'यह चैट खोली नहीं जा सकी।';
+
+  @override
+  String aiChatAskSideEffects(String name) {
+    return '$name के दुष्प्रभाव क्या हैं?';
+  }
+
+  @override
+  String aiChatAskUsedFor(String name) {
+    return '$name किस लिए इस्तेमाल होती है?';
+  }
+
+  @override
+  String aiChatAskWarnings(String name) {
+    return '$name की चेतावनियाँ क्या हैं?';
+  }
+
+  @override
+  String get aiChatSuggested => 'सुझाए गए सवाल';
+
+  @override
+  String get aiChatEmptyHint =>
+      'अपनी किसी दवा के बारे में पूछें। मैं उसका आधिकारिक FDA लेबल दिखा सकता हूँ।';
+
+  @override
+  String get aiHistoryTitle => 'चैट इतिहास';
+
+  @override
+  String get aiHistoryNew => 'नई चैट शुरू करें';
+
+  @override
+  String get aiHistoryPast => 'पिछली बातचीत';
+
+  @override
+  String get aiHistoryHint => 'जारी रखने के लिए किसी बातचीत पर टैप करें';
+
+  @override
+  String get aiHistorySaved =>
+      'चैट आपके खाते में सहेजी जाती हैं। आप उन्हें कभी भी हटा सकते हैं।';
+
+  @override
+  String get aiHistoryEmpty => 'अभी कोई बातचीत नहीं';
+
+  @override
+  String get aiHistoryEmptyBody => 'सहायक के साथ आपकी चैट यहाँ दिखेंगी।';
+
+  @override
+  String get aiHistoryError => 'आपकी चैट लोड नहीं हो सकीं।';
+
+  @override
+  String get aiHistoryDeleteTitle => 'यह चैट हटाएँ?';
+
+  @override
+  String get aiHistoryDeleteBody =>
+      'बातचीत और उसके सभी संदेश हट जाएँगे। इसे वापस नहीं किया जा सकता।';
+
+  @override
+  String get aiHistoryDelete => 'हटाएँ';
+
+  @override
+  String get aiHistoryDeleted => 'चैट हट गई';
+
+  @override
+  String get aiHistoryDeleteFailed => 'चैट हटाई नहीं जा सकी।';
+
+  @override
+  String get aiHistoryToday => 'आज';
+
+  @override
+  String get aiHistoryYesterday => 'कल';
 }

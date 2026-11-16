@@ -15,6 +15,7 @@ const {
   serverTimestamp,
   deleteField,
   arrayRemove,
+  writeBatch,
 } = require("firebase/firestore");
 
 let testEnv;
@@ -1739,5 +1740,301 @@ describe("Solo Pro gate for prescribers / appointments / notes — M16 step 7", 
       activePlan: "annual_premium", status: "active",
     }));
     await assertFails(setDoc(note(ownerDb(), "still-blocked"), noteDoc()));
+  });
+});
+
+
+describe("AI consent — M18 step 1", () => {
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "users", "u1"), {
+        email: "u1@example.com",
+        displayName: "U One",
+        aiConsentAt: null,
+      });
+      await setDoc(doc(db, "users", "agreed1"), {
+        email: "a@example.com",
+        displayName: "Agreed",
+        aiConsentAt: new Date("2026-11-01T00:00:00Z"),
+      });
+    });
+  });
+
+  test("User can give consent with the server time", async () => {
+    const db = testEnv.authenticatedContext("u1").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "u1"), {
+        aiConsentAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+    );
+  });
+
+  test("Consent with a client-chosen date is rejected", async () => {
+    const db = testEnv.authenticatedContext("u1").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "u1"), {
+        aiConsentAt: new Date("2020-01-01T00:00:00Z"),
+      })
+    );
+  });
+
+  test("Consent as a string or a number is rejected", async () => {
+    const db = testEnv.authenticatedContext("u1").firestore();
+    await assertFails(updateDoc(doc(db, "users", "u1"), { aiConsentAt: "yes" }));
+    await assertFails(updateDoc(doc(db, "users", "u1"), { aiConsentAt: true }));
+    await assertFails(updateDoc(doc(db, "users", "u1"), { aiConsentAt: 1 }));
+  });
+
+  test("User can withdraw consent (null)", async () => {
+    const db = testEnv.authenticatedContext("agreed1").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "agreed1"), {
+        aiConsentAt: null,
+        updatedAt: serverTimestamp(),
+      })
+    );
+  });
+
+  test("Other edits keep an old consent date untouched", async () => {
+    const db = testEnv.authenticatedContext("agreed1").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users", "agreed1"), {
+        displayName: "Agreed Renamed",
+        updatedAt: serverTimestamp(),
+      })
+    );
+  });
+
+  test("Another user cannot change someone else's consent", async () => {
+    const db = testEnv.authenticatedContext("u1").firestore();
+    await assertFails(
+      updateDoc(doc(db, "users", "agreed1"), { aiConsentAt: null })
+    );
+  });
+
+  test("Creating the user document with a fake consent date is rejected", async () => {
+    const db = testEnv.authenticatedContext("new1").firestore();
+    await assertFails(
+      setDoc(doc(db, "users", "new1"), {
+        email: "n@example.com",
+        aiConsentAt: new Date("2020-01-01T00:00:00Z"),
+      })
+    );
+    await assertSucceeds(
+      setDoc(doc(db, "users", "new1"), {
+        email: "n@example.com",
+        aiConsentAt: null,
+      })
+    );
+  });
+});
+
+describe("AI chat storage — M18 step 4", () => {
+
+  const threadDoc = (db, uid, tid) =>
+    doc(db, "users", uid, "chatThreads", tid);
+  const msgDoc = (db, uid, tid, mid) =>
+    doc(db, "users", uid, "chatThreads", tid, "messages", mid);
+
+  const newThread = (over = {}) => ({
+    profileId: "profile1",
+    title: "Metformin side effects",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    ...over,
+  });
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      // owner123 agreed to the AI assistant, stranger999 and nocons123 did not.
+      await setDoc(doc(db, "users", "owner123"), {
+        email: "o@example.com",
+        aiConsentAt: new Date("2026-11-01T00:00:00Z"),
+      });
+      await setDoc(doc(db, "users", "stranger999"), {
+        email: "s@example.com",
+        aiConsentAt: null,
+      });
+      await setDoc(doc(db, "users", "nocons123"), {
+        email: "n@example.com",
+        aiConsentAt: null,
+      });
+      await setDoc(threadDoc(db, "owner123", "old1"), {
+        profileId: "profile1",
+        title: "Old chat",
+        createdAt: new Date("2026-11-02T00:00:00Z"),
+        updatedAt: new Date("2026-11-02T00:00:00Z"),
+      });
+      await setDoc(msgDoc(db, "owner123", "old1", "m1"), {
+        role: "user",
+        text: "hello",
+        createdAt: new Date("2026-11-02T00:00:00Z"),
+      });
+    });
+  });
+
+  test("User with consent can start a thread for their own profile", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(setDoc(threadDoc(db, "owner123", "t1"), newThread()));
+  });
+
+  test("Cannot start a thread without AI consent", async () => {
+    const db = testEnv.authenticatedContext("nocons123").firestore();
+    await assertFails(setDoc(threadDoc(db, "nocons123", "t1"), newThread()));
+  });
+
+  test("Cannot start a thread for a profile the user does not belong to", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      setDoc(threadDoc(db, "owner123", "t1"), newThread({ profileId: "someone-elses" }))
+    );
+  });
+
+  test("Cannot create a thread under another user's path", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(setDoc(threadDoc(db, "stranger999", "t1"), newThread()));
+  });
+
+  test("Thread with a client-chosen time, an empty or too long title, or an extra field is rejected", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      setDoc(threadDoc(db, "owner123", "t1"), newThread({ createdAt: new Date("2020-01-01") }))
+    );
+    await assertFails(
+      setDoc(threadDoc(db, "owner123", "t2"), newThread({ title: "" }))
+    );
+    await assertFails(
+      setDoc(threadDoc(db, "owner123", "t3"), newThread({ title: "x".repeat(81) }))
+    );
+    await assertFails(
+      setDoc(threadDoc(db, "owner123", "t4"), newThread({ extra: "nope" }))
+    );
+  });
+
+  test("Owner can read their threads and messages, others cannot", async () => {
+    const own = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(getDoc(threadDoc(own, "owner123", "old1")));
+    await assertSucceeds(getDoc(msgDoc(own, "owner123", "old1", "m1")));
+
+    const other = testEnv.authenticatedContext("stranger999").firestore();
+    await assertFails(getDoc(threadDoc(other, "owner123", "old1")));
+    await assertFails(getDoc(msgDoc(other, "owner123", "old1", "m1")));
+
+    const anon = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(threadDoc(anon, "owner123", "old1")));
+  });
+
+  test("Owner can add user and assistant messages to a thread", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(
+      setDoc(msgDoc(db, "owner123", "old1", "m2"), {
+        role: "user",
+        text: "Can I take it with food?",
+        createdAt: serverTimestamp(),
+      })
+    );
+    await assertSucceeds(
+      setDoc(msgDoc(db, "owner123", "old1", "m3"), {
+        role: "assistant",
+        text: "Usually yes.",
+        createdAt: serverTimestamp(),
+      })
+    );
+  });
+
+  test("Message with a wrong role, empty or huge text, extra field or client time is rejected", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    const base = { role: "user", text: "hi", createdAt: serverTimestamp() };
+    await assertFails(setDoc(msgDoc(db, "owner123", "old1", "a"), { ...base, role: "system" }));
+    await assertFails(setDoc(msgDoc(db, "owner123", "old1", "b"), { ...base, text: "" }));
+    await assertFails(setDoc(msgDoc(db, "owner123", "old1", "c"), { ...base, text: "x".repeat(4001) }));
+    await assertFails(setDoc(msgDoc(db, "owner123", "old1", "d"), { ...base, extra: 1 }));
+    await assertFails(setDoc(msgDoc(db, "owner123", "old1", "e"), { ...base, createdAt: new Date("2020-01-01") }));
+  });
+
+  test("A message needs an existing thread", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      setDoc(msgDoc(db, "owner123", "missing-thread", "m1"), {
+        role: "user",
+        text: "hi",
+        createdAt: serverTimestamp(),
+      })
+    );
+  });
+
+  test("A message can be added together with its new thread in one batch", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    const batch = writeBatch(db);
+    batch.set(threadDoc(db, "owner123", "b1"), newThread());
+    batch.set(msgDoc(db, "owner123", "b1", "m1"), {
+      role: "user",
+      text: "first question",
+      createdAt: serverTimestamp(),
+    });
+    await assertSucceeds(batch.commit());
+  });
+
+  test("Messages cannot be edited", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertFails(
+      updateDoc(msgDoc(db, "owner123", "old1", "m1"), { text: "changed" })
+    );
+  });
+
+  test("Thread: only the title and updatedAt can change", async () => {
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(
+      updateDoc(threadDoc(db, "owner123", "old1"), {
+        title: "Renamed",
+        updatedAt: serverTimestamp(),
+      })
+    );
+    await assertFails(
+      updateDoc(threadDoc(db, "owner123", "old1"), {
+        profileId: "other",
+        updatedAt: serverTimestamp(),
+      })
+    );
+    await assertFails(
+      updateDoc(threadDoc(db, "owner123", "old1"), {
+        title: "Renamed",
+        updatedAt: new Date("2020-01-01"),
+      })
+    );
+  });
+
+  test("Owner can delete messages and threads, others cannot", async () => {
+    const other = testEnv.authenticatedContext("stranger999").firestore();
+    await assertFails(deleteDoc(msgDoc(other, "owner123", "old1", "m1")));
+    await assertFails(deleteDoc(threadDoc(other, "owner123", "old1")));
+
+    const own = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(deleteDoc(msgDoc(own, "owner123", "old1", "m1")));
+    await assertSucceeds(deleteDoc(threadDoc(own, "owner123", "old1")));
+  });
+
+  test("After consent is withdrawn old chats can be read and deleted, but nothing new is written", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "users", "owner123"), {
+        email: "o@example.com",
+        aiConsentAt: null,
+      });
+    });
+    const db = testEnv.authenticatedContext("owner123").firestore();
+    await assertSucceeds(getDoc(threadDoc(db, "owner123", "old1")));
+    await assertFails(setDoc(threadDoc(db, "owner123", "t9"), newThread()));
+    await assertFails(
+      setDoc(msgDoc(db, "owner123", "old1", "m9"), {
+        role: "user",
+        text: "hi",
+        createdAt: serverTimestamp(),
+      })
+    );
+    await assertSucceeds(deleteDoc(msgDoc(db, "owner123", "old1", "m1")));
   });
 });

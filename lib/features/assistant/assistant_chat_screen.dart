@@ -1,180 +1,146 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
+import '../../core/ai/ai_chat_backend.dart';
+import '../../core/ai/chat_controller.dart';
+import '../../core/ai/chat_models.dart';
+import '../../core/ai/fda_label_client.dart';
+import '../../core/ai/label_question_router.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/services/ai_service.dart';
-import 'assistant_chat_data.dart';
-import 'assistant_context.dart';
+import '../../core/profile/profile_controller.dart';
+import '../../core/services/fda_label_service.dart';
+import '../../l10n/app_localizations.dart';
+import '../../repositories/ai_context_wiring.dart';
+import '../../repositories/chat_repository.dart';
+import '../../repositories/medication_repository.dart';
 import 'assistant_history_screen.dart';
+import 'chat_texts_l10n.dart';
 
 /// ============================================================
-/// MED ASSISTANT CHAT THREAD
+/// AI ASSISTANT CHAT — M18 step 6
 ///
-/// PURPOSE:
-/// Conversational Q&A — user apne medications aur logged data
-/// ke baare mein sawaal poochhe (message thread + input + send).
+/// Home → "AI Assist" → (consent) → this screen.
 ///
-/// FLOW:
-/// Home → Quick Access "AI Assist" → [CHAT THREAD]
-///   • Thread khaali start hota hai — sirf user ke messages.
-///   • Suggested chip tap → sawaal auto-send
-///   • Type + send → user bubble + real AI reply (Gemini)
-///   • AI ko user ka real data (meds, dose time, refill) diya jata hai
-/// History button → Chat History List.
-///
-/// NOTE:
-/// Design mein bottom nav NAHI hai — input area bottom par
-/// sticky hai, back button se pop hota hai.
-///
-/// TODO Backend:
-/// AI reply (logged data + model) aur voice input backend par
-/// depend karte hain.
+/// How a question is answered is decided by [ChatController]:
+///   1. emergency / dose change / diagnosis -> fixed safe message
+///   2. side effects / uses / warnings of one of the user's medicines ->
+///      the official FDA label, with its source (no AI needed)
+///   3. anything else -> the AI backend (not available on the Spark plan)
+/// Every message is saved to the user's chat history (users/{uid}/chatThreads).
 /// ============================================================
 class AssistantChatScreen extends StatefulWidget {
-  const AssistantChatScreen({super.key});
+  const AssistantChatScreen({super.key, this.threadId, this.controller});
+
+  /// Opens this saved thread instead of an empty chat.
+  final String? threadId;
+
+  /// For tests: a controller with fake parts.
+  @visibleForTesting
+  final ChatController? controller;
 
   @override
   State<AssistantChatScreen> createState() => _AssistantChatScreenState();
 }
 
 class _AssistantChatScreenState extends State<AssistantChatScreen> {
-  /// Thread khaali start hota hai — koi dummy/seed messages nahi.
-  final List<AssistantMessage> _messages = [];
+  late final ChatController _c;
+  late final bool _ownsController;
 
-  final TextEditingController _inputController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-
-  final AiService _aiService = AiService();
-
-  /// User ka real app data (meds/schedule/refill/vitals) — AI ke liye.
-  String _dataContext = '';
-  bool _contextLoaded = false;
-
-  /// Ek reply pending — double-send (chip/enter) rokne ke liye.
-  bool _isReplying = false;
+  final TextEditingController _input = TextEditingController();
+  final ScrollController _scroll = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _loadContext();
+    _ownsController = widget.controller == null;
+    _c = widget.controller ?? _defaultController();
+    _c.addListener(_onChanged);
+    _c.init();
+    final id = widget.threadId;
+    if (id != null) _c.openThread(id);
   }
 
-  /// Context ek baar load karo (screen khulte hi), background mein.
-  Future<void> _loadContext() async {
-    try {
-      final context = await AssistantContext.build();
-      if (!mounted) return;
-      setState(() {
-        _dataContext = context;
-        _contextLoaded = true;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _contextLoaded = true);
+  static ChatController _defaultController() {
+    String? memberId() {
+      final id = ProfileController.instance.memberId;
+      return (id == null || id.isEmpty) ? null : id;
     }
+
+    return ChatController(
+      store: ChatRepository.instance,
+      backend: const UnavailableAiBackend(),
+      profileId: memberId,
+      loadMeds: () async {
+        final id = memberId();
+        if (id == null) return const [];
+        final meds = await MedicationRepository.instance
+            .watchActiveMedications(id)
+            .first;
+        return [for (final m in meds) ChatMed(name: m.name, rxcui: m.rxcui)];
+      },
+      lookupLabel: ({rxcui, name}) =>
+          FdaLabelService.instance.lookup(rxcui: rxcui, name: name),
+      loadContext: () async {
+        final id = memberId();
+        if (id == null) return '';
+        return (await buildAiContextBuilder(id).build()).toPromptText();
+      },
+    );
   }
 
   @override
   void dispose() {
-    _inputController.dispose();
-    _scrollController.dispose();
+    _c.removeListener(_onChanged);
+    if (_ownsController) _c.dispose();
+    _input.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  // ============================================================
-  // SEND + AI REPLY (Google Gemini)
-  // ============================================================
-
-  Future<void> _sendText(String raw) async {
-    final String text = raw.trim();
-    if (text.isEmpty || _isReplying) return;
-
-    // AI ko bhejne se pehle ka conversation context.
-    final List<AiChatTurn> history = [
-      for (final message in _messages)
-        AiChatTurn(
-          isUser: message.role == AssistantMessageRole.user,
-          text: message.text,
-        ),
-    ];
-
-    _inputController.clear();
-    setState(() {
-      _isReplying = true;
-      _messages.add(
-        AssistantMessage(
-          role: AssistantMessageRole.user,
-          text: text,
-          time: 'Just now',
-        ),
-      );
-    });
-    _scrollToBottom();
-
-    // Context pehli baar load ho raha ho to wait karo.
-    if (!_contextLoaded) {
-      await _loadContext();
-    }
-
-    String replyText;
-    try {
-      replyText = await _aiService.sendMessage(
-        message: text,
-        history: history,
-        context: _dataContext,
-      );
-    } on AiServiceException catch (error) {
-      replyText = error.message;
-    } catch (_) {
-      replyText =
-          'Something went wrong while contacting the AI. Please try again.';
-    }
-
+  void _onChanged() {
     if (!mounted) return;
-
-    setState(() {
-      _isReplying = false;
-      _messages.add(
-        AssistantMessage(
-          role: AssistantMessageRole.assistant,
-          text: replyText,
-          time: 'Just now',
-        ),
-      );
-    });
+    setState(() {});
+    if (_c.takeSaveWarning()) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.aiChatSaveFailed)));
+    }
     _scrollToBottom();
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) return;
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+      if (!mounted || !_scroll.hasClients) return;
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
       );
     });
   }
 
-  // ---- Pending destinations (screens abhi nahi bane) ----
-
-  void _openChatHistory() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AssistantHistoryScreen()),
-    );
+  Future<void> _send(String text) async {
+    final texts = ChatTextsL10n.of(AppLocalizations.of(context));
+    _input.clear();
+    await _c.send(text, texts);
   }
 
-  void _onVoiceInput() {
-    // TODO Backend: speech-to-text integration.
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(content: Text('Voice input — coming next')),
-      );
+  Future<void> _openHistory() async {
+    final choice = await Navigator.of(context).push<AssistantHistoryChoice>(
+      MaterialPageRoute(builder: (_) => const AssistantHistoryScreen()),
+    );
+    if (choice == null || !mounted) return;
+    if (choice.threadId == null) {
+      _c.newChat();
+    } else {
+      await _c.openThread(choice.threadId!);
+    }
   }
 
   // ============================================================
-  // BUILD — header + chat stream + sticky input
+  // BUILD
   // ============================================================
 
   @override
@@ -190,7 +156,7 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
         body: Column(
           children: [
             _buildHeader(),
-            Expanded(child: _buildChatStream()),
+            Expanded(child: _buildStream()),
             _buildInputArea(),
           ],
         ),
@@ -198,11 +164,8 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
     );
   }
 
-  // ============================================================
-  // HEADER (back + bot badge + title/status + history + avatar)
-  // ============================================================
-
   Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -219,23 +182,18 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 80,
+          height: 72,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
                 IconButton(
-                  onPressed: () {
-                    Navigator.of(context).maybePop();
-                  },
+                  onPressed: () => Navigator.of(context).maybePop(),
                   icon: const Icon(
                     Icons.arrow_back_rounded,
                     color: AppColors.surface,
-                    size: 24,
                   ),
                 ),
-
-                // ---- Bot badge ----
                 Container(
                   width: 32,
                   height: 32,
@@ -252,17 +210,14 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
                     color: AppColors.reportVitalsTile,
                   ),
                 ),
-
                 const SizedBox(width: 8),
-
-                // ---- Title + online status ----
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        AssistantChatData.screenTitle,
+                        l10n.aiChatTitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -271,61 +226,38 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
                           color: AppColors.surface,
                         ),
                       ),
-                      Row(
-                        children: [
-                          // HTML ka pulse dot (abhi static).
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.assistantLiveGreen,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              AssistantChatData.statusText,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.assistantOnlineText,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        l10n.aiChatStatus,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.assistantOnlineText,
+                        ),
                       ),
                     ],
                   ),
                 ),
-
-                // ---- History ----
                 IconButton(
-                  onPressed: _openChatHistory,
+                  key: const Key('chat-new'),
+                  tooltip: l10n.aiChatNewChat,
+                  onPressed: _c.isReplying ? null : _c.newChat,
+                  icon: const Icon(
+                    Icons.add_comment_outlined,
+                    size: 22,
+                    color: AppColors.surface,
+                  ),
+                ),
+                IconButton(
+                  key: const Key('chat-history'),
+                  tooltip: l10n.aiHistoryTitle,
+                  onPressed: _openHistory,
                   icon: const Icon(
                     Icons.history,
                     size: 22,
                     color: AppColors.surface,
                   ),
                 ),
-
-                const SizedBox(width: 4),
-
-                // ---- Profile avatar ----
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: AppColors.reportPrimary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    size: 18,
-                    color: AppColors.surface,
-                  ),
-                ),
               ],
             ),
           ),
@@ -334,440 +266,68 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
     );
   }
 
-  // ============================================================
-  // CHAT STREAM (divider + messages + suggested + caution)
-  // ============================================================
+  Widget _buildStream() {
+    final l10n = AppLocalizations.of(context);
 
-  Widget _buildChatStream() {
-    final List<Widget> items = <Widget>[
-      Center(child: _buildDateDividerPill()),
-      const SizedBox(height: 16),
-    ];
-
-    for (int i = 0; i < _messages.length; i++) {
-      if (i > 0) items.add(const SizedBox(height: 16));
-      items.add(_buildMessageItem(_messages[i]));
+    if (_c.isLoadingThread) {
+      return const Center(child: CircularProgressIndicator());
     }
 
-    if (_isReplying) {
+    final items = <Widget>[];
+
+    if (_c.loadFailed) {
+      items.add(_notice(l10n.aiChatLoadFailed, Icons.error_outline));
+      items.add(const SizedBox(height: 12));
+    }
+
+    if (_c.isEmpty && !_c.loadFailed) {
+      items.add(_notice(l10n.aiChatEmptyHint, Icons.medication_outlined));
+      items.add(const SizedBox(height: 12));
+    }
+
+    for (var i = 0; i < _c.messages.length; i++) {
+      if (i > 0) items.add(const SizedBox(height: 14));
+      items.add(_buildMessage(_c.messages[i]));
+    }
+
+    if (_c.isReplying) {
+      items.add(const SizedBox(height: 14));
+      items.add(_buildTyping());
+    }
+
+    if (_c.isEmpty && _suggestions(l10n).isNotEmpty) {
       items.add(const SizedBox(height: 16));
-      items.add(_buildTypingIndicator());
+      items.add(_buildSuggestions(l10n));
     }
 
-    items.add(const SizedBox(height: 16));
-    items.add(_buildSuggestedSection());
-    items.add(const SizedBox(height: 12));
-    items.add(_buildCautionBanner());
+    items.add(const SizedBox(height: 14));
+    items.add(_buildCaution(l10n));
 
     return ListView(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      controller: _scroll,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       children: items,
     );
   }
 
-  Widget _buildDateDividerPill() {
+  Widget _notice(String text, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.all(14),
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.all(Radius.circular(999)),
-        boxShadow: [
-          BoxShadow(color: AppColors.permissionsCardShadow, blurRadius: 4),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              color: AppColors.assistantInsightTile,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            AssistantChatData.todayLabel.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.7,
-              color: AppColors.permissionsSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageItem(AssistantMessage message) {
-    return message.role == AssistantMessageRole.user
-        ? _buildUserMessage(message)
-        : _buildAssistantMessage(message);
-  }
-
-  // ---- "AI is typing" indicator ----
-
-  Widget _buildTypingIndicator() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            margin: const EdgeInsets.only(bottom: 4),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.permissionsCardShadow,
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.smart_toy,
-              size: 16,
-              color: AppColors.permissionsSecondary,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-                bottomRight: Radius.circular(16),
-                bottomLeft: Radius.circular(4),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.permissionsCardShadow,
-                  blurRadius: 4,
-                  offset: Offset(0, 1),
-                ),
-              ],
-            ),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 2),
-              child: _TypingDots(color: AppColors.permissionsSecondary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---- Assistant bubble (avatar + timestamp + optional insight) ----
-
-  Widget _buildAssistantMessage(AssistantMessage message) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.85,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  margin: const EdgeInsets.only(bottom: 4),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.permissionsCardShadow,
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.smart_toy,
-                    size: 16,
-                    color: AppColors.permissionsSecondary,
-                  ),
-                ),
-
-                const SizedBox(width: 4),
-
-                Flexible(child: _buildAssistantBubble(message)),
-              ],
-            ),
-
-            Padding(
-              padding: const EdgeInsets.only(left: 36, top: 4),
-              child: Text(
-                message.time,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.permissionsSecondary,
-                ),
-              ),
-            ),
-
-            if (message.insight != null) ...[
-              const SizedBox(height: 8),
-              _buildInsightCard(message.insight!),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAssistantBubble(AssistantMessage message) {
-    final bool hasStats = message.stats != null;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
-          bottomRight: Radius.circular(16),
-          bottomLeft: Radius.circular(4),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.permissionsCardShadow,
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildMessageText(
-            message,
-            headline: hasStats,
-          ),
-
-          if (message.stats != null) ...[
-            const SizedBox(height: 10),
-
-            // ---- Status pills ----
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final AssistantStatPill pill in message.stats!.pills)
-                  _buildPill(pill),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            // ---- Nested clinical note ----
-            _buildNoteBox(message.stats!),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageText(
-    AssistantMessage message, {
-    required bool headline,
-  }) {
-    final TextStyle style = headline
-        ? const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            height: 1.35,
-            color: AppColors.reportPrimary,
-          )
-        : const TextStyle(
-            fontSize: 14,
-            height: 1.5,
-            color: AppColors.reportPrimary,
-          );
-
-    final String? bold = message.boldSegment;
-    if (bold == null || !message.text.contains(bold)) {
-      return Text(message.text, style: style);
-    }
-
-    final int index = message.text.indexOf(bold);
-    return Text.rich(
-      TextSpan(
-        style: style,
-        children: [
-          TextSpan(text: message.text.substring(0, index)),
-          TextSpan(
-            text: bold,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          TextSpan(text: message.text.substring(index + bold.length)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPill(AssistantStatPill pill) {
-    final Color bg;
-    final Color fg;
-    switch (pill.kind) {
-      case AssistantPillKind.taken:
-        bg = AppColors.permissionsGreen;
-        fg = AppColors.surface;
-      case AssistantPillKind.pending:
-        bg = AppColors.reportVitalsTile;
-        fg = AppColors.assistantPendingText;
-      case AssistantPillKind.missed:
-        bg = AppColors.permissionsErrorContainer;
-        fg = AppColors.permissionsErrorIcon;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: const BorderRadius.all(Radius.circular(999)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (pill.kind == AssistantPillKind.pending)
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
-            )
-          else
-            Icon(
-              pill.kind == AssistantPillKind.taken
-                  ? Icons.check
-                  : Icons.close,
-              size: 14,
-              color: fg,
-            ),
-          const SizedBox(width: 4),
-          Text(
-            pill.label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.4,
-              color: fg,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoteBox(AssistantStats stats) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(8),
-      decoration: const BoxDecoration(
-        color: AppColors.permissionsChipFill,
         borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
-      child: Text.rich(
-        TextSpan(
-          style: const TextStyle(
-            fontSize: 13,
-            height: 1.4,
-            color: AppColors.assistantNoteText,
-          ),
-          children: [
-            TextSpan(text: stats.noteLead),
-            TextSpan(
-              text: stats.noteHighlight,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.reportPrimary,
-              ),
-            ),
-            TextSpan(text: stats.noteTail),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInsightCard(AssistantInsight insight) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.permissionsCardShadow,
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.assistantInsightTile.withValues(alpha: 0.3),
-              borderRadius: const BorderRadius.all(Radius.circular(12)),
-            ),
-            child: const Icon(
-              Icons.monitor_heart,
-              size: 22,
-              color: AppColors.permissionsSecondary,
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
+          Icon(icon, size: 20, color: AppColors.permissionsSecondary),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  insight.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.reportPrimary,
-                  ),
-                ),
-                Text(
-                  insight.subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.permissionsSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          RepaintBoundary(
-            child: CustomPaint(
-              size: const Size(64, 32),
-              painter: const _SparklinePainter(
-                color: AppColors.assistantLiveGreen,
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: AppColors.permissionsSecondary,
               ),
             ),
           ),
@@ -776,29 +336,37 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
     );
   }
 
-  // ---- User bubble (right aligned) ----
+  // ---- messages ----
 
-  Widget _buildUserMessage(AssistantMessage message) {
+  String _time(DateTime t) =>
+      DateFormat.jm(AppLocalizations.of(context).localeName).format(t);
+
+  Widget _buildMessage(ChatMessage m) {
+    final user = m.isUser;
     return Align(
-      alignment: Alignment.centerRight,
+      alignment: user
+          ? AlignmentDirectional.centerEnd
+          : AlignmentDirectional.centerStart,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.85,
+          maxWidth: MediaQuery.sizeOf(context).width * 0.86,
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: user
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: AppColors.permissionsGreen,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(4),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: user ? AppColors.permissionsGreen : AppColors.surface,
+                borderRadius: BorderRadiusDirectional.only(
+                  topStart: const Radius.circular(16),
+                  topEnd: const Radius.circular(16),
+                  bottomStart: Radius.circular(user ? 16 : 4),
+                  bottomEnd: Radius.circular(user ? 4 : 16),
                 ),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
                     color: AppColors.permissionsCardShadow,
                     blurRadius: 4,
@@ -806,20 +374,20 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
                   ),
                 ],
               ),
-              child: Text(
-                message.text,
-                style: const TextStyle(
+              child: SelectableText(
+                m.text,
+                style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
                   height: 1.5,
-                  color: AppColors.surface,
+                  fontWeight: user ? FontWeight.w600 : FontWeight.w400,
+                  color: user ? AppColors.surface : AppColors.reportPrimary,
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(right: 4, top: 4),
+              padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
               child: Text(
-                message.time,
+                _time(m.createdAt),
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -833,9 +401,38 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
     );
   }
 
-  // ---- Suggested queries ----
+  Widget _buildTyping() {
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+        child: const _TypingDots(color: AppColors.permissionsSecondary),
+      ),
+    );
+  }
 
-  Widget _buildSuggestedSection() {
+  // ---- suggestions ----
+
+  /// Questions built from the user's first medicine (they are answered from
+  /// its official label).
+  List<String> _suggestions(AppLocalizations l10n) {
+    if (_c.meds.isEmpty) return const [];
+    final raw = FdaQuery.genericName(_c.meds.first.name);
+    if (raw == null) return const [];
+    final name = '${raw[0].toUpperCase()}${raw.substring(1)}';
+    return [
+      l10n.aiChatAskSideEffects(name),
+      l10n.aiChatAskUsedFor(name),
+      l10n.aiChatAskWarnings(name),
+    ];
+  }
+
+  Widget _buildSuggestions(AppLocalizations l10n) {
+    final questions = _suggestions(l10n);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -848,7 +445,7 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
             ),
             const SizedBox(width: 6),
             Text(
-              AssistantChatData.suggestedLabel.toUpperCase(),
+              l10n.aiChatSuggested.toUpperCase(),
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -858,83 +455,53 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
             ),
           ],
         ),
-
         const SizedBox(height: 8),
-
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (var i = 0; i < AssistantChatData.prompts.length; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                _buildPromptChip(AssistantChatData.prompts[i]),
-              ],
-            ],
-          ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final q in questions)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _send(q),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 9,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.all(Radius.circular(999)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.permissionsCardShadow,
+                        blurRadius: 4,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    q,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.permissionsSecondary,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildPromptChip(AssistantPrompt prompt) {
-    final Color iconColor = switch (prompt.kind) {
-      AssistantPromptKind.sideEffects => AppColors.permissionsSecondary,
-      AssistantPromptKind.streak => AppColors.assistantLiveGreen,
-      AssistantPromptKind.nextDose => AppColors.reportPrimary,
-    };
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        _sendText(prompt.kind.prompt);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.all(Radius.circular(999)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.permissionsCardShadow,
-              blurRadius: 4,
-              offset: Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(prompt.kind.icon, size: 16, color: iconColor),
-            const SizedBox(width: 6),
-            Text(
-              prompt.kind.label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.permissionsSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---- Clinical caution banner ----
-
-  Widget _buildCautionBanner() {
+  Widget _buildCaution(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.all(Radius.circular(12)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.permissionsCardShadow,
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
       ),
       child: Row(
         children: [
@@ -943,11 +510,10 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
             size: 18,
             color: AppColors.assistantPendingText,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              AssistantChatData.cautionText,
-              textAlign: TextAlign.center,
+              l10n.aiChatCaution,
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -962,10 +528,11 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
   }
 
   // ============================================================
-  // STICKY INPUT AREA (field + mic + send + disclaimer)
+  // INPUT
   // ============================================================
 
   Widget _buildInputArea() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -986,24 +553,24 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(child: _buildInputField()),
-                  const SizedBox(width: 8),
-                  _buildSendButton(),
-                ],
-              ),
-
+              if (_c.isFull)
+                _buildFullBanner(l10n)
+              else
+                Row(
+                  children: [
+                    Expanded(child: _buildField(l10n)),
+                    const SizedBox(width: 8),
+                    _buildSendButton(),
+                  ],
+                ),
               const SizedBox(height: 6),
-
               Text(
-                AssistantChatData.disclaimer,
+                l10n.aiChatFooter,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.permissionsSecondary
-                      .withValues(alpha: 0.8),
+                  color: AppColors.permissionsSecondary.withValues(alpha: 0.8),
                 ),
               ),
             ],
@@ -1013,152 +580,93 @@ class _AssistantChatScreenState extends State<AssistantChatScreen> {
     );
   }
 
-  Widget _buildInputField() {
-    const OutlineInputBorder border = OutlineInputBorder(
+  Widget _buildFullBanner(AppLocalizations l10n) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            l10n.aiChatFull,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.permissionsSecondary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton(
+          key: const Key('chat-full-new'),
+          onPressed: _c.newChat,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.permissionsGreen,
+            foregroundColor: AppColors.surface,
+          ),
+          child: Text(l10n.aiChatNewChat),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildField(AppLocalizations l10n) {
+    const border = OutlineInputBorder(
       borderRadius: BorderRadius.all(Radius.circular(24)),
       borderSide: BorderSide.none,
     );
-
     return SizedBox(
       height: 48,
-      child: Stack(
-        children: [
-          TextField(
-            controller: _inputController,
-            textInputAction: TextInputAction.send,
-            onSubmitted: _sendText,
-            cursorColor: AppColors.permissionsSecondary,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.reportPrimary,
-            ),
-            decoration: InputDecoration(
-              hintText: AssistantChatData.inputHint,
-              hintStyle: TextStyle(
-                fontSize: 14,
-                color: AppColors.permissionsSecondary.withValues(alpha: 0.7),
-              ),
-              filled: true,
-              fillColor: AppColors.permissionsChipFill,
-              contentPadding: const EdgeInsets.only(
-                left: 20,
-                right: 44,
-                top: 14,
-                bottom: 14,
-              ),
-              border: border,
-              enabledBorder: border,
-              focusedBorder: border,
-            ),
+      child: TextField(
+        key: const Key('chat-input'),
+        controller: _input,
+        textInputAction: TextInputAction.send,
+        onSubmitted: _send,
+        maxLength: ChatLimits.maxTextLength,
+        buildCounter: (
+          context, {
+          required currentLength,
+          required isFocused,
+          required maxLength,
+        }) => null,
+        cursorColor: AppColors.permissionsSecondary,
+        style: const TextStyle(fontSize: 14, color: AppColors.reportPrimary),
+        decoration: InputDecoration(
+          hintText: l10n.aiChatInputHint,
+          hintStyle: TextStyle(
+            fontSize: 14,
+            color: AppColors.permissionsSecondary.withValues(alpha: 0.7),
           ),
-
-          // ---- Mic (inside field) ----
-          Positioned(
-            right: 12,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _onVoiceInput,
-                child: const Icon(
-                  Icons.mic,
-                  size: 20,
-                  color: AppColors.permissionsSecondary,
-                ),
-              ),
-            ),
+          filled: true,
+          fillColor: AppColors.permissionsChipFill,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 14,
           ),
-        ],
+          border: border,
+          enabledBorder: border,
+          focusedBorder: border,
+        ),
       ),
     );
   }
 
   Widget _buildSendButton() {
     return GestureDetector(
-      onTap: () {
-        _sendText(_inputController.text);
-      },
+      key: const Key('chat-send'),
+      onTap: () => _send(_input.text),
       child: Container(
         width: 48,
         height: 48,
-        decoration: const BoxDecoration(
-          color: AppColors.permissionsGreen,
+        decoration: BoxDecoration(
+          color: _c.isReplying
+              ? AppColors.permissionsSecondary
+              : AppColors.permissionsGreen,
           shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.reportGenerateShadow,
-              blurRadius: 24,
-              offset: Offset(0, 8),
-              spreadRadius: -4,
-            ),
-          ],
         ),
-        child: const Icon(
-          Icons.send,
-          size: 22,
-          color: AppColors.surface,
-        ),
+        child: const Icon(Icons.send, size: 22, color: AppColors.surface),
       ),
     );
   }
 }
 
-/// ============================================================
-/// SPARKLINE PAINTER
-/// HTML SVG polyline (viewBox 0 0 64 32) ke exact points.
-/// ============================================================
-class _SparklinePainter extends CustomPainter {
-  const _SparklinePainter({required this.color});
-
-  final Color color;
-
-  static const List<Offset> _points = [
-    Offset(2, 24),
-    Offset(14, 18),
-    Offset(26, 20),
-    Offset(38, 10),
-    Offset(50, 14),
-    Offset(62, 4),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final Path path = Path();
-    for (int i = 0; i < _points.length; i++) {
-      final Offset p = _points[i];
-      final double dx = p.dx / 64 * size.width;
-      final double dy = p.dy / 32 * size.height;
-      if (i == 0) {
-        path.moveTo(dx, dy);
-      } else {
-        path.lineTo(dx, dy);
-      }
-    }
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_SparklinePainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
-
-/// ============================================================
-/// TYPING DOTS
-///
-/// AI reply pending hone par "[ • • • ]" wali animated 3-dot
-/// loading (circular spinner ki jagah). Dots staggered pulse
-/// (opacity + up-down) karte hain.
-/// ============================================================
+/// Three pulsing dots while an answer is being made.
 class _TypingDots extends StatefulWidget {
   const _TypingDots({required this.color});
 
@@ -1189,24 +697,18 @@ class _TypingDotsState extends State<_TypingDots>
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: List.generate(3, (index) {
-            // Har dot thoda offset se pulse kare.
-            final double phase = (_controller.value + index * 0.2) % 1.0;
-            final double wave = (phase * 2 - 1).abs(); // 1 → 0 → 1
-            final double lift = (1 - wave) * 3;
-
+            final phase = (_controller.value + index * 0.2) % 1.0;
+            final wave = (phase * 2 - 1).abs();
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2.5),
               child: Opacity(
                 opacity: 0.4 + (1 - wave) * 0.6,
-                child: Transform.translate(
-                  offset: Offset(0, -lift),
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: widget.color,
-                      shape: BoxShape.circle,
-                    ),
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: widget.color,
+                    shape: BoxShape.circle,
                   ),
                 ),
               ),

@@ -5023,6 +5023,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pro'**
   String get rptProBadge;
+
+  /// No description provided for @aiConsentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Before you use the AI assistant'**
+  String get aiConsentTitle;
+
+  /// No description provided for @aiConsentIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'The assistant answers general questions about your medicines. To do that, your questions and a small summary of your medicine information are sent to an AI service when you chat.'**
+  String get aiConsentIntro;
+
+  /// No description provided for @aiConsentSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What is shared'**
+  String get aiConsentSentTitle;
+
+  /// No description provided for @aiConsentSentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your active medicines and their schedules, your adherence over the last 30 days, your allergies, and the question you type.'**
+  String get aiConsentSentBody;
+
+  /// No description provided for @aiConsentNeverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What is never shared'**
+  String get aiConsentNeverTitle;
+
+  /// No description provided for @aiConsentNeverBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name, date of birth, email, phone number or any other contact details.'**
+  String get aiConsentNeverBody;
+
+  /// No description provided for @aiConsentLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'The assistant is not a doctor. It never changes your doses, never diagnoses, and always sends medical questions to your doctor or pharmacist. You can turn it off at any time in Settings > Privacy & Security.'**
+  String get aiConsentLimits;
+
+  /// No description provided for @aiConsentAgree.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree'**
+  String get aiConsentAgree;
+
+  /// No description provided for @aiConsentNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get aiConsentNotNow;
+
+  /// No description provided for @aiConsentSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your choice. Please check your connection and try again.'**
+  String get aiConsentSaveFailed;
+
+  /// No description provided for @aiSettingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant'**
+  String get aiSettingTitle;
+
+  /// No description provided for @aiSettingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow the assistant to use a summary of your medicines'**
+  String get aiSettingSubtitle;
+
+  /// No description provided for @aiSettingWithdrawn.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant is turned off'**
+  String get aiSettingWithdrawn;
+
+  /// No description provided for @aiSafetyEmergency.
+  ///
+  /// In en, this message translates to:
+  /// **'This sounds like it could be an emergency. Please call your local emergency number now, or ask someone nearby to help you. I cannot help with emergencies.'**
+  String get aiSafetyEmergency;
+
+  /// No description provided for @aiSafetyDoseChange.
+  ///
+  /// In en, this message translates to:
+  /// **'I cannot advise on changing, skipping, stopping or taking extra of any medicine. Your doctor or pharmacist is the right person to decide this. Please check with them first.'**
+  String get aiSafetyDoseChange;
+
+  /// No description provided for @aiSafetyDiagnosis.
+  ///
+  /// In en, this message translates to:
+  /// **'I cannot diagnose symptoms or explain what a rash, pain or test result means. Please see a doctor, who can examine you properly.'**
+  String get aiSafetyDiagnosis;
+
+  /// No description provided for @aiReplyBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'I cannot answer that safely. Please ask your doctor or pharmacist.'**
+  String get aiReplyBlocked;
+
+  /// No description provided for @aiDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'General information only, not medical advice.'**
+  String get aiDisclaimer;
+
+  /// No description provided for @aiConsentFdaNote.
+  ///
+  /// In en, this message translates to:
+  /// **'To show official drug label facts, the names of your medicines are looked up on the public FDA label service (openFDA). Nothing about you is sent there.'**
+  String get aiConsentFdaNote;
+
+  /// No description provided for @aiChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant'**
+  String get aiChatTitle;
+
+  /// No description provided for @aiChatStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Official label facts and safe guidance'**
+  String get aiChatStatus;
+
+  /// No description provided for @aiChatInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about your medicine...'**
+  String get aiChatInputHint;
+
+  /// No description provided for @aiChatFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Not medical advice. Always ask your doctor or pharmacist.'**
+  String get aiChatFooter;
+
+  /// No description provided for @aiChatCaution.
+  ///
+  /// In en, this message translates to:
+  /// **'Answers use your medicine list and official FDA drug labels.'**
+  String get aiChatCaution;
+
+  /// No description provided for @aiChatUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-written answers are not available yet. You can still ask what one of your medicines is used for, or about its side effects, warnings or interactions, and I will show the official FDA label.'**
+  String get aiChatUnavailable;
+
+  /// No description provided for @aiChatLabelNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'I could not find an official FDA label for {name}. Please ask your pharmacist.'**
+  String aiChatLabelNotFound(String name);
+
+  /// No description provided for @aiChatLabelUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'I could not load the FDA label right now. Please check your connection and try again.'**
+  String get aiChatLabelUnavailable;
+
+  /// No description provided for @aiChatSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This message could not be saved to your history.'**
+  String get aiChatSaveFailed;
+
+  /// No description provided for @aiChatFull.
+  ///
+  /// In en, this message translates to:
+  /// **'This chat is full. Please start a new chat.'**
+  String get aiChatFull;
+
+  /// No description provided for @aiChatNewChat.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get aiChatNewChat;
+
+  /// No description provided for @aiChatLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this chat.'**
+  String get aiChatLoadFailed;
+
+  /// No description provided for @aiChatAskSideEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'What are the side effects of {name}?'**
+  String aiChatAskSideEffects(String name);
+
+  /// No description provided for @aiChatAskUsedFor.
+  ///
+  /// In en, this message translates to:
+  /// **'What is {name} used for?'**
+  String aiChatAskUsedFor(String name);
+
+  /// No description provided for @aiChatAskWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'What are the warnings for {name}?'**
+  String aiChatAskWarnings(String name);
+
+  /// No description provided for @aiChatSuggested.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested questions'**
+  String get aiChatSuggested;
+
+  /// No description provided for @aiChatEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about one of your medicines. I can show its official FDA label.'**
+  String get aiChatEmptyHint;
+
+  /// No description provided for @aiHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat history'**
+  String get aiHistoryTitle;
+
+  /// No description provided for @aiHistoryNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Start new chat'**
+  String get aiHistoryNew;
+
+  /// No description provided for @aiHistoryPast.
+  ///
+  /// In en, this message translates to:
+  /// **'Past conversations'**
+  String get aiHistoryPast;
+
+  /// No description provided for @aiHistoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a conversation to continue it'**
+  String get aiHistoryHint;
+
+  /// No description provided for @aiHistorySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Chats are saved in your account. You can delete them at any time.'**
+  String get aiHistorySaved;
+
+  /// No description provided for @aiHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get aiHistoryEmpty;
+
+  /// No description provided for @aiHistoryEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your chats with the assistant will appear here.'**
+  String get aiHistoryEmptyBody;
+
+  /// No description provided for @aiHistoryError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your chats.'**
+  String get aiHistoryError;
+
+  /// No description provided for @aiHistoryDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this chat?'**
+  String get aiHistoryDeleteTitle;
+
+  /// No description provided for @aiHistoryDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation and all its messages will be deleted. This cannot be undone.'**
+  String get aiHistoryDeleteBody;
+
+  /// No description provided for @aiHistoryDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get aiHistoryDelete;
+
+  /// No description provided for @aiHistoryDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat deleted'**
+  String get aiHistoryDeleted;
+
+  /// No description provided for @aiHistoryDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the chat.'**
+  String get aiHistoryDeleteFailed;
+
+  /// No description provided for @aiHistoryToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get aiHistoryToday;
+
+  /// No description provided for @aiHistoryYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get aiHistoryYesterday;
 }
 
 class _AppLocalizationsDelegate

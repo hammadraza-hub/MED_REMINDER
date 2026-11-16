@@ -281,6 +281,41 @@ void main() {
       expect(names, ['export-info.txt', 'user.json']);
     });
 
+    test('AI chats are written to chats.json with their messages', () {
+      final b = ExportBundle(
+        generatedAt: DateTime.utc(2026, 11, 16),
+        appVersion: '1.0.0+1',
+        userId: 'u1',
+        userData: const {'email': 'a@b.c'},
+        profiles: const [],
+        chats: const [
+          ExportDoc(
+            path: 'chatThreads/c1',
+            data: {
+              'title': 'Metformin',
+              'messages': [
+                {'id': 'm1', 'role': 'user', 'text': 'hi'},
+              ],
+            },
+          ),
+        ],
+      );
+      final files = ExportBuilder.build(b);
+      final chats = files.firstWhere((f) => f.name == 'chats.json');
+      final list = jsonDecode(chats.content) as List;
+      expect(list.length, 1);
+      expect((list.first as Map)['_path'], 'chatThreads/c1');
+      expect((list.first as Map)['title'], 'Metformin');
+      expect(((list.first as Map)['messages'] as List).length, 1);
+      final info = files.firstWhere((f) => f.name == 'export-info.txt');
+      expect(info.content, contains('chats.json'));
+    });
+
+    test('no chats -> no chats.json', () {
+      final names = ExportBuilder.build(bundle()).map((f) => f.name);
+      expect(names, isNot(contains('chats.json')));
+    });
+
     test('user data is exported with ISO dates', () {
       final user = ExportBuilder.build(bundle())
           .firstWhere((f) => f.name == 'user.json');

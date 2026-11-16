@@ -15,6 +15,7 @@ import 'dart:convert';
 /// Output layout:
 ///   export-info.txt                         what is included, counts
 ///   user.json                               users/{uid}
+///   chats.json                              AI assistant chats (if any)
 ///   profiles/{profileId}/profile.json       the profile document
 ///   profiles/{profileId}/{collection}.json  every document, as a JSON array
 ///   profiles/{profileId}/{collection}.csv   same data as a table
@@ -56,6 +57,7 @@ class ExportBundle {
     required this.userId,
     required this.userData,
     required this.profiles,
+    this.chats = const [],
     this.notes = const [],
   });
 
@@ -67,6 +69,10 @@ class ExportBundle {
   final Map<String, dynamic> userData;
 
   final List<ExportProfile> profiles;
+
+  /// AI assistant chats (`users/{uid}/chatThreads`); each document holds its
+  /// messages in a `messages` list. M18 step 4.
+  final List<ExportDoc> chats;
 
   /// Extra lines for export-info.txt (e.g. "doses: could not be read").
   final List<String> notes;
@@ -90,6 +96,17 @@ class ExportBuilder {
       ExportFile(name: 'export-info.txt', content: _info(bundle)),
       ExportFile(name: 'user.json', content: toJson(bundle.userData)),
     ];
+
+    if (bundle.chats.isNotEmpty) {
+      files.add(
+        ExportFile(
+          name: 'chats.json',
+          content: toJson([
+            for (final d in bundle.chats) {'_path': d.path, ...d.data},
+          ]),
+        ),
+      );
+    }
 
     final usedFolders = <String>{};
     for (final profile in bundle.profiles) {
@@ -238,6 +255,10 @@ class ExportBuilder {
       ..writeln()
       ..writeln('Files')
       ..writeln('- user.json: your account document')
+      ..writeln(
+        '- chats.json: your AI assistant chats (${b.chats.length} '
+        'conversation${b.chats.length == 1 ? '' : 's'})',
+      )
       ..writeln(
         '- profiles/<id>/profile.json: each profile you own '
         '(${b.profiles.length} profile${b.profiles.length == 1 ? '' : 's'})',

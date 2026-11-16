@@ -46,3 +46,15 @@
 - M17 Step 6: PDF preview (printing) and PDF/CSV share via share sheet with temp-file cleanup; 7 l10n keys; tests.
 
 - M17 Step 7: Free users limited to a 7-day report, longer ranges need Pro (app-side gate, upgrade dialog, lock icons); 3 l10n keys; tests. M17 complete on Spark.
+
+- M18 Step 1: AI consent (aiConsentAt rules, controller, consent screen, gate on Home, Settings switch), 13 l10n keys, jest + unit + widget tests.
+
+- M18 Step 2: privacy-safe AI context (meds, 30-day adherence, allergies; no name/DOB/contact), text scrubber, wiring, chat screen switched to it, old Drift/dummy context removed; unit + integration tests.
+
+- M18 Step 3: AI safety layers (question guard, system-prompt rules, reply checker + disclaimer), 91-prompt risky/normal test set in 6 languages, fixed safe answers in 5 languages, wired into the chat; unit + widget tests.
+
+- M18 Step 4: AI chat storage (users/{uid}/chatThreads + messages) with rules, models, title maker, ChatRepository, index, account purge and data export coverage; jest, unit and emulator integration tests.
+
+- M18 Step 5: openFDA label client (rxcui then ingredient-matched name search, cleaned sections without dosage, citations, 7-day cache), consent line about the FDA lookup; unit tests on a real response fixture + optional live test.
+
+- M18 Step 6: chat + history screens on real data (ChatController, FDA-label answers with sources, safe messages, saved history with delete), AiChatBackend interface (unavailable on Spark), Gemini/.env/flutter_dotenv removed, 33 l10n keys, 38 new tests. M18 Spark part complete.

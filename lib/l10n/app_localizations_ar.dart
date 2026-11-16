@@ -2889,4 +2889,180 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get rptProBadge => 'Pro';
+
+  @override
+  String get aiConsentTitle => 'قبل استخدام مساعد الذكاء الاصطناعي';
+
+  @override
+  String get aiConsentIntro =>
+      'يجيب المساعد عن أسئلة عامة حول أدويتك. ولذلك يتم إرسال أسئلتك وملخص صغير لمعلومات أدويتك إلى خدمة ذكاء اصطناعي عند المحادثة.';
+
+  @override
+  String get aiConsentSentTitle => 'ما الذي تتم مشاركته';
+
+  @override
+  String get aiConsentSentBody =>
+      'أدويتك الحالية ومواعيدها، والتزامك بالجرعات خلال آخر 30 يومًا، وحساسيتك، والسؤال الذي تكتبه.';
+
+  @override
+  String get aiConsentNeverTitle => 'ما الذي لا تتم مشاركته أبدًا';
+
+  @override
+  String get aiConsentNeverBody =>
+      'اسمك أو تاريخ ميلادك أو بريدك الإلكتروني أو رقم هاتفك أو أي بيانات اتصال أخرى.';
+
+  @override
+  String get aiConsentLimits =>
+      'المساعد ليس طبيبًا. لا يغيّر جرعاتك أبدًا، ولا يشخّص، ويحيل الأسئلة الطبية دائمًا إلى طبيبك أو الصيدلي. يمكنك إيقافه في أي وقت من الإعدادات > الخصوصية والأمان.';
+
+  @override
+  String get aiConsentAgree => 'أوافق';
+
+  @override
+  String get aiConsentNotNow => 'ليس الآن';
+
+  @override
+  String get aiConsentSaveFailed =>
+      'تعذر حفظ اختيارك. تحقق من الاتصال وحاول مرة أخرى.';
+
+  @override
+  String get aiSettingTitle => 'مساعد الذكاء الاصطناعي';
+
+  @override
+  String get aiSettingSubtitle => 'السماح للمساعد باستخدام ملخص لأدويتك';
+
+  @override
+  String get aiSettingWithdrawn => 'تم إيقاف مساعد الذكاء الاصطناعي';
+
+  @override
+  String get aiSafetyEmergency =>
+      'قد تكون هذه حالة طارئة. اتصل الآن برقم الطوارئ في بلدك أو اطلب المساعدة ممن حولك. لا أستطيع المساعدة في الحالات الطارئة.';
+
+  @override
+  String get aiSafetyDoseChange =>
+      'لا أستطيع إعطاء نصيحة بتغيير أي دواء أو تخطيه أو إيقافه أو تناول جرعة إضافية منه. الطبيب أو الصيدلي هو من يقرر ذلك. يرجى استشارته أولًا.';
+
+  @override
+  String get aiSafetyDiagnosis =>
+      'لا أستطيع تشخيص الأعراض أو شرح معنى طفح أو ألم أو نتيجة فحص. يرجى مراجعة طبيب يستطيع فحصك.';
+
+  @override
+  String get aiReplyBlocked =>
+      'لا أستطيع الإجابة عن ذلك بأمان. يرجى سؤال طبيبك أو الصيدلي.';
+
+  @override
+  String get aiDisclaimer => 'معلومات عامة فقط وليست نصيحة طبية.';
+
+  @override
+  String get aiConsentFdaNote =>
+      'لعرض معلومات رسمية من نشرات الأدوية، يتم البحث عن أسماء أدويتك في خدمة نشرات الأدوية العامة التابعة لإدارة الغذاء والدواء الأمريكية (openFDA). لا يتم إرسال أي شيء عنك إلى هناك.';
+
+  @override
+  String get aiChatTitle => 'مساعد الذكاء الاصطناعي';
+
+  @override
+  String get aiChatStatus => 'معلومات رسمية من النشرات وإرشادات آمنة';
+
+  @override
+  String get aiChatInputHint => 'اسأل عن دوائك...';
+
+  @override
+  String get aiChatFooter => 'ليست نصيحة طبية. اسأل طبيبك أو الصيدلي دائمًا.';
+
+  @override
+  String get aiChatCaution =>
+      'تعتمد الإجابات على قائمة أدويتك ونشرات الأدوية الرسمية لإدارة الغذاء والدواء الأمريكية.';
+
+  @override
+  String get aiChatUnavailable =>
+      'الإجابات المكتوبة بالذكاء الاصطناعي غير متاحة بعد. يمكنك مع ذلك أن تسأل عن استخدام أحد أدويتك أو آثاره الجانبية أو تحذيراته أو تفاعلاته، وسأعرض لك النشرة الرسمية.';
+
+  @override
+  String aiChatLabelNotFound(String name) {
+    return 'لم أجد نشرة رسمية لـ $name. يرجى سؤال الصيدلي.';
+  }
+
+  @override
+  String get aiChatLabelUnavailable =>
+      'تعذر تحميل النشرة الآن. تحقق من الاتصال وحاول مرة أخرى.';
+
+  @override
+  String get aiChatSaveFailed => 'تعذر حفظ هذه الرسالة في سجلك.';
+
+  @override
+  String get aiChatFull => 'هذه المحادثة ممتلئة. يرجى بدء محادثة جديدة.';
+
+  @override
+  String get aiChatNewChat => 'محادثة جديدة';
+
+  @override
+  String get aiChatLoadFailed => 'تعذر فتح هذه المحادثة.';
+
+  @override
+  String aiChatAskSideEffects(String name) {
+    return 'ما هي الآثار الجانبية لـ $name؟';
+  }
+
+  @override
+  String aiChatAskUsedFor(String name) {
+    return 'ما استخدام $name؟';
+  }
+
+  @override
+  String aiChatAskWarnings(String name) {
+    return 'ما هي تحذيرات $name؟';
+  }
+
+  @override
+  String get aiChatSuggested => 'أسئلة مقترحة';
+
+  @override
+  String get aiChatEmptyHint => 'اسأل عن أحد أدويتك. يمكنني عرض نشرته الرسمية.';
+
+  @override
+  String get aiHistoryTitle => 'سجل المحادثات';
+
+  @override
+  String get aiHistoryNew => 'بدء محادثة جديدة';
+
+  @override
+  String get aiHistoryPast => 'المحادثات السابقة';
+
+  @override
+  String get aiHistoryHint => 'اضغط على محادثة لمتابعتها';
+
+  @override
+  String get aiHistorySaved =>
+      'تُحفظ المحادثات في حسابك. يمكنك حذفها في أي وقت.';
+
+  @override
+  String get aiHistoryEmpty => 'لا توجد محادثات بعد';
+
+  @override
+  String get aiHistoryEmptyBody => 'ستظهر هنا محادثاتك مع المساعد.';
+
+  @override
+  String get aiHistoryError => 'تعذر تحميل محادثاتك.';
+
+  @override
+  String get aiHistoryDeleteTitle => 'حذف هذه المحادثة؟';
+
+  @override
+  String get aiHistoryDeleteBody =>
+      'سيتم حذف المحادثة وجميع رسائلها. لا يمكن التراجع.';
+
+  @override
+  String get aiHistoryDelete => 'حذف';
+
+  @override
+  String get aiHistoryDeleted => 'تم حذف المحادثة';
+
+  @override
+  String get aiHistoryDeleteFailed => 'تعذر حذف المحادثة.';
+
+  @override
+  String get aiHistoryToday => 'اليوم';
+
+  @override
+  String get aiHistoryYesterday => 'أمس';
 }

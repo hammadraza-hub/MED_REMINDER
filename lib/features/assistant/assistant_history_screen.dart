@@ -1,72 +1,137 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
+import '../../core/ai/chat_controller.dart';
+import '../../core/ai/chat_models.dart';
 import '../../core/constants/app_colors.dart';
-import '../../main_shell.dart';
-import '../../widgets/app_avatar.dart';
-import '../../widgets/app_bottom_navigation.dart';
-import 'assistant_chat_screen.dart';
-import 'assistant_history_data.dart';
+import '../../core/profile/profile_controller.dart';
+import '../../l10n/app_localizations.dart';
+import '../../repositories/chat_repository.dart';
 
-/// ============================================================
-/// ASSISTANT CHAT HISTORY
-///
-/// PURPOSE:
-/// User ke past AI conversations ki list — browse aur resume.
-///
-/// KEY ELEMENTS:
-/// - "+ Start New Chat" primary action
-/// - Past threads (title + preview + date)
-/// - Secure-storage assurance footer
-///
-/// USER ACTIONS:
-/// - New Chat → fresh Chat Thread
-/// - Thread tap → conversation resume (open thread)
-///
-/// NAVIGATION:
-/// Home child screen → shared bottom navigation currentIndex = 0
-///
-/// TODO Backend:
-/// Thread list Firestore se load hoga; thread tap par us
-/// thread ka message history Chat Thread mein load hoga.
-/// ============================================================
-class AssistantHistoryScreen extends StatefulWidget {
-  const AssistantHistoryScreen({super.key});
+/// What the user chose on the history screen: open a saved thread
+/// ([threadId] set) or start a new chat ([threadId] null).
+class AssistantHistoryChoice {
+  const AssistantHistoryChoice.open(String this.threadId);
+  const AssistantHistoryChoice.newChat() : threadId = null;
 
-  @override
-  State<AssistantHistoryScreen> createState() =>
-      _AssistantHistoryScreenState();
+  final String? threadId;
 }
 
+/// ============================================================
+/// CHAT HISTORY — M18 step 6
+///
+/// The user's saved conversations for the profile being viewed, newest first.
+/// Tap one to continue it, start a new chat, or delete a conversation
+/// (confirmed, with all its messages). The screen pops with an
+/// [AssistantHistoryChoice]; the chat screen acts on it.
+/// ============================================================
+class AssistantHistoryScreen extends StatefulWidget {
+  const AssistantHistoryScreen({super.key, this.store, this.profileId});
+
+  /// For tests.
+  @visibleForTesting
+  final ChatStore? store;
+
+  @visibleForTesting
+  final String? profileId;
+
+  @override
+  State<AssistantHistoryScreen> createState() => _AssistantHistoryScreenState();
+}
+
+enum _Phase { loading, ready, failed }
+
 class _AssistantHistoryScreenState extends State<AssistantHistoryScreen> {
-  // ================= NAVIGATION =================
+  _Phase _phase = _Phase.loading;
+  List<ChatThread> _threads = const [];
 
-  void _onBottomNavigationTap(int index) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => MedRemindShell(initialIndex: index)),
-      (route) => false,
-    );
+  ChatStore get _store => widget.store ?? ChatRepository.instance;
+
+  String? get _profileId =>
+      widget.profileId ?? ProfileController.instance.memberId;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
   }
 
-  void _startNewChat() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AssistantChatScreen()),
-    );
+  Future<void> _load() async {
+    setState(() => _phase = _Phase.loading);
+    final id = _profileId;
+    if (id == null || id.isEmpty) {
+      setState(() {
+        _threads = const [];
+        _phase = _Phase.ready;
+      });
+      return;
+    }
+    try {
+      final list = await _store.listThreads(id);
+      if (!mounted) return;
+      setState(() {
+        _threads = list;
+        _phase = _Phase.ready;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _phase = _Phase.failed);
+    }
   }
 
-  void _openThread(AssistantChatThread thread) {
-    // TODO Backend:
-    // thread.id se us conversation ka message history load karke
-    // AssistantChatScreen mein seed karna.
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AssistantChatScreen()),
+  Future<void> _delete(ChatThread t) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.aiHistoryDeleteTitle),
+        content: Text(l10n.aiHistoryDeleteBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            key: const Key('history-confirm-delete'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.aiHistoryDelete),
+          ),
+        ],
+      ),
     );
+    if (ok != true) return;
+
+    try {
+      await _store.deleteThread(t.id);
+      if (!mounted) return;
+      setState(() => _threads = [..._threads.where((x) => x.id != t.id)]);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.aiHistoryDeleted)));
+    } catch (_) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.aiHistoryDeleteFailed)));
+    }
   }
 
-  // ================= BUILD =================
+  String _dateLabel(DateTime d, AppLocalizations l10n) {
+    final now = DateTime.now();
+    final day = DateTime(d.year, d.month, d.day);
+    final today = DateTime(now.year, now.month, now.day);
+    final diff = today.difference(day).inDays;
+    if (diff == 0) return l10n.aiHistoryToday;
+    if (diff == 1) return l10n.aiHistoryYesterday;
+    return DateFormat.MMMd(l10n.localeName).format(d);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: AppColors.permissionsHeader,
@@ -77,295 +142,261 @@ class _AssistantHistoryScreenState extends State<AssistantHistoryScreen> {
         backgroundColor: AppColors.background,
         body: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(l10n),
             Expanded(
               child: Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 480),
-                  child: _buildBody(),
+                  child: _buildBody(l10n),
                 ),
               ),
             ),
           ],
         ),
-        bottomNavigationBar: AppBottomNavigation(
-          currentIndex: 0,
-          onTap: _onBottomNavigationTap,
-        ),
       ),
     );
   }
 
-  // ================= HEADER =================
-
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.permissionsHeader,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.permissionsHeaderShadow,
-            blurRadius: 20,
-            offset: Offset(0, 4),
-            spreadRadius: -2,
-          ),
-        ],
-      ),
+      color: AppColors.permissionsHeader,
       child: SafeArea(
         bottom: false,
-        child: SizedBox(
-          height: 66,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () {
-                    Navigator.of(context).maybePop();
-                  },
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 6, 16, 12),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: AppColors.surface,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  l10n.aiHistoryTitle,
+                  style: const TextStyle(
                     color: AppColors.surface,
-                    size: 22,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(width: 2),
-                const Expanded(
-                  child: Text(
-                    AssistantHistoryData.screenTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.surface,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ),
-
-                // TODO Backend / Firebase Storage:
-                // Selected member ki persistent profile URL use karna.
-                const AppAvatar(size: 36),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // ================= BODY =================
+  Widget _buildBody(AppLocalizations l10n) {
+    final children = <Widget>[_newChatButton(l10n), const SizedBox(height: 18)];
 
-  Widget _buildBody() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 26),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildNewChatButton(),
-          const SizedBox(height: 12),
-
-          _buildSectionHeading(),
-          const SizedBox(height: 12),
-
-          ...AssistantHistoryData.threads.map(
-            (thread) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildThreadCard(thread),
+    switch (_phase) {
+      case _Phase.loading:
+        children.add(
+          const Padding(
+            padding: EdgeInsets.only(top: 40),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        );
+      case _Phase.failed:
+        children.add(
+          _message(
+            icon: Icons.cloud_off_outlined,
+            title: l10n.aiHistoryError,
+            action: TextButton(
+              key: const Key('history-retry'),
+              onPressed: _load,
+              child: Text(l10n.rptTryAgain),
             ),
           ),
+        );
+      case _Phase.ready:
+        if (_threads.isEmpty) {
+          children.add(
+            _message(
+              icon: Icons.chat_bubble_outline,
+              title: l10n.aiHistoryEmpty,
+              body: l10n.aiHistoryEmptyBody,
+            ),
+          );
+        } else {
+          children.add(_label(l10n.aiHistoryPast));
+          children.add(const SizedBox(height: 8));
+          for (final t in _threads) {
+            children.add(_threadTile(t, l10n));
+            children.add(const SizedBox(height: 10));
+          }
+          children.add(
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                l10n.aiHistoryHint,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.permissionsSecondary,
+                ),
+              ),
+            ),
+          );
+        }
+    }
 
-          const SizedBox(height: 4),
-          _buildFooter(),
+    children.add(const SizedBox(height: 16));
+    children.add(
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.lock_outline,
+            size: 14,
+            color: AppColors.permissionsSecondary,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              l10n.aiHistorySaved,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.permissionsSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: children,
+    );
+  }
+
+  Widget _newChatButton(AppLocalizations l10n) {
+    return SizedBox(
+      height: 52,
+      child: ElevatedButton.icon(
+        key: const Key('history-new'),
+        onPressed: () =>
+            Navigator.of(context).pop(const AssistantHistoryChoice.newChat()),
+        icon: const Icon(Icons.add_comment_outlined),
+        label: Text(l10n.aiHistoryNew),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.permissionsGreen,
+          foregroundColor: AppColors.surface,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _label(String text) => Text(
+    text.toUpperCase(),
+    style: const TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.66,
+      color: AppColors.permissionsSecondary,
+    ),
+  );
+
+  Widget _message({
+    required IconData icon,
+    required String title,
+    String? body,
+    Widget? action,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          Icon(icon, size: 40, color: AppColors.permissionsSecondary),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.reportPrimary,
+            ),
+          ),
+          if (body != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              body,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.permissionsSecondary,
+              ),
+            ),
+          ],
+          ?action,
         ],
       ),
     );
   }
 
-  // ---- New Chat button ----
-
-  Widget _buildNewChatButton() {
-    return GestureDetector(
-      onTap: _startNewChat,
-      child: Container(
-        height: 56,
-        decoration: const BoxDecoration(
-          color: AppColors.assistantNewChatGreen,
-          borderRadius: BorderRadius.all(Radius.circular(14)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.assistantNewChatShadow,
-              blurRadius: 20,
-              offset: Offset(0, 6),
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add, size: 20, color: AppColors.surface),
-            SizedBox(width: 8),
-            Text(
-              AssistantHistoryData.newChatLabel,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.surface,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---- Section heading ----
-
-  Widget _buildSectionHeading() {
-    return Text(
-      AssistantHistoryData.sectionLabel.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.5,
-        color: AppColors.permissionsHeader,
-      ),
-    );
-  }
-
-  // ---- Thread card ----
-
-  Widget _buildThreadCard(AssistantChatThread thread) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _openThread(thread),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.all(Radius.circular(14)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.permissionsCardShadow,
-              blurRadius: 20,
-              offset: Offset(0, 4),
-              spreadRadius: -2,
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // ---- Chat icon tile ----
-            Container(
-              width: 44,
-              height: 44,
-              decoration: const BoxDecoration(
-                color: AppColors.shareTileFill,
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-              child: const Icon(
-                Icons.chat_bubble_outline,
-                size: 20,
-                color: AppColors.assistantNewChatGreen,
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            // ---- Title + preview ----
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    thread.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.permissionsHeader,
+  Widget _threadTile(ChatThread t, AppLocalizations l10n) {
+    return Material(
+      color: AppColors.surface,
+      borderRadius: const BorderRadius.all(Radius.circular(12)),
+      child: InkWell(
+        key: Key('history-thread-${t.id}'),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        onTap: () =>
+            Navigator.of(context).pop(AssistantHistoryChoice.open(t.id)),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 4, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.reportPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    thread.preview,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.shareSecondaryText,
+                    const SizedBox(height: 2),
+                    Text(
+                      _dateLabel(t.updatedAt, l10n),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.permissionsSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-
-            const SizedBox(width: 8),
-
-            // ---- Date + chevron ----
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  thread.dateLabel,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.shareSecondaryText,
-                  ),
+              IconButton(
+                key: Key('history-delete-${t.id}'),
+                tooltip: l10n.aiHistoryDelete,
+                onPressed: () => _delete(t),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.permissionsSecondary,
                 ),
-                const SizedBox(height: 6),
-                const Icon(
-                  Icons.chevron_right,
-                  size: 16,
-                  color: AppColors.shareSecondaryText,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---- Assurance footer ----
-
-  Widget _buildFooter() {
-    return Column(
-      children: [
-        Text(
-          AssistantHistoryData.footerHint,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: AppColors.shareSecondaryText,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.lock_outline,
-              size: 14,
-              color: AppColors.shareSecondaryText,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              AssistantHistoryData.secureNote,
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.shareSecondaryText,
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 }
