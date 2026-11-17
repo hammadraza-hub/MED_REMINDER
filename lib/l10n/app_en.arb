@@ -1883,5 +1883,11 @@
   "savedQueuedNotice": "Saved on this phone. It will sync when you are back online.",
   "appErrorSignInAgain": "Sign in again",
   "queuedWriteRejected": "A change you made while offline could not be saved.",
-  "accessLostNotice": "You no longer have access to that profile. Showing your own profile instead."
+  "accessLostNotice": "You no longer have access to that profile. Showing your own profile instead.",
+  "reminderGenericTitle": "Medication reminder",
+  "reminderGenericBody": "Time to take your medication",
+  "apptNotifBodyHidden": "You have an upcoming appointment",
+  "notifPrivacyTitle": "Hide details on the lock screen",
+  "notifPrivacyBody": "Reminders say \"Medication reminder\" instead of the medicine or doctor name.",
+  "dailyLimitReached": "You have reached today's limit for this. Please try again tomorrow."
 }

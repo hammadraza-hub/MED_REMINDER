@@ -67,6 +67,9 @@ void main() {
     'users/u1/devices/d1',
     'users/u1/devices/d2',
     'users/u1/devices/d3',
+    // M21 step 6: daily limit counters
+    'users/u1/limits/20774',
+    'users/u1/limits/20775',
     // M18 step 4: AI chats
     'users/u1/chatThreads/c1',
     'users/u1/chatThreads/c2',
@@ -139,6 +142,8 @@ void main() {
     expect(order.last, 'users/u1');
     // devices before the user document
     expect(at('users/u1/devices/d3'), lessThan(at('users/u1')));
+    expect(at('users/u1/limits/20774'), lessThan(at('users/u1')));
+    expect(at('users/u1/limits/20775'), lessThan(at('users/u1')));
   });
 
   test(

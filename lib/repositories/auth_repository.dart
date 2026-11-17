@@ -65,7 +65,7 @@ class AuthRepository {
 
       // Verification email pehle send karo.
       await user.sendEmailVerification();
-      print('Verification email requested for ${user.email}');
+      debugPrint('Verification email requested');
 
       // Firestore profile creation.
       await _createUserDocument(

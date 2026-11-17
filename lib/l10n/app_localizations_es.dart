@@ -3512,4 +3512,24 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get accessLostNotice =>
       'Ya no tienes acceso a ese perfil. Se muestra tu propio perfil.';
+
+  @override
+  String get reminderGenericTitle => 'Recordatorio de medicación';
+
+  @override
+  String get reminderGenericBody => 'Es hora de tomar tu medicación';
+
+  @override
+  String get apptNotifBodyHidden => 'Tienes una cita próxima';
+
+  @override
+  String get notifPrivacyTitle => 'Ocultar detalles en la pantalla de bloqueo';
+
+  @override
+  String get notifPrivacyBody =>
+      'Los recordatorios muestran «Recordatorio de medicación» en lugar del nombre del medicamento o del médico.';
+
+  @override
+  String get dailyLimitReached =>
+      'Has alcanzado el límite de hoy para esto. Inténtalo de nuevo mañana.';
 }

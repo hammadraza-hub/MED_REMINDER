@@ -993,5 +993,11 @@
   "savedQueuedNotice": "Guardado en este teléfono. Se sincronizará cuando vuelvas a tener conexión.",
   "appErrorSignInAgain": "Iniciar sesión de nuevo",
   "queuedWriteRejected": "Un cambio que hiciste sin conexión no se pudo guardar.",
-  "accessLostNotice": "Ya no tienes acceso a ese perfil. Se muestra tu propio perfil."
+  "accessLostNotice": "Ya no tienes acceso a ese perfil. Se muestra tu propio perfil.",
+  "reminderGenericTitle": "Recordatorio de medicación",
+  "reminderGenericBody": "Es hora de tomar tu medicación",
+  "apptNotifBodyHidden": "Tienes una cita próxima",
+  "notifPrivacyTitle": "Ocultar detalles en la pantalla de bloqueo",
+  "notifPrivacyBody": "Los recordatorios muestran «Recordatorio de medicación» en lugar del nombre del medicamento o del médico.",
+  "dailyLimitReached": "Has alcanzado el límite de hoy para esto. Inténtalo de nuevo mañana."
 }

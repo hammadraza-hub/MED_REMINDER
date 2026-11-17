@@ -252,7 +252,7 @@ class _SignupScreenState extends State<SignupScreen> {
       );
       final result = await AuthRepository.instance.signInWithGoogle();
       debugPrint(
-        'ðŸ” GOOGLE SIGN-UP: signInWithGoogle returned. uid=${result.user.uid}, isNewUser=${result.isNewUser}',
+        'ðŸ” GOOGLE SIGN-UP: signInWithGoogle returned. isNewUser=${result.isNewUser}',
       );
       if (!mounted) {
         debugPrint(
@@ -277,7 +277,7 @@ class _SignupScreenState extends State<SignupScreen> {
         memberId = data['selectedMemberId'] as String?;
         memberDisplayName = data['selectedDisplayName'] as String?;
         debugPrint(
-          'ðŸ” GOOGLE SIGN-UP: Firestore user doc found. memberId=$memberId, displayName=$memberDisplayName',
+          'ðŸ” GOOGLE SIGN-UP: Firestore user doc found',
         );
       } else {
         debugPrint(

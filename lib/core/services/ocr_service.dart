@@ -222,14 +222,8 @@ class OcrService {
         .where((e) => e.isNotEmpty)
         .toList();
 
-    debugPrint('');
-    debugPrint('======= CLEANED OCR LINES =======');
-
-    for (int i = 0; i < lines.length; i++) {
-      debugPrint('[$i] ${lines[i]}');
-    }
-
-    debugPrint('=================================');
+    // The text of a medicine label is health data: log only how much was read.
+    debugPrint('OCR: ${lines.length} cleaned line(s)');
 
     final List<DetectedMedicine> medicines = [];
 
@@ -257,10 +251,8 @@ class OcrService {
         );
 
         if (name == null) {
-          debugPrint(
-            'Strength found but name '
-            'not found: $line',
-          );
+          // (the label text itself is health data: not logged)
+          debugPrint('OCR: strength found but no name');
 
           continue;
         }
@@ -299,24 +291,7 @@ class OcrService {
       }
     }
 
-    debugPrint('');
-    debugPrint(
-      '===== DETECTED '
-      '${medicines.length} '
-      'MEDICINE(S) =====',
-    );
-
-    for (final m in medicines) {
-      debugPrint('NAME: ${m.name}');
-      debugPrint('STRENGTH: ${m.strength}');
-      debugPrint('FORM: ${m.form}');
-      debugPrint('FREQUENCY: ${m.frequency}');
-      debugPrint(
-        'INSTRUCTIONS: '
-        '${m.instructions}',
-      );
-      debugPrint('--------------------------');
-    }
+    debugPrint('OCR: ${medicines.length} medicine(s) detected');
 
     return medicines;
   }

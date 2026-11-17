@@ -22,19 +22,19 @@ class NotificationSettings {
   /// Quiet hours delay refill/appointment pushes; never blocks dose reminders.
   final bool quietHoursEnabled;
 
-    /// Quiet-hours start (local hour, 0-23).
+  /// Quiet-hours start (local hour, 0-23).
   final int quietStartHour;
 
-    /// Quiet-hours start minute.
+  /// Quiet-hours start minute.
   final int quietStartMinute;
 
-    /// Quiet-hours end (local hour, 0-23).
+  /// Quiet-hours end (local hour, 0-23).
   final int quietEndHour;
 
-    /// Quiet-hours end minute.
+  /// Quiet-hours end minute.
   final int quietEndMinute;
 
-    /// Hide medicine names on the lock screen / notification preview.
+  /// Hide medicine names on the lock screen / notification preview.
   final bool hideMedicineNamesOnLockScreen;
 
   const NotificationSettings({
@@ -61,7 +61,7 @@ class NotificationSettings {
     quietStartMinute: 0,
     quietEndHour: 7,
     quietEndMinute: 0,
-    hideMedicineNamesOnLockScreen: false,
+    hideMedicineNamesOnLockScreen: true,
   );
 
   /// Read from `users/{uid}.settings` map (Firestore `map` field).
@@ -76,7 +76,10 @@ class NotificationSettings {
       quietStartMinute: _int(m['quietStartMinute'], 0),
       quietEndHour: _int(m['quietEndHour'], 7),
       quietEndMinute: _int(m['quietEndMinute'], 0),
-      hideMedicineNamesOnLockScreen: _bool(m['hideMedicineNamesOnLockScreen'], false),
+      hideMedicineNamesOnLockScreen: _bool(
+        m['hideMedicineNamesOnLockScreen'],
+        true,
+      ),
     );
   }
 
@@ -127,5 +130,6 @@ class NotificationSettings {
   String toString() => 'NotificationSettings(${toMap()})';
 
   static bool _bool(dynamic v, bool d) => v is bool ? v : d;
-  static int _int(dynamic v, int d) => v is int ? v : (v is num ? v.toInt() : d);
+  static int _int(dynamic v, int d) =>
+      v is int ? v : (v is num ? v.toInt() : d);
 }

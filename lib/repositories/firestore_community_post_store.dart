@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../core/community/community_models.dart';
+import '../core/daily_limits.dart';
 import '../core/community/community_posts.dart';
 
 /// Firestore side of posts and comments. M19 step 4.
@@ -16,6 +18,12 @@ class FirestoreCommunityPostStore implements CommunityPostStore {
     String groupId,
     String postId,
   ) => _posts(groupId).doc(postId).collection('comments');
+
+  String _uid() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) throw StateError('Not signed in');
+    return uid;
+  }
 
   /// A refused write becomes [CommunityDeniedException]; other errors pass.
   Future<T> _guard<T>(Future<T> Function() run) async {
@@ -33,8 +41,15 @@ class FirestoreCommunityPostStore implements CommunityPostStore {
     required String authorId,
     required String body,
   }) => _guard(() async {
-    final ref = await _posts(groupId)
-        .add(CommunityFeedPost.createMap(authorId: authorId, body: body));
+    // M21 step 6: the post and the day's counter go in one batch; the rules
+    // refuse the post without it (and above the limit).
+    final uid = _uid();
+    await DailyLimits.assertRoom(_db, uid, DailyLimitKind.posts);
+    final ref = _posts(groupId).doc();
+    final batch = _db.batch()
+      ..set(ref, CommunityFeedPost.createMap(authorId: authorId, body: body));
+    DailyLimits.bump(batch, _db, uid, DailyLimitKind.posts);
+    await batch.commit();
     return ref.id;
   });
 
@@ -98,10 +113,13 @@ class FirestoreCommunityPostStore implements CommunityPostStore {
     required String authorId,
     required String body,
   }) => _guard(() async {
-    final ref = await _comments(
-      groupId,
-      postId,
-    ).add(CommunityComment.createMap(authorId: authorId, body: body));
+    final uid = _uid();
+    await DailyLimits.assertRoom(_db, uid, DailyLimitKind.comments);
+    final ref = _comments(groupId, postId).doc();
+    final batch = _db.batch()
+      ..set(ref, CommunityComment.createMap(authorId: authorId, body: body));
+    DailyLimits.bump(batch, _db, uid, DailyLimitKind.comments);
+    await batch.commit();
     return ref.id;
   });
 

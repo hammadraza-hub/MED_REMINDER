@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_error_text.dart';
+import '../../core/daily_limits.dart';
 import '../../core/app_exception.dart';
 import '../../core/community/community_content_filter.dart';
 import '../../core/community/community_models.dart';
@@ -48,6 +49,7 @@ String communityActionError(
         ? l10n.communityErrContactPost
         : l10n.communityErrInappropriate;
   }
+  if (error is DailyLimitException) return l10n.dailyLimitReached;
   if (error is CommunityNoProfileException) return l10n.communityNoProfile;
   if (error is CommunityDeniedException) return l10n.communityDenied;
   // No connection / no answer: say so, so the user knows to try again later.

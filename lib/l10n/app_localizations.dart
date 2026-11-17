@@ -6019,6 +6019,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You no longer have access to that profile. Showing your own profile instead.'**
   String get accessLostNotice;
+
+  /// No description provided for @reminderGenericTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication reminder'**
+  String get reminderGenericTitle;
+
+  /// No description provided for @reminderGenericBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to take your medication'**
+  String get reminderGenericBody;
+
+  /// No description provided for @apptNotifBodyHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'You have an upcoming appointment'**
+  String get apptNotifBodyHidden;
+
+  /// No description provided for @notifPrivacyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide details on the lock screen'**
+  String get notifPrivacyTitle;
+
+  /// No description provided for @notifPrivacyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders say \"Medication reminder\" instead of the medicine or doctor name.'**
+  String get notifPrivacyBody;
+
+  /// No description provided for @dailyLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'You have reached today\'s limit for this. Please try again tomorrow.'**
+  String get dailyLimitReached;
 }
 
 class _AppLocalizationsDelegate

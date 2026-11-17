@@ -8,6 +8,10 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../l10n/app_localizations.dart';
+import '../../repositories/auth_repository.dart';
+import '../locale/locale_controller.dart';
+import '../notification_privacy.dart';
 import '../profile/profile_controller.dart';
 import '../../models/dose.dart';
 import '../../repositories/dose_repository.dart';
@@ -66,7 +70,10 @@ class ReminderScheduler with WidgetsBindingObserver {
   Future<void>? _rescheduling;
   String? _lastProfileId;
 
-  static final NotificationDetails _details = NotificationDetails(
+  // M21 step 4: "private" shows only a generic line on a locked screen (the
+  // phone's own setting decides); "public" is used only when the user chose to
+  // show the medicine name.
+  static NotificationDetails _detailsFor(bool hide) => NotificationDetails(
     android: AndroidNotificationDetails(
       _channelId,
       _channelName,
@@ -77,6 +84,9 @@ class ReminderScheduler with WidgetsBindingObserver {
       category: AndroidNotificationCategory.reminder,
       enableVibration: true,
       actions: _actions,
+      visibility: hide
+          ? NotificationVisibility.private
+          : NotificationVisibility.public,
     ),
     iOS: const DarwinNotificationDetails(),
   );
@@ -211,10 +221,17 @@ class ReminderScheduler with WidgetsBindingObserver {
       return;
     }
 
-    // Load escalation interval from settings (falls back to 10 on first launch).
+    // Load the user's settings (they live under users/{uid}, not under the
+    // profile): escalation interval and whether names are hidden on the lock
+    // screen. A failure keeps the safe defaults (names hidden).
     try {
-      final settings = await SettingsRepository.instance.getSettings(profileId);
-      _escalationMinutes = settings.escalationMinutes;
+      final uid = AuthRepository.instance.currentUid;
+      if (uid != null && uid.isNotEmpty) {
+        final settings = await SettingsRepository.instance.getSettings(uid);
+        _escalationMinutes = settings.escalationMinutes;
+        NotificationPrivacy.instance.hideNames =
+            settings.hideMedicineNamesOnLockScreen;
+      }
     } catch (e) {
       debugPrint('ReminderScheduler: failed to load settings: $e');
     }
@@ -309,12 +326,14 @@ class ReminderScheduler with WidgetsBindingObserver {
     required String payload,
     required AndroidScheduleMode mode,
   }) async {
+    final hide = NotificationPrivacy.instance.hideNames;
+    final l10n = lookupAppLocalizations(LocaleController.instance.locale);
     await _plugin.zonedSchedule(
       id: id,
-      title: dose.medName,
-      body: dose.doseLabel ?? 'Time to take your medication',
+      title: ReminderText.title(l10n, hide: hide, medName: dose.medName),
+      body: ReminderText.body(l10n, hide: hide, doseLabel: dose.doseLabel),
       scheduledDate: tz.TZDateTime.from(at.toLocal(), tz.local),
-      notificationDetails: _details,
+      notificationDetails: _detailsFor(hide),
       androidScheduleMode: mode,
       payload: payload,
     );
@@ -365,7 +384,7 @@ class ReminderScheduler with WidgetsBindingObserver {
       return;
     }
     // Body tap just opens the app; queued actions replay on resume.
-    debugPrint('ReminderScheduler: notification opened (${response.payload})');
+    debugPrint('ReminderScheduler: notification opened');
   }
 
   Future<void> _handleAction(String action, String? payload) async {

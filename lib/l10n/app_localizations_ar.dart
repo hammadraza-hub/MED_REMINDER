@@ -3447,4 +3447,24 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get accessLostNotice =>
       'لم يعد لديك صلاحية الوصول إلى هذا الملف. يتم عرض ملفك الشخصي.';
+
+  @override
+  String get reminderGenericTitle => 'تذكير بالدواء';
+
+  @override
+  String get reminderGenericBody => 'حان وقت تناول دوائك';
+
+  @override
+  String get apptNotifBodyHidden => 'لديك موعد قادم';
+
+  @override
+  String get notifPrivacyTitle => 'إخفاء التفاصيل على شاشة القفل';
+
+  @override
+  String get notifPrivacyBody =>
+      'تعرض التذكيرات «تذكير بالدواء» بدلاً من اسم الدواء أو الطبيب.';
+
+  @override
+  String get dailyLimitReached =>
+      'لقد وصلت إلى حد اليوم لهذا الإجراء. يرجى المحاولة غدًا.';
 }

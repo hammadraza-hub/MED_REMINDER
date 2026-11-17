@@ -117,6 +117,8 @@ class AccountDeletionEngine {
 
     onProgress?.call('account');
     await _purgeCollection('users/$uid/devices');
+    // M21 step 6: the day counters of the daily limits.
+    await _purgeCollection('users/$uid/limits');
     await _delete('users/$uid');
 
     return PurgeSummary(

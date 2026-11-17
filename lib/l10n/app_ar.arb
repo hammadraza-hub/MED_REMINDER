@@ -993,5 +993,11 @@
   "savedQueuedNotice": "تم الحفظ على هذا الهاتف. ستتم المزامنة عند عودة الاتصال.",
   "appErrorSignInAgain": "تسجيل الدخول مرة أخرى",
   "queuedWriteRejected": "تعذّر حفظ تغيير أجريته أثناء عدم الاتصال.",
-  "accessLostNotice": "لم يعد لديك صلاحية الوصول إلى هذا الملف. يتم عرض ملفك الشخصي."
+  "accessLostNotice": "لم يعد لديك صلاحية الوصول إلى هذا الملف. يتم عرض ملفك الشخصي.",
+  "reminderGenericTitle": "تذكير بالدواء",
+  "reminderGenericBody": "حان وقت تناول دوائك",
+  "apptNotifBodyHidden": "لديك موعد قادم",
+  "notifPrivacyTitle": "إخفاء التفاصيل على شاشة القفل",
+  "notifPrivacyBody": "تعرض التذكيرات «تذكير بالدواء» بدلاً من اسم الدواء أو الطبيب.",
+  "dailyLimitReached": "لقد وصلت إلى حد اليوم لهذا الإجراء. يرجى المحاولة غدًا."
 }

@@ -294,6 +294,32 @@ service cloud.firestore {
     //   - Lifecycle fields (status, archivedReason - use archiveMedication method)
     //   - Immutable fields (profileId, createdBy, createdAt, source, rxcui)
     //   - If schedule changes, new schedule must be valid
+    // M21: Spark has no Cloud Function to keep the stock count, so the app
+    // changes quantityOnHand itself (a dose taken, a manual correction, the
+    // first count). The rules keep it honest: it must be a whole number in a
+    // sane range, written together with the change time and its source, and
+    // nothing else of the medication may change in the same write.
+    // (Blaze: move this to a function and block the field again.)
+    function validStockChange() {
+      let d = request.resource.data;
+
+      return d.quantityOnHand is int
+        && d.quantityOnHand >= -1000 && d.quantityOnHand <= 100000
+        && d.lastAdjustedAt == request.time
+        && d.adjustmentSource is string
+        && d.adjustmentSource.size() >= 1 && d.adjustmentSource.size() <= 40
+        && d.updatedAt == request.time;
+    }
+
+    // Stock-only update: whoever may log doses can lower the stock when they
+    // log one, without being allowed to edit the medication itself.
+    function validStockOnlyUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'quantityOnHand', 'lastAdjustedAt', 'adjustmentSource', 'updatedAt'
+        ])
+        && validStockChange();
+    }
+
     function validMedicationUpdate() {
       let data = request.resource.data;
       let diff = data.diff(resource.data).affectedKeys();
@@ -304,13 +330,163 @@ service cloud.firestore {
         && !diff.hasAny(['profileId', 'createdBy', 'createdAt', 'source', 'rxcui'])
 
         // Block server-maintained fields (only functions update these)
-        && !diff.hasAny(['quantityOnHand', 'daysOfSupply', 'flags'])
+        && !diff.hasAny(['daysOfSupply', 'flags'])
+
+        // Stock count: only through the bounded rule above
+        && (!diff.hasAny(['quantityOnHand']) || validStockChange())
 
         // Block lifecycle fields (use archiveMedication repository method instead)
         && !diff.hasAny(['status', 'archivedReason'])
 
         // If schedule is being updated, validate new shape
         && (!diff.hasAny(['schedule']) || validSchedule(data.schedule));
+    }
+
+    // =====================================
+    // M21: SHAPE RULES FOR FREE-FORM COLLECTIONS
+    // =====================================
+
+    function validInventoryEvent() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly(['delta', 'reason', 'doseId', 'createdAt'])
+        && d.keys().hasAll(['delta', 'reason', 'createdAt'])
+        && d.delta is int && d.delta >= -1000 && d.delta <= 100000
+        && d.reason is string && d.reason.size() >= 1 && d.reason.size() <= 40
+        && (!('doseId' in d) || d.doseId == null
+            || (d.doseId is string && d.doseId.size() <= 100))
+        && d.createdAt == request.time;
+    }
+
+    function strMax(d, key, max) {
+      return !(key in d) || d[key] == null
+        || (d[key] is string && d[key].size() <= max);
+    }
+
+    // Allergies are written by two screens with slightly different keys.
+    function validAllergy() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly([
+          'id', 'memberId', 'name', 'category', 'severity', 'symptoms',
+          'description', 'addedAt', 'createdAt', 'updatedAt'
+        ])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 100
+        && strMax(d, 'id', 100)
+        && strMax(d, 'memberId', 100)
+        && strMax(d, 'category', 40)
+        && strMax(d, 'severity', 40)
+        && strMax(d, 'symptoms', 500)
+        && strMax(d, 'description', 500)
+        && (!('addedAt' in d) || d.addedAt == null
+            || d.addedAt is timestamp
+            || (d.addedAt is string && d.addedAt.size() <= 40))
+        && (!('createdAt' in d) || d.createdAt == null
+            || d.createdAt is timestamp
+            || (d.createdAt is string && d.createdAt.size() <= 40))
+        && (!('updatedAt' in d) || d.updatedAt == null
+            || d.updatedAt is timestamp
+            || (d.updatedAt is string && d.updatedAt.size() <= 40));
+    }
+
+    function validPharmacy() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly([
+          'id', 'memberId', 'name', 'phone', 'address', 'isPrimary',
+          'linkedMedicationIds', 'openingHours', 'createdAt', 'updatedAt'
+        ])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 120
+        && strMax(d, 'id', 100)
+        && strMax(d, 'memberId', 100)
+        && strMax(d, 'phone', 40)
+        && strMax(d, 'address', 300)
+        && (!('isPrimary' in d) || d.isPrimary is bool)
+        && (!('linkedMedicationIds' in d) || d.linkedMedicationIds == null
+            || (d.linkedMedicationIds is list
+                && d.linkedMedicationIds.size() <= 50))
+        && (!('openingHours' in d) || d.openingHours == null
+            || (d.openingHours is list && d.openingHours.size() <= 14))
+        && (!('createdAt' in d) || d.createdAt == null
+            || d.createdAt is timestamp)
+        && (!('updatedAt' in d) || d.updatedAt == null
+            || d.updatedAt is timestamp);
+    }
+
+    // users/{uid}.settings: only the keys the app syncs, small values.
+    function validUserSettings(settings) {
+      return settings is map
+        && settings.keys().hasOnly([
+          'language', 'textSizeIndex', 'highContrast', 'simplifiedMode',
+          'voiceInput', 'doseEnabled', 'refillEnabled', 'caregiverEnabled',
+          'escalationMinutes', 'quietHoursEnabled', 'quietStartHour',
+          'quietStartMinute', 'quietEndHour', 'quietEndMinute',
+          'hideMedicineNamesOnLockScreen'
+        ])
+        && (!('language' in settings)
+            || (settings.language is string && settings.language.size() <= 10));
+    }
+
+    function validDevice() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly([
+          'platform', 'appVersion', 'lastSeen', 'updatedAt', 'timezone'
+        ])
+        && strMax(d, 'platform', 20)
+        && strMax(d, 'appVersion', 40)
+        && strMax(d, 'timezone', 64);
+    }
+
+    // =====================================
+    // M21 step 6: DAILY LIMITS (Spark has no function to count for us)
+    //
+    // Every limited action (community post, comment, report, support ticket)
+    // must be written in the SAME batch as users/{uid}/limits/{day}, with that
+    // day's counter raised by exactly one and not above the limit. The numbers
+    // must match lib/core/daily_limits.dart (DailyLimitKind).
+    // {day} is the UTC day number (server time / 86400000, whole days).
+    // =====================================
+
+    function limitDay() {
+      return string(int(request.time.toMillis() / 86400000));
+    }
+
+    function limitDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid)/limits/$(limitDay());
+    }
+
+    function limitUsedBefore(field) {
+      return exists(limitDocPath())
+        ? get(limitDocPath()).data.get(field, 0)
+        : 0;
+    }
+
+    // The action's batch also raises today's counter by one, within [max].
+    function bumpedOnce(field, max) {
+      return signedIn()
+        && getAfter(limitDocPath()).data[field] == limitUsedBefore(field) + 1
+        && getAfter(limitDocPath()).data[field] <= max;
+    }
+
+    // The counter document itself: one field, +1, within its limit.
+    function validLimitBump() {
+      let d = request.resource.data;
+      let before = resource == null ? {} : resource.data;
+      let changed = d.diff(before).affectedKeys();
+
+      return d.keys().hasOnly(['posts', 'comments', 'reports', 'tickets'])
+        && changed.size() == 1
+        && (
+          ('posts' in changed && d.posts == before.get('posts', 0) + 1
+            && d.posts <= 20)
+          || ('comments' in changed && d.comments == before.get('comments', 0) + 1
+            && d.comments <= 100)
+          || ('reports' in changed && d.reports == before.get('reports', 0) + 1
+            && d.reports <= 20)
+          || ('tickets' in changed && d.tickets == before.get('tickets', 0) + 1
+            && d.tickets <= 5)
+        );
     }
 
     // =====================================
@@ -335,8 +511,84 @@ service cloud.firestore {
               'missDeadline'
             ])
 
+        // M21: values must look like what the app writes
+        && data.status in ['pending', 'taken', 'skipped', 'missed']
+        && (!('reasonCode' in data) || data.reasonCode == null
+            || data.reasonCode in ['forgot', 'side_effect', 'ran_out', 'other'])
+        && (!('reasonText' in data) || data.reasonText == null
+            || (data.reasonText is string && data.reasonText.size() <= 500))
+        // Whoever logs a dose is recorded as themselves (checked only when
+        // loggedBy is being written, so later edits by someone else keep it).
+        && (!diff.hasAny(['loggedBy'])
+            || data.loggedBy == null
+            || data.loggedBy == request.auth.uid)
+
         // Validate status transition (if status is changing)
         && validDoseTransition();
+    }
+
+    // M21: a dose document created by the app. Two shapes only:
+    //  * a scheduled dose (status pending, nothing logged yet), made by
+    //    whoever may edit medications (the 14-day generator);
+    //  * a PRN dose (status taken, logged by the creator right now), made by
+    //    whoever may log doses.
+    function validDoseCreate(profileId) {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly([
+          'profileId', 'medicationId', 'medName', 'doseLabel', 'scheduledAt',
+          'missDeadline', 'status', 'loggedAt', 'loggedBy', 'reasonCode',
+          'reasonText', 'snoozedUntil', 'createdAt'
+        ])
+        && d.keys().hasAll([
+          'profileId', 'medicationId', 'medName', 'doseLabel', 'scheduledAt',
+          'missDeadline', 'status', 'createdAt'
+        ])
+        && d.profileId == profileId
+        && d.medicationId is string
+        && d.medicationId.size() > 0 && d.medicationId.size() <= 100
+        && d.medName is string && d.medName.size() <= 200
+        && d.doseLabel is string && d.doseLabel.size() <= 200
+        && d.scheduledAt is timestamp
+        && d.missDeadline is timestamp
+        && d.createdAt is timestamp
+        && (!('reasonText' in d) || d.reasonText == null
+            || (d.reasonText is string && d.reasonText.size() <= 500))
+        && (!('reasonCode' in d) || d.reasonCode == null
+            || d.reasonCode in ['forgot', 'side_effect', 'ran_out', 'other'])
+        && (
+          (d.status == 'pending'
+            && canEditMedications(profileId)
+            && d.get('loggedAt', null) == null
+            && d.get('loggedBy', null) == null)
+          ||
+          (d.status == 'taken'
+            && canLogDoses(profileId)
+            && d.get('loggedAt', null) is timestamp
+            && d.get('loggedBy', null) == request.auth.uid)
+        );
+    }
+
+    // M21: Spark has no scheduled function, so the app itself marks overdue
+    // doses "missed" when it opens. The rules only allow exactly that: a
+    // pending dose whose miss deadline has passed, with nothing else changed.
+    function overdueSweepOnly() {
+      let before = resource.data;
+
+      return before.status == 'pending'
+        && request.resource.data.status == 'missed'
+        && request.resource.data.diff(before).affectedKeys().hasOnly(['status'])
+        && before.get('missDeadline', null) is timestamp
+        && before.missDeadline < request.time;
+    }
+
+    // M21: "undo" (taken / skipped -> pending) only within 24 h of logging,
+    // like the app's Dose.canUndo().
+    function undoWindowOpen() {
+      let at = resource.data.get('loggedAt', null);
+
+      return at is timestamp
+        && request.time <= at + duration.value(24, 'h');
     }
 
     // M7: Validate status transitions.
@@ -353,11 +605,13 @@ service cloud.firestore {
         || (
           (oldStatus == 'pending' && newStatus == 'taken')
           || (oldStatus == 'pending' && newStatus == 'skipped')
-          || (oldStatus == 'pending' && newStatus == 'missed')
+          || overdueSweepOnly()
           || (oldStatus == 'missed' && newStatus == 'taken')
           || (oldStatus == 'missed' && newStatus == 'skipped')
-          || (oldStatus == 'taken' && newStatus == 'pending')
-          || (oldStatus == 'skipped' && newStatus == 'pending')
+          || (oldStatus == 'taken' && newStatus == 'pending'
+              && undoWindowOpen())
+          || (oldStatus == 'skipped' && newStatus == 'pending'
+              && undoWindowOpen())
         );
     }
 
@@ -736,7 +990,8 @@ service cloud.firestore {
     function validUserCreate() {
       let data = request.resource.data;
 
-      return data.keys().hasOnly([
+      return (!('settings' in data) || validUserSettings(data.settings))
+        && data.keys().hasOnly([
         'email',
         'displayName',
         'timezone',
@@ -971,7 +1226,8 @@ service cloud.firestore {
     function validUserUpdate() {
       let data = request.resource.data;
 
-      return data.diff(resource.data)
+      return (!('settings' in data) || validUserSettings(data.settings))
+        && data.diff(resource.data)
         .affectedKeys()
         .hasOnly([
           'email',
@@ -1086,10 +1342,31 @@ service cloud.firestore {
         && request.auth.uid == uid
         && accountDeletionDue();
 
+      // M21 step 6: the day's counters (see DAILY LIMITS above).
+      match /limits/{day} {
+
+        allow read: if signedIn() && request.auth.uid == uid;
+
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && day == limitDay()
+          && validLimitBump();
+
+        // Account purge removes it with the rest of the user's data.
+        allow delete: if signedIn()
+          && request.auth.uid == uid
+          && accountDeletionDue();
+      }
+
       match /devices/{deviceId} {
 
-        allow read, write: if signedIn()
+        allow read, delete: if signedIn()
           && request.auth.uid == uid;
+
+        // M21: only the fields the app saves, small values.
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && validDevice();
       }
 
       // M19 step 1: saved posts (private to the owner)
@@ -1223,7 +1500,8 @@ service cloud.firestore {
 
     match /supportTickets/{ticketId} {
 
-      allow create: if signedIn() && validTicketCreate();
+      allow create: if signedIn() && validTicketCreate()
+        && bumpedOnce('tickets', 5);
 
       // Users can read only their own tickets (support staff use the console).
       allow read: if signedIn() && resource.data.uid == request.auth.uid;
@@ -1244,7 +1522,13 @@ service cloud.firestore {
       // get = single doc read (uses get() in isMember — OK)
       // list = query (can't use get() — just check auth, query constrains results)
       allow get: if isMember(profileId);
-      allow list: if signedIn();
+
+      // M21: a list may only ask for the user's own profiles. The query has
+      // to say so (the app uses where memberUids array-contains uid, or
+      // where ownerUid == uid); an unfiltered list is refused.
+      allow list: if signedIn()
+        && (request.auth.uid in resource.data.memberUids
+            || resource.data.ownerUid == request.auth.uid);
 
       allow update: if (isOwner(profileId)
         && validProfileUpdate())
@@ -1259,11 +1543,9 @@ service cloud.firestore {
 
       match /medications/{medId} {
 
-        // M5: Split read into get + list (same pattern as profiles)
-        // get = single doc read (uses get() in isMember — OK)
-        // list = query / stream (can't use get() — just check auth)
-        allow get: if isMember(profileId);
-        allow list: if signedIn();
+        // M21: get AND list check membership. The profile id comes from the
+        // path, so a list can use the same get()-based check as a single read.
+        allow get, list: if isMember(profileId);
 
         // M5: Create — owner/caregiver with full validation
         // (validMedicationCreate blocks server-maintained fields)
@@ -1272,8 +1554,9 @@ service cloud.firestore {
 
         // M5: Update — owner/caregiver with shape validation
         // (validMedicationUpdate blocks immutable + server-maintained + lifecycle fields)
-        allow update: if canEditMedications(profileId)
-          && validMedicationUpdate();
+        allow update: if (canEditMedications(profileId)
+            && validMedicationUpdate())
+          || (canLogDoses(profileId) && validStockOnlyUpdate());
 
         // M5: "Archive, never delete." — deletion not allowed
         // (use archiveMedication method to discontinue)
@@ -1284,8 +1567,10 @@ service cloud.firestore {
 
           allow read: if isMember(profileId);
 
-          allow create:
-            if canEditMedications(profileId);
+          // M21: the event the app writes with every stock change.
+          allow create: if (canEditMedications(profileId)
+              || canLogDoses(profileId))
+            && validInventoryEvent();
 
           allow update: if false;
 
@@ -1297,8 +1582,8 @@ service cloud.firestore {
       // M9: Pharmacies (name, phone, address, linked to medications)
       match /pharmacies/{pharmacyId} {
         allow read: if isMember(profileId);
-        allow create: if canEditMedications(profileId);
-        allow update: if canEditMedications(profileId);
+        allow create: if canEditMedications(profileId) && validPharmacy();
+        allow update: if canEditMedications(profileId) && validPharmacy();
         allow delete: if canPurgeProfile(profileId);
       }
 
@@ -1308,13 +1593,11 @@ service cloud.firestore {
 
       match /doses/{doseId} {
 
-        // M7: Split read into get + list (same pattern as profiles/medications)
-        allow get: if isMember(profileId);
-        allow list: if signedIn();
+        // M21: get AND list check membership (see medications).
+        allow get, list: if isMember(profileId);
 
         // M7: Create — dose generation (canEditMedications) OR PRN logging (canLogDoses)
-        allow create: if canEditMedications(profileId)
-          || canLogDoses(profileId);
+        allow create: if validDoseCreate(profileId);
 
         // M7: Update — logging (canLogDoses) OR regeneration (canEditMedications)
         // + validDoseUpdate() enforces field restrictions + valid transitions
@@ -1353,7 +1636,7 @@ service cloud.firestore {
         allow read: if canRead(profileId);
 
         // M3: Owner or caregiver can create/update allergies
-        allow create, update: if canWrite(profileId);
+        allow create, update: if canWrite(profileId) && validAllergy();
 
         // M3: Only owner can delete allergies
         allow delete: if isOwner(profileId);
@@ -1502,7 +1785,8 @@ service cloud.firestore {
               || isModerator()
               || isMyCpid(resource.data.authorId));
 
-        allow create: if validCommunityPostCreate();
+        allow create: if validCommunityPostCreate()
+          && bumpedOnce('posts', 20);
 
         allow update: if validCommunityPostEdit()
           || validCommunityVoteCount(groupId, postId)
@@ -1537,7 +1821,8 @@ service cloud.firestore {
           allow read: if signedIn();
 
           allow create: if validCommunityComment()
-            && get(communityPostPath(groupId, postId)).data.hidden == false;
+            && get(communityPostPath(groupId, postId)).data.hidden == false
+            && bumpedOnce('comments', 100);
 
           allow update: if validCommunityCommentEdit();
 
@@ -1551,7 +1836,8 @@ service cloud.firestore {
     // can read or clear them.
     match /reports/{reportId} {
 
-      allow create: if validCommunityReport();
+      allow create: if validCommunityReport()
+        && bumpedOnce('reports', 20);
 
       allow read, delete: if isModerator();
 

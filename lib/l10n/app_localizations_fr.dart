@@ -3530,4 +3530,25 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get accessLostNotice =>
       'Vous n\'avez plus accès à ce profil. Votre propre profil est affiché.';
+
+  @override
+  String get reminderGenericTitle => 'Rappel de médicament';
+
+  @override
+  String get reminderGenericBody =>
+      'C\'est l\'heure de prendre votre médicament';
+
+  @override
+  String get apptNotifBodyHidden => 'Vous avez un rendez-vous à venir';
+
+  @override
+  String get notifPrivacyTitle => 'Masquer les détails sur l\'écran verrouillé';
+
+  @override
+  String get notifPrivacyBody =>
+      'Les rappels affichent « Rappel de médicament » au lieu du nom du médicament ou du médecin.';
+
+  @override
+  String get dailyLimitReached =>
+      'Vous avez atteint la limite d\'aujourd\'hui pour cette action. Réessayez demain.';
 }

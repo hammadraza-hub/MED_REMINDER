@@ -86,7 +86,7 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       if (user != null) {
-        debugPrint('🔥 Auth state: user signed in → ${user.uid}');
+        debugPrint('🔥 Auth state: user signed in');
         _navigateToDashboard(user.uid);
       } else {
         debugPrint('🔥 Auth state: no user → onboarding');

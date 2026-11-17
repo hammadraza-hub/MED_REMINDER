@@ -23,7 +23,23 @@ const {
   orderBy,
   limit,
   documentId,
+  increment,
 } = require("firebase/firestore");
+
+// M21 step 6: a limited action (community post / comment / report, support
+// ticket) must be written in the SAME batch as the day's counter, like the app
+// does (lib/core/daily_limits.dart). `makeRef(db)` builds the document ref on
+// the same Firestore instance as the batch.
+function limited(db, uid, kind, makeRef, data) {
+  const batch = writeBatch(db);
+  batch.set(makeRef(db), data);
+  batch.set(
+    doc(db, "users", uid, "limits", String(Math.floor(Date.now() / 86400000))),
+    { [kind]: increment(1) },
+    { merge: true }
+  );
+  return batch.commit();
+}
 
 let testEnv;
 
@@ -642,7 +658,7 @@ describe("Support tickets — M13 step 5", () => {
 
   test("User can create their own ticket", async () => {
     const db = testEnv.authenticatedContext("owner123").firestore();
-    await assertSucceeds(addDoc(collection(db, "supportTickets"), ticket()));
+    await assertSucceeds(limited(db, "owner123", "tickets", (d) => doc(collection(d, "supportTickets")), ticket()));
   });
 
   test("Unauthenticated user cannot create a ticket", async () => {
@@ -653,14 +669,14 @@ describe("Support tickets — M13 step 5", () => {
   test("Cannot create a ticket for another user", async () => {
     const db = testEnv.authenticatedContext("owner123").firestore();
     await assertFails(
-      addDoc(collection(db, "supportTickets"), ticket({ uid: "viewer123" }))
+      limited(db, "owner123", "tickets", (d) => doc(collection(d, "supportTickets")), ticket({ uid: "viewer123" }))
     );
   });
 
   test("Extra or missing fields are rejected", async () => {
     const db = testEnv.authenticatedContext("owner123").firestore();
     await assertFails(
-      addDoc(collection(db, "supportTickets"), ticket({ admin: true }))
+      limited(db, "owner123", "tickets", (d) => doc(collection(d, "supportTickets")), ticket({ admin: true }))
     );
     const { body, ...withoutBody } = ticket();
     await assertFails(addDoc(collection(db, "supportTickets"), withoutBody));
@@ -669,36 +685,34 @@ describe("Support tickets — M13 step 5", () => {
   test("Empty or oversized subject/body are rejected", async () => {
     const db = testEnv.authenticatedContext("owner123").firestore();
     await assertFails(
-      addDoc(collection(db, "supportTickets"), ticket({ subject: "" }))
+      limited(db, "owner123", "tickets", (d) => doc(collection(d, "supportTickets")), ticket({ subject: "" }))
     );
     await assertFails(
-      addDoc(collection(db, "supportTickets"), ticket({ subject: "x".repeat(121) }))
+      limited(db, "owner123", "tickets", (d) => doc(collection(d, "supportTickets")), ticket({ subject: "x".repeat(121) }))
     );
     await assertFails(
-      addDoc(collection(db, "supportTickets"), ticket({ body: "" }))
+      limited(db, "owner123", "tickets", (d) => doc(collection(d, "supportTickets")), ticket({ body: "" }))
     );
     await assertFails(
-      addDoc(collection(db, "supportTickets"), ticket({ body: "x".repeat(2001) }))
+      limited(db, "owner123", "tickets", (d) => doc(collection(d, "supportTickets")), ticket({ body: "x".repeat(2001) }))
     );
   });
 
   test("Limits are inclusive (120 / 2000 characters)", async () => {
     const db = testEnv.authenticatedContext("owner123").firestore();
     await assertSucceeds(
-      addDoc(
-        collection(db, "supportTickets"),
-        ticket({ subject: "x".repeat(120), body: "y".repeat(2000) })
-      )
+      limited(db, "owner123", "tickets", (d) => doc(collection(d, "supportTickets")),
+        ticket({ subject: "x".repeat(120), body: "y".repeat(2000) }))
     );
   });
 
   test("Status must be open and createdAt must be server time", async () => {
     const db = testEnv.authenticatedContext("owner123").firestore();
     await assertFails(
-      addDoc(collection(db, "supportTickets"), ticket({ status: "closed" }))
+      limited(db, "owner123", "tickets", (d) => doc(collection(d, "supportTickets")), ticket({ status: "closed" }))
     );
     await assertFails(
-      addDoc(collection(db, "supportTickets"), ticket({ createdAt: new Date(2020, 1, 1) }))
+      limited(db, "owner123", "tickets", (d) => doc(collection(d, "supportTickets")), ticket({ createdAt: new Date(2020, 1, 1) }))
     );
   });
 
@@ -2208,30 +2222,30 @@ describe("Community — M19 step 1", () => {
   // ------------------------------------------------------------
   describe("posts", () => {
     test("author creates a post with their own community id", async () => {
-      await assertSucceeds(setDoc(post(ctx("alice"), "new1"), newPost()));
+      await assertSucceeds(limited(ctx("alice"), "alice", "posts", (d) => post(d, "new1"), newPost()));
     });
 
     test("cannot post as someone else", async () => {
-      await assertFails(setDoc(post(ctx("alice"), "new1"), newPost({ authorId: CPB })));
+      await assertFails(limited(ctx("alice"), "alice", "posts", (d) => post(d, "new1"), newPost({ authorId: CPB })));
     });
 
     test("cannot post without a pseudonym profile", async () => {
-      await assertFails(setDoc(post(ctx("carol"), "new1"), newPost({ authorId: CPC })));
+      await assertFails(limited(ctx("carol"), "carol", "posts", (d) => post(d, "new1"), newPost({ authorId: CPC })));
     });
 
     test("bad body, extra fields, fake counters or time are refused", async () => {
       const db = ctx("alice");
-      await assertFails(setDoc(post(db, "x1"), newPost({ body: "" })));
-      await assertFails(setDoc(post(db, "x2"), newPost({ body: "x".repeat(2001) })));
-      await assertFails(setDoc(post(db, "x3"), newPost({ voteCount: 5 })));
-      await assertFails(setDoc(post(db, "x4"), newPost({ hidden: true })));
-      await assertFails(setDoc(post(db, "x5"), newPost({ editedAt: new Date() })));
-      await assertFails(setDoc(post(db, "x6"), newPost({ uid: "alice" })));
-      await assertFails(setDoc(post(db, "x7"), newPost({ createdAt: new Date("2020-01-01") })));
+      await assertFails(limited(db, "alice", "posts", (d) => post(d, "x1"), newPost({ body: "" })));
+      await assertFails(limited(db, "alice", "posts", (d) => post(d, "x2"), newPost({ body: "x".repeat(2001) })));
+      await assertFails(limited(db, "alice", "posts", (d) => post(d, "x3"), newPost({ voteCount: 5 })));
+      await assertFails(limited(db, "alice", "posts", (d) => post(d, "x4"), newPost({ hidden: true })));
+      await assertFails(limited(db, "alice", "posts", (d) => post(d, "x5"), newPost({ editedAt: new Date() })));
+      await assertFails(limited(db, "alice", "posts", (d) => post(d, "x6"), newPost({ uid: "alice" })));
+      await assertFails(limited(db, "alice", "posts", (d) => post(d, "x7"), newPost({ createdAt: new Date("2020-01-01") })));
     });
 
     test("a post has no uid or personal field", async () => {
-      await assertFails(setDoc(post(ctx("alice"), "x1"), newPost({ email: "a@x.com" })));
+      await assertFails(limited(ctx("alice"), "alice", "posts", (d) => post(d, "x1"), newPost({ email: "a@x.com" })));
     });
 
     test("normal posts are readable, hidden ones only by author and moderator", async () => {
@@ -2407,20 +2421,20 @@ describe("Community — M19 step 1", () => {
   // ------------------------------------------------------------
   describe("comments", () => {
     test("author comments with their own id", async () => {
-      await assertSucceeds(setDoc(comment(ctx("bob"), "p1", "n1"), newComment()));
+      await assertSucceeds(limited(ctx("bob"), "bob", "comments", (d) => comment(d, "p1", "n1"), newComment()));
     });
 
     test("not as someone else, not too long, not empty, no extra fields", async () => {
       const db = ctx("bob");
-      await assertFails(setDoc(comment(db, "p1", "n1"), newComment({ authorId: CPA })));
-      await assertFails(setDoc(comment(db, "p1", "n2"), newComment({ body: "" })));
-      await assertFails(setDoc(comment(db, "p1", "n3"), newComment({ body: "x".repeat(801) })));
-      await assertFails(setDoc(comment(db, "p1", "n4"), newComment({ uid: "bob" })));
-      await assertFails(setDoc(comment(db, "p1", "n5"), newComment({ createdAt: new Date("2020-01-01") })));
+      await assertFails(limited(db, "bob", "comments", (d) => comment(d, "p1", "n1"), newComment({ authorId: CPA })));
+      await assertFails(limited(db, "bob", "comments", (d) => comment(d, "p1", "n2"), newComment({ body: "" })));
+      await assertFails(limited(db, "bob", "comments", (d) => comment(d, "p1", "n3"), newComment({ body: "x".repeat(801) })));
+      await assertFails(limited(db, "bob", "comments", (d) => comment(d, "p1", "n4"), newComment({ uid: "bob" })));
+      await assertFails(limited(db, "bob", "comments", (d) => comment(d, "p1", "n5"), newComment({ createdAt: new Date("2020-01-01") })));
     });
 
     test("no comments on a hidden post", async () => {
-      await assertFails(setDoc(comment(ctx("bob"), "hid", "n1"), newComment()));
+      await assertFails(limited(ctx("bob"), "bob", "comments", (d) => comment(d, "hid", "n1"), newComment()));
     });
 
     test("author edits own comment, others cannot", async () => {
@@ -2501,24 +2515,24 @@ describe("Community — M19 step 1", () => {
 
     test("anyone can report a post or a comment as themselves", async () => {
       const db = ctx("bob");
-      await assertSucceeds(setDoc(report(db, "r1"), newReport()));
+      await assertSucceeds(limited(db, "bob", "reports", (d) => report(d, "r1"), newReport()));
       await assertSucceeds(
-        setDoc(report(db, "r2"), newReport({ targetType: "comment", commentId: "c1", reason: "abuse" }))
+        limited(db, "bob", "reports", (d) => report(d, "r2"), newReport({ targetType: "comment", commentId: "c1", reason: "abuse" }))
       );
     });
 
     test("bad reports are refused", async () => {
       const db = ctx("bob");
-      await assertFails(setDoc(report(db, "r1"), newReport({ reporterId: CPA })));
-      await assertFails(setDoc(report(db, "r2"), newReport({ reason: "i dislike it" })));
-      await assertFails(setDoc(report(db, "r3"), newReport({ targetType: "comment" }))); // no commentId
-      await assertFails(setDoc(report(db, "r4"), newReport({ targetType: "user" })));
-      await assertFails(setDoc(report(db, "r5"), newReport({ extra: 1 })));
-      await assertFails(setDoc(report(db, "r6"), newReport({ createdAt: new Date("2020-01-01") })));
+      await assertFails(limited(db, "bob", "reports", (d) => report(d, "r1"), newReport({ reporterId: CPA })));
+      await assertFails(limited(db, "bob", "reports", (d) => report(d, "r2"), newReport({ reason: "i dislike it" })));
+      await assertFails(limited(db, "bob", "reports", (d) => report(d, "r3"), newReport({ targetType: "comment" }))); // no commentId
+      await assertFails(limited(db, "bob", "reports", (d) => report(d, "r4"), newReport({ targetType: "user" })));
+      await assertFails(limited(db, "bob", "reports", (d) => report(d, "r5"), newReport({ extra: 1 })));
+      await assertFails(limited(db, "bob", "reports", (d) => report(d, "r6"), newReport({ createdAt: new Date("2020-01-01") })));
     });
 
     test("only moderators read and clear reports", async () => {
-      await assertSucceeds(setDoc(report(ctx("bob"), "r1"), newReport()));
+      await assertSucceeds(limited(ctx("bob"), "bob", "reports", (d) => report(d, "r1"), newReport()));
       await assertFails(getDoc(report(ctx("bob"), "r1")));
       await assertFails(getDoc(report(ctx("alice"), "r1")));
       await assertSucceeds(getDoc(report(ctx("mod1", { moderator: true }), "r1")));

@@ -238,3 +238,52 @@ Firestore Region: nam5
 
 Database ID for both:
 (default)
+
+
+========================================
+M21 ADDITIONS (security hardening)
+========================================
+
+users/{uid}/limits/{dayNumber}      (M21 step 6, daily limits on Spark)
+
+- dayNumber: UTC day = server time in ms / 86400000, whole days (document id, as text)
+- posts: int      community posts today (limit 20)
+- comments: int   community comments today (limit 100)
+- reports: int    community reports today (limit 20)
+- tickets: int    support tickets today (limit 5)
+
+Written by the client in the SAME batch as the limited action; the rules accept
+only +1 on one field within its limit, for today's id and the user's own uid.
+Read: own only. Delete: only after the account-deletion grace period (purge).
+The numbers are in lib/core/daily_limits.dart and firestore.rules (a test keeps
+them equal). On Blaze the functions can count instead.
+
+profiles/{profileId}/doses/{doseId}  (shape enforced by the rules since M21)
+
+- Create: exactly the keys profileId, medicationId, medName, doseLabel,
+  scheduledAt, missDeadline, status, loggedAt, loggedBy, reasonCode,
+  reasonText, snoozedUntil, createdAt. status "pending" (needs
+  editMedications) or "taken" with loggedAt and loggedBy = the creator (PRN,
+  needs logDoses). The app never writes status "snoozed" (snooze = pending +
+  snoozedUntil).
+- Update: only status / loggedAt / loggedBy / reasonCode / reasonText /
+  snoozedUntil / missDeadline. "missed" only for a pending dose whose
+  missDeadline has passed and only the status changes (the app's overdue sweep,
+  because Spark has no scheduled function). Undo (taken / skipped -> pending)
+  only within 24 h of loggedAt.
+
+profiles/{profileId}/medications/{medId}.quantityOnHand  (Spark)
+
+- The app changes it (a dose taken, a correction): int in [-1000, 100000]
+  written together with lastAdjustedAt = server time, adjustmentSource (1-40
+  characters) and updatedAt = server time. daysOfSupply and flags stay
+  server-only. On Blaze move this to a function and block the field again.
+
+users/{uid}.settings   only the keys: language, textSizeIndex, highContrast,
+simplifiedMode, voiceInput, doseEnabled, refillEnabled, caregiverEnabled,
+escalationMinutes, quietHoursEnabled, quietStartHour, quietStartMinute,
+quietEndHour, quietEndMinute, hideMedicineNamesOnLockScreen (default true).
+
+users/{uid}/devices/{token}   only platform, appVersion, lastSeen, updatedAt,
+timezone.
+

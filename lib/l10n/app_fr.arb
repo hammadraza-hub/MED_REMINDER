@@ -993,5 +993,11 @@
   "savedQueuedNotice": "Enregistré sur ce téléphone. Synchronisation dès le retour de la connexion.",
   "appErrorSignInAgain": "Se reconnecter",
   "queuedWriteRejected": "Une modification faite hors connexion n'a pas pu être enregistrée.",
-  "accessLostNotice": "Vous n'avez plus accès à ce profil. Votre propre profil est affiché."
+  "accessLostNotice": "Vous n'avez plus accès à ce profil. Votre propre profil est affiché.",
+  "reminderGenericTitle": "Rappel de médicament",
+  "reminderGenericBody": "C'est l'heure de prendre votre médicament",
+  "apptNotifBodyHidden": "Vous avez un rendez-vous à venir",
+  "notifPrivacyTitle": "Masquer les détails sur l'écran verrouillé",
+  "notifPrivacyBody": "Les rappels affichent « Rappel de médicament » au lieu du nom du médicament ou du médecin.",
+  "dailyLimitReached": "Vous avez atteint la limite d'aujourd'hui pour cette action. Réessayez demain."
 }

@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../core/app_exception.dart';
+import '../core/daily_limits.dart';
 import '../models/support_ticket.dart';
 
 /// How a submitted ticket ended up.
@@ -31,10 +33,18 @@ class SupportRepository {
   /// (permission / validation); returns [TicketSendResult.queued] if there is
   /// simply no answer in time.
   Future<TicketSendResult> submit(SupportTicket ticket) async {
-    final write = FirebaseFirestore.instance.collection('supportTickets').add({
-      ...ticket.toMap(),
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    // M21 step 6: the ticket and the day's counter go in one batch (the rules
+    // allow 5 tickets a day).
+    final db = FirebaseFirestore.instance;
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? ticket.uid;
+    await DailyLimits.assertRoom(db, uid, DailyLimitKind.tickets);
+    final batch = db.batch()
+      ..set(db.collection('supportTickets').doc(), {
+        ...ticket.toMap(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    DailyLimits.bump(batch, db, uid, DailyLimitKind.tickets);
+    final write = batch.commit();
     try {
       await write.timeout(_confirmTimeout);
       return TicketSendResult.sent;

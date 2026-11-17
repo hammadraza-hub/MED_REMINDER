@@ -1,3 +1,5 @@
+import '../notification_privacy.dart';
+
 import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
@@ -33,8 +35,18 @@ class AppointmentTexts {
   static AppointmentReminderPlan plan(
     AppLocalizations l10n,
     Appointment appointment,
-    String? doctorName,
-  ) {
+    String? doctorName, {
+    bool hide = true,
+  }) {
+    // M21 step 4: on a locked phone say only that an appointment is coming
+    // (no doctor, no kind of visit, no place).
+    if (hide) {
+      return AppointmentReminderPlan(
+        appointment: appointment,
+        title: l10n.apptNotifTitleNoDoctor,
+        body: l10n.apptNotifBodyHidden,
+      );
+    }
     final hasDoctor = doctorName != null && doctorName.trim().isNotEmpty;
     final place = (appointment.location ?? '').trim();
     final body = StringBuffer(
@@ -90,6 +102,9 @@ class PluginAppointmentBackend implements AppointmentNotificationBackend {
       importance: Importance.high,
       priority: Priority.high,
       category: AndroidNotificationCategory.reminder,
+      visibility: NotificationPrivacy.instance.hideNames
+          ? NotificationVisibility.private
+          : NotificationVisibility.public,
     ),
     iOS: const DarwinNotificationDetails(),
   );
@@ -174,7 +189,12 @@ class AppointmentReminders {
   }) async {
     try {
       final l10n = await _prepare();
-      final plan = AppointmentTexts.plan(l10n, appointment, doctorName);
+      final plan = AppointmentTexts.plan(
+        l10n,
+        appointment,
+        doctorName,
+        hide: NotificationPrivacy.instance.hideNames,
+      );
       await _service.schedule(
         appointment,
         profileId: profileId,
@@ -218,7 +238,12 @@ class AppointmentReminders {
         profileId: profileId,
         plans: [
           for (final a in appointments)
-            AppointmentTexts.plan(l10n, a, names[a.prescriberId]),
+            AppointmentTexts.plan(
+              l10n,
+              a,
+              names[a.prescriberId],
+              hide: NotificationPrivacy.instance.hideNames,
+            ),
         ],
       );
       debugPrint(

@@ -3490,4 +3490,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accessLostNotice =>
       'You no longer have access to that profile. Showing your own profile instead.';
+
+  @override
+  String get reminderGenericTitle => 'Medication reminder';
+
+  @override
+  String get reminderGenericBody => 'Time to take your medication';
+
+  @override
+  String get apptNotifBodyHidden => 'You have an upcoming appointment';
+
+  @override
+  String get notifPrivacyTitle => 'Hide details on the lock screen';
+
+  @override
+  String get notifPrivacyBody =>
+      'Reminders say \"Medication reminder\" instead of the medicine or doctor name.';
+
+  @override
+  String get dailyLimitReached =>
+      'You have reached today\'s limit for this. Please try again tomorrow.';
 }

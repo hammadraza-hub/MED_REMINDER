@@ -11,7 +11,6 @@ import 'features/onboarding/splash_screen.dart';
 // FIREBASE IMPORTS (M0 + M1)
 // ──────────────────────────────────────────────────────────────
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -27,6 +26,8 @@ import 'config/remote_config_service.dart';
 // ──────────────────────────────────────────────────────────────
 // EXISTING CONTROLLERS
 // ──────────────────────────────────────────────────────────────
+import 'core/safe_log.dart';
+import 'core/services/app_check_setup.dart';
 import 'core/services/app_guards.dart';
 import 'core/accessibility/accessibility_controller.dart';
 import 'core/app_navigator.dart';
@@ -69,6 +70,10 @@ import 'repositories/auth_repository.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // M21 step 3: in release / profile builds every log line is redacted
+  // (e-mail addresses, numbers, long ids) before it is printed.
+  SafeLog.install();
+
   // M20 step 2: start watching the network right away (it needs no Firebase),
   // so the "Offline" bar can show even while the rest of startup waits.
   unawaited(ConnectivityService.instance.start());
@@ -78,12 +83,25 @@ Future<void> main() async {
   // ───────────────────────────────────────────────────────────
   // These function pointers are set early — they fire later when
   // an error actually occurs (by which point Firebase is initialized).
+  // M21 step 3: only the KIND of the error (and a redacted first line) goes to
+  // Crashlytics, never the raw message or the widget details, which can carry
+  // names or values. No user id and no custom keys are ever set.
   FlutterError.onError = (details) {
-    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    if (kDebugMode) FlutterError.presentError(details);
+    FirebaseCrashlytics.instance.recordError(
+      SafeLog.reported(details.exception),
+      details.stack,
+      reason: 'flutter',
+      fatal: true,
+    );
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    FirebaseCrashlytics.instance.recordError(
+      SafeLog.reported(error),
+      stack,
+      fatal: true,
+    );
     return true;
   };
 
@@ -126,8 +144,13 @@ Future<void> main() async {
   // ───────────────────────────────────────────────────────────
   // STEP 2: App Check Activate
   // ───────────────────────────────────────────────────────────
-  // Enforcement OFF for now. Will be enforced in M21.
-  await FirebaseAppCheck.instance.activate();
+  // M21 step 5: debug provider in debug / emulator / staging test builds,
+  // Play Integrity (Android) and DeviceCheck (iOS) in production. Enforcement
+  // is switched on in the Firebase console, not here (see HANDOFF).
+  await AppCheckSetup.activate(
+    useEmulator: AppConfig.useEmulator,
+    isProduction: AppConfig.isProduction,
+  );
 
   // ───────────────────────────────────────────────────────────
   // STEP 2.5: Remote Config Initialize

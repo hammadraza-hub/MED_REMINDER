@@ -1,3 +1,5 @@
+import '../../core/daily_limits.dart';
+
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
@@ -89,6 +91,10 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
             : l10n.supportRequestQueued,
       );
       Navigator.of(context).pop();
+    } on DailyLimitException {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      _toast(l10n.dailyLimitReached);
     } catch (_) {
       if (!mounted) return;
       setState(() => _busy = false);
@@ -98,15 +104,15 @@ class _SubmitRequestScreenState extends State<SubmitRequestScreen> {
 
   String? _subjectError(AppLocalizations l10n) =>
       (_error == TicketValidation.subjectEmpty ||
-              _error == TicketValidation.subjectTooLong)
-          ? l10n.supportRequestSubjectRequired
-          : null;
+          _error == TicketValidation.subjectTooLong)
+      ? l10n.supportRequestSubjectRequired
+      : null;
 
   String? _bodyError(AppLocalizations l10n) =>
       (_error == TicketValidation.bodyEmpty ||
-              _error == TicketValidation.bodyTooLong)
-          ? l10n.supportRequestBodyRequired
-          : null;
+          _error == TicketValidation.bodyTooLong)
+      ? l10n.supportRequestBodyRequired
+      : null;
 
   @override
   Widget build(BuildContext context) {

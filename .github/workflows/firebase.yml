@@ -57,7 +57,9 @@ jobs:
         run: npm install
 
       - name: Run Firestore Security Rules tests on emulator
-        run: firebase emulators:exec --only firestore "npx jest tests/firestore.rules.test.js --runInBand"
+        # All rules test files (tests/firestore.rules*.test.js). They share one emulator,
+        # so they must run one after the other (package.json: jest maxWorkers 1).
+        run: firebase emulators:exec --only firestore "npx jest tests --runInBand"
 
   # ============================================================
   # JOB 2: Deploy to Staging (on merge to main)

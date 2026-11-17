@@ -3,5 +3,12 @@
     "@firebase/rules-unit-testing": "^6.0.0",
     "firebase": "^13.0.0",
     "jest": "^30.5.2"
+  },
+  "jest": {
+    "maxWorkers": 1,
+    "testTimeout": 30000
+  },
+  "scripts": {
+    "test:rules": "jest tests"
   }
 }

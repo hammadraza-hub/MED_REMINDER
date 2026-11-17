@@ -3473,4 +3473,24 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get accessLostNotice =>
       'अब आपके पास उस प्रोफ़ाइल का एक्सेस नहीं है। आपकी अपनी प्रोफ़ाइल दिखाई जा रही है।';
+
+  @override
+  String get reminderGenericTitle => 'दवा का रिमाइंडर';
+
+  @override
+  String get reminderGenericBody => 'अपनी दवा लेने का समय हो गया है';
+
+  @override
+  String get apptNotifBodyHidden => 'आपकी एक अपॉइंटमेंट आने वाली है';
+
+  @override
+  String get notifPrivacyTitle => 'लॉक स्क्रीन पर विवरण छिपाएँ';
+
+  @override
+  String get notifPrivacyBody =>
+      'रिमाइंडर में दवा या डॉक्टर के नाम की जगह \"दवा का रिमाइंडर\" दिखेगा।';
+
+  @override
+  String get dailyLimitReached =>
+      'आज की इस काम की सीमा पूरी हो गई है। कृपया कल फिर कोशिश करें।';
 }

@@ -66,7 +66,7 @@ class LocalOnlyPushService implements PushService {
 
       _currentToken = token;
       _currentUid = uid;
-      debugPrint('LocalOnlyPushService: FCM token registered for $uid');
+      debugPrint('LocalOnlyPushService: FCM token registered');
     } catch (e) {
       debugPrint('LocalOnlyPushService: registerToken failed: $e');
       rethrow;
@@ -80,7 +80,7 @@ class LocalOnlyPushService implements PushService {
       await DeviceTokenRepository.instance.removeToken(uid, _currentToken!);
       _currentToken = null;
       _currentUid = null;
-      debugPrint('LocalOnlyPushService: FCM token removed for $uid');
+      debugPrint('LocalOnlyPushService: FCM token removed');
     } catch (e) {
       debugPrint('LocalOnlyPushService: removeToken failed: $e');
     }

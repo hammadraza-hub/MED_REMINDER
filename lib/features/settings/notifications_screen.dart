@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/notification_privacy.dart';
+import '../../core/services/reminder_scheduler.dart';
 import '../../l10n/app_localizations.dart';
 import '../../main_shell.dart';
 import '../../models/notification_settings.dart';
@@ -51,6 +55,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   int _escalationMinutes = NotificationsData.defaultEscalationMinutes;
 
   bool _quietHoursEnabled = NotificationsData.defaultQuietHoursEnabled;
+
+  /// M21 step 4: no medicine or doctor names on the lock screen (default on).
+  bool _hideNames = true;
 
   bool _justSaved = false;
 
@@ -108,6 +115,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               : b,
         );
         _quietHoursEnabled = settings.quietHoursEnabled;
+        _hideNames = settings.hideMedicineNamesOnLockScreen;
         _isLoading = false;
       });
     } catch (e) {
@@ -141,11 +149,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       quietStartMinute: 0,
       quietEndHour: 7,
       quietEndMinute: 0,
-      hideMedicineNamesOnLockScreen: false,
+      hideMedicineNamesOnLockScreen: _hideNames,
     );
 
     try {
       await SettingsRepository.instance.saveSettings(_uid!, settings);
+      // Takes effect at once: the reminders already set are written again with
+      // (or without) the names.
+      NotificationPrivacy.instance.hideNames = _hideNames;
+      unawaited(ReminderScheduler.instance.rescheduleAll());
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -257,6 +269,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         _buildSectionLabel(l10n.sectionQuietHours),
                         const SizedBox(height: 8),
                         _buildQuietHoursCard(),
+                        const SizedBox(height: 12),
+                        _buildPrivacyCard(),
                         const SizedBox(height: 12),
                         _buildSaveButton(),
                       ],
@@ -558,6 +572,56 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             onChanged: (value) {
               setState(() {
                 _quietHoursEnabled = value;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // LOCK SCREEN PRIVACY CARD (M21 step 4)
+  // ============================================================
+
+  Widget _buildPrivacyCard() {
+    return Container(
+      key: const Key('notif-privacy-card'),
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.notifPrivacyTitle,
+                  style: const TextStyle(
+                    color: AppColors.reportPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.notifPrivacyBody,
+                  style: const TextStyle(
+                    color: AppColors.permissionsSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          AppToggleSwitch(
+            key: const Key('notif-privacy-switch'),
+            value: _hideNames,
+            onChanged: (value) {
+              setState(() {
+                _hideNames = value;
               });
             },
           ),
