@@ -8,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/services/community_moderation_service.dart';
 import '../../core/services/community_profile_service.dart';
 import '../../core/services/community_safety_service.dart';
+import '../../widgets/error_retry_view.dart';
 import '../../l10n/app_localizations.dart';
 import 'community_avatar.dart';
 import 'community_blocked_screen.dart';
@@ -146,32 +147,11 @@ class _CommunityGateScreenState extends State<CommunityGateScreen> {
           child: CircularProgressIndicator(key: Key('community-loading')),
         );
       case _Phase.failed:
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.cloud_off_rounded,
-                  size: 40,
-                  color: AppColors.permissionsSecondary,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.communityLoadFailed,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.permissionsSecondary),
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  key: const Key('community-retry'),
-                  onPressed: _load,
-                  child: Text(l10n.communityRetry),
-                ),
-              ],
-            ),
-          ),
+        return ErrorRetryView(
+          message: l10n.communityLoadFailed,
+          retryLabel: l10n.communityRetry,
+          retryKey: const Key('community-retry'),
+          onRetry: _load,
         );
       case _Phase.ready:
         return _profileView(l10n, _profile!);

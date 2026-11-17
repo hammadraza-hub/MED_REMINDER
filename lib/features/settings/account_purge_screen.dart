@@ -1,3 +1,4 @@
+import '../../core/services/session_guard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -74,6 +75,7 @@ class _AccountPurgeScreenState extends State<AccountPurgeScreen> {
   Future<void> _loginAgain() async {
     setState(() => _busy = true);
     try {
+      SessionGuard.expectSignOut();
       await FirebaseAuth.instance.signOut();
     } catch (_) {}
     if (mounted) _goToStart();

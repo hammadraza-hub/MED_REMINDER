@@ -9,6 +9,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/services/community_feed_service.dart';
 import '../../core/services/community_moderation_service.dart';
 import '../../core/services/community_post_service.dart';
+import '../../widgets/error_retry_view.dart';
 import '../../l10n/app_localizations.dart';
 import 'community_texts.dart';
 
@@ -139,21 +140,11 @@ class _CommunityModerationScreenState extends State<CommunityModerationScreen> {
           child: CircularProgressIndicator(key: Key('mod-loading')),
         );
       case CommunityModerationStatus.failed:
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l10n.communityLoadFailed,
-                style: const TextStyle(color: AppColors.permissionsSecondary),
-              ),
-              TextButton(
-                key: const Key('mod-retry'),
-                onPressed: _c.refresh,
-                child: Text(l10n.communityRetry),
-              ),
-            ],
-          ),
+        return ErrorRetryView(
+          message: l10n.communityLoadFailed,
+          retryLabel: l10n.communityRetry,
+          retryKey: const Key('mod-retry'),
+          onRetry: _c.refresh,
         );
       case CommunityModerationStatus.ready:
         if (_c.entries.isEmpty) {

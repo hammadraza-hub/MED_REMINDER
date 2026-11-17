@@ -1,15 +1,12 @@
 {
   "@@locale": "ar",
-
   "comingSoon": "{title} — قريبًا",
   "cancel": "إلغاء",
-
   "navHome": "الرئيسية",
   "navMeds": "الأدوية",
   "navCalendar": "التقويم",
   "navReports": "التقارير",
   "navSettings": "الإعدادات",
-
   "settingsTitle": "الإعدادات",
   "settingsGroupPreferences": "التفضيلات",
   "settingsGroupAccountPlan": "الحساب والخطة",
@@ -34,11 +31,9 @@
   "settingsLogoutComingSoon": "تسجيل الخروج — قريبًا",
   "settingsFooterVersion": "MedRemind Care Health Suite • إصدار {version} ({build})",
   "settingsHipaa": "متوافق مع HIPAA ومشفّر",
-
   "languageTitle": "اللغة",
   "languageNote": "يتم تحديث التطبيق فورًا بعد اختيار اللغة.",
   "languageDeviceDefault": "افتراضي الجهاز: لغة النظام (English - US)",
-
   "homeGreetingMorning": "صباح الخير",
   "homeGreetingAfternoon": "طاب مساؤك",
   "homeGreetingEvening": "مساء الخير",
@@ -91,7 +86,6 @@
   "doseReasonLabel": "السبب (اختياري)",
   "doseReasonHint": "مثال: غثيان",
   "doseConfirmSkip": "تأكيد التخطي",
-
   "dataExportTitle": "تصدير البيانات",
   "dataExportHeroTitle": "تصدير كل بياناتي",
   "dataExportHeroSubtitle": "احصل على نسخة كاملة من كل ما هو مخزّن في حسابك.",
@@ -103,10 +97,22 @@
   "dataExportIncludedVitals": "العلامات الحيوية والأعراض والملاحظات",
   "dataExportIncludedPrescribers": "الأطباء والمواعيد والصيدليات",
   "dataExportFormatNote": "يتم إنشاء ملف ZIP ({formats}) على هذا الجهاز. أنت تختار مكان حفظه أو مشاركته.",
-  "@dataExportFormatNote": { "placeholders": { "formats": { "type": "String" } } },
+  "@dataExportFormatNote": {
+    "placeholders": {
+      "formats": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportFormats": "JSON + CSV",
   "dataExportSentTo": "بيانات الحساب {email}",
-  "@dataExportSentTo": { "placeholders": { "email": { "type": "String" } } },
+  "@dataExportSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportRequest": "إنشاء التصدير",
   "dataExportGenerating": "جارٍ تجهيز بياناتك...",
   "dataExportSubmitted": "التصدير جاهز",
@@ -184,10 +190,21 @@
   "symptomRecordedFor": "تم تسجيل العرض لـ {name}",
   "dataExportLastExportNever": "آخر تصدير: أبدًا",
   "dataExportLastExportNow": "آخر تصدير: الآن ({timestamp})",
-  "@dataExportLastExportNow": { "placeholders": { "timestamp": { "type": "String" } } },
+  "@dataExportLastExportNow": {
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportRetentionId": "معرّف الاحتفاظ بسجلات الحساب: {id}",
-  "@dataExportRetentionId": { "placeholders": { "id": { "type": "String" } } },
-
+  "@dataExportRetentionId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "helpSupportTitle": "المساعدة والدعم",
   "helpSupportSearchHint": "ابحث في الأسئلة الشائعة...",
   "helpSupportNoResults": "لا توجد مقالات مطابقة.",
@@ -195,7 +212,13 @@
   "helpSupportBannerSubtitle": "نحن هنا للحفاظ على مواعيد روتينك.",
   "helpSupportFaqHeader": "الأسئلة الشائعة",
   "helpSupportFaqCount": "{count} مقالات",
-  "@helpSupportFaqCount": { "placeholders": { "count": { "type": "int" } } },
+  "@helpSupportFaqCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "helpSupportStillNeedHelp": "ما زلت بحاجة إلى مساعدة؟",
   "helpSupportLiveOnline": "الفريق متصل الآن",
   "helpSupportEmailSupport": "الدعم عبر البريد",
@@ -209,7 +232,13 @@
   "helpSupportVersion": "MedRemind v{version} (إصدار {build})",
   "helpSupportCompliance": "شبكة مقدّمي رعاية مشفّرة • متوافق مع HIPAA",
   "helpSupportEmailClipped": "راسلنا على {email}",
-  "@helpSupportEmailClipped": { "placeholders": { "email": { "type": "String" } } },
+  "@helpSupportEmailClipped": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "faqQ1": "كيف أغيّر وقت الجرعة؟",
   "faqA1": "افتح تبويب الجدول أو الأدوية، وانقر على بطاقة الدواء المحددة، واختر تعديل الجدول، ثم اضبط تنبيهات الجرعة. تتم المزامنة فورًا بين أجهزة مقدّمي الرعاية.",
   "faqQ2": "لماذا لم أستلم تذكيرًا؟",
@@ -218,7 +247,6 @@
   "faqA3": "يتلقى مقدّمو الرعاية تأكيدات صامتة عند تسجيل الأدوية. إذا فاتت جرعة حاسمة لأكثر من 30 دقيقة، يُرسل إشعار مُصعَّد تلقائيًا إلى مقدّم الرعاية الأساسي.",
   "faqQ4": "كيف أضيف فردًا من العائلة؟",
   "faqA4": "انتقل إلى الملفات، وانقر على إضافة، ثم أرسل دعوة عبر البريد أو الهاتف. سيقبلون الرابط للاتصال.",
-
   "aboutTitle": "حول",
   "aboutAppName": "MedRemind",
   "aboutVersion": "الإصدار {version} (إصدار {build})",
@@ -239,7 +267,6 @@
   "aboutLegalComplianceTitle": "الامتثال والتدقيق",
   "aboutLegalComplianceValue": "معتمد SOC-2 Type II · ضمانات أمان HIPAA · موثّق 2025",
   "aboutDone": "تم",
-
   "upgradeTitle": "ترقية",
   "upgradePlanStatus": "الخطة المجانية • جاهز للتوسّع",
   "upgradeProGated": "يتطلب Pro",
@@ -282,7 +309,6 @@
   "upgradeValueFamily": "Family Pro فقط",
   "upgradeRestoreToast": "جارٍ استعادة المشتريات... لم يتم العثور على اشتراكات سابقة.",
   "upgradeTrialToast": "بدء التجربة المجانية 7 أيام لخطة {plan} ({cadence})",
-
   "compareTitle": "مقارنة الخطط",
   "compareGuarantee": "ضمان استرداد لمدة 30 يومًا",
   "compareAnnualSave": "وفّر 40% سنويًا",
@@ -320,7 +346,6 @@
   "compareEncrypted": "تشفير 256 بت",
   "compareAutoSync": "مزامنة تلقائية",
   "compareHipaaReady": "متوافق مع HIPAA",
-
   "paymentTitle": "تم الدفع بنجاح",
   "paymentProNowTitle": "أنت الآن Pro!",
   "paymentWelcome": "مرحبًا بك في {plan}، {name}. جميع ميزات Pro مفتوحة.",
@@ -338,7 +363,6 @@
   "paymentViewFullReceipt": "عرض الإيصال الكامل",
   "paymentStartPro": "ابدأ استخدام Pro",
   "paymentUnlockNote": "فحوصات التفاعلات وتنبيهات إعادة التعبئة والتقارير أصبحت نشطة",
-
   "doctorsTitle": "الأطباء",
   "doctorsAdd": "إضافة طبيب",
   "doctorsAdded": "تمت إضافة الطبيب بنجاح",
@@ -479,7 +503,6 @@
   "proGateBody": "الأطباء والمواعيد والملاحظات للطبيب جزء من خطة Solo Pro. ما حفظته سابقًا يبقى هنا ويمكنك عرضه أو حذفه.",
   "proGateSeePlans": "عرض الخطط",
   "proReadOnlyBanner": "للقراءة فقط في الخطة المجانية. انتقل إلى Solo Pro للإضافة أو التعديل.",
-
   "medsTitle": "الأدوية",
   "medsMemberMedications": "أدوية {name}",
   "medsActiveCount": "{count, plural, =1{دواء نشط واحد} other{{count} أدوية نشطة}}",
@@ -527,7 +550,6 @@
   "medsUnitCapsule": "{count, plural, =1{كبسولة} other{كبسولات}}",
   "medsUnitBottle": "{count, plural, =1{زجاجة} other{زجاجات}}",
   "medsUnitDose": "{count, plural, =1{جرعة} other{جرعات}}",
-
   "inventoryTitle": "المخزون",
   "inventoryMedicationsCount": "{count, plural, =1{دواء واحد} other{{count} أدوية}}",
   "inventoryTrackedSupply": "المخزون المتتبَّع",
@@ -549,7 +571,6 @@
   "inventoryAutoSyncPending": "مزامنة الصيدلية التلقائية قيد الانتظار",
   "inventoryCountUpdated": "تم تحديث {name} إلى {count}",
   "inventorySupplyDays": "{count, plural, =1{~1 يوم} other{~{count} أيام}}",
-
   "inventoryAdjustReasonLabel": "سبب التعديل (اختياري)",
   "inventoryAdjustReasonHint": "سبب التعديل (اختياري)...",
   "inventoryAdjustSave": "حفظ العدد",
@@ -958,5 +979,19 @@
   "communityAlreadyRemoved": "تمت إزالته بالفعل.",
   "communityModerationFailed": "تعذر تنفيذ ذلك. يرجى المحاولة مرة أخرى.",
   "communityReportedPost": "منشور مُبلَّغ عنه",
-  "communityReportedComment": "تعليق مُبلَّغ عنه"
+  "communityReportedComment": "تعليق مُبلَّغ عنه",
+  "appErrorNetwork": "لا يوجد اتصال بالإنترنت. يرجى التحقق منه والمحاولة مرة أخرى.",
+  "appErrorPermission": "ليس لديك صلاحية الوصول إلى هذا. إذا تغيّر شيء، ارجع وسجّل الدخول مرة أخرى.",
+  "appErrorNotFound": "تعذر العثور على هذا. ربما تمت إزالته.",
+  "appErrorValidation": "هناك خطأ ما. يرجى التحقق والمحاولة مرة أخرى.",
+  "appErrorServer": "حدث خطأ من جانبنا. يرجى المحاولة مرة أخرى بعد قليل.",
+  "appErrorUnknown": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+  "appErrorSessionExpired": "انتهت جلستك. يرجى تسجيل الدخول مرة أخرى.",
+  "appErrorRetry": "إعادة المحاولة",
+  "offlineBannerText": "غير متصل: ستتم مزامنة التغييرات عند عودة الاتصال.",
+  "offlineBackOnline": "عاد الاتصال",
+  "savedQueuedNotice": "تم الحفظ على هذا الهاتف. ستتم المزامنة عند عودة الاتصال.",
+  "appErrorSignInAgain": "تسجيل الدخول مرة أخرى",
+  "queuedWriteRejected": "تعذّر حفظ تغيير أجريته أثناء عدم الاتصال.",
+  "accessLostNotice": "لم يعد لديك صلاحية الوصول إلى هذا الملف. يتم عرض ملفك الشخصي."
 }

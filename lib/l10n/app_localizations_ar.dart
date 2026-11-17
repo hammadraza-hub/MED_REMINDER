@@ -3397,4 +3397,54 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get communityReportedComment => 'تعليق مُبلَّغ عنه';
+
+  @override
+  String get appErrorNetwork =>
+      'لا يوجد اتصال بالإنترنت. يرجى التحقق منه والمحاولة مرة أخرى.';
+
+  @override
+  String get appErrorPermission =>
+      'ليس لديك صلاحية الوصول إلى هذا. إذا تغيّر شيء، ارجع وسجّل الدخول مرة أخرى.';
+
+  @override
+  String get appErrorNotFound => 'تعذر العثور على هذا. ربما تمت إزالته.';
+
+  @override
+  String get appErrorValidation =>
+      'هناك خطأ ما. يرجى التحقق والمحاولة مرة أخرى.';
+
+  @override
+  String get appErrorServer =>
+      'حدث خطأ من جانبنا. يرجى المحاولة مرة أخرى بعد قليل.';
+
+  @override
+  String get appErrorUnknown => 'حدث خطأ ما. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get appErrorSessionExpired =>
+      'انتهت جلستك. يرجى تسجيل الدخول مرة أخرى.';
+
+  @override
+  String get appErrorRetry => 'إعادة المحاولة';
+
+  @override
+  String get offlineBannerText =>
+      'غير متصل: ستتم مزامنة التغييرات عند عودة الاتصال.';
+
+  @override
+  String get offlineBackOnline => 'عاد الاتصال';
+
+  @override
+  String get savedQueuedNotice =>
+      'تم الحفظ على هذا الهاتف. ستتم المزامنة عند عودة الاتصال.';
+
+  @override
+  String get appErrorSignInAgain => 'تسجيل الدخول مرة أخرى';
+
+  @override
+  String get queuedWriteRejected => 'تعذّر حفظ تغيير أجريته أثناء عدم الاتصال.';
+
+  @override
+  String get accessLostNotice =>
+      'لم يعد لديك صلاحية الوصول إلى هذا الملف. يتم عرض ملفك الشخصي.';
 }

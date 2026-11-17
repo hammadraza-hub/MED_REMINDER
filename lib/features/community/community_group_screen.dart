@@ -9,6 +9,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/services/community_feed_service.dart';
 import '../../core/services/community_reaction_service.dart';
 import '../../core/services/community_safety_service.dart';
+import '../../widgets/error_retry_view.dart';
 import '../../l10n/app_localizations.dart';
 import 'community_compose_screen.dart';
 import 'community_post_card.dart';
@@ -277,28 +278,11 @@ class _CommunityGroupScreenState extends State<CommunityGroupScreen> {
     required String text,
     required String retry,
   }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 40, color: AppColors.permissionsSecondary),
-            const SizedBox(height: 12),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.permissionsSecondary),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              key: const Key('feed-retry'),
-              onPressed: _refresh,
-              child: Text(retry),
-            ),
-          ],
-        ),
-      ),
+    return ErrorRetryView(
+      message: text,
+      retryLabel: retry,
+      retryKey: const Key('feed-retry'),
+      onRetry: _refresh,
     );
   }
 }

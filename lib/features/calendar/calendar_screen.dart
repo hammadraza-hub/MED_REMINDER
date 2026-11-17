@@ -3,6 +3,13 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/services/access_guard.dart';
+import '../../core/app_error_text.dart';
+import '../../core/app_exception.dart';
+import '../../core/queued_write.dart';
+import '../../l10n/app_localizations.dart';
+import '../../widgets/error_retry_view.dart';
+import '../../widgets/skeleton.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/dose.dart';
 import '../../repositories/auth_repository.dart';
@@ -61,6 +68,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   /// True while profile ID is being fetched from Firestore.
   bool _profileLoading = true;
+
+  /// Profile id could not be read (whole screen) / month doses could not be
+  /// read (a bar above the calendar).
+  Object? _profileError;
+  Object? _monthError;
 
   static const List<String> _weekDays = [
     'Mon',
@@ -133,6 +145,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
   /// This is the SAME pattern MedsScreen uses — profile IDs match
   /// Firestore security rules' isOwner() check.
   Future<void> _fetchFirestoreProfileId() async {
+    if (_profileError != null && mounted) {
+      setState(() {
+        _profileError = null;
+        _profileLoading = true;
+      });
+    }
     try {
       final uid = AuthRepository.instance.currentUid;
       if (uid == null) {
@@ -190,7 +208,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     } catch (e) {
       debugPrint('CalendarScreen: failed to fetch profile ID — $e');
       if (!mounted) return;
-      setState(() => _profileLoading = false);
+      setState(() {
+        _profileLoading = false;
+        _profileError = e;
+      });
     }
   }
 
@@ -220,13 +241,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
         .listen(
           (doses) {
             if (!mounted) return;
-            setState(() => _monthDoses = doses);
+            setState(() {
+              _monthDoses = doses;
+              _monthError = null;
+            });
           },
           onError: (error) {
             if (!mounted) return;
-            // Silent fail — calendar still renders, just empty.
             debugPrint('Calendar stream error: $error');
-            setState(() => _monthDoses = const []);
+            AccessGuard.reportIfDenied(error);
+            // Keep the last doses on screen and say that they are not fresh.
+            setState(() => _monthError = error);
           },
         );
   }
@@ -514,25 +539,38 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     try {
-      await DoseRepository.instance.updateMissedReason(
-        profileId: profileId,
-        doseId: dose.id,
-        reasonCode: reasonCode,
-        reasonText: combinedText,
+      final outcome = await queuedWrite(
+        () => DoseRepository.instance.updateMissedReason(
+          profileId: profileId,
+          doseId: dose.id,
+          reasonCode: reasonCode,
+          reasonText: combinedText,
+        ),
       );
 
       if (!mounted) return;
+      final saved = 'Reason saved: ${result.reasonText}';
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text('Reason saved: ${result.reasonText}')),
+          SnackBar(
+            content: Text(
+              outcome == SaveOutcome.queued
+                  ? '$saved\n${AppLocalizations.of(context).savedQueuedNotice}'
+                  : saved,
+            ),
+          ),
         );
       // Stream will auto-refresh _monthDoses → UI updates.
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('Failed to save reason: $e')));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(AppErrorText.of(AppLocalizations.of(context), e)),
+          ),
+        );
     }
   }
 
@@ -560,7 +598,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (_profileLoading) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        body: const Center(child: CircularProgressIndicator()),
+        body: const SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(16),
+            child: SkeletonList(count: 4),
+          ),
+        ),
+      );
+    }
+
+    if (_profileError != null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: ErrorRetryView(
+            error: AppException.fromAny(_profileError!),
+            retryKey: const Key('calendar-retry'),
+            onRetry: _fetchFirestoreProfileId,
+          ),
+        ),
       );
     }
 
@@ -608,6 +664,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
+          if (_monthError != null)
+            _MonthErrorBar(error: _monthError!, onRetry: _subscribeMonthDoses),
           _buildHeader(),
 
           Expanded(
@@ -1389,6 +1447,48 @@ class _Legend extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A slim bar above the calendar: the month could not be refreshed.
+class _MonthErrorBar extends StatelessWidget {
+  const _MonthErrorBar({required this.error, required this.onRetry});
+
+  final Object error;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Material(
+      color: AppColors.hintBackground,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            key: const Key('calendar-month-error'),
+            children: [
+              Expanded(
+                child: Text(
+                  AppErrorText.of(l10n, error),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              if (AppErrorText.canRetry(error))
+                TextButton(
+                  key: const Key('calendar-month-retry'),
+                  onPressed: onRetry,
+                  child: Text(l10n.appErrorRetry),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

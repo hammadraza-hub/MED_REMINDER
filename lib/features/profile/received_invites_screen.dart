@@ -10,7 +10,12 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../core/app_error_text.dart';
+import '../../core/app_exception.dart';
 import '../../core/caregiver/caregiver_repository.dart';
+import '../../l10n/app_localizations.dart';
+import '../../widgets/error_retry_view.dart';
+import '../../widgets/skeleton.dart';
 import '../../core/caregiver/firebase_caregiver_repository.dart';
 import '../../repositories/auth_repository.dart';
 
@@ -23,13 +28,18 @@ class ReceivedInvitesScreen extends StatefulWidget {
 }
 
 class _ReceivedInvitesScreenState extends State<ReceivedInvitesScreen> {
-  final FirebaseCaregiverRepository _repo = FirebaseCaregiverRepository.instance;
+  final FirebaseCaregiverRepository _repo =
+      FirebaseCaregiverRepository.instance;
 
   late Stream<List<CaregiverInvite>> _invitesStream;
 
   @override
   void initState() {
     super.initState();
+    _openStream();
+  }
+
+  void _openStream() {
     final email = AuthRepository.instance.currentEmail;
     if (email != null) {
       _invitesStream = _repo.watchReceivedInvites(userEmail: email);
@@ -41,19 +51,22 @@ class _ReceivedInvitesScreenState extends State<ReceivedInvitesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Received Invites'),
-      ),
+      appBar: AppBar(title: const Text('Received Invites')),
       body: StreamBuilder<List<CaregiverInvite>>(
         stream: _invitesStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: SkeletonList(count: 3),
+            );
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
+            return ErrorRetryView(
+              error: AppException.fromAny(snapshot.error!),
+              retryKey: const Key('invites-retry'),
+              onRetry: () => setState(_openStream),
             );
           }
 
@@ -131,30 +144,46 @@ class _ReceivedInvitesScreenState extends State<ReceivedInvitesScreen> {
 
   Future<void> _acceptInvite(String inviteId) async {
     try {
-      await FirebaseCaregiverRepository.instance.acceptInvite(inviteId: inviteId);
+      await FirebaseCaregiverRepository.instance.acceptInvite(
+        inviteId: inviteId,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invite accepted'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Invite accepted'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to accept: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(AppErrorText.of(AppLocalizations.of(context), e)),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
   Future<void> _declineInvite(String inviteId) async {
     try {
-      await FirebaseCaregiverRepository.instance.declineInvite(inviteId: inviteId);
+      await FirebaseCaregiverRepository.instance.declineInvite(
+        inviteId: inviteId,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invite declined'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Invite declined'),
+          backgroundColor: Colors.orange,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to decline: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(AppErrorText.of(AppLocalizations.of(context), e)),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

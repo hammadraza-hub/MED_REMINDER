@@ -45,15 +45,19 @@ class FirebaseDoctorNoteRepository {
       );
 
   /// Adds an open note and returns it with its id.
+  /// A fresh id, made on the phone (no network). See the appointment repo.
+  String newId(String memberId) => _col(memberId).doc().id;
+
   Future<DoctorNote> add(
     String memberId,
     String body, {
     String? appointmentId,
+    String? id,
   }) async {
     DoctorFirestore.requireUid();
     _validate(body);
     try {
-      final ref = _col(memberId).doc();
+      final ref = id == null ? _col(memberId).doc() : _col(memberId).doc(id);
       await ref.set({
         'body': body.trim(),
         'createdAt': FieldValue.serverTimestamp(),

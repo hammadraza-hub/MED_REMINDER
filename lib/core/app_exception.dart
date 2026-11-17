@@ -1,3 +1,5 @@
+import 'dart:async' show TimeoutException;
+
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:cloud_functions/cloud_functions.dart' as functions;
@@ -116,6 +118,14 @@ class AppException implements Exception {
       case 'credential-already-in-use':
       case 'account-exists-with-different-credential':
       case 'requires-recent-login':
+        type = AppExceptionType.permission;
+        break;
+
+      // The sign-in is no longer valid (token expired / revoked): M20 sends
+      // the user back to Log In for these.
+      case 'user-token-expired':
+      case 'invalid-user-token':
+      case 'user-token-revoked':
         type = AppExceptionType.permission;
         break;
 
@@ -307,6 +317,16 @@ class AppException implements Exception {
 
     if (error is fs.FirebaseException) {
       return fromFirebaseException(error);
+    }
+
+    // A read or write that took too long, or a dropped connection, is a
+    // network problem (repositories use `.timeout(...)`).
+    if (error is TimeoutException ||
+        error.runtimeType.toString() == 'SocketException') {
+      return AppException.network(
+        'Network unavailable. Please check your connection',
+        originalError: error,
+      );
     }
 
     // Generic unknown error

@@ -52,11 +52,15 @@ class FirebaseAppointmentRepository {
 
   /// Saves a new appointment (it must be in the future) and returns it with
   /// its id. The id is needed to schedule reminders.
-  Future<Appointment> add(String memberId, Appointment a) async {
+  /// A fresh id, made on the phone (no network). Pass it to [add] so a screen
+  /// knows the id even when the save is still waiting for the connection.
+  String newId(String memberId) => _col(memberId).doc().id;
+
+  Future<Appointment> add(String memberId, Appointment a, {String? id}) async {
     DoctorFirestore.requireUid();
     _validate(a, requireFuture: true);
     try {
-      final ref = _col(memberId).doc();
+      final ref = id == null ? _col(memberId).doc() : _col(memberId).doc(id);
       await ref.set({
         ...a.toMap(),
         'createdAt': FieldValue.serverTimestamp(),

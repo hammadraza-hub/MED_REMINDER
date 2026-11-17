@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/app_error_text.dart';
 import '../../core/app_exception.dart';
+import '../../core/queued_write.dart';
+import '../../l10n/app_localizations.dart';
+import '../../widgets/error_retry_view.dart';
+import '../../widgets/skeleton.dart';
 import '../../models/medication.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/medication_repository.dart';
@@ -90,13 +95,15 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
 
     try {
       final userId = AuthRepository.instance.currentUid ?? 'unknown';
-      await MedicationRepository.instance.archiveMedication(
-        profileId: widget.profileId,
-        medicationId: widget.medicationId,
-        reason: reasonController.text.trim().isEmpty
-            ? 'Discontinued by user'
-            : reasonController.text.trim(),
-        archivedBy: userId,
+      await queuedWrite(
+        () => MedicationRepository.instance.archiveMedication(
+          profileId: widget.profileId,
+          medicationId: widget.medicationId,
+          reason: reasonController.text.trim().isEmpty
+              ? 'Discontinued by user'
+              : reasonController.text.trim(),
+          archivedBy: userId,
+        ),
       );
 
       if (mounted) {
@@ -108,14 +115,17 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
     } on AppException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text(AppErrorText.of(AppLocalizations.of(context), e)),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to archive: $e'),
+            content: Text(AppErrorText.of(AppLocalizations.of(context), e)),
             backgroundColor: AppColors.error,
           ),
         );
@@ -159,7 +169,10 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
           return Scaffold(
             backgroundColor: AppColors.background,
             appBar: AppBar(),
-            body: const Center(child: CircularProgressIndicator()),
+            body: const SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: SkeletonList(count: 3),
+            ),
           );
         }
 
@@ -167,7 +180,11 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
           return Scaffold(
             backgroundColor: AppColors.background,
             appBar: AppBar(),
-            body: _buildErrorState(snapshot.error.toString()),
+            body: ErrorRetryView(
+              error: AppException.fromAny(snapshot.error!),
+              retryKey: const Key('med-detail-retry'),
+              onRetry: () => setState(() {}),
+            ),
           );
         }
 
@@ -394,7 +411,10 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
 
   Widget _buildSafetySection(Medication med) {
     return FutureBuilder<bool>(
-      future: AllergyRepository.instance.hasAllergyTo(widget.profileId, med.name),
+      future: AllergyRepository.instance.hasAllergyTo(
+        widget.profileId,
+        med.name,
+      ),
       builder: (context, snapshot) {
         final isAllergic = snapshot.data ?? false;
         final hasInteraction = med.hasInteractionFlag;
@@ -424,7 +444,11 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(
                   children: [
-                    Icon(Icons.check_circle, size: 16, color: AppColors.formAccent),
+                    Icon(
+                      Icons.check_circle,
+                      size: 16,
+                      color: AppColors.formAccent,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'No known safety issues.',
@@ -443,7 +467,12 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
     );
   }
 
-  Widget _buildSafetyRow(String title, String message, Color color, IconData icon) {
+  Widget _buildSafetyRow(
+    String title,
+    String message,
+    Color color,
+    IconData icon,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
@@ -485,6 +514,7 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
       ),
     );
   }
+
   Widget _buildFlagRow(
     String title,
     String message,
@@ -554,40 +584,6 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
   // ============================================================
   // STATES
   // ============================================================
-
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-            const SizedBox(height: 16),
-            const Text(
-              'Failed to Load',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildNotFoundState() {
     return Center(

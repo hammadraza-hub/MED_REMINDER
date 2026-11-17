@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/queued_write.dart';
 import '../../core/doctors/doctor_link_diff.dart';
 import '../../core/doctors/prescriber_models.dart';
 import '../../core/doctors/prescriber_validator.dart';
@@ -221,10 +222,12 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
     String doctorId;
     try {
       if (_isEdit) {
-        await repo.update(memberId, doctor);
+        await queuedWrite(() => repo.update(memberId, doctor));
         doctorId = doctor.id;
       } else {
-        doctorId = (await repo.add(memberId, doctor)).id;
+        final id = repo.newId(memberId);
+        await queuedWrite(() => repo.add(memberId, doctor, id: id));
+        doctorId = id;
       }
     } on AppException catch (e) {
       if (!mounted) return;
@@ -251,11 +254,13 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
       );
       if (!diff.isEmpty) {
         try {
-          await repo.setMedicationLinks(
-            memberId,
-            doctorId,
-            toLink: diff.toLink,
-            toUnlink: diff.toUnlink,
+          await queuedWrite(
+            () => repo.setMedicationLinks(
+              memberId,
+              doctorId,
+              toLink: diff.toLink,
+              toUnlink: diff.toUnlink,
+            ),
           );
         } catch (_) {
           linksFailed = true;
@@ -299,7 +304,10 @@ class _AddDoctorScreenState extends State<AddDoctorScreen> {
 
     setState(() => _isSaving = true);
     try {
-      await FirebasePrescriberRepository.instance.delete(memberId, existing.id);
+      await queuedWrite(
+        () =>
+            FirebasePrescriberRepository.instance.delete(memberId, existing.id),
+      );
     } catch (_) {
       if (!mounted) return;
       setState(() => _isSaving = false);

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/doctors/appointment_models.dart';
+import '../../core/queued_write.dart';
 import '../../core/doctors/appointment_reminder_service.dart';
 import '../../core/doctors/appointment_validator.dart';
 import '../../core/doctors/prescriber_models.dart';
@@ -418,10 +419,22 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
     Appointment saved;
     try {
       if (_isEdit) {
-        await repo.update(memberId, draft);
+        await queuedWrite(() => repo.update(memberId, draft));
         saved = draft;
       } else {
-        saved = await repo.add(memberId, draft);
+        // The id is made on the phone, so a save that is still waiting for
+        // the connection can be used (reminders) right away.
+        final id = repo.newId(memberId);
+        await queuedWrite(() => repo.add(memberId, draft, id: id));
+        saved = Appointment(
+          id: id,
+          startsAt: draft.startsAt,
+          prescriberId: draft.prescriberId,
+          type: draft.type,
+          location: draft.location,
+          notes: draft.notes,
+          reminderOffsets: Appointment.normalizeOffsets(draft.reminderOffsets),
+        );
       }
     } catch (e) {
       if (!mounted) return;
@@ -477,9 +490,11 @@ class _AddAppointmentScreenState extends State<AddAppointmentScreen> {
 
     setState(() => _isSaving = true);
     try {
-      await FirebaseAppointmentRepository.instance.delete(
-        memberId,
-        existing.id,
+      await queuedWrite(
+        () => FirebaseAppointmentRepository.instance.delete(
+          memberId,
+          existing.id,
+        ),
       );
     } catch (_) {
       if (!mounted) return;

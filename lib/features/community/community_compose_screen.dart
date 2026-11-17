@@ -53,6 +53,10 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
     super.dispose();
   }
 
+  /// A public post needs the server (rate limits, checks), so it is not
+  /// queued: after this long the user is told there is no connection.
+  static const _writeLimit = Duration(seconds: 10);
+
   Future<void> _save() async {
     if (_saving) return;
     final l10n = AppLocalizations.of(context);
@@ -64,17 +68,13 @@ class _CommunityComposeScreenState extends State<CommunityComposeScreen> {
     try {
       final done = await submitWithWarnings(context, (confirmed) async {
         if (_editing) {
-          await _actions.editPost(
-            widget.existing!,
-            _text.text,
-            confirmed: confirmed,
-          );
+          await _actions
+              .editPost(widget.existing!, _text.text, confirmed: confirmed)
+              .timeout(_writeLimit);
         } else {
-          await _actions.createPost(
-            widget.groupId,
-            _text.text,
-            confirmed: confirmed,
-          );
+          await _actions
+              .createPost(widget.groupId, _text.text, confirmed: confirmed)
+              .timeout(_writeLimit);
         }
       });
       if (!mounted) return;

@@ -1,21 +1,20 @@
 {
   "@@locale": "en",
-
   "comingSoon": "{title} — coming soon",
   "@comingSoon": {
     "description": "Snackbar jab koi feature abhi available na ho.",
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "cancel": "Cancel",
-
   "navHome": "Home",
   "navMeds": "Meds",
   "navCalendar": "Calendar",
   "navReports": "Reports",
   "navSettings": "Settings",
-
   "settingsTitle": "Settings",
   "settingsGroupPreferences": "Preferences",
   "settingsGroupAccountPlan": "Account & Plan",
@@ -39,25 +38,42 @@
   "settingsLogOut": "Log Out",
   "settingsLogoutComingSoon": "Log Out — coming soon",
   "settingsFooterVersion": "MedRemind Care Health Suite • v{version} (Build {build})",
-  "@settingsFooterVersion": { "placeholders": { "version": { "type": "String" }, "build": { "type": "String" } } },
+  "@settingsFooterVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
   "settingsHipaa": "HIPAA Compliant & Encrypted",
-
   "languageTitle": "Language",
   "languageNote": "The app updates instantly after selecting a language.",
   "languageDeviceDefault": "Device default: System Language (English - US)",
-
   "homeGreetingMorning": "Good Morning",
   "homeGreetingAfternoon": "Good Afternoon",
   "homeGreetingEvening": "Good Evening",
   "homeGreetingWithName": "{greeting}, {name} 👋",
   "@homeGreetingWithName": {
     "placeholders": {
-      "greeting": { "type": "String" },
-      "name": { "type": "String" }
+      "greeting": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
     }
   },
   "homeDayStreak": "{days} Day Streak",
-  "@homeDayStreak": { "placeholders": { "days": { "type": "int" } } },
+  "@homeDayStreak": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "homeAdd": "Add",
   "homeTodaySchedule": "Today's Schedule",
   "homeFilterAll": "All",
@@ -65,11 +81,29 @@
   "homeFilterTaken": "Taken",
   "homeDaily": "Daily",
   "homeStatTaken": "{count} Taken",
-  "@homeStatTaken": { "placeholders": { "count": { "type": "int" } } },
+  "@homeStatTaken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homeStatPending": "{count} Pending",
-  "@homeStatPending": { "placeholders": { "count": { "type": "int" } } },
+  "@homeStatPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homeStatMissed": "{count} Missed",
-  "@homeStatMissed": { "placeholders": { "count": { "type": "int" } } },
+  "@homeStatMissed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "homeQuickAccess": "QUICK ACCESS",
   "homeShortcuts": "Shortcuts",
   "homeQuickVitals": "Vitals",
@@ -77,29 +111,67 @@
   "homeQuickAI": "AI Assist",
   "homeQuickFamily": "Family",
   "homeScreenComingSoon": "{name} screen coming next.",
-  "@homeScreenComingSoon": { "placeholders": { "name": { "type": "String" } } },
+  "@homeScreenComingSoon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "homeMarkedTaken": "{name} marked as taken ✓",
-  "@homeMarkedTaken": { "placeholders": { "name": { "type": "String" } } },
+  "@homeMarkedTaken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "homeMarkedUntaken": "{name} marked as untaken 🔄",
-  "@homeMarkedUntaken": { "placeholders": { "name": { "type": "String" } } },
+  "@homeMarkedUntaken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "homeSkipped": "{name} skipped",
-  "@homeSkipped": { "placeholders": { "name": { "type": "String" } } },
+  "@homeSkipped": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "homeSkippedReason": "{name} skipped — {reason}",
   "@homeSkippedReason": {
     "placeholders": {
-      "name": { "type": "String" },
-      "reason": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "homeSnoozed": "{name} snoozed — reminder again in {minutes} min",
   "@homeSnoozed": {
     "placeholders": {
-      "name": { "type": "String" },
-      "minutes": { "type": "int" }
+      "name": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "homeSwitchedMember": "Switched to {name}'s medicines",
-  "@homeSwitchedMember": { "placeholders": { "name": { "type": "String" } } },
+  "@homeSwitchedMember": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "homeActionTaken": "Taken",
   "homeActionSkip": "Skip",
   "homeActionSnooze": "Snooze",
@@ -110,8 +182,12 @@
   "homeRunningLow": "{name} running low · {days} days left",
   "@homeRunningLow": {
     "placeholders": {
-      "name": { "type": "String" },
-      "days": { "type": "int" }
+      "name": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
     }
   },
   "homeRefill": "Refill →",
@@ -123,7 +199,13 @@
   "doseScheduleAfterBreakfast": "After breakfast",
   "doseScheduleWithDinner": "With dinner",
   "doseDueSoon": "{time} · Due soon",
-  "@doseDueSoon": { "placeholders": { "time": { "type": "String" } } },
+  "@doseDueSoon": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "doseMarkTaken": "Mark as Taken",
   "doseMarkUntaken": "Mark as Untaken",
   "doseHideReason": "Hide Reason",
@@ -132,7 +214,6 @@
   "doseReasonLabel": "Reason (optional)",
   "doseReasonHint": "e.g., Feeling nauseous",
   "doseConfirmSkip": "Confirm Skip",
-
   "dataExportTitle": "Data Export",
   "dataExportHeroTitle": "Export All My Data",
   "dataExportHeroSubtitle": "Get a complete copy of everything stored in your account.",
@@ -144,10 +225,22 @@
   "dataExportIncludedVitals": "Vitals, symptoms & notes",
   "dataExportIncludedPrescribers": "Prescribers, appointments & pharmacies",
   "dataExportFormatNote": "A ZIP file ({formats}) is created on this device. You choose where to save or share it.",
-  "@dataExportFormatNote": { "placeholders": { "formats": { "type": "String" } } },
+  "@dataExportFormatNote": {
+    "placeholders": {
+      "formats": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportFormats": "JSON + CSV",
   "dataExportSentTo": "Data of account {email}",
-  "@dataExportSentTo": { "placeholders": { "email": { "type": "String" } } },
+  "@dataExportSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportRequest": "Create Export",
   "dataExportGenerating": "Preparing your data...",
   "dataExportSubmitted": "Export Ready",
@@ -159,7 +252,13 @@
   "accountDeleteSheetTitle": "Delete Account?",
   "accountDeleteButton": "Delete Account",
   "accountDeleteSheetBody": "Your account will be scheduled for deletion in {days} days. You can cancel from this screen until then. After that your profiles, medications and dose history are permanently removed.",
-  "@accountDeleteSheetBody": { "placeholders": { "days": { "type": "int" } } },
+  "@accountDeleteSheetBody": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "accountDeleteExportTitle": "Backup your data first",
   "accountDeleteExportHint": "Create a ZIP export of everything before deleting.",
   "accountDeleteExportButton": "Export",
@@ -167,7 +266,13 @@
   "accountDeleteKeep": "Keep Account",
   "accountDeleteScheduledTitle": "Deletion scheduled",
   "accountDeleteScheduledBody": "Your account will be deleted in {days} days. You can still cancel.",
-  "@accountDeleteScheduledBody": { "placeholders": { "days": { "type": "int" } } },
+  "@accountDeleteScheduledBody": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "accountDeleteDueBody": "The waiting period is over. Your account is ready to be deleted.",
   "accountDeleteCancel": "Cancel Deletion",
   "accountDeleteRequested": "Deletion scheduled.",
@@ -182,70 +287,192 @@
   "accountPurgeRetry": "Try Again",
   "accountDeleteSummaryTitle": "What will be deleted",
   "accountDeleteOthersLose": "{count, plural, =1{1 other person will lose access} other{{count} other people will lose access}}",
-  "@accountDeleteOthersLose": { "placeholders": { "count": { "type": "int" } } },
+  "@accountDeleteOthersLose": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "accountDeleteMemberOf": "{count, plural, =1{You will also be removed from 1 profile shared with you. Its data stays with its owner.} other{You will also be removed from {count} profiles shared with you. Their data stays with their owners.}}",
-  "@accountDeleteMemberOf": { "placeholders": { "count": { "type": "int" } } },
+  "@accountDeleteMemberOf": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "accountDeleteSubscriptionNote": "Deleting your account does not cancel a paid subscription. Cancel it in the store to avoid further charges.",
   "accountDeleteSubscriptionButton": "Manage subscription",
   "vitalsErrEmpty": "Please enter a value.",
   "vitalsErrNotNumber": "Please enter a valid number.",
   "vitalsErrRange": "Value must be between {min} and {max} {unit}.",
-  "@vitalsErrRange": { "placeholders": { "min": { "type": "String" }, "max": { "type": "String" }, "unit": { "type": "String" } } },
+  "@vitalsErrRange": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "vitalsErrDiastolicMissing": "Please enter the diastolic (bottom) value.",
   "vitalsErrDiastolicRange": "Diastolic must be between {min} and {max} mmHg.",
-  "@vitalsErrDiastolicRange": { "placeholders": { "min": { "type": "String" }, "max": { "type": "String" } } },
+  "@vitalsErrDiastolicRange": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
   "vitalsErrDiastolicNotLower": "Diastolic must be lower than systolic.",
   "vitalsErrPulseRange": "Pulse must be between {min} and {max} bpm.",
-  "@vitalsErrPulseRange": { "placeholders": { "min": { "type": "String" }, "max": { "type": "String" } } },
+  "@vitalsErrPulseRange": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
   "vitalsErrFuture": "The time cannot be in the future.",
   "vitalsErrNoProfile": "No profile is selected. Please go back and try again.",
   "vitalsSaveFailed": "Could not save the reading. Check your connection and try again.",
   "vitalsSavePermission": "You do not have permission to add readings for this profile.",
   "vitalsOptional": "Optional",
   "vitalsLast": "Last: {value} {unit} ({when})",
-  "@vitalsLast": { "placeholders": { "value": { "type": "String" }, "unit": { "type": "String" }, "when": { "type": "String" } } },
+  "@vitalsLast": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "vitalsNoReadings": "No readings yet. Tap + to log your first one.",
   "vitalsLoadFailed": "Could not load readings. Check your connection and try again.",
   "vitalsRetry": "Try Again",
   "vitalsLoggedToday": "{count} of {total} metrics logged today",
-  "@vitalsLoggedToday": { "placeholders": { "count": { "type": "int" }, "total": { "type": "int" } } },
+  "@vitalsLoggedToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "symptomNoMedication": "No medication linked",
   "symptomPrivacyNote": "Visible only to people with health access to this profile",
   "healthSyncTitle": "Sync health data",
   "healthSyncSubtitle": "Import blood pressure, glucose, weight and heart rate from {app}.",
-  "@healthSyncSubtitle": { "placeholders": { "app": { "type": "String" } } },
+  "@healthSyncSubtitle": {
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  },
   "healthSyncButton": "Sync now",
   "healthSyncLast": "Last sync: {when}",
-  "@healthSyncLast": { "placeholders": { "when": { "type": "String" } } },
+  "@healthSyncLast": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "healthSyncNever": "Not synced yet",
   "healthSyncDone": "{count, plural, =1{1 new reading imported} other{{count} new readings imported}}",
-  "@healthSyncDone": { "placeholders": { "count": { "type": "int" } } },
+  "@healthSyncDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "healthSyncNothingNew": "Already up to date",
   "healthSyncProOnly": "Health sync is part of the Pro plan.",
   "healthSyncSeePlans": "See plans",
   "healthSyncDenied": "Permission was not granted. You can allow access in {app}.",
-  "@healthSyncDenied": { "placeholders": { "app": { "type": "String" } } },
+  "@healthSyncDenied": {
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  },
   "healthSyncUnavailable": "{app} is not available on this device.",
-  "@healthSyncUnavailable": { "placeholders": { "app": { "type": "String" } } },
+  "@healthSyncUnavailable": {
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  },
   "healthSyncFailed": "Sync failed. Check your connection and try again.",
   "symptomSelectMedication": "Select medication (optional)",
   "symptomNoMedicationsFound": "No medications found for this profile.",
   "symptomErrNameEmpty": "Please enter a symptom name.",
   "symptomErrNameTooLong": "The symptom name is too long (max {max} characters).",
-  "@symptomErrNameTooLong": { "placeholders": { "max": { "type": "int" } } },
+  "@symptomErrNameTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "symptomErrNotesTooLong": "The notes are too long (max {max} characters).",
-  "@symptomErrNotesTooLong": { "placeholders": { "max": { "type": "int" } } },
+  "@symptomErrNotesTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "symptomSaveFailed": "Could not save the symptom. Check your connection and try again.",
   "symptomSavePermission": "You do not have permission to add symptoms for this profile.",
   "symptomRecorded": "Symptom recorded",
   "symptomRecordedFor": "Symptom recorded for {name}",
-  "@symptomRecordedFor": { "placeholders": { "name": { "type": "String" } } },
+  "@symptomRecordedFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportLastExportNever": "Last export: Never",
   "dataExportLastExportNow": "Last export: Just now ({timestamp})",
-  "@dataExportLastExportNow": { "placeholders": { "timestamp": { "type": "String" } } },
+  "@dataExportLastExportNow": {
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportRetentionId": "Account records retention ID: {id}",
-  "@dataExportRetentionId": { "placeholders": { "id": { "type": "String" } } },
-
+  "@dataExportRetentionId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "helpSupportTitle": "Help & Support",
   "helpSupportSearchHint": "Search FAQ...",
   "helpSupportNoResults": "No matching articles.",
@@ -253,7 +480,13 @@
   "helpSupportBannerSubtitle": "We're here to keep your routines on schedule.",
   "helpSupportFaqHeader": "Frequently Asked",
   "helpSupportFaqCount": "{count} articles",
-  "@helpSupportFaqCount": { "placeholders": { "count": { "type": "int" } } },
+  "@helpSupportFaqCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "helpSupportStillNeedHelp": "Still Need Help?",
   "helpSupportLiveOnline": "Live Team Online",
   "helpSupportEmailSupport": "Email Support",
@@ -265,10 +498,25 @@
   "helpSupportNo": "No",
   "helpSupportFeedbackThanks": "Thanks for your feedback!",
   "helpSupportVersion": "MedRemind v{version} (build {build})",
-  "@helpSupportVersion": { "placeholders": { "version": { "type": "String" }, "build": { "type": "String" } } },
+  "@helpSupportVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
   "helpSupportCompliance": "Encrypted Caregiver Network • HIPAA Compliant",
   "helpSupportEmailClipped": "Email us at {email}",
-  "@helpSupportEmailClipped": { "placeholders": { "email": { "type": "String" } } },
+  "@helpSupportEmailClipped": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "faqQ1": "How do I change a dose time?",
   "faqA1": "Open your Schedule or Medication tab, tap the specific medication card, select Edit Schedule, and adjust your dosage alerts. Changes sync instantly across caregiver devices.",
   "faqQ2": "Why didn't I get a reminder?",
@@ -277,14 +525,17 @@
   "faqA3": "Caregivers receive silent affirmations when medicines are logged. If a crucial dose is missed for over 30 minutes, an escalated notification is automatically sent to the primary caregiver.",
   "faqQ4": "How do I add a family member?",
   "faqA4": "Go to Profiles, tap Add, then send an invite by email or phone. They accept the link to connect.",
-
   "aboutTitle": "About",
   "aboutAppName": "MedRemind",
   "aboutVersion": "Version {version} (build {build})",
   "@aboutVersion": {
     "placeholders": {
-      "version": {"type": "String"},
-      "build": {"type": "String"}
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
     }
   },
   "aboutUpToDate": "UP TO DATE ✓",
@@ -304,7 +555,6 @@
   "aboutLegalComplianceTitle": "Compliance & Audits",
   "aboutLegalComplianceValue": "SOC-2 Type II Certified · HIPAA Security Safeguards · Verified 2025",
   "aboutDone": "Done",
-
   "upgradeTitle": "Upgrade",
   "upgradePlanStatus": "Free Plan • Ready to expand",
   "upgradeProGated": "Pro Gated",
@@ -329,15 +579,27 @@
   "upgradeSelected": "Selected",
   "upgradePriceAnnual": "{price}/yr",
   "@upgradePriceAnnual": {
-    "placeholders": { "price": { "type": "String" } }
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
   },
   "upgradePriceMonthly": "{price}/mo",
   "@upgradePriceMonthly": {
-    "placeholders": { "price": { "type": "String" } }
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
   },
   "upgradeWasPrice": "was {price}",
   "@upgradeWasPrice": {
-    "placeholders": { "price": { "type": "String" } }
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
   },
   "upgradeStartTrial": "Start 7-Day Free Trial",
   "upgradeNothingDue": "Nothing due today. Reminder sent on Day 5.",
@@ -358,11 +620,14 @@
   "upgradeTrialToast": "Starting 7-day trial for {plan} ({cadence})",
   "@upgradeTrialToast": {
     "placeholders": {
-      "plan": { "type": "String" },
-      "cadence": { "type": "String" }
+      "plan": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
     }
   },
-
   "compareTitle": "Compare Plans",
   "compareGuarantee": "30-Day Money Back Guarantee",
   "compareAnnualSave": "Annual Save 40%",
@@ -400,14 +665,17 @@
   "compareEncrypted": "256-bit Encrypted",
   "compareAutoSync": "Auto-sync",
   "compareHipaaReady": "HIPAA Ready",
-
   "paymentTitle": "Payment Successful",
   "paymentProNowTitle": "You're Pro now!",
   "paymentWelcome": "Welcome to {plan}, {name}. All Pro features are unlocked.",
   "@paymentWelcome": {
     "placeholders": {
-      "plan": { "type": "String" },
-      "name": { "type": "String" }
+      "plan": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
     }
   },
   "paymentPlanActive": "Plan Active • Unlimited Care Sync",
@@ -417,7 +685,11 @@
   "paymentFreeTrialLabel": "Free trial",
   "paymentFreeTrialValue": "7 days — then {price}",
   "@paymentFreeTrialValue": {
-    "placeholders": { "price": { "type": "String" } }
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
   },
   "paymentNextBillingLabel": "Next billing date",
   "paymentReceipt": "Receipt",
@@ -427,21 +699,38 @@
   "paymentViewFullReceipt": "View full receipt",
   "paymentStartPro": "Start Using Pro",
   "paymentUnlockNote": "Interaction checks, refill alerts & reports are now active",
-
   "doctorsTitle": "Doctors",
   "doctorsAdd": "Add Doctor",
   "doctorsAdded": "Doctor added successfully",
   "doctorsCountOnFile": "{count, plural, =1{1 doctor on file} other{{count} doctors on file}}",
-  "@doctorsCountOnFile": { "placeholders": { "count": { "type": "int" } } },
+  "@doctorsCountOnFile": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "doctorsEmptyTitle": "No doctors on file",
   "doctorsEmptySubtitle": "Add a doctor to link prescriptions",
   "doctorsUpcomingVisits": "Upcoming Visits",
   "doctorsAppointmentsScheduled": "{count, plural, =1{1 appointment scheduled} other{{count} appointments scheduled}}",
-  "@doctorsAppointmentsScheduled": { "placeholders": { "count": { "type": "int" } } },
+  "@doctorsAppointmentsScheduled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "doctorsView": "View →",
   "doctorsHint": "Tap a doctor to view details or edit",
   "doctorsMedCount": "{count, plural, =1{1 med} other{{count} meds}}",
-  "@doctorsMedCount": { "placeholders": { "count": { "type": "int" } } },
+  "@doctorsMedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "doctorsDetailsSection": "DOCTOR DETAILS",
   "doctorsFieldFullName": "Full Name *",
   "doctorsHintFullName": "Enter full name",
@@ -470,7 +759,13 @@
   "doctorsDeleteAction": "Delete doctor",
   "doctorsDeleteTitle": "Delete this doctor?",
   "doctorsDeleteBody": "{name} will be removed. Appointments and medications stay, but will no longer name this doctor.",
-  "@doctorsDeleteBody": { "placeholders": { "name": { "type": "String" } } },
+  "@doctorsDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "doctorsDeleted": "Doctor deleted",
   "doctorsDeleteFailed": "Could not delete the doctor. Check your connection and try again.",
   "doctorsNoMeds": "No active medications to link yet.",
@@ -520,7 +815,13 @@
   "apptOffsetHour": "1 hour before",
   "apptOffsetMinutes30": "30 minutes before",
   "apptOffsetCustom": "{minutes} min before",
-  "@apptOffsetCustom": { "placeholders": { "minutes": { "type": "int" } } },
+  "@apptOffsetCustom": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "apptReminderNoteTitle": "Phone reminders",
   "apptReminderNote": "Reminders are set on this phone. They are set again when you open the app on a new phone.",
   "apptSave": "Save Appointment",
@@ -536,26 +837,68 @@
   "apptErrTooLong": "Location or notes are too long.",
   "apptErrReminders": "Please choose at most 5 reminders.",
   "apptNotifTitle": "Appointment with {doctor}",
-  "@apptNotifTitle": { "placeholders": { "doctor": { "type": "String" } } },
+  "@apptNotifTitle": {
+    "placeholders": {
+      "doctor": {
+        "type": "String"
+      }
+    }
+  },
   "apptNotifTitleNoDoctor": "Upcoming appointment",
   "apptNotifBody": "{type} · {when}",
-  "@apptNotifBody": { "placeholders": { "type": { "type": "String" }, "when": { "type": "String" } } },
+  "@apptNotifBody": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "apptChannelName": "Appointment reminders",
   "apptChannelDesc": "Reminders for upcoming doctor appointments",
   "notesTitle": "Notes for Doctor",
   "notesBanner": "These notes carry into your next appointment — check off after discussing.",
   "notesAddHint": "Add a question or note...",
   "notesLinkSwitch": "Link to next appointment ({when})",
-  "@notesLinkSwitch": { "placeholders": { "when": { "type": "String" } } },
+  "@notesLinkSwitch": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "notesLinkedTag": "Appointment: {when}",
-  "@notesLinkedTag": { "placeholders": { "when": { "type": "String" } } },
+  "@notesLinkedTag": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "notesDiscussed": "Discussed",
   "notesSummary": "{open} open · {done} discussed",
-  "@notesSummary": { "placeholders": { "open": { "type": "int" }, "done": { "type": "int" } } },
+  "@notesSummary": {
+    "placeholders": {
+      "open": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      }
+    }
+  },
   "notesClearDiscussed": "Clear discussed",
   "notesClearTitle": "Clear discussed notes?",
   "notesClearBody": "{count, plural, =1{1 discussed note will be removed.} other{{count} discussed notes will be removed.}}",
-  "@notesClearBody": { "placeholders": { "count": { "type": "int" } } },
+  "@notesClearBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notesCleared": "Discussed notes cleared",
   "notesEditTitle": "Edit Note",
   "notesEditHint": "Enter a question or note...",
@@ -572,40 +915,102 @@
   "notesLoadFailed": "Could not load notes. Check your connection and try again.",
   "notesRetry": "Try Again",
   "notesToday": "Today, {time}",
-  "@notesToday": { "placeholders": { "time": { "type": "String" } } },
+  "@notesToday": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "notesYesterday": "Yesterday · {time}",
-  "@notesYesterday": { "placeholders": { "time": { "type": "String" } } },
+  "@notesYesterday": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "notesDateTime": "{date} · {time}",
-  "@notesDateTime": { "placeholders": { "date": { "type": "String" }, "time": { "type": "String" } } },
+  "@notesDateTime": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "apptQuestionsCount": "{count, plural, =0{No open questions} =1{1 open question} other{{count} open questions}}",
-  "@apptQuestionsCount": { "placeholders": { "count": { "type": "int" } } },
+  "@apptQuestionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "proGateTitle": "Solo Pro feature",
   "proGateBody": "Doctors, appointments and notes for your doctor are part of the Solo Pro plan. What you already saved stays here and can still be viewed or deleted.",
   "proGateSeePlans": "See plans",
   "proReadOnlyBanner": "Read-only on the free plan. Upgrade to Solo Pro to add or change.",
-
   "medsTitle": "Medications",
   "medsMemberMedications": "{name}'s Medications",
-  "@medsMemberMedications": { "placeholders": { "name": { "type": "String" } } },
+  "@medsMemberMedications": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "medsActiveCount": "{count, plural, =1{1 active medication} other{{count} active medications}}",
-  "@medsActiveCount": { "placeholders": { "count": { "type": "int" } } },
+  "@medsActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsManageHeader": "MANAGE",
   "medsQuickTools": "Quick Tools",
   "medsInventory": "Inventory",
   "medsLowBadge": "{count} LOW",
-  "@medsLowBadge": { "placeholders": { "count": { "type": "int" } } },
+  "@medsLowBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsAllergies": "Allergies",
   "medsSideEffects": "Side Effects",
   "medsPharmacy": "Pharmacy",
   "medsSearchHint": "Search medications...",
   "medsTabActive": "Active ({count})",
-  "@medsTabActive": { "placeholders": { "count": { "type": "int" } } },
+  "@medsTabActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsTabArchived": "Archived ({count})",
-  "@medsTabArchived": { "placeholders": { "count": { "type": "int" } } },
+  "@medsTabArchived": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsEmptyArchived": "No archived medicines",
   "medsEmpty": "No medicines found",
   "medsMovedToArchived": "{name} moved to Archived",
-  "@medsMovedToArchived": { "placeholders": { "name": { "type": "String" } } },
+  "@medsMovedToArchived": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "medsDiscontinueError": "Could not discontinue medication. Please try again.",
   "medsDiscontinueBarrierLabel": "Close discontinue medication",
   "medsDiscontinue": "Discontinue",
@@ -614,20 +1019,65 @@
   "medsScheduleNotSet": "Schedule not set",
   "medsFrequencyAsNeeded": "As needed",
   "medsFrequencySelectedDays": "{count, plural, =1{1x on selected days} other{{count}x on selected days}}",
-  "@medsFrequencySelectedDays": { "placeholders": { "count": { "type": "int" } } },
+  "@medsFrequencySelectedDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsFrequencyCyclical": "{count, plural, =1{1x cyclical} other{{count}x cyclical}}",
-  "@medsFrequencyCyclical": { "placeholders": { "count": { "type": "int" } } },
+  "@medsFrequencyCyclical": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsFrequencyTapering": "Tapering schedule",
   "medsFrequencyDaily": "{count, plural, =1{1x daily} other{{count}x daily}}",
-  "@medsFrequencyDaily": { "placeholders": { "count": { "type": "int" } } },
+  "@medsFrequencyDaily": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsNextDoseTomorrow": "Tomorrow {time}",
-  "@medsNextDoseTomorrow": { "placeholders": { "time": { "type": "String" } } },
+  "@medsNextDoseTomorrow": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "medsNextDoseWeekday": "{day} {time}",
-  "@medsNextDoseWeekday": { "placeholders": { "day": { "type": "String" }, "time": { "type": "String" } } },
+  "@medsNextDoseWeekday": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "medsEnds": "Ends {date}",
-  "@medsEnds": { "placeholders": { "date": { "type": "String" } } },
+  "@medsEnds": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "medsNext": "Next: {time}",
-  "@medsNext": { "placeholders": { "time": { "type": "String" } } },
+  "@medsNext": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "medsWeekdayMon": "Mon",
   "medsWeekdayTue": "Tue",
   "medsWeekdayWed": "Wed",
@@ -639,24 +1089,74 @@
   "medsFormDrops": "Drops",
   "medsFormInjection": "Injection",
   "medsDayOf": "Day {day} of {total}",
-  "@medsDayOf": { "placeholders": { "day": { "type": "int" }, "total": { "type": "int" } } },
+  "@medsDayOf": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "medsDaysLeft": "{count, plural, =1{1 day left} other{{count} days left}}",
-  "@medsDaysLeft": { "placeholders": { "count": { "type": "int" } } },
+  "@medsDaysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsUnitTablet": "{count, plural, =1{tablet} other{tablets}}",
-  "@medsUnitTablet": { "placeholders": { "count": { "type": "int" } } },
+  "@medsUnitTablet": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsUnitCapsule": "{count, plural, =1{capsule} other{capsules}}",
-  "@medsUnitCapsule": { "placeholders": { "count": { "type": "int" } } },
+  "@medsUnitCapsule": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsUnitBottle": "{count, plural, =1{bottle} other{bottles}}",
-  "@medsUnitBottle": { "placeholders": { "count": { "type": "int" } } },
+  "@medsUnitBottle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "medsUnitDose": "{count, plural, =1{dose} other{doses}}",
-  "@medsUnitDose": { "placeholders": { "count": { "type": "int" } } },
-
+  "@medsUnitDose": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "inventoryTitle": "Inventory",
   "inventoryMedicationsCount": "{count, plural, =1{1 Medication} other{{count} Medications}}",
-  "@inventoryMedicationsCount": { "placeholders": { "count": { "type": "int" } } },
+  "@inventoryMedicationsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "inventoryTrackedSupply": "Tracked supply",
   "inventoryLowStockCount": "{count} LOW STOCK",
-  "@inventoryLowStockCount": { "placeholders": { "count": { "type": "int" } } },
+  "@inventoryLowStockCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "inventoryFilterAll": "All",
   "inventoryFilterLow": "Low Stock",
   "inventoryFilterOk": "OK",
@@ -673,21 +1173,62 @@
   "inventoryAutoSyncSubtitle": "Connect your pharmacy for automatic refill updates",
   "inventoryAutoSyncPending": "Pharmacy auto-sync integration pending",
   "inventoryCountUpdated": "{name} count updated to {count}",
-  "@inventoryCountUpdated": { "placeholders": { "name": { "type": "String" }, "count": { "type": "int" } } },
+  "@inventoryCountUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "inventorySupplyDays": "{count, plural, =1{~1 day} other{~{count} days}}",
-  "@inventorySupplyDays": { "placeholders": { "count": { "type": "int" } } },
-
+  "@inventorySupplyDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "inventoryAdjustReasonLabel": "Adjustment Reason (Optional)",
   "inventoryAdjustReasonHint": "Reason for adjustment (optional)...",
   "inventoryAdjustSave": "Save Count",
   "inventoryCurrentOnHand": "Current on hand: {quantity} {unit}",
-  "@inventoryCurrentOnHand": { "placeholders": { "quantity": { "type": "int" }, "unit": { "type": "String" } } },
+  "@inventoryCurrentOnHand": {
+    "placeholders": {
+      "quantity": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "inventoryAfterRefill": "After refill: {quantity}",
-  "@inventoryAfterRefill": { "placeholders": { "quantity": { "type": "int" } } },
+  "@inventoryAfterRefill": {
+    "placeholders": {
+      "quantity": {
+        "type": "int"
+      }
+    }
+  },
   "inventoryFullBottle": "Full bottle: {quantity}",
-  "@inventoryFullBottle": { "placeholders": { "quantity": { "type": "int" } } },
+  "@inventoryFullBottle": {
+    "placeholders": {
+      "quantity": {
+        "type": "int"
+      }
+    }
+  },
   "inventoryHalfPack": "Half pack: {quantity}",
-  "@inventoryHalfPack": { "placeholders": { "quantity": { "type": "int" } } },
+  "@inventoryHalfPack": {
+    "placeholders": {
+      "quantity": {
+        "type": "int"
+      }
+    }
+  },
   "medFormExtendedRelease": "Extended Release",
   "medRouteOral": "Oral",
   "medRouteSubcutaneous": "Subcutaneous",
@@ -703,7 +1244,13 @@
   "medConditionAcidReflux": "Acid Reflux",
   "addMedDailyDose": "Daily Dose",
   "addMedCommonFor": "Common for: {condition}",
-  "@addMedCommonFor": { "placeholders": { "condition": { "type": "String" } } },
+  "@addMedCommonFor": {
+    "placeholders": {
+      "condition": {
+        "type": "String"
+      }
+    }
+  },
   "addManualColorWhite": "White",
   "addManualColorYellow": "Yellow",
   "addManualColorPink": "Pink",
@@ -736,13 +1283,28 @@
   "addManualInteractionTitle": "Automatic Interaction Checks",
   "addManualInteractionBody": "We'll cross-reference this dosage against your existing logged medications in the next step.",
   "addMedSelected": "{name} {strength} selected — details next!",
-  "@addMedSelected": { "placeholders": { "name": { "type": "String" }, "strength": { "type": "String" } } },
+  "@addMedSelected": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "strength": {
+        "type": "String"
+      }
+    }
+  },
   "addMedPrivateNote": "Private and encrypted on this device",
   "addMedScanLabel": "Scan Label",
   "addMedSearch": "Search",
   "addMedManualEntry": "Manual Entry",
   "addMedMatchingCount": "Matching Medications ({count})",
-  "@addMedMatchingCount": { "placeholders": { "count": { "type": "int" } } },
+  "@addMedMatchingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "addMedFdaApproved": "FDA Approved",
   "addMedTipTitle": "Tip: Look for the imprint",
   "addMedTipBody": "Most Metformin tablets have numbers like '500' or 'M' pressed on the front to guarantee the exact dosage match.",
@@ -752,7 +1314,13 @@
   "addMedEmptySubtitle": "Enter a medicine name above or scan its label",
   "addMedNoResultsTitle": "No medications found",
   "addMedNoResultsFor": "No results for \"{query}\"",
-  "@addMedNoResultsFor": { "placeholders": { "query": { "type": "String" } } },
+  "@addMedNoResultsFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "addMedSelectAction": "Select ›",
   "reviewScanNameRequired": "Please enter the medication name.",
   "reviewScanStrengthRequired": "Please enter the medication strength.",
@@ -761,9 +1329,21 @@
   "scanCaptureError": "Could not capture image. Try again.",
   "scanGalleryError": "Could not open image. Try again.",
   "scanDetectedOne": "✓ Detected: {name}",
-  "@scanDetectedOne": { "placeholders": { "name": { "type": "String" } } },
+  "@scanDetectedOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "scanDetectedCount": "✓ {count} medicines detected",
-  "@scanDetectedCount": { "placeholders": { "count": { "type": "int" } } },
+  "@scanDetectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "scanTextNoMedicine": "Text was detected, but medicine details could not be identified.",
   "scanNoText": "No text detected. Keep the document clear, flat and well lit.",
   "scanReadError": "Could not read the image. Try again.",
@@ -782,7 +1362,13 @@
   "scanReadingMedicineText": "Reading medicine text...",
   "scanMedicineDetected": "Medicine detected",
   "scanMedicinesDetected": "{count} medicines detected",
-  "@scanMedicinesDetected": { "placeholders": { "count": { "type": "int" } } },
+  "@scanMedicinesDetected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "scanImageCaptured": "Image captured",
   "scanMedicineOrRxDetected": "Medicine or prescription detected",
   "scanPointCameraHint": "Point camera at medicine or prescription",
@@ -791,7 +1377,13 @@
   "scanGallery": "Gallery",
   "scanTryAgain": "Try Again",
   "scanMedicineBadgeNumber": "MEDICINE {index} DETECTED",
-  "@scanMedicineBadgeNumber": { "placeholders": { "index": { "type": "int" } } },
+  "@scanMedicineBadgeNumber": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
   "scanMedicineBadgeSingular": "MEDICINE DETECTED",
   "scanFieldStrength": "Strength",
   "scanFieldForm": "Form",
@@ -806,7 +1398,6 @@
   "reviewScanRequired": "REQUIRED",
   "reviewScanStrengthHint": "Enter strength e.g. 500mg",
   "reviewScanConfirmContinue": "Confirm & Continue →",
-
   "couldNotLoadSettings": "Could not load settings",
   "notificationsTitle": "Notifications",
   "notificationsSubtitle": "Sync reminder habits with your daily rhythm",
@@ -830,10 +1421,11 @@
   "minutesFormat": "{minutes} minutes",
   "@minutesFormat": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
-
   "permTitle": "Enable Dose Reminders",
   "permSubtitle": "MedRemind needs your permission to send dose reminders — at the right time, even when the app is closed.",
   "permCardNotificationsTitle": "Show notifications",
@@ -873,7 +1465,13 @@
   "supportRequestError": "Couldn't send your request. Please try again.",
   "supportRequestSignIn": "Please sign in to send a request.",
   "helpSupportEmailOpenFailed": "Couldn't open your email app. Write to us at {email}",
-  "@helpSupportEmailOpenFailed": { "placeholders": { "email": { "type": "String" } } },
+  "@helpSupportEmailOpenFailed": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "appLockTitle": "MedRemind is locked",
   "appLockSubtitle": "Unlock with your fingerprint, face or phone PIN to continue.",
   "appLockUnlock": "Unlock",
@@ -888,7 +1486,13 @@
   "rptProfileHelp": "The report is made for the profile you are viewing.",
   "rptDateRange": "DATE RANGE",
   "rptDaysTotal": "{count, plural, =1{1 day} other{{count} days}}",
-  "@rptDaysTotal": { "placeholders": { "count": { "type": "int" } } },
+  "@rptDaysTotal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rptPreset7": "Last 7 days",
   "rptPreset30": "Last 30 days",
   "rptPreset90": "Last 90 days",
@@ -900,7 +1504,13 @@
   "rptErrFuture": "The end date cannot be in the future.",
   "rptData": "DATA TO INCLUDE",
   "rptSelectedCount": "{count} selected",
-  "@rptSelectedCount": { "placeholders": { "count": { "type": "int" } } },
+  "@rptSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "rptOptAdherence": "Adherence",
   "rptOptVitals": "Vitals",
   "rptOptSideEffects": "Side effects",
@@ -917,11 +1527,32 @@
   "rptPrivacyNote": "The report is made on this phone. Nothing is sent to a server.",
   "rptReadyTitle": "Report ready",
   "rptSectionNotIncluded": "Not included: {section}",
-  "@rptSectionNotIncluded": { "placeholders": { "section": { "type": "String" } } },
+  "@rptSectionNotIncluded": {
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
   "rptSectionTruncated": "Only the newest entries are included: {section}",
-  "@rptSectionTruncated": { "placeholders": { "section": { "type": "String" } } },
+  "@rptSectionTruncated": {
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
   "rptFileInfo": "PDF {pdf} · CSV {csv}",
-  "@rptFileInfo": { "placeholders": { "pdf": { "type": "String" }, "csv": { "type": "String" } } },
+  "@rptFileInfo": {
+    "placeholders": {
+      "pdf": {
+        "type": "String"
+      },
+      "csv": {
+        "type": "String"
+      }
+    }
+  },
   "rptNoDataTitle": "No data in this range",
   "rptNoDataBody": "There is nothing to report for these dates. Try a longer range.",
   "rptTooLargeTitle": "This range is too big",
@@ -983,7 +1614,16 @@
   "rptLLegendPending": "Pending",
   "rptLLegendNoDoses": "No doses",
   "rptLPage": "Page {page} of {pages}",
-  "@rptLPage": { "placeholders": { "page": { "type": "int" }, "pages": { "type": "int" } } },
+  "@rptLPage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
   "rptPreviewPdf": "Preview PDF",
   "rptSharePdf": "Share PDF",
   "rptShareCsv": "Share CSV",
@@ -1020,18 +1660,42 @@
   "aiChatCaution": "Answers use your medicine list and official FDA drug labels.",
   "aiChatUnavailable": "AI-written answers are not available yet. You can still ask what one of your medicines is used for, or about its side effects, warnings or interactions, and I will show the official FDA label.",
   "aiChatLabelNotFound": "I could not find an official FDA label for {name}. Please ask your pharmacist.",
-  "@aiChatLabelNotFound": { "placeholders": { "name": { "type": "String" } } },
+  "@aiChatLabelNotFound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "aiChatLabelUnavailable": "I could not load the FDA label right now. Please check your connection and try again.",
   "aiChatSaveFailed": "This message could not be saved to your history.",
   "aiChatFull": "This chat is full. Please start a new chat.",
   "aiChatNewChat": "New chat",
   "aiChatLoadFailed": "Could not open this chat.",
   "aiChatAskSideEffects": "What are the side effects of {name}?",
-  "@aiChatAskSideEffects": { "placeholders": { "name": { "type": "String" } } },
+  "@aiChatAskSideEffects": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "aiChatAskUsedFor": "What is {name} used for?",
-  "@aiChatAskUsedFor": { "placeholders": { "name": { "type": "String" } } },
+  "@aiChatAskUsedFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "aiChatAskWarnings": "What are the warnings for {name}?",
-  "@aiChatAskWarnings": { "placeholders": { "name": { "type": "String" } } },
+  "@aiChatAskWarnings": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "aiChatSuggested": "Suggested questions",
   "aiChatEmptyHint": "Ask about one of your medicines. I can show its official FDA label.",
   "aiHistoryTitle": "Chat history",
@@ -1078,14 +1742,38 @@
   "communityEdited": "edited",
   "communityAgoNow": "just now",
   "communityAgoMinutes": "{n} min ago",
-  "@communityAgoMinutes": { "placeholders": { "n": { "type": "int" } } },
+  "@communityAgoMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "communityAgoHours": "{n} h ago",
-  "@communityAgoHours": { "placeholders": { "n": { "type": "int" } } },
+  "@communityAgoHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "communityAgoDays": "{n} d ago",
-  "@communityAgoDays": { "placeholders": { "n": { "type": "int" } } },
+  "@communityAgoDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "communityLoadMoreFailed": "Could not load more. Tap to try again.",
   "communityVotesLabel": "{n} votes",
-  "@communityVotesLabel": { "placeholders": { "n": { "type": "int" } } },
+  "@communityVotesLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "communityNewPost": "New post",
   "communityEditPost": "Edit post",
   "communityPostHint": "Share something with the group…",
@@ -1100,7 +1788,13 @@
   "communityEdit": "Edit",
   "communityCommentsTitle": "Comments",
   "communityCommentsCount": "{n, plural, =1{1 comment} other{{n} comments}}",
-  "@communityCommentsCount": { "placeholders": { "n": { "type": "int" } } },
+  "@communityCommentsCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "communityNoComments": "No comments yet. Be the first.",
   "communityCommentHint": "Write a comment…",
   "communitySend": "Send",
@@ -1108,7 +1802,13 @@
   "communityPostGone": "This post is no longer available.",
   "communityErrBodyEmpty": "Please write something.",
   "communityErrBodyTooLong": "This is too long ({max} characters at most).",
-  "@communityErrBodyTooLong": { "placeholders": { "max": { "type": "int" } } },
+  "@communityErrBodyTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "communitySavedTitle": "Saved posts",
   "communitySavedEmpty": "You have not saved any posts yet.",
   "communitySavePost": "Save post",
@@ -1131,7 +1831,13 @@
   "communityReportThanks": "Thank you. We will look at it.",
   "communityReportDenied": "This could not be sent. You may have reported it already.",
   "communityBlockTitle": "Block {name}?",
-  "@communityBlockTitle": { "placeholders": { "name": { "type": "String" } } },
+  "@communityBlockTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "communityBlockBody": "You will no longer see their posts and comments. You can unblock them under Blocked people.",
   "communityBlockedDone": "Blocked.",
   "communityBlockFailed": "Could not block. Please try again.",
@@ -1149,7 +1855,13 @@
   "communityModerationTitle": "Reports",
   "communityModerationEmpty": "No reports. All clear.",
   "communityReportsCount": "{n, plural, =1{1 report} other{{n} reports}}",
-  "@communityReportsCount": { "placeholders": { "n": { "type": "int" } } },
+  "@communityReportsCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "communityHidePost": "Hide post",
   "communityUnhidePost": "Show post again",
   "communityDismissReports": "Dismiss reports",
@@ -1157,5 +1869,19 @@
   "communityAlreadyRemoved": "Already removed.",
   "communityModerationFailed": "Could not do that. Please try again.",
   "communityReportedPost": "Reported post",
-  "communityReportedComment": "Reported comment"
+  "communityReportedComment": "Reported comment",
+  "appErrorNetwork": "No internet connection. Please check it and try again.",
+  "appErrorPermission": "You do not have access to this. If something changed, go back and sign in again.",
+  "appErrorNotFound": "We could not find this. It may have been removed.",
+  "appErrorValidation": "Something about this is not right. Please check it and try again.",
+  "appErrorServer": "Something went wrong on our side. Please try again in a moment.",
+  "appErrorUnknown": "Something went wrong. Please try again.",
+  "appErrorSessionExpired": "Your session has expired. Please sign in again.",
+  "appErrorRetry": "Try again",
+  "offlineBannerText": "Offline: changes will sync when you are back online.",
+  "offlineBackOnline": "Back online",
+  "savedQueuedNotice": "Saved on this phone. It will sync when you are back online.",
+  "appErrorSignInAgain": "Sign in again",
+  "queuedWriteRejected": "A change you made while offline could not be saved.",
+  "accessLostNotice": "You no longer have access to that profile. Showing your own profile instead."
 }

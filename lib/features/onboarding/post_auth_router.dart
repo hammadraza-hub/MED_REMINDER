@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/account_deletion_policy.dart';
 import '../../core/services/account_deletion_service.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/services/legal_service.dart';
 import '../../main_shell.dart';
 import '../settings/account_purge_screen.dart';
@@ -18,12 +19,34 @@ import 'legal_reconsent_screen.dart';
 ///
 /// Both checks fail open — see [AccountDeletionService] and [LegalService].
 Future<Widget> resolvePostAuthHome(String uid) async {
-  final deletion = await AccountDeletionService.instance.refresh();
+  // M20 step 3: offline, both checks need the network and would only wait for
+  // their time limit. They fail open anyway, so go straight to the app; the
+  // next start with a connection checks again.
+  if (ConnectivityService.instance.isOffline) return const MedRemindShell();
+
+  // Online but the server may not answer (down, or a Wi-Fi without internet):
+  // the two checks run side by side and each gets only a few seconds, so the
+  // user is not kept on the splash for their longest timeouts added together.
+  const limit = Duration(seconds: 5);
+  final results = await Future.wait<Object>([
+    AccountDeletionService.instance
+        .refresh()
+        .then<Object>((s) => s)
+        .timeout(
+          limit,
+          onTimeout: () => AccountDeletionService.instance.status.value,
+        ),
+    LegalService.instance
+        .needsReconsent(uid)
+        .then<Object>((b) => b)
+        .timeout(limit, onTimeout: () => false),
+  ]);
+
+  final deletion = results[0] as DeletionStatus;
   if (deletion.phase == DeletionPhase.due) {
     return const AccountPurgeScreen();
   }
-
-  if (await LegalService.instance.needsReconsent(uid)) {
+  if (results[1] as bool) {
     return LegalReconsentScreen(uid: uid, next: (_) => const MedRemindShell());
   }
   return const MedRemindShell();

@@ -3478,4 +3478,56 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get communityReportedComment => 'Commentaire signalé';
+
+  @override
+  String get appErrorNetwork =>
+      'Pas de connexion internet. Vérifiez-la et réessayez.';
+
+  @override
+  String get appErrorPermission =>
+      'Vous n’y avez pas accès. Si quelque chose a changé, revenez en arrière et reconnectez-vous.';
+
+  @override
+  String get appErrorNotFound =>
+      'Impossible de trouver cet élément. Il a peut-être été supprimé.';
+
+  @override
+  String get appErrorValidation =>
+      'Quelque chose ne va pas. Vérifiez et réessayez.';
+
+  @override
+  String get appErrorServer =>
+      'Un problème est survenu de notre côté. Réessayez dans un instant.';
+
+  @override
+  String get appErrorUnknown => 'Une erreur est survenue. Veuillez réessayer.';
+
+  @override
+  String get appErrorSessionExpired =>
+      'Votre session a expiré. Veuillez vous reconnecter.';
+
+  @override
+  String get appErrorRetry => 'Réessayer';
+
+  @override
+  String get offlineBannerText =>
+      'Hors ligne : les modifications seront synchronisées au retour de la connexion.';
+
+  @override
+  String get offlineBackOnline => 'De nouveau en ligne';
+
+  @override
+  String get savedQueuedNotice =>
+      'Enregistré sur ce téléphone. Synchronisation dès le retour de la connexion.';
+
+  @override
+  String get appErrorSignInAgain => 'Se reconnecter';
+
+  @override
+  String get queuedWriteRejected =>
+      'Une modification faite hors connexion n\'a pas pu être enregistrée.';
+
+  @override
+  String get accessLostNotice =>
+      'Vous n\'avez plus accès à ce profil. Votre propre profil est affiché.';
 }

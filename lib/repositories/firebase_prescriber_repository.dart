@@ -51,11 +51,14 @@ class FirebasePrescriberRepository {
       );
 
   /// Saves a doctor and returns it with its id.
-  Future<Prescriber> add(String memberId, Prescriber p) async {
+  /// A fresh id, made on the phone (no network). See the appointment repo.
+  String newId(String memberId) => _col(memberId).doc().id;
+
+  Future<Prescriber> add(String memberId, Prescriber p, {String? id}) async {
     DoctorFirestore.requireUid();
     _validate(p);
     try {
-      final ref = _col(memberId).doc();
+      final ref = id == null ? _col(memberId).doc() : _col(memberId).doc(id);
       await ref.set({
         ...p.toMap(),
         'createdAt': FieldValue.serverTimestamp(),

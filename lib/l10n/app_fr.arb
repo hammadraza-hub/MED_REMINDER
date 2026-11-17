@@ -1,15 +1,12 @@
 {
   "@@locale": "fr",
-
   "comingSoon": "{title} — bientôt disponible",
   "cancel": "Annuler",
-
   "navHome": "Accueil",
   "navMeds": "Médicaments",
   "navCalendar": "Calendrier",
   "navReports": "Rapports",
   "navSettings": "Réglages",
-
   "settingsTitle": "Réglages",
   "settingsGroupPreferences": "Préférences",
   "settingsGroupAccountPlan": "Compte et offre",
@@ -34,11 +31,9 @@
   "settingsLogoutComingSoon": "Déconnexion — bientôt disponible",
   "settingsFooterVersion": "MedRemind Care Health Suite • v{version} (Build {build})",
   "settingsHipaa": "Conforme HIPAA et chiffré",
-
   "languageTitle": "Langue",
   "languageNote": "L'application se met à jour instantanément après avoir choisi une langue.",
   "languageDeviceDefault": "Par défaut de l'appareil : langue du système (English - US)",
-
   "homeGreetingMorning": "Bonjour",
   "homeGreetingAfternoon": "Bon après-midi",
   "homeGreetingEvening": "Bonsoir",
@@ -91,7 +86,6 @@
   "doseReasonLabel": "Raison (facultatif)",
   "doseReasonHint": "ex. : Nausées",
   "doseConfirmSkip": "Confirmer l'omission",
-
   "dataExportTitle": "Exportation des données",
   "dataExportHeroTitle": "Exporter toutes mes données",
   "dataExportHeroSubtitle": "Obtenez une copie complète de tout ce qui est stocké dans votre compte.",
@@ -103,10 +97,22 @@
   "dataExportIncludedVitals": "Signes vitaux, symptômes et notes",
   "dataExportIncludedPrescribers": "Médecins, rendez-vous et pharmacies",
   "dataExportFormatNote": "Un fichier ZIP ({formats}) est créé sur cet appareil. Vous choisissez où l’enregistrer ou le partager.",
-  "@dataExportFormatNote": { "placeholders": { "formats": { "type": "String" } } },
+  "@dataExportFormatNote": {
+    "placeholders": {
+      "formats": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportFormats": "JSON + CSV",
   "dataExportSentTo": "Données du compte {email}",
-  "@dataExportSentTo": { "placeholders": { "email": { "type": "String" } } },
+  "@dataExportSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportRequest": "Créer l’export",
   "dataExportGenerating": "Préparation de vos données...",
   "dataExportSubmitted": "Export prêt",
@@ -184,10 +190,21 @@
   "symptomRecordedFor": "Symptôme enregistré pour {name}",
   "dataExportLastExportNever": "Dernière exportation : Jamais",
   "dataExportLastExportNow": "Dernière exportation : À l'instant ({timestamp})",
-  "@dataExportLastExportNow": { "placeholders": { "timestamp": { "type": "String" } } },
+  "@dataExportLastExportNow": {
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportRetentionId": "ID de conservation des données du compte : {id}",
-  "@dataExportRetentionId": { "placeholders": { "id": { "type": "String" } } },
-
+  "@dataExportRetentionId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "helpSupportTitle": "Aide et assistance",
   "helpSupportSearchHint": "Rechercher dans la FAQ...",
   "helpSupportNoResults": "Aucun article correspondant.",
@@ -195,7 +212,13 @@
   "helpSupportBannerSubtitle": "Nous sommes là pour maintenir vos routines à l'heure.",
   "helpSupportFaqHeader": "Questions fréquentes",
   "helpSupportFaqCount": "{count} articles",
-  "@helpSupportFaqCount": { "placeholders": { "count": { "type": "int" } } },
+  "@helpSupportFaqCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "helpSupportStillNeedHelp": "Besoin d'aide ?",
   "helpSupportLiveOnline": "Équipe en ligne",
   "helpSupportEmailSupport": "Assistance par e-mail",
@@ -209,7 +232,13 @@
   "helpSupportVersion": "MedRemind v{version} (build {build})",
   "helpSupportCompliance": "Réseau d'aidants chiffré • Conforme HIPAA",
   "helpSupportEmailClipped": "Écrivez-nous à {email}",
-  "@helpSupportEmailClipped": { "placeholders": { "email": { "type": "String" } } },
+  "@helpSupportEmailClipped": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "faqQ1": "Comment modifier l'heure d'une dose ?",
   "faqA1": "Ouvrez l'onglet Planning ou Médicaments, touchez la carte du médicament, sélectionnez Modifier le planning, puis ajustez vos alertes. Les changements se synchronisent instantanément entre les appareils des aidants.",
   "faqQ2": "Pourquoi n'ai-je pas reçu de rappel ?",
@@ -218,7 +247,6 @@
   "faqA3": "Les aidants reçoivent des confirmations silencieuses lorsque les médicaments sont enregistrés. Si une dose cruciale est manquée pendant plus de 30 minutes, une notification escaladée est automatiquement envoyée à l'aidant principal.",
   "faqQ4": "Comment ajouter un membre de la famille ?",
   "faqA4": "Allez dans Profils, touchez Ajouter, puis envoyez une invitation par e-mail ou téléphone. La personne accepte le lien pour se connecter.",
-
   "aboutTitle": "À propos",
   "aboutAppName": "MedRemind",
   "aboutVersion": "Version {version} (build {build})",
@@ -239,7 +267,6 @@
   "aboutLegalComplianceTitle": "Conformité et audits",
   "aboutLegalComplianceValue": "Certifié SOC-2 Type II · Mesures de sécurité HIPAA · Vérifié 2025",
   "aboutDone": "Terminé",
-
   "upgradeTitle": "Mettre à niveau",
   "upgradePlanStatus": "Forfait gratuit • Prêt à évoluer",
   "upgradeProGated": "Réservé Pro",
@@ -282,7 +309,6 @@
   "upgradeValueFamily": "Family Pro uniquement",
   "upgradeRestoreToast": "Restauration des achats... Aucun abonnement antérieur trouvé.",
   "upgradeTrialToast": "Démarrage de l'essai de 7 jours pour {plan} ({cadence})",
-
   "compareTitle": "Comparer les forfaits",
   "compareGuarantee": "Garantie satisfait ou remboursé 30 jours",
   "compareAnnualSave": "Économisez 40 % par an",
@@ -320,7 +346,6 @@
   "compareEncrypted": "Chiffré 256 bits",
   "compareAutoSync": "Synchro auto",
   "compareHipaaReady": "Compatible HIPAA",
-
   "paymentTitle": "Paiement réussi",
   "paymentProNowTitle": "Vous êtes maintenant Pro !",
   "paymentWelcome": "Bienvenue dans {plan}, {name}. Toutes les fonctions Pro sont débloquées.",
@@ -338,7 +363,6 @@
   "paymentViewFullReceipt": "Voir le reçu complet",
   "paymentStartPro": "Commencer à utiliser Pro",
   "paymentUnlockNote": "Les vérifications d'interactions, alertes de renouvellement et rapports sont désormais actifs",
-
   "doctorsTitle": "Médecins",
   "doctorsAdd": "Ajouter un médecin",
   "doctorsAdded": "Médecin ajouté avec succès",
@@ -479,7 +503,6 @@
   "proGateBody": "Les médecins, les rendez-vous et les notes pour le médecin font partie de l’offre Solo Pro. Ce que vous avez déjà enregistré reste ici et peut être consulté ou supprimé.",
   "proGateSeePlans": "Voir les offres",
   "proReadOnlyBanner": "Lecture seule avec l’offre gratuite. Passez à Solo Pro pour ajouter ou modifier.",
-
   "medsTitle": "Médicaments",
   "medsMemberMedications": "Médicaments de {name}",
   "medsActiveCount": "{count, plural, =1{1 médicament actif} other{{count} médicaments actifs}}",
@@ -527,7 +550,6 @@
   "medsUnitCapsule": "{count, plural, =1{gélule} other{gélules}}",
   "medsUnitBottle": "{count, plural, =1{flacon} other{flacons}}",
   "medsUnitDose": "{count, plural, =1{dose} other{doses}}",
-
   "inventoryTitle": "Inventaire",
   "inventoryMedicationsCount": "{count, plural, =1{1 médicament} other{{count} médicaments}}",
   "inventoryTrackedSupply": "Stock suivi",
@@ -549,7 +571,6 @@
   "inventoryAutoSyncPending": "Intégration de la synchronisation auto pharmacie en attente",
   "inventoryCountUpdated": "{name} mis à jour à {count}",
   "inventorySupplyDays": "{count, plural, =1{~1 jour} other{~{count} jours}}",
-
   "inventoryAdjustReasonLabel": "Motif de l'ajustement (facultatif)",
   "inventoryAdjustReasonHint": "Motif de l'ajustement (facultatif)...",
   "inventoryAdjustSave": "Enregistrer la quantité",
@@ -958,5 +979,19 @@
   "communityAlreadyRemoved": "Déjà supprimé.",
   "communityModerationFailed": "Action impossible. Veuillez réessayer.",
   "communityReportedPost": "Publication signalée",
-  "communityReportedComment": "Commentaire signalé"
+  "communityReportedComment": "Commentaire signalé",
+  "appErrorNetwork": "Pas de connexion internet. Vérifiez-la et réessayez.",
+  "appErrorPermission": "Vous n’y avez pas accès. Si quelque chose a changé, revenez en arrière et reconnectez-vous.",
+  "appErrorNotFound": "Impossible de trouver cet élément. Il a peut-être été supprimé.",
+  "appErrorValidation": "Quelque chose ne va pas. Vérifiez et réessayez.",
+  "appErrorServer": "Un problème est survenu de notre côté. Réessayez dans un instant.",
+  "appErrorUnknown": "Une erreur est survenue. Veuillez réessayer.",
+  "appErrorSessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
+  "appErrorRetry": "Réessayer",
+  "offlineBannerText": "Hors ligne : les modifications seront synchronisées au retour de la connexion.",
+  "offlineBackOnline": "De nouveau en ligne",
+  "savedQueuedNotice": "Enregistré sur ce téléphone. Synchronisation dès le retour de la connexion.",
+  "appErrorSignInAgain": "Se reconnecter",
+  "queuedWriteRejected": "Une modification faite hors connexion n'a pas pu être enregistrée.",
+  "accessLostNotice": "Vous n'avez plus accès à ce profil. Votre propre profil est affiché."
 }

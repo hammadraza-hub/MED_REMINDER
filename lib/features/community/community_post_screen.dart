@@ -11,6 +11,7 @@ import '../../core/services/community_post_service.dart';
 import '../../core/services/community_profile_service.dart';
 import '../../core/services/community_reaction_service.dart';
 import '../../core/services/community_safety_service.dart';
+import '../../widgets/error_retry_view.dart';
 import '../../l10n/app_localizations.dart';
 import 'community_avatar.dart';
 import 'community_compose_screen.dart';
@@ -225,12 +226,14 @@ class _CommunityPostScreenState extends State<CommunityPostScreen> {
     try {
       final done = await submitWithWarnings(
         context,
-        (confirmed) => _actions.createComment(
-          _post.groupId,
-          _post.id,
-          _input.text,
-          confirmed: confirmed,
-        ),
+        (confirmed) => _actions
+            .createComment(
+              _post.groupId,
+              _post.id,
+              _input.text,
+              confirmed: confirmed,
+            )
+            .timeout(const Duration(seconds: 10)),
       );
       if (!mounted) return;
       if (!done) {
@@ -425,19 +428,14 @@ class _CommunityPostScreenState extends State<CommunityPostScreen> {
         );
       case CommunityCommentsStatus.failed:
         children.add(
-          Column(
-            children: [
-              Text(
-                l10n.communityLoadFailed,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.permissionsSecondary),
-              ),
-              TextButton(
-                key: const Key('comments-retry'),
-                onPressed: c.refresh,
-                child: Text(l10n.communityRetry),
-              ),
-            ],
+          SizedBox(
+            height: 200,
+            child: ErrorRetryView(
+              message: l10n.communityLoadFailed,
+              retryLabel: l10n.communityRetry,
+              retryKey: const Key('comments-retry'),
+              onRetry: c.refresh,
+            ),
           ),
         );
       case CommunityCommentsStatus.ready:

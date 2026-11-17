@@ -3,12 +3,16 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/services/access_guard.dart';
+import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/medication.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/medication_repository.dart';
+import '../../widgets/error_retry_view.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/app_avatar.dart';
 import 'add_medication_screen.dart';
 import 'allergies_screen.dart';
@@ -102,6 +106,9 @@ class _MedsScreenState extends State<MedsScreen> {
   List<Medication> _archivedMedications = [];
   bool _medicationsLoading = true;
 
+  /// Set when the profile or the medication list could not be read.
+  Object? _loadError;
+
   StreamSubscription<List<Medication>>? _activeSubscription;
   StreamSubscription<List<Medication>>? _archivedSubscription;
 
@@ -132,6 +139,7 @@ class _MedsScreenState extends State<MedsScreen> {
   // ============================================================
 
   Future<void> _fetchFirestoreProfileId() async {
+    if (_loadError != null && mounted) setState(() => _loadError = null);
     try {
       final uid = AuthRepository.instance.currentUid;
       if (uid == null) {
@@ -181,6 +189,7 @@ class _MedsScreenState extends State<MedsScreen> {
       setState(() {
         _profileLoading = false;
         _medicationsLoading = false;
+        _loadError = e;
       });
     }
   }
@@ -205,6 +214,7 @@ class _MedsScreenState extends State<MedsScreen> {
 
     setState(() {
       _medicationsLoading = true;
+      _loadError = null;
     });
 
     _activeSubscription = MedicationRepository.instance
@@ -215,13 +225,17 @@ class _MedsScreenState extends State<MedsScreen> {
             setState(() {
               _activeMedications = medications;
               _medicationsLoading = false;
+              _loadError = null;
             });
           },
           onError: (Object error, StackTrace stackTrace) {
             debugPrint('Active medications stream failed: $error');
+            AccessGuard.reportIfDenied(error);
             if (!mounted) return;
             setState(() {
               _medicationsLoading = false;
+              // Keep showing the last list when we have one.
+              if (_activeMedications.isEmpty) _loadError = error;
             });
           },
         );
@@ -331,27 +345,23 @@ class _MedsScreenState extends State<MedsScreen> {
   }
 
   void _openInventory() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const InventoryScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const InventoryScreen()));
   }
 
   void _openAllergies() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AllergiesScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const AllergiesScreen()));
   }
 
   void _openSideEffects() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SideEffectsScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const SideEffectsScreen()));
   }
 
   void _openPharmacy() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PharmacyInfoScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const PharmacyInfoScreen()));
   }
 
   // ============================================================
@@ -490,6 +500,15 @@ class _MedsScreenState extends State<MedsScreen> {
 
           if (_medicationsLoading)
             _buildLoadingState()
+          else if (_loadError != null)
+            SizedBox(
+              height: 240,
+              child: ErrorRetryView(
+                error: AppException.fromAny(_loadError!),
+                retryKey: const Key('meds-retry'),
+                onRetry: _fetchFirestoreProfileId,
+              ),
+            )
           else if (items.isEmpty)
             _buildEmptyState()
           else
@@ -722,12 +741,7 @@ class _MedsScreenState extends State<MedsScreen> {
   // ============================================================
 
   Widget _buildLoadingState() {
-    return const SizedBox(
-      height: 200,
-      child: Center(
-        child: CircularProgressIndicator(color: AppColors.formAccent),
-      ),
-    );
+    return const SkeletonList(count: 3);
   }
 
   // ============================================================

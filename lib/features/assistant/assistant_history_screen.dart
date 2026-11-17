@@ -3,11 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/ai/chat_controller.dart';
+import '../../core/async_state.dart';
 import '../../core/ai/chat_models.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../../repositories/chat_repository.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/error_retry_view.dart';
+import '../../widgets/skeleton.dart';
 
 /// What the user chose on the history screen: open a saved thread
 /// ([threadId] set) or start a new chat ([threadId] null).
@@ -40,11 +44,8 @@ class AssistantHistoryScreen extends StatefulWidget {
   State<AssistantHistoryScreen> createState() => _AssistantHistoryScreenState();
 }
 
-enum _Phase { loading, ready, failed }
-
 class _AssistantHistoryScreenState extends State<AssistantHistoryScreen> {
-  _Phase _phase = _Phase.loading;
-  List<ChatThread> _threads = const [];
+  AsyncState<List<ChatThread>> _state = const AsyncState.loading();
 
   ChatStore get _store => widget.store ?? ChatRepository.instance;
 
@@ -58,26 +59,16 @@ class _AssistantHistoryScreenState extends State<AssistantHistoryScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _phase = _Phase.loading);
+    setState(() => _state = const AsyncState.loading());
     final id = _profileId;
     if (id == null || id.isEmpty) {
-      setState(() {
-        _threads = const [];
-        _phase = _Phase.ready;
-      });
+      setState(() => _state = const AsyncState.empty());
       return;
     }
-    try {
-      final list = await _store.listThreads(id);
-      if (!mounted) return;
-      setState(() {
-        _threads = list;
-        _phase = _Phase.ready;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _phase = _Phase.failed);
-    }
+    final next = await AsyncState.guard<List<ChatThread>>(
+      () => _store.listThreads(id),
+    );
+    if (mounted) setState(() => _state = next);
   }
 
   Future<void> _delete(ChatThread t) async {
@@ -107,7 +98,16 @@ class _AssistantHistoryScreenState extends State<AssistantHistoryScreen> {
     try {
       await _store.deleteThread(t.id);
       if (!mounted) return;
-      setState(() => _threads = [..._threads.where((x) => x.id != t.id)]);
+      final left = [
+        ...(_state.valueOrNull ?? const <ChatThread>[]).where(
+          (x) => x.id != t.id,
+        ),
+      ];
+      setState(
+        () => _state = left.isEmpty
+            ? const AsyncState.empty()
+            : AsyncState.data(left),
+      );
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(l10n.aiHistoryDeleted)));
@@ -195,57 +195,50 @@ class _AssistantHistoryScreenState extends State<AssistantHistoryScreen> {
   Widget _buildBody(AppLocalizations l10n) {
     final children = <Widget>[_newChatButton(l10n), const SizedBox(height: 18)];
 
-    switch (_phase) {
-      case _Phase.loading:
-        children.add(
-          const Padding(
-            padding: EdgeInsets.only(top: 40),
-            child: Center(child: CircularProgressIndicator()),
+    _state.when(
+      loading: () => children.add(const SkeletonList(count: 3)),
+      failure: (e) => children.add(
+        SizedBox(
+          height: 220,
+          child: ErrorRetryView(
+            error: e,
+            onRetry: _load,
+            retryKey: const Key('history-retry'),
           ),
-        );
-      case _Phase.failed:
-        children.add(
-          _message(
-            icon: Icons.cloud_off_outlined,
-            title: l10n.aiHistoryError,
-            action: TextButton(
-              key: const Key('history-retry'),
-              onPressed: _load,
-              child: Text(l10n.rptTryAgain),
-            ),
+        ),
+      ),
+      empty: () => children.add(
+        SizedBox(
+          height: 220,
+          child: EmptyStateView(
+            icon: Icons.chat_bubble_outline,
+            title: l10n.aiHistoryEmpty,
+            message: l10n.aiHistoryEmptyBody,
           ),
-        );
-      case _Phase.ready:
-        if (_threads.isEmpty) {
-          children.add(
-            _message(
-              icon: Icons.chat_bubble_outline,
-              title: l10n.aiHistoryEmpty,
-              body: l10n.aiHistoryEmptyBody,
-            ),
-          );
-        } else {
-          children.add(_label(l10n.aiHistoryPast));
-          children.add(const SizedBox(height: 8));
-          for (final t in _threads) {
-            children.add(_threadTile(t, l10n));
-            children.add(const SizedBox(height: 10));
-          }
-          children.add(
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                l10n.aiHistoryHint,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.permissionsSecondary,
-                ),
+        ),
+      ),
+      data: (threads) {
+        children.add(_label(l10n.aiHistoryPast));
+        children.add(const SizedBox(height: 8));
+        for (final t in threads) {
+          children.add(_threadTile(t, l10n));
+          children.add(const SizedBox(height: 10));
+        }
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              l10n.aiHistoryHint,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.permissionsSecondary,
               ),
             ),
-          );
-        }
-    }
+          ),
+        );
+      },
+    );
 
     children.add(const SizedBox(height: 16));
     children.add(
@@ -307,44 +300,6 @@ class _AssistantHistoryScreenState extends State<AssistantHistoryScreen> {
       color: AppColors.permissionsSecondary,
     ),
   );
-
-  Widget _message({
-    required IconData icon,
-    required String title,
-    String? body,
-    Widget? action,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          Icon(icon, size: 40, color: AppColors.permissionsSecondary),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.reportPrimary,
-            ),
-          ),
-          if (body != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              body,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.permissionsSecondary,
-              ),
-            ),
-          ],
-          ?action,
-        ],
-      ),
-    );
-  }
 
   Widget _threadTile(ChatThread t, AppLocalizations l10n) {
     return Material(

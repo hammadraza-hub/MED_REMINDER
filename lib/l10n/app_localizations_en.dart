@@ -3438,4 +3438,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get communityReportedComment => 'Reported comment';
+
+  @override
+  String get appErrorNetwork =>
+      'No internet connection. Please check it and try again.';
+
+  @override
+  String get appErrorPermission =>
+      'You do not have access to this. If something changed, go back and sign in again.';
+
+  @override
+  String get appErrorNotFound =>
+      'We could not find this. It may have been removed.';
+
+  @override
+  String get appErrorValidation =>
+      'Something about this is not right. Please check it and try again.';
+
+  @override
+  String get appErrorServer =>
+      'Something went wrong on our side. Please try again in a moment.';
+
+  @override
+  String get appErrorUnknown => 'Something went wrong. Please try again.';
+
+  @override
+  String get appErrorSessionExpired =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get appErrorRetry => 'Try again';
+
+  @override
+  String get offlineBannerText =>
+      'Offline: changes will sync when you are back online.';
+
+  @override
+  String get offlineBackOnline => 'Back online';
+
+  @override
+  String get savedQueuedNotice =>
+      'Saved on this phone. It will sync when you are back online.';
+
+  @override
+  String get appErrorSignInAgain => 'Sign in again';
+
+  @override
+  String get queuedWriteRejected =>
+      'A change you made while offline could not be saved.';
+
+  @override
+  String get accessLostNotice =>
+      'You no longer have access to that profile. Showing your own profile instead.';
 }

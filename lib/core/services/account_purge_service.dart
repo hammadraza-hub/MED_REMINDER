@@ -1,3 +1,4 @@
+import 'session_guard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -124,6 +125,7 @@ class AccountPurgeService {
         return PurgeOutcome.failed;
       }
 
+      SessionGuard.expectSignOut();
       try {
         await user.delete();
       } on FirebaseAuthException catch (e) {

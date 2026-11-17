@@ -1,15 +1,12 @@
 {
   "@@locale": "hi",
-
   "comingSoon": "{title} — जल्द आ रहा है",
   "cancel": "रद्द करें",
-
   "navHome": "होम",
   "navMeds": "दवाइयाँ",
   "navCalendar": "कैलेंडर",
   "navReports": "रिपोर्ट",
   "navSettings": "सेटिंग्स",
-
   "settingsTitle": "सेटिंग्स",
   "settingsGroupPreferences": "प्राथमिकताएँ",
   "settingsGroupAccountPlan": "खाता और योजना",
@@ -34,11 +31,9 @@
   "settingsLogoutComingSoon": "लॉग आउट — जल्द आ रहा है",
   "settingsFooterVersion": "MedRemind Care Health Suite • v{version} (बिल्ड {build})",
   "settingsHipaa": "HIPAA अनुरूप और एन्क्रिप्टेड",
-
   "languageTitle": "भाषा",
   "languageNote": "भाषा चुनने के तुरंत बाद ऐप अपडेट हो जाता है।",
   "languageDeviceDefault": "डिवाइस डिफ़ॉल्ट: सिस्टम भाषा (English - US)",
-
   "homeGreetingMorning": "सुप्रभात",
   "homeGreetingAfternoon": "नमस्ते",
   "homeGreetingEvening": "शुभ संध्या",
@@ -91,7 +86,6 @@
   "doseReasonLabel": "कारण (वैकल्पिक)",
   "doseReasonHint": "जैसे, जी मिचलाना",
   "doseConfirmSkip": "छोड़ना पुष्टि करें",
-
   "dataExportTitle": "डेटा निर्यात",
   "dataExportHeroTitle": "मेरा सारा डेटा निर्यात करें",
   "dataExportHeroSubtitle": "आपके खाते में संग्रहीत सब कुछ की पूरी प्रति प्राप्त करें।",
@@ -103,10 +97,22 @@
   "dataExportIncludedVitals": "वाइटल्स, लक्षण और नोट्स",
   "dataExportIncludedPrescribers": "डॉक्टर, अपॉइंटमेंट और फ़ार्मेसी",
   "dataExportFormatNote": "इस डिवाइस पर एक ZIP फ़ाइल ({formats}) बनती है। इसे कहाँ सेव या शेयर करना है, आप चुनते हैं।",
-  "@dataExportFormatNote": { "placeholders": { "formats": { "type": "String" } } },
+  "@dataExportFormatNote": {
+    "placeholders": {
+      "formats": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportFormats": "JSON + CSV",
   "dataExportSentTo": "खाते {email} का डेटा",
-  "@dataExportSentTo": { "placeholders": { "email": { "type": "String" } } },
+  "@dataExportSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportRequest": "एक्सपोर्ट बनाएँ",
   "dataExportGenerating": "आपका डेटा तैयार हो रहा है...",
   "dataExportSubmitted": "एक्सपोर्ट तैयार",
@@ -184,10 +190,21 @@
   "symptomRecordedFor": "{name} के लिए लक्षण दर्ज हुआ",
   "dataExportLastExportNever": "अंतिम निर्यात: कभी नहीं",
   "dataExportLastExportNow": "अंतिम निर्यात: अभी-अभी ({timestamp})",
-  "@dataExportLastExportNow": { "placeholders": { "timestamp": { "type": "String" } } },
+  "@dataExportLastExportNow": {
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      }
+    }
+  },
   "dataExportRetentionId": "खाता रिकॉर्ड प्रतिधारण ID: {id}",
-  "@dataExportRetentionId": { "placeholders": { "id": { "type": "String" } } },
-
+  "@dataExportRetentionId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
   "helpSupportTitle": "सहायता और समर्थन",
   "helpSupportSearchHint": "FAQ खोजें...",
   "helpSupportNoResults": "कोई मेल खाता लेख नहीं।",
@@ -195,7 +212,13 @@
   "helpSupportBannerSubtitle": "हम आपकी दिनचर्या समय पर रखने के लिए यहाँ हैं।",
   "helpSupportFaqHeader": "अक्सर पूछे जाने वाले",
   "helpSupportFaqCount": "{count} लेख",
-  "@helpSupportFaqCount": { "placeholders": { "count": { "type": "int" } } },
+  "@helpSupportFaqCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "helpSupportStillNeedHelp": "अभी भी सहायता चाहिए?",
   "helpSupportLiveOnline": "टीम ऑनलाइन है",
   "helpSupportEmailSupport": "ईमेल सहायता",
@@ -209,7 +232,13 @@
   "helpSupportVersion": "MedRemind v{version} (बिल्ड {build})",
   "helpSupportCompliance": "एन्क्रिप्टेड देखभालकर्ता नेटवर्क • HIPAA अनुरूप",
   "helpSupportEmailClipped": "हमें {email} पर ईमेल करें",
-  "@helpSupportEmailClipped": { "placeholders": { "email": { "type": "String" } } },
+  "@helpSupportEmailClipped": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "faqQ1": "मैं डोज़ का समय कैसे बदलूँ?",
   "faqA1": "अपना शेड्यूल या दवा टैब खोलें, उस दवा कार्ड पर टैप करें, शेड्यूल संपादित करें चुनें, और अपनी डोज़ अलर्ट समायोजित करें। बदलाव देखभालकर्ता उपकरणों पर तुरंत सिंक हो जाते हैं।",
   "faqQ2": "मुझे रिमाइंडर क्यों नहीं मिला?",
@@ -218,7 +247,6 @@
   "faqA3": "दवाएँ दर्ज होने पर देखभालकर्ताओं को मौन पुष्टि मिलती है। यदि कोई महत्वपूर्ण डोज़ 30 मिनट से अधिक छूट जाए, तो मुख्य देखभालकर्ता को स्वतः एस्केलेटेड सूचना भेजी जाती है।",
   "faqQ4": "मैं परिवार का सदस्य कैसे जोड़ूँ?",
   "faqA4": "प्रोफ़ाइल पर जाएँ, जोड़ें पर टैप करें, फिर ईमेल या फ़ोन से निमंत्रण भेजें। वे जुड़ने के लिए लिंक स्वीकार करेंगे।",
-
   "aboutTitle": "परिचय",
   "aboutAppName": "MedRemind",
   "aboutVersion": "संस्करण {version} (बिल्ड {build})",
@@ -239,7 +267,6 @@
   "aboutLegalComplianceTitle": "अनुपालन और ऑडिट",
   "aboutLegalComplianceValue": "SOC-2 Type II प्रमाणित · HIPAA सुरक्षा उपाय · 2025 सत्यापित",
   "aboutDone": "हो गया",
-
   "upgradeTitle": "अपग्रेड",
   "upgradePlanStatus": "मुफ़्त प्लान • विस्तार के लिए तैयार",
   "upgradeProGated": "प्रो के लिए",
@@ -282,7 +309,6 @@
   "upgradeValueFamily": "केवल Family Pro",
   "upgradeRestoreToast": "खरीद बहाल की जा रही है... कोई पिछली सदस्यता नहीं मिली।",
   "upgradeTrialToast": "{plan} ({cadence}) के लिए 7-दिन का ट्रायल शुरू हो रहा है",
-
   "compareTitle": "प्लान तुलना करें",
   "compareGuarantee": "30-दिन मनी बैक गारंटी",
   "compareAnnualSave": "सालाना 40% बचाएँ",
@@ -320,7 +346,6 @@
   "compareEncrypted": "256-बिट एन्क्रिप्टेड",
   "compareAutoSync": "ऑटो-सिंक",
   "compareHipaaReady": "HIPAA तैयार",
-
   "paymentTitle": "भुगतान सफल",
   "paymentProNowTitle": "आप अब Pro हैं!",
   "paymentWelcome": "{plan} में आपका स्वागत है, {name}। सभी Pro सुविधाएँ अनलॉक हैं।",
@@ -338,7 +363,6 @@
   "paymentViewFullReceipt": "पूरी रसीद देखें",
   "paymentStartPro": "Pro का उपयोग शुरू करें",
   "paymentUnlockNote": "इंटरैक्शन जाँच, रीफ़िल अलर्ट और रिपोर्ट अब सक्रिय हैं",
-
   "doctorsTitle": "डॉक्टर",
   "doctorsAdd": "डॉक्टर जोड़ें",
   "doctorsAdded": "डॉक्टर सफलतापूर्वक जोड़ा गया",
@@ -479,7 +503,6 @@
   "proGateBody": "डॉक्टर, अपॉइंटमेंट और डॉक्टर के लिए नोट्स Solo Pro प्लान का हिस्सा हैं। जो आपने पहले सेव किया है वह यहीं रहेगा और देखा या हटाया जा सकता है।",
   "proGateSeePlans": "प्लान देखें",
   "proReadOnlyBanner": "फ़्री प्लान में केवल देखने के लिए। जोड़ने या बदलने के लिए Solo Pro लें।",
-
   "medsTitle": "दवाइयाँ",
   "medsMemberMedications": "{name} की दवाइयाँ",
   "medsActiveCount": "{count, plural, =1{1 सक्रिय दवा} other{{count} सक्रिय दवाएँ}}",
@@ -527,7 +550,6 @@
   "medsUnitCapsule": "{count, plural, =1{कैप्सूल} other{कैप्सूल}}",
   "medsUnitBottle": "{count, plural, =1{बोतल} other{बोतलें}}",
   "medsUnitDose": "{count, plural, =1{खुराक} other{खुराकें}}",
-
   "inventoryTitle": "इन्वेंटरी",
   "inventoryMedicationsCount": "{count, plural, =1{1 दवा} other{{count} दवाएँ}}",
   "inventoryTrackedSupply": "ट्रैक किया गया स्टॉक",
@@ -549,7 +571,6 @@
   "inventoryAutoSyncPending": "फ़ार्मेसी ऑटो-सिंक एकीकरण लंबित है",
   "inventoryCountUpdated": "{name} को {count} पर अपडेट किया गया",
   "inventorySupplyDays": "{count, plural, =1{~1 दिन} other{~{count} दिन}}",
-
   "inventoryAdjustReasonLabel": "समायोजन का कारण (वैकल्पिक)",
   "inventoryAdjustReasonHint": "समायोजन का कारण (वैकल्पिक)...",
   "inventoryAdjustSave": "गिनती सहेजें",
@@ -667,7 +688,6 @@
   "reviewScanRequired": "आवश्यक",
   "reviewScanStrengthHint": "मात्रा दर्ज करें, उदा. 500mg",
   "reviewScanConfirmContinue": "पुष्टि करें और आगे बढ़ें →",
-
   "couldNotLoadSettings": "सेटिंग्स लोड नहीं की जा सकीं",
   "notificationsTitle": "नोटिफिकेशन",
   "notificationsSubtitle": "अपनी दैनिक दिनचर्या के साथ रिमाइंडर की आदतें सिंक करें",
@@ -691,10 +711,11 @@
   "minutesFormat": "{minutes} मिनट",
   "@minutesFormat": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
-
   "permTitle": "खुराक रिमाइंडर सक्षम करें",
   "permSubtitle": "MedRemind को खुराक रिमाइंडर भेजने की अनुमति चाहिए — सही समय पर, भले ही ऐप बंद हो।",
   "permCardNotificationsTitle": "नोटिफिकेशन दिखाएं",
@@ -999,5 +1020,19 @@
   "communityAlreadyRemoved": "पहले ही हटाया जा चुका है।",
   "communityModerationFailed": "यह नहीं हो सका। कृपया फिर कोशिश करें।",
   "communityReportedPost": "रिपोर्ट की गई पोस्ट",
-  "communityReportedComment": "रिपोर्ट की गई टिप्पणी"
+  "communityReportedComment": "रिपोर्ट की गई टिप्पणी",
+  "appErrorNetwork": "इंटरनेट कनेक्शन नहीं है। कृपया उसे जाँचें और फिर कोशिश करें।",
+  "appErrorPermission": "आपके पास इसकी पहुँच नहीं है। अगर कुछ बदला है तो वापस जाकर फिर से साइन इन करें।",
+  "appErrorNotFound": "यह नहीं मिला। हो सकता है इसे हटा दिया गया हो।",
+  "appErrorValidation": "इसमें कुछ ठीक नहीं है। कृपया जाँचें और फिर कोशिश करें।",
+  "appErrorServer": "हमारी तरफ़ से कुछ गड़बड़ हुई। कृपया थोड़ी देर बाद फिर कोशिश करें।",
+  "appErrorUnknown": "कुछ गड़बड़ हो गई। कृपया फिर कोशिश करें।",
+  "appErrorSessionExpired": "आपका सत्र समाप्त हो गया है। कृपया फिर से साइन इन करें।",
+  "appErrorRetry": "फिर कोशिश करें",
+  "offlineBannerText": "ऑफ़लाइन: इंटरनेट लौटने पर बदलाव सिंक हो जाएँगे।",
+  "offlineBackOnline": "फिर से ऑनलाइन",
+  "savedQueuedNotice": "इस फ़ोन में सेव हो गया। इंटरनेट लौटने पर सिंक हो जाएगा।",
+  "appErrorSignInAgain": "फिर से साइन इन करें",
+  "queuedWriteRejected": "ऑफ़लाइन रहते हुए किया गया बदलाव सेव नहीं हो सका।",
+  "accessLostNotice": "अब आपके पास उस प्रोफ़ाइल का एक्सेस नहीं है। आपकी अपनी प्रोफ़ाइल दिखाई जा रही है।"
 }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../core/app_exception.dart';
+import '../../core/app_error_text.dart';
+import '../../core/queued_write.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/constants/app_colors.dart';
 
 import '../../main_shell.dart';
@@ -285,26 +287,28 @@ class _AddAllergyScreenState extends State<AddAllergyScreen> {
 
       // M3: Create allergy in Firestore
       // Path: profiles/{profileId}/allergies/{allergyId}
-      await FirebaseFirestore.instance
-          .collection('profiles')
-          .doc(profileId)
-          .collection('allergies')
-          .add({
-            'name': name,
-            'category': AllergyCategory.medication.name,
-            'severity': _severity.name,
-            'symptoms': _notesController.text.trim(),
-            'addedAt': FieldValue.serverTimestamp(),
-          });
+      await queuedWrite(
+        () => FirebaseFirestore.instance
+            .collection('profiles')
+            .doc(profileId)
+            .collection('allergies')
+            .add({
+              'name': name,
+              'category': AllergyCategory.medication.name,
+              'severity': _severity.name,
+              'symptoms': _notesController.text.trim(),
+              'addedAt': FieldValue.serverTimestamp(),
+            }),
+      );
 
       if (mounted) {
         _showMessage('$name saved to your allergy list');
         Navigator.of(context).pop(true);
       }
-    } on AppException catch (e) {
-      if (mounted) _showMessage(e.message);
     } catch (e) {
-      if (mounted) _showMessage('Failed to save allergy: $e');
+      if (mounted) {
+        _showMessage(AppErrorText.of(AppLocalizations.of(context), e));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

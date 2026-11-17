@@ -3421,4 +3421,56 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get communityReportedComment => 'रिपोर्ट की गई टिप्पणी';
+
+  @override
+  String get appErrorNetwork =>
+      'इंटरनेट कनेक्शन नहीं है। कृपया उसे जाँचें और फिर कोशिश करें।';
+
+  @override
+  String get appErrorPermission =>
+      'आपके पास इसकी पहुँच नहीं है। अगर कुछ बदला है तो वापस जाकर फिर से साइन इन करें।';
+
+  @override
+  String get appErrorNotFound =>
+      'यह नहीं मिला। हो सकता है इसे हटा दिया गया हो।';
+
+  @override
+  String get appErrorValidation =>
+      'इसमें कुछ ठीक नहीं है। कृपया जाँचें और फिर कोशिश करें।';
+
+  @override
+  String get appErrorServer =>
+      'हमारी तरफ़ से कुछ गड़बड़ हुई। कृपया थोड़ी देर बाद फिर कोशिश करें।';
+
+  @override
+  String get appErrorUnknown => 'कुछ गड़बड़ हो गई। कृपया फिर कोशिश करें।';
+
+  @override
+  String get appErrorSessionExpired =>
+      'आपका सत्र समाप्त हो गया है। कृपया फिर से साइन इन करें।';
+
+  @override
+  String get appErrorRetry => 'फिर कोशिश करें';
+
+  @override
+  String get offlineBannerText =>
+      'ऑफ़लाइन: इंटरनेट लौटने पर बदलाव सिंक हो जाएँगे।';
+
+  @override
+  String get offlineBackOnline => 'फिर से ऑनलाइन';
+
+  @override
+  String get savedQueuedNotice =>
+      'इस फ़ोन में सेव हो गया। इंटरनेट लौटने पर सिंक हो जाएगा।';
+
+  @override
+  String get appErrorSignInAgain => 'फिर से साइन इन करें';
+
+  @override
+  String get queuedWriteRejected =>
+      'ऑफ़लाइन रहते हुए किया गया बदलाव सेव नहीं हो सका।';
+
+  @override
+  String get accessLostNotice =>
+      'अब आपके पास उस प्रोफ़ाइल का एक्सेस नहीं है। आपकी अपनी प्रोफ़ाइल दिखाई जा रही है।';
 }

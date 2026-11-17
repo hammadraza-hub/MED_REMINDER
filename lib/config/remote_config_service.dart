@@ -90,7 +90,12 @@ class RemoteConfigService {
   // ─────────────────────────────────────────────────────────
   // Initialize
   // ─────────────────────────────────────────────────────────
-  Future<void> initialize() async {
+  /// Sets up Remote Config. The settings and defaults are local and fast. With
+  /// [fetch] true (the default) it also fetches fresh values, which can take
+  /// up to the 10 s fetch timeout; startup passes false and fetches later with
+  /// [refresh] under a short limit (M20 step 3), so a missing network never
+  /// delays the first screen.
+  Future<void> initialize({bool fetch = true}) async {
     if (_initialized) return;
 
     _remoteConfig = FirebaseRemoteConfig.instance;
@@ -115,6 +120,12 @@ class RemoteConfigService {
       _kDisclaimerText: _defaultDisclaimerText,
     });
 
+    // The values are readable from here on (defaults, or the last fetched
+    // ones kept on the phone).
+    _initialized = true;
+
+    if (!fetch) return;
+
     // Fetch + activate (background mein, app block na ho)
     try {
       await _remoteConfig.fetchAndActivate();
@@ -122,8 +133,6 @@ class RemoteConfigService {
     } catch (e) {
       debugPrint('⚠️ Remote Config: fetch failed, using defaults — $e');
     }
-
-    _initialized = true;
   }
 
   // ─────────────────────────────────────────────────────────

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../core/async_state.dart';
 import '../../core/community/community_feed.dart';
 import '../../core/community/community_safety.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/community_feed_service.dart';
 import '../../core/services/community_safety_service.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/async_state_view.dart';
+import '../../widgets/empty_state_view.dart';
 import 'community_avatar.dart';
 
 /// The people the user blocked, with "Unblock". M19 step 6.
@@ -23,8 +26,7 @@ class CommunityBlockedScreen extends StatefulWidget {
 }
 
 class _CommunityBlockedScreenState extends State<CommunityBlockedScreen> {
-  List<CommunityBlockedPerson>? _people;
-  bool _failed = false;
+  AsyncState<List<CommunityBlockedPerson>> _state = const AsyncState.loading();
 
   CommunitySafety get _safety =>
       widget.safety ?? CommunitySafetyService.instance;
@@ -36,19 +38,14 @@ class _CommunityBlockedScreenState extends State<CommunityBlockedScreen> {
   }
 
   Future<void> _load() async {
-    setState(() {
-      _failed = false;
-      _people = null;
-    });
-    try {
+    setState(() => _state = const AsyncState.loading());
+    final next = await AsyncState.guard<List<CommunityBlockedPerson>>(() async {
       await _safety.blocks.load();
-      final people = await _safety.blocks.people(
+      return _safety.blocks.people(
         widget.feedStore ?? CommunityFeedService.instance,
       );
-      if (mounted) setState(() => _people = people);
-    } catch (_) {
-      if (mounted) setState(() => _failed = true);
-    }
+    });
+    if (mounted) setState(() => _state = next);
   }
 
   Future<void> _unblock(CommunityBlockedPerson p) async {
@@ -57,11 +54,14 @@ class _CommunityBlockedScreenState extends State<CommunityBlockedScreen> {
     try {
       await _safety.blocks.unblock(p.id);
       if (mounted) {
+        final left = [
+          for (final x in _state.valueOrNull ?? const <CommunityBlockedPerson>[])
+            if (x.id != p.id) x,
+        ];
         setState(
-          () => _people = [
-            for (final x in _people!)
-              if (x.id != p.id) x,
-          ],
+          () => _state = left.isEmpty
+              ? const AsyncState.empty()
+              : AsyncState.data(left),
         );
       }
     } catch (_) {
@@ -89,39 +89,23 @@ class _CommunityBlockedScreenState extends State<CommunityBlockedScreen> {
   }
 
   Widget _body(AppLocalizations l10n) {
-    if (_failed) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.communityLoadFailed,
-              style: const TextStyle(color: AppColors.permissionsSecondary),
-            ),
-            TextButton(
-              key: const Key('blocked-retry'),
-              onPressed: _load,
-              child: Text(l10n.communityRetry),
-            ),
-          ],
-        ),
-      );
-    }
-    final people = _people;
-    if (people == null) {
-      return const Center(
+    return AsyncStateView<List<CommunityBlockedPerson>>(
+      state: _state,
+      onRetry: _load,
+      retryKey: const Key('blocked-retry'),
+      loading: (_) => const Center(
         child: CircularProgressIndicator(key: Key('blocked-loading')),
-      );
-    }
-    if (people.isEmpty) {
-      return Center(
-        child: Text(
-          l10n.communityBlockedEmpty,
-          key: const Key('blocked-empty'),
-          style: const TextStyle(color: AppColors.permissionsSecondary),
-        ),
-      );
-    }
+      ),
+      empty: (_) => EmptyStateView(
+        key: const Key('blocked-empty'),
+        icon: Icons.block_outlined,
+        title: l10n.communityBlockedEmpty,
+      ),
+      data: (context, people) => _list(l10n, people),
+    );
+  }
+
+  Widget _list(AppLocalizations l10n, List<CommunityBlockedPerson> people) {
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/queued_write.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../core/vitals/symptom_entry.dart';
 import '../../core/vitals/symptom_validator.dart';
@@ -264,17 +265,23 @@ class _AddSymptomScreenState extends State<AddSymptomScreen>
 
     setState(() => _saving = true);
     try {
-      await FirebaseSymptomRepository.instance.add(
-        memberId,
-        SymptomEntry(
-          symptom: symptom,
-          severity: _severity,
-          medicationId: _selectedMedication?.id,
-          occurredAt: occurredAt,
-          notes: note.isEmpty ? null : note,
+      final outcome = await queuedWrite(
+        () => FirebaseSymptomRepository.instance.add(
+          memberId,
+          SymptomEntry(
+            symptom: symptom,
+            severity: _severity,
+            medicationId: _selectedMedication?.id,
+            occurredAt: occurredAt,
+            notes: note.isEmpty ? null : note,
+          ),
         ),
       );
       if (!mounted) return;
+      if (outcome == SaveOutcome.queued) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.savedQueuedNotice)));
+      }
       _showToast();
     } on AppException catch (e) {
       debugPrint('Add symptom: save failed (${e.type}) — ${e.message}');

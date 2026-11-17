@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_error_text.dart';
+import '../../core/app_exception.dart';
 import '../../core/community/community_content_filter.dart';
 import '../../core/community/community_models.dart';
 import '../../core/community/community_posts.dart';
@@ -48,5 +50,10 @@ String communityActionError(
   }
   if (error is CommunityNoProfileException) return l10n.communityNoProfile;
   if (error is CommunityDeniedException) return l10n.communityDenied;
+  // No connection / no answer: say so, so the user knows to try again later.
+  final mapped = AppException.fromAny(error);
+  if (mapped.type == AppExceptionType.network) {
+    return AppErrorText.of(l10n, mapped);
+  }
   return l10n.communitySaveFailed;
 }

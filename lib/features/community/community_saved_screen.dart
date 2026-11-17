@@ -9,6 +9,7 @@ import '../../core/services/community_feed_service.dart';
 import '../../core/services/community_post_service.dart';
 import '../../core/services/community_reaction_service.dart';
 import '../../core/services/community_safety_service.dart';
+import '../../widgets/error_retry_view.dart';
 import '../../l10n/app_localizations.dart';
 import 'community_post_card.dart';
 import 'community_post_screen.dart';
@@ -146,31 +147,11 @@ class _CommunitySavedScreenState extends State<CommunitySavedScreen> {
           child: CircularProgressIndicator(key: Key('saved-loading')),
         );
       case CommunitySavedStatus.failed:
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.cloud_off_rounded,
-                  size: 40,
-                  color: AppColors.permissionsSecondary,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.communityLoadFailed,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.permissionsSecondary),
-                ),
-                TextButton(
-                  key: const Key('saved-retry'),
-                  onPressed: _saved.refresh,
-                  child: Text(l10n.communityRetry),
-                ),
-              ],
-            ),
-          ),
+        return ErrorRetryView(
+          message: l10n.communityLoadFailed,
+          retryLabel: l10n.communityRetry,
+          retryKey: const Key('saved-retry'),
+          onRetry: _saved.refresh,
         );
       case CommunitySavedStatus.ready:
         if (_saved.entries.isEmpty) {

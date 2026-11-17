@@ -27,8 +27,10 @@ import 'config/remote_config_service.dart';
 // ──────────────────────────────────────────────────────────────
 // EXISTING CONTROLLERS
 // ──────────────────────────────────────────────────────────────
+import 'core/services/app_guards.dart';
 import 'core/accessibility/accessibility_controller.dart';
 import 'core/app_navigator.dart';
+import 'core/app_startup.dart';
 import 'core/locale/locale_controller.dart';
 import 'core/profile/profile_controller.dart';
 import 'core/services/app_info_service.dart';
@@ -36,10 +38,12 @@ import 'core/services/app_lock_service.dart';
 import 'core/services/preferences_sync_service.dart';
 import 'core/services/push_service.dart';
 import 'core/services/reminder_action_queue.dart';
+import 'core/services/connectivity_service.dart';
 import 'core/services/reminder_scheduler.dart';
 import 'core/subscription/subscription_service.dart';
 import 'l10n/app_localizations.dart';
 import 'widgets/app_lock_gate.dart';
+import 'widgets/offline_banner.dart';
 import 'repositories/auth_repository.dart';
 
 // import 'main_shell.dart';
@@ -64,6 +68,10 @@ import 'repositories/auth_repository.dart';
 /// ============================================================
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // M20 step 2: start watching the network right away (it needs no Firebase),
+  // so the "Offline" bar can show even while the rest of startup waits.
+  unawaited(ConnectivityService.instance.start());
 
   // ───────────────────────────────────────────────────────────
   // STEP 0: Crashlytics Error Handlers (BEFORE runApp)
@@ -126,35 +134,78 @@ Future<void> main() async {
   // ───────────────────────────────────────────────────────────
   // Installed version first: the force-update check compares against it.
   await AppInfoService.instance.initialize();
-  await RemoteConfigService.instance.initialize();
+  // Local part only (settings + defaults); the fetch is a bounded startup
+  // task below (M20 step 3).
+  await RemoteConfigService.instance.initialize(fetch: false);
 
   // ───────────────────────────────────────────────────────────
   // STEP 4: Persisted Profile / Member Selection Restore
   // ───────────────────────────────────────────────────────────
   await ProfileController.instance.initialize();
 
-  // Resolve the signed-in account's profile so the app stops using a stale
-  // local memberId (wrong name + Firestore permission-denied on dose writes).
-  await AuthRepository.instance.restoreSelectedProfile();
+  // ───────────────────────────────────────────────────────────
+  // STEP 4.5: Network work, bounded (M20 step 3)
+  // ───────────────────────────────────────────────────────────
+  // These used to be awaited with no limit: a Firestore write never finishes
+  // while the phone is offline, so the app stayed on the native splash for
+  // ever. Now an offline phone skips them at once, an online one waits at most
+  // a few seconds for each, and whatever was skipped or too slow runs again
+  // when the network is back (see AppStartup).
+  try {
+    await ConnectivityService.instance.start().timeout(
+      const Duration(seconds: 1),
+      onTimeout: () {},
+    );
+  } catch (_) {
+    // Unknown connectivity just means "try the tasks".
+  }
 
-  // ───────────────────────────────────────────────────────────
-  // STEP 5d: FCM token registration (Spark: client writes devices collection;
-  //          server-side sendPush is Blaze-only and deferred)
-  // ───────────────────────────────────────────────────────────
-  final uid = AuthRepository.instance.currentUid;
-  if (uid != null && uid.isNotEmpty) {
-    try {
-      final pushService = LocalOnlyPushService();
-      await pushService.registerToken(uid);
-      // Re-register on token refresh.
+  final pushService = LocalOnlyPushService();
+  var pushListening = false;
+  Future<void> registerPushToken() async {
+    // The token is registered for whoever is signed in right now.
+    final uid = AuthRepository.instance.currentUid;
+    if (uid == null || uid.isEmpty) return;
+    await pushService.registerToken(uid);
+    // Re-register on token refresh (once).
+    if (!pushListening) {
+      pushListening = true;
       FirebaseMessaging.instance.onRegistered.listen((newToken) {
-        unawaited(pushService.registerToken(uid));
+        final current = AuthRepository.instance.currentUid;
+        if (current != null && current.isNotEmpty) {
+          unawaited(pushService.registerToken(current));
+        }
       });
-    } catch (e) {
-      debugPrint('M8 step 5d: FCM token registration failed: $e');
-      // Non-fatal — reminders still work locally without FCM token.
     }
   }
+
+  final startup = AppStartup(
+    ConnectivityService.instance,
+    tasks: [
+      // Fresh Remote Config values (the app already has defaults / old ones).
+      StartupTask('remote-config', RemoteConfigService.instance.refresh),
+      // Wrong name + Firestore permission-denied on dose writes happened with
+      // a stale local memberId, so the account's profile is looked up again.
+      StartupTask(
+        'restore-profile',
+        AuthRepository.instance.restoreSelectedProfile,
+      ),
+      // RevenueCat (Spark: client-side); purchases stay off if it fails.
+      StartupTask(
+        'subscription',
+        SubscriptionService.instance.initialize,
+        limit: const Duration(seconds: 5),
+      ),
+      // FCM token: a Firestore write, so it must never block the first screen.
+      StartupTask(
+        'push-token',
+        registerPushToken,
+        limit: const Duration(seconds: 10),
+        beforeApp: false,
+      ),
+    ],
+  );
+  await startup.runBeforeApp();
 
   // ───────────────────────────────────────────────────────────
   // STEP 5: Accessibility + Locale Restore
@@ -177,15 +228,6 @@ Future<void> main() async {
   );
 
   // ───────────────────────────────────────────────────────────
-  // STEP 6.5: M12 — RevenueCat SDK init (Spark: client-side)
-  // ───────────────────────────────────────────────────────────
-  try {
-    await SubscriptionService.instance.initialize();
-  } catch (e) {
-    debugPrint('M12: RevenueCat init failed: $e');
-    // Non-fatal — subscription features gracefully disabled.
-  }
-  // ───────────────────────────────────────────────────────────
   // STEP 6: M8 — local dose reminders (Spark: no server involved)
   // ───────────────────────────────────────────────────────────
   await ReminderScheduler.instance.init();
@@ -201,7 +243,13 @@ Future<void> main() async {
     await ReminderScheduler.instance.scheduleTestNotification();
   }
 
+  installAppGuards();
   runApp(const MyApp());
+
+  // After the first screen: the push token, and anything skipped while the
+  // phone was offline (or too slow) runs when the network is back.
+  startup.runAfterApp();
+  startup.catchUpWhenOnline();
 }
 
 class MyApp extends StatelessWidget {
@@ -215,6 +263,7 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           navigatorKey: appNavigatorKey,
+          scaffoldMessengerKey: appMessengerKey,
           title: 'MedRemind',
           theme: ThemeData(useMaterial3: true),
           locale: LocaleController.instance.locale,
@@ -238,7 +287,7 @@ class MyApp extends StatelessWidget {
                         maxScaleFactor: AccessibilityController.maxScaleFactor,
                       ),
                     ),
-                    child: child!,
+                    child: OfflineBannerHost(child: child!),
                   );
                 },
               ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+import '../../core/queued_write.dart';
+import '../../core/app_error_text.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/app_exception.dart';
 import '../../models/drug.dart';
 import '../../models/medication.dart';
 import '../../models/schedule.dart';
@@ -225,24 +227,30 @@ class _AddMedicationManualScreenState extends State<AddMedicationManualScreen> {
         updatedBy: userId,
       );
 
-      final medId = await MedicationRepository.instance.createMedication(
-        profileId: widget.profileId,
-        medication: medication,
-      );
+      String? medId;
+      final outcome = await queuedWrite(() async {
+        medId = await MedicationRepository.instance.createMedication(
+          profileId: widget.profileId,
+          medication: medication,
+        );
+      });
 
       if (mounted) {
+        final notice = AppLocalizations.of(context).savedQueuedNotice;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Medication saved successfully!')),
+          SnackBar(
+            content: Text(
+              outcome == SaveOutcome.queued
+                  ? 'Medication saved.\n$notice'
+                  : 'Medication saved successfully!',
+            ),
+          ),
         );
         Navigator.of(context).pop(medId);
       }
-    } on AppException catch (e) {
-      if (mounted) {
-        _showError(e.message);
-      }
     } catch (e) {
       if (mounted) {
-        _showError('Failed to save medication: $e');
+        _showError(AppErrorText.of(AppLocalizations.of(context), e));
       }
     } finally {
       if (mounted) {

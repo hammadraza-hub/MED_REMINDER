@@ -4,6 +4,7 @@ import '../../core/community/community_feed.dart';
 import '../../core/community/community_models.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/community_feed_service.dart';
+import '../../widgets/error_retry_view.dart';
 import '../../l10n/app_localizations.dart';
 import 'community_group_screen.dart';
 
@@ -50,19 +51,14 @@ class _CommunityGroupsListState extends State<CommunityGroupsList> {
     final l10n = AppLocalizations.of(context);
 
     if (_failed) {
-      return Column(
-        children: [
-          Text(
-            l10n.communityLoadFailed,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.permissionsSecondary),
-          ),
-          TextButton(
-            key: const Key('groups-retry'),
-            onPressed: _load,
-            child: Text(l10n.communityRetry),
-          ),
-        ],
+      return SizedBox(
+        height: 200,
+        child: ErrorRetryView(
+          message: l10n.communityLoadFailed,
+          retryLabel: l10n.communityRetry,
+          retryKey: const Key('groups-retry'),
+          onRetry: _load,
+        ),
       );
     }
 

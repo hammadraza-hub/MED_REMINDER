@@ -1,3 +1,5 @@
+import '../core/services/session_guard.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -83,7 +85,7 @@ class AuthRepository {
       await _initProfileController(uid: user.uid, profileId: profileId);
 
       // Verification se pehle authenticated session end karo.
-      await _auth.signOut();
+      await _signOutExpected();
 
       return user;
     } on FirebaseAuthException catch (e) {
@@ -114,7 +116,7 @@ class AuthRepository {
       // Check if email is verified
       if (!user.emailVerified) {
         // Sign out — user should not stay logged in
-        await _auth.signOut();
+        await _signOutExpected();
         throw AppException.validation(
           'Email not verified. Please check your inbox and click the verification link.',
         );
@@ -186,13 +188,19 @@ class AuthRepository {
     }
   }
 
+  /// Signs out on purpose: tells [SessionGuard] this is not a lost session.
+  Future<void> _signOutExpected() {
+    SessionGuard.expectSignOut();
+    return _auth.signOut();
+  }
+
   Future<void> signOut() async {
     try {
       await _googleSignIn.signOut();
-      await _auth.signOut();
+      await _signOutExpected();
     } catch (e) {
       try {
-        await _auth.signOut();
+        await _signOutExpected();
       } catch (_) {}
     }
   }
@@ -230,7 +238,7 @@ class AuthRepository {
       await user.reload();
       if (user.emailVerified) {
         // Already verified — sign out and inform
-        await _auth.signOut();
+        await _signOutExpected();
         throw AppException.validation(
           'Email is already verified. You can log in.',
         );
@@ -240,7 +248,7 @@ class AuthRepository {
       await user.sendEmailVerification();
 
       // Sign out — user should not stay logged in
-      await _auth.signOut();
+      await _signOutExpected();
     } on FirebaseAuthException catch (e) {
       throw _mapAuthException(e);
     } on FirebaseException catch (e) {

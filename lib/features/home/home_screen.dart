@@ -3,6 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../widgets/skeleton.dart';
+import '../../widgets/error_retry_view.dart';
+import '../../core/services/access_guard.dart';
+import '../../core/app_exception.dart';
+import '../../core/queued_write.dart';
+import '../../core/app_error_text.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/members/local_member_repository.dart';
 import '../../core/members/member_repository.dart';
@@ -53,7 +59,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============ DOSES (M7 — Firestore stream) ============
   List<dose_model.Dose> _doses = [];
   bool _dosesLoading = true;
-  String? _dosesError;
+  Object? _dosesError;
+  Timer? _dosesSlowTimer;
 
   // ============ COMPUTED — DOSES (M7) ============
 
@@ -140,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ProfileController.instance.removeListener(_handleProfileChanged);
     _membersSubscription?.cancel();
     _dosesSubscription?.cancel();
+    _dosesSlowTimer?.cancel();
     super.dispose();
   }
 
@@ -157,6 +165,10 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
     }
+    // A profile that is not in the member bar (for example the app switched
+    // to the user's own profile after access to another one was removed):
+    // the list must still follow it.
+    _subscribeDoses();
   }
 
   // ============================================================
@@ -180,11 +192,24 @@ class _HomeScreenState extends State<HomeScreen> {
       _dosesError = null;
     });
 
+    // Offline with nothing cached, Firestore never answers. After a while
+    // show "no connection" with Try again instead of a spinner for ever; the
+    // list still appears by itself if the answer comes later.
+    _dosesSlowTimer?.cancel();
+    _dosesSlowTimer = Timer(const Duration(seconds: 8), () {
+      if (!mounted || !_dosesLoading) return;
+      setState(() {
+        _dosesLoading = false;
+        _dosesError = const AppException.network('no answer');
+      });
+    });
+
     _dosesSubscription = DoseRepository.instance
         .watchTodaysDoses(memberId)
         .listen(
           (doses) {
             if (!mounted) return;
+            _dosesSlowTimer?.cancel();
             setState(() {
               _doses = doses;
               _dosesLoading = false;
@@ -193,10 +218,11 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           onError: (Object error, StackTrace stackTrace) {
             debugPrint('Home dose stream failed: $error');
+            AccessGuard.reportIfDenied(error);
             if (!mounted) return;
             setState(() {
               _dosesLoading = false;
-              _dosesError = error.toString();
+              _dosesError = error;
             });
           },
         );
@@ -303,55 +329,58 @@ class _HomeScreenState extends State<HomeScreen> {
   // DOSE ACTIONS (M7 — DoseRepository)
   // ============================================================
 
+  /// Runs a dose write without hanging offline. Shows the message when the
+  /// server confirmed it, or the message plus "saved on this phone" when the
+  /// write is queued; a real error shows the matching error text.
+  Future<void> _doseWrite(
+    Future<void> Function() write,
+    String Function(AppLocalizations l10n) message,
+  ) async {
+    try {
+      final outcome = await queuedWrite(write);
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      final text = outcome == SaveOutcome.queued
+          ? '${message(l10n)}\n${l10n.savedQueuedNotice}'
+          : message(l10n);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(text)));
+    } catch (e) {
+      AccessGuard.reportIfDenied(e);
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(AppErrorText.of(l10n, e))));
+    }
+  }
+
   Future<void> _markTaken(dose_model.Dose dose) async {
     final memberId = ProfileController.instance.memberId;
     if (memberId == null) return;
     final userId = AuthRepository.instance.currentUid ?? 'unknown';
-
-    try {
-      await DoseRepository.instance.logDose(
+    await _doseWrite(
+      () => DoseRepository.instance.logDose(
         profileId: memberId,
         doseId: dose.id,
         status: dose_model.DoseStatus.taken,
         loggedBy: userId,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context).homeMarkedTaken(dose.medName),
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Failed: $e')));
-    }
+      ),
+      (l10n) => l10n.homeMarkedTaken(dose.medName),
+    );
   }
 
   Future<void> _markUntaken(dose_model.Dose dose) async {
     final memberId = ProfileController.instance.memberId;
     if (memberId == null) return;
-
-    try {
-      await DoseRepository.instance.undoDose(
+    await _doseWrite(
+      () => DoseRepository.instance.undoDose(
         profileId: memberId,
         doseId: dose.id,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context).homeMarkedUntaken(dose.medName),
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Failed: $e')));
-    }
+      ),
+      (l10n) => l10n.homeMarkedUntaken(dose.medName),
+    );
   }
 
   Future<void> _confirmSkipFromSheet(dose_model.Dose dose) async {
@@ -374,56 +403,31 @@ class _HomeScreenState extends State<HomeScreen> {
     final memberId = ProfileController.instance.memberId;
     if (memberId == null) return;
     final userId = AuthRepository.instance.currentUid ?? 'unknown';
-
-    try {
-      await DoseRepository.instance.logDose(
+    await _doseWrite(
+      () => DoseRepository.instance.logDose(
         profileId: memberId,
         doseId: dose.id,
         status: dose_model.DoseStatus.skipped,
         loggedBy: userId,
         reasonText: reason,
-      );
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            reason == null
-                ? l10n.homeSkipped(dose.medName)
-                : l10n.homeSkippedReason(dose.medName, reason),
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Failed: $e')));
-    }
+      ),
+      (l10n) => reason == null
+          ? l10n.homeSkipped(dose.medName)
+          : l10n.homeSkippedReason(dose.medName, reason),
+    );
   }
 
   Future<void> _snoozeDose(dose_model.Dose dose, int minutes) async {
     final memberId = ProfileController.instance.memberId;
     if (memberId == null) return;
-
-    try {
-      await DoseRepository.instance.snoozeDose(
+    await _doseWrite(
+      () => DoseRepository.instance.snoozeDose(
         profileId: memberId,
         doseId: dose.id,
         snoozeDuration: Duration(minutes: minutes),
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context).homeSnoozed(dose.medName, minutes),
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Failed: $e')));
-    }
+      ),
+      (l10n) => l10n.homeSnoozed(dose.medName, minutes),
+    );
   }
 
   void _openDoseSheet(dose_model.Dose dose) {
@@ -742,14 +746,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 12),
           if (_dosesLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 40),
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const SkeletonList(count: 3)
           else if (_dosesError != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: _buildDoseError(_dosesError!),
+            SizedBox(
+              height: 220,
+              child: ErrorRetryView(
+                error: AppException.fromAny(_dosesError!),
+                retryKey: const Key('home-doses-retry'),
+                onRetry: _subscribeDoses,
+              ),
             )
           else if (_filteredDoses.isEmpty)
             _buildEmptyDoses()
@@ -794,38 +799,6 @@ class _HomeScreenState extends State<HomeScreen> {
             'No doses scheduled for today.',
             style: TextStyle(fontSize: 12, color: AppColors.fieldHint),
             textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDoseError(String error) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.hintBackground,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline, color: AppColors.error, size: 32),
-          const SizedBox(height: 8),
-          const Text(
-            'Failed to load doses',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.error,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            error,
-            style: const TextStyle(fontSize: 11, color: AppColors.fieldHint),
-            textAlign: TextAlign.center,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

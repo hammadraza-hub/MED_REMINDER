@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/queued_write.dart';
 import '../../core/doctors/appointment_models.dart';
 import '../../core/doctors/doctor_note_models.dart';
 import '../../core/doctors/doctor_note_validator.dart';
@@ -207,10 +208,12 @@ class _NotesForDoctorScreenState extends State<NotesForDoctorScreen> {
 
     setState(() => _busy = true);
     try {
-      await FirebaseDoctorNoteRepository.instance.add(
-        memberId,
-        text,
-        appointmentId: _linkToNext ? _next?.id : null,
+      await queuedWrite(
+        () => FirebaseDoctorNoteRepository.instance.add(
+          memberId,
+          text,
+          appointmentId: _linkToNext ? _next?.id : null,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -249,9 +252,9 @@ class _NotesForDoctorScreenState extends State<NotesForDoctorScreen> {
     try {
       final repo = FirebaseDoctorNoteRepository.instance;
       if (note.isOpen) {
-        await repo.markDone(memberId, note.id);
+        await queuedWrite(() => repo.markDone(memberId, note.id));
       } else {
-        await repo.reopen(memberId, note.id);
+        await queuedWrite(() => repo.reopen(memberId, note.id));
       }
     } catch (e) {
       if (!mounted) return;
@@ -290,10 +293,12 @@ class _NotesForDoctorScreenState extends State<NotesForDoctorScreen> {
 
     setState(() => _busy = true);
     try {
-      await FirebaseDoctorNoteRepository.instance.editBody(
-        memberId,
-        note.id,
-        updatedText,
+      await queuedWrite(
+        () => FirebaseDoctorNoteRepository.instance.editBody(
+          memberId,
+          note.id,
+          updatedText,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -355,7 +360,9 @@ class _NotesForDoctorScreenState extends State<NotesForDoctorScreen> {
 
     setState(() => _busy = true);
     try {
-      await FirebaseDoctorNoteRepository.instance.delete(memberId, note.id);
+      await queuedWrite(
+        () => FirebaseDoctorNoteRepository.instance.delete(memberId, note.id),
+      );
     } catch (_) {
       if (!mounted) return;
       setState(() => _busy = false);

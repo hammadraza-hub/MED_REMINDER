@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/queued_write.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../core/vitals/vital_input.dart';
 import '../../core/vitals/vital_models.dart';
@@ -195,11 +196,17 @@ class _AddVitalsEntryScreenState extends State<AddVitalsEntryScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final saved = await FirebaseVitalsRepository.instance.addManual(
-        memberId,
-        reading,
+      // Offline the write waits in Firestore's queue: after 3 s we go on
+      // as saved (the reading is also shown from the local cache).
+      final outcome = await queuedWrite(
+        () => FirebaseVitalsRepository.instance.addManual(memberId, reading),
       );
+      final saved = reading;
       if (!mounted) return;
+      if (outcome == SaveOutcome.queued) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.savedQueuedNotice)));
+      }
 
       Navigator.of(context).pop(
         AddVitalsEntryResult(

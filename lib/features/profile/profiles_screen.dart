@@ -3,7 +3,11 @@ import 'package:flutter/services.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/app_exception.dart';
 import '../../core/constants/app_colors.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/error_retry_view.dart';
+import '../../widgets/skeleton.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../main_shell.dart';
 import '../../models/profile.dart';
@@ -204,52 +208,25 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
           stream: _profilesStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.formAccent),
-                ),
-              );
+              return const SkeletonList(count: 2);
             }
             if (snapshot.hasError) {
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Error loading profiles: ${snapshot.error}',
-                  style: const TextStyle(color: AppColors.textSecondary),
+              return SizedBox(
+                height: 220,
+                child: ErrorRetryView(
+                  error: AppException.fromAny(snapshot.error!),
+                  retryKey: const Key('profiles-retry'),
+                  onRetry: () =>
+                      setState(() => _profilesStream = _createProfilesStream()),
                 ),
               );
             }
             final profiles = snapshot.data ?? [];
             if (profiles.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.person_off_rounded,
-                      size: 48,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'No profiles yet',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Your profiles will appear here',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
+              return const EmptyStateView(
+                icon: Icons.person_off_rounded,
+                title: 'No profiles yet',
+                message: 'Your profiles will appear here',
               );
             }
             return Column(

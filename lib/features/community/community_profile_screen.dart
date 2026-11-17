@@ -8,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/services/community_profile_service.dart';
 import '../../l10n/app_localizations.dart';
 import 'community_avatar.dart';
+import 'community_texts.dart';
 
 /// Create (first time) or edit the user's pseudonym profile. M19 step 2.
 ///
@@ -91,11 +92,9 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
 
     setState(() => _saving = true);
     try {
-      final saved = await _controller.save(
-        pseudonym: _name.text,
-        avatar: _avatar,
-        bio: _bio.text,
-      );
+      final saved = await _controller
+          .save(pseudonym: _name.text, avatar: _avatar, bio: _bio.text)
+          .timeout(const Duration(seconds: 10));
       if (!mounted) return;
       if (widget.onSaved != null) {
         widget.onSaved!(saved);
@@ -112,8 +111,10 @@ class _CommunityProfileScreenState extends State<CommunityProfileScreen> {
           _bioError = e.error;
         }
       });
-    } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.communitySaveFailed)));
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(communityActionError(l10n, e))),
+      );
       if (mounted) setState(() => _saving = false);
     }
   }

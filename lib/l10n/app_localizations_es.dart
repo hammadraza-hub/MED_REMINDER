@@ -3460,4 +3460,56 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get communityReportedComment => 'Comentario denunciado';
+
+  @override
+  String get appErrorNetwork =>
+      'Sin conexión a internet. Revísala e inténtalo de nuevo.';
+
+  @override
+  String get appErrorPermission =>
+      'No tienes acceso a esto. Si algo cambió, vuelve atrás e inicia sesión de nuevo.';
+
+  @override
+  String get appErrorNotFound =>
+      'No pudimos encontrarlo. Puede que se haya eliminado.';
+
+  @override
+  String get appErrorValidation =>
+      'Algo no está bien. Revísalo e inténtalo de nuevo.';
+
+  @override
+  String get appErrorServer =>
+      'Algo salió mal de nuestro lado. Inténtalo de nuevo en un momento.';
+
+  @override
+  String get appErrorUnknown => 'Algo salió mal. Inténtalo de nuevo.';
+
+  @override
+  String get appErrorSessionExpired =>
+      'Tu sesión ha caducado. Inicia sesión de nuevo.';
+
+  @override
+  String get appErrorRetry => 'Reintentar';
+
+  @override
+  String get offlineBannerText =>
+      'Sin conexión: los cambios se sincronizarán cuando vuelvas a estar en línea.';
+
+  @override
+  String get offlineBackOnline => 'De nuevo en línea';
+
+  @override
+  String get savedQueuedNotice =>
+      'Guardado en este teléfono. Se sincronizará cuando vuelvas a tener conexión.';
+
+  @override
+  String get appErrorSignInAgain => 'Iniciar sesión de nuevo';
+
+  @override
+  String get queuedWriteRejected =>
+      'Un cambio que hiciste sin conexión no se pudo guardar.';
+
+  @override
+  String get accessLostNotice =>
+      'Ya no tienes acceso a ese perfil. Se muestra tu propio perfil.';
 }

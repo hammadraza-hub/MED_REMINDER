@@ -394,7 +394,7 @@ void main() {
     testWidgets('a load error shows Try again, which reloads', (t) async {
       final store = MemStore()..failList = true;
       await openAndPick(t, store, () async {
-        expect(find.text('Could not load your chats.'), findsOneWidget);
+        expect(find.byKey(const Key('error-text')), findsOneWidget);
         store.failList = false;
         store.seed('a', 'Back again', const []);
         await t.tap(find.byKey(const Key('history-retry')));

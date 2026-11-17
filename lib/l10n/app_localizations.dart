@@ -5935,6 +5935,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reported comment'**
   String get communityReportedComment;
+
+  /// No description provided for @appErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Please check it and try again.'**
+  String get appErrorNetwork;
+
+  /// No description provided for @appErrorPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have access to this. If something changed, go back and sign in again.'**
+  String get appErrorPermission;
+
+  /// No description provided for @appErrorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not find this. It may have been removed.'**
+  String get appErrorNotFound;
+
+  /// No description provided for @appErrorValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Something about this is not right. Please check it and try again.'**
+  String get appErrorValidation;
+
+  /// No description provided for @appErrorServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong on our side. Please try again in a moment.'**
+  String get appErrorServer;
+
+  /// No description provided for @appErrorUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get appErrorUnknown;
+
+  /// No description provided for @appErrorSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired. Please sign in again.'**
+  String get appErrorSessionExpired;
+
+  /// No description provided for @appErrorRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get appErrorRetry;
+
+  /// No description provided for @offlineBannerText.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline: changes will sync when you are back online.'**
+  String get offlineBannerText;
+
+  /// No description provided for @offlineBackOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Back online'**
+  String get offlineBackOnline;
+
+  /// No description provided for @savedQueuedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this phone. It will sync when you are back online.'**
+  String get savedQueuedNotice;
+
+  /// No description provided for @appErrorSignInAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again'**
+  String get appErrorSignInAgain;
+
+  /// No description provided for @queuedWriteRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'A change you made while offline could not be saved.'**
+  String get queuedWriteRejected;
+
+  /// No description provided for @accessLostNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'You no longer have access to that profile. Showing your own profile instead.'**
+  String get accessLostNotice;
 }
 
 class _AppLocalizationsDelegate

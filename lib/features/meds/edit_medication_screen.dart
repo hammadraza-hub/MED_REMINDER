@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+import '../../core/queued_write.dart';
+import '../../core/app_error_text.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/app_exception.dart';
 import '../../models/medication.dart';
@@ -212,24 +215,29 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
       //   - Removes server-maintained fields (quantityOnHand, daysOfSupply, flags)
       //   - Removes lifecycle fields (status, archivedReason)
       //   - Removes immutable fields (profileId, createdBy, createdAt, source, rxcui)
-      await MedicationRepository.instance.updateMedication(
-        profileId: widget.profileId,
-        medication: updated,
+      final outcome = await queuedWrite(
+        () => MedicationRepository.instance.updateMedication(
+          profileId: widget.profileId,
+          medication: updated,
+        ),
       );
 
       if (mounted) {
+        final notice = AppLocalizations.of(context).savedQueuedNotice;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Medication updated successfully!')),
+          SnackBar(
+            content: Text(
+              outcome == SaveOutcome.queued
+                  ? 'Medication updated.\n$notice'
+                  : 'Medication updated successfully!',
+            ),
+          ),
         );
         Navigator.of(context).pop();
       }
-    } on AppException catch (e) {
-      if (mounted) {
-        _showError(e.message);
-      }
     } catch (e) {
       if (mounted) {
-        _showError('Failed to update: $e');
+        _showError(AppErrorText.of(AppLocalizations.of(context), e));
       }
     } finally {
       if (mounted) {
