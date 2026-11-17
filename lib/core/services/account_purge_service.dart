@@ -63,6 +63,13 @@ class FirestorePurgeStore implements PurgeStore {
 
   @override
   Future<void> deleteDoc(String docPath) => _db.doc(docPath).delete();
+
+  @override
+  Future<String?> communityProfileId(String uid) async {
+    final snap = await _db.collection('users').doc(uid).get();
+    final id = snap.data()?['communityProfileId'];
+    return id is String && id.isNotEmpty ? id : null;
+  }
 }
 
 enum PurgeOutcome {

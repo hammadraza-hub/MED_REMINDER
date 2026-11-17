@@ -79,6 +79,7 @@ class SettingsData {
           id: 'allergies',
           icon: Icons.medical_services_rounded,
         ),
+        SettingsMenuItem(id: 'community', icon: Icons.groups_rounded),
       ],
     ),
     SettingsGroup(

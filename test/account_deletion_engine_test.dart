@@ -46,6 +46,12 @@ class FakeStore implements PurgeStore {
     return ids.take(pageSize).toList();
   }
 
+  /// users/{uid}.communityProfileId in the fake.
+  String? communityId = 'CPU1';
+
+  @override
+  Future<String?> communityProfileId(String uid) async => communityId;
+
   @override
   Future<void> deleteDoc(String docPath) async {
     if (failOn == docPath) throw Exception('network down');
@@ -68,6 +74,14 @@ void main() {
     'users/u1/chatThreads/c1/messages/m2',
     'users/u1/chatThreads/c1/messages/m3',
     'users/u1/chatThreads/c2/messages/m9',
+    // M19 step 1: community
+    'communityProfiles/CPU1',
+    'users/u1/bookmarks/b1',
+    'users/u1/bookmarks/b2',
+    'users/u1/blocks/x1',
+    // someone else's community data must never be touched
+    'communityProfiles/CPOTHER',
+    'groups/g1/posts/p9',
     'profiles/p1',
     'profiles/p1/medications/m1',
     'profiles/p1/medications/m2',
@@ -93,9 +107,15 @@ void main() {
     final store = FakeStore(data, owned: ['p1', 'p2'], pageSize: 2);
     final summary = await AccountDeletionEngine(store).purge('u1');
 
-    expect(store.docs, {'users/other', 'profiles/pOther', 'profiles/pOther/doses/x'});
+    expect(store.docs, {
+      'users/other',
+      'profiles/pOther',
+      'profiles/pOther/doses/x',
+      'communityProfiles/CPOTHER',
+      'groups/g1/posts/p9',
+    });
     expect(summary.profiles, 2);
-    expect(summary.deletedDocs, data.length - 3);
+    expect(summary.deletedDocs, data.length - 5);
   });
 
   test('children are deleted before their parents', () async {
@@ -105,8 +125,10 @@ void main() {
 
     int at(String p) => order.indexOf(p);
     // nested events before the medication
-    expect(at('profiles/p1/medications/m1/inventoryEvents/e3'),
-        lessThan(at('profiles/p1/medications/m1')));
+    expect(
+      at('profiles/p1/medications/m1/inventoryEvents/e3'),
+      lessThan(at('profiles/p1/medications/m1')),
+    );
     // every child before the profile document
     for (final d in data.where((d) => d.startsWith('profiles/p1/'))) {
       expect(at(d), lessThan(at('profiles/p1')), reason: d);
@@ -119,20 +141,56 @@ void main() {
     expect(at('users/u1/devices/d3'), lessThan(at('users/u1')));
   });
 
-  test('AI chats: messages go before their thread, threads before the user', () async {
-    final store = FakeStore(data, owned: ['p1', 'p2'], pageSize: 2);
-    await AccountDeletionEngine(store).purge('u1');
-    final order = store.deleteOrder;
-    int at(String p) => order.indexOf(p);
+  test(
+    'AI chats: messages go before their thread, threads before the user',
+    () async {
+      final store = FakeStore(data, owned: ['p1', 'p2'], pageSize: 2);
+      await AccountDeletionEngine(store).purge('u1');
+      final order = store.deleteOrder;
+      int at(String p) => order.indexOf(p);
 
-    for (final m in ['m1', 'm2', 'm3']) {
-      expect(at('users/u1/chatThreads/c1/messages/$m'),
-          lessThan(at('users/u1/chatThreads/c1')));
-    }
-    expect(at('users/u1/chatThreads/c2/messages/m9'),
-        lessThan(at('users/u1/chatThreads/c2')));
-    expect(at('users/u1/chatThreads/c1'), lessThan(at('users/u1')));
-    expect(store.docs.where((d) => d.contains('chatThreads')), isEmpty);
+      for (final m in ['m1', 'm2', 'm3']) {
+        expect(
+          at('users/u1/chatThreads/c1/messages/$m'),
+          lessThan(at('users/u1/chatThreads/c1')),
+        );
+      }
+      expect(
+        at('users/u1/chatThreads/c2/messages/m9'),
+        lessThan(at('users/u1/chatThreads/c2')),
+      );
+      expect(at('users/u1/chatThreads/c1'), lessThan(at('users/u1')));
+      expect(store.docs.where((d) => d.contains('chatThreads')), isEmpty);
+    },
+  );
+
+  test(
+    'community: the pseudonym, bookmarks and blocks go; posts stay',
+    () async {
+      final store = FakeStore(data, owned: ['p1', 'p2'], pageSize: 2);
+      await AccountDeletionEngine(store).purge('u1');
+      expect(store.docs.contains('communityProfiles/CPU1'), isFalse);
+      expect(store.docs.where((d) => d.contains('/bookmarks/')), isEmpty);
+      expect(store.docs.where((d) => d.contains('/blocks/')), isEmpty);
+      // other people's community data and the posts are untouched
+      expect(store.docs.contains('communityProfiles/CPOTHER'), isTrue);
+      expect(store.docs.contains('groups/g1/posts/p9'), isTrue);
+      final order = store.deleteOrder;
+      expect(
+        order.indexOf('communityProfiles/CPU1'),
+        lessThan(order.indexOf('users/u1')),
+      );
+    },
+  );
+
+  test('a user who never joined the community is purged without it', () async {
+    final store = FakeStore(data, owned: ['p1', 'p2'])..communityId = null;
+    await AccountDeletionEngine(store).purge('u1');
+    expect(
+      store.docs.contains('communityProfiles/CPU1'),
+      isTrue,
+    ); // not theirs to know
+    expect(store.docs.contains('users/u1'), isFalse);
   });
 
   test('works for a user with no profiles', () async {
@@ -163,21 +221,31 @@ void main() {
 
     store.failOn = null;
     // profiles that were already deleted would no longer be listed as owned
-    final owned = ['p1', 'p2']
-        .where((p) => store.docs.contains('profiles/$p'))
-        .toList();
+    final owned = [
+      'p1',
+      'p2',
+    ].where((p) => store.docs.contains('profiles/$p')).toList();
     final retry = FakeStore(store.docs, owned: owned, pageSize: store.pageSize);
     await AccountDeletionEngine(retry).purge('u1');
-    expect(retry.docs, {'users/other', 'profiles/pOther', 'profiles/pOther/doses/x'});
+    expect(retry.docs, {
+      'users/other',
+      'profiles/pOther',
+      'profiles/pOther/doses/x',
+      'communityProfiles/CPOTHER',
+      'groups/g1/posts/p9',
+    });
   });
 
-  test('delete that silently does nothing is detected, not looped forever', () async {
-    final store = FakeStore(data, owned: ['p1'])..noopDelete = true;
-    await expectLater(
-      AccountDeletionEngine(store).purge('u1'),
-      throwsA(isA<PurgeStalledException>()),
-    );
-  });
+  test(
+    'delete that silently does nothing is detected, not looped forever',
+    () async {
+      final store = FakeStore(data, owned: ['p1'])..noopDelete = true;
+      await expectLater(
+        AccountDeletionEngine(store).purge('u1'),
+        throwsA(isA<PurgeStalledException>()),
+      );
+    },
+  );
 
   test('progress callback reports profiles and account', () async {
     final steps = <String>[];
@@ -187,20 +255,23 @@ void main() {
     expect(steps.last, 'account');
   });
 
-  test('leaves profiles owned by others first, never deletes their docs', () async {
-    final store = FakeStore(
-      [...data, 'profiles/pShared', 'profiles/pShared/doses/q'],
-      owned: ['p1', 'p2'],
-      memberOf: ['pShared'],
-    );
-    final summary = await AccountDeletionEngine(store).purge('u1');
+  test(
+    'leaves profiles owned by others first, never deletes their docs',
+    () async {
+      final store = FakeStore(
+        [...data, 'profiles/pShared', 'profiles/pShared/doses/q'],
+        owned: ['p1', 'p2'],
+        memberOf: ['pShared'],
+      );
+      final summary = await AccountDeletionEngine(store).purge('u1');
 
-    expect(store.left, ['pShared']);
-    expect(summary.leftProfiles, 1);
-    expect(store.docs, contains('profiles/pShared'));
-    expect(store.docs, contains('profiles/pShared/doses/q'));
-    expect(store.deleteOrder.where((d) => d.contains('pShared')), isEmpty);
-  });
+      expect(store.left, ['pShared']);
+      expect(summary.leftProfiles, 1);
+      expect(store.docs, contains('profiles/pShared'));
+      expect(store.docs, contains('profiles/pShared/doses/q'));
+      expect(store.deleteOrder.where((d) => d.contains('pShared')), isEmpty);
+    },
+  );
 
   test('a failed leave stops before anything is deleted', () async {
     final store = FakeStore(data, owned: ['p1'], memberOf: ['pShared'])

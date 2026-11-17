@@ -3065,4 +3065,336 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get aiHistoryYesterday => 'أمس';
+
+  @override
+  String get communityTitle => 'المجتمع';
+
+  @override
+  String get communityCreateTitle => 'أنشئ ملفك في المجتمع';
+
+  @override
+  String get communityEditTitle => 'تعديل الملف';
+
+  @override
+  String get communityPrivacyNote =>
+      'هذا الاسم عام. لا تستخدم اسمك الحقيقي أو بريدك الإلكتروني أو رقم هاتفك. لا يستطيع أحد هنا رؤية أدويتك أو بياناتك الصحية.';
+
+  @override
+  String get communityPseudonymLabel => 'الاسم المستعار';
+
+  @override
+  String get communityPseudonymHint => 'مثال: calm_river';
+
+  @override
+  String get communitySuggest => 'اقتراح اسم';
+
+  @override
+  String get communityAvatarLabel => 'اختر صورة رمزية';
+
+  @override
+  String get communityBioLabel => 'نبذة عنك (اختياري)';
+
+  @override
+  String get communityJoin => 'انضم إلى المجتمع';
+
+  @override
+  String get communitySave => 'حفظ';
+
+  @override
+  String get communitySaveFailed =>
+      'تعذر الحفظ. يرجى التحقق من الاتصال والمحاولة مرة أخرى.';
+
+  @override
+  String get communityLoadFailed => 'تعذر فتح المجتمع. يرجى التحقق من الاتصال.';
+
+  @override
+  String get communityRetry => 'حاول مرة أخرى';
+
+  @override
+  String get communityYourProfile => 'ملفك في المجتمع';
+
+  @override
+  String get communityEditAction => 'تعديل الملف';
+
+  @override
+  String get communityProfileSaved => 'تم حفظ الملف';
+
+  @override
+  String get communityErrEmpty => 'يرجى إدخال اسم.';
+
+  @override
+  String get communityErrTooShort => 'استخدم 3 أحرف على الأقل.';
+
+  @override
+  String get communityErrTooLong => 'هذا طويل جدًا.';
+
+  @override
+  String get communityErrChars =>
+      'استخدم الأحرف والأرقام والنقطة والشرطة والشرطة السفلية فقط.';
+
+  @override
+  String get communityErrContact =>
+      'يرجى عدم إدراج بريد إلكتروني أو رقم هاتف أو رابط ويب.';
+
+  @override
+  String get communityGroupsTitle => 'المجموعات';
+
+  @override
+  String get communityGroupsEmpty => 'لا توجد مجموعات بعد.';
+
+  @override
+  String get communityFeedEmpty => 'لا توجد منشورات في هذه المجموعة بعد.';
+
+  @override
+  String get communityDeletedAuthor => '[محذوف]';
+
+  @override
+  String get communityEdited => 'معدّل';
+
+  @override
+  String get communityAgoNow => 'الآن';
+
+  @override
+  String communityAgoMinutes(int n) {
+    return 'منذ $n د';
+  }
+
+  @override
+  String communityAgoHours(int n) {
+    return 'منذ $n س';
+  }
+
+  @override
+  String communityAgoDays(int n) {
+    return 'منذ $n ي';
+  }
+
+  @override
+  String get communityLoadMoreFailed =>
+      'تعذر تحميل المزيد. اضغط للمحاولة مرة أخرى.';
+
+  @override
+  String communityVotesLabel(int n) {
+    return '$n أصوات';
+  }
+
+  @override
+  String get communityNewPost => 'منشور جديد';
+
+  @override
+  String get communityEditPost => 'تعديل المنشور';
+
+  @override
+  String get communityPostHint => 'شارك شيئًا مع المجموعة…';
+
+  @override
+  String get communityPostButton => 'نشر';
+
+  @override
+  String get communityPostSafety =>
+      'يرجى عدم طلب أو تقديم نصائح طبية هنا. تحدث مع طبيبك أو الصيدلي.';
+
+  @override
+  String get communityDenied => 'تعذر الحفظ. ربما لم يعد المنشور متاحًا.';
+
+  @override
+  String get communityNoProfile => 'أنشئ ملفك في المجتمع أولًا.';
+
+  @override
+  String get communityDeletePostTitle => 'حذف هذا المنشور؟';
+
+  @override
+  String get communityDeleteCommentTitle => 'حذف هذا التعليق؟';
+
+  @override
+  String get communityDeleteBody => 'لا يمكن التراجع عن هذا.';
+
+  @override
+  String get communityDelete => 'حذف';
+
+  @override
+  String get communityEdit => 'تعديل';
+
+  @override
+  String get communityCommentsTitle => 'التعليقات';
+
+  @override
+  String communityCommentsCount(int n) {
+    return '$n تعليقات';
+  }
+
+  @override
+  String get communityNoComments => 'لا توجد تعليقات بعد. كن الأول.';
+
+  @override
+  String get communityCommentHint => 'اكتب تعليقًا…';
+
+  @override
+  String get communitySend => 'إرسال';
+
+  @override
+  String get communityEditComment => 'تعديل التعليق';
+
+  @override
+  String get communityPostGone => 'لم يعد هذا المنشور متاحًا.';
+
+  @override
+  String get communityErrBodyEmpty => 'يرجى كتابة شيء.';
+
+  @override
+  String communityErrBodyTooLong(int max) {
+    return 'هذا طويل جدًا (الحد الأقصى $max حرفًا).';
+  }
+
+  @override
+  String get communitySavedTitle => 'المنشورات المحفوظة';
+
+  @override
+  String get communitySavedEmpty => 'لم تحفظ أي منشورات بعد.';
+
+  @override
+  String get communitySavePost => 'حفظ المنشور';
+
+  @override
+  String get communityUnsavePost => 'إزالة من المحفوظات';
+
+  @override
+  String get communityUpvote => 'تصويت إيجابي';
+
+  @override
+  String get communityRemoveUpvote => 'إزالة التصويت';
+
+  @override
+  String get communityVoteFailed =>
+      'تعذر تحديث تصويتك. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get communityRemoveFromSaved => 'إزالة من القائمة';
+
+  @override
+  String get communitySavedButton => 'المحفوظات';
+
+  @override
+  String get communityErrInappropriate =>
+      'يرجى الحفاظ على اللطف. هذه الصياغة غير مسموحة.';
+
+  @override
+  String get communityErrContactPost =>
+      'يرجى عدم مشاركة عناوين البريد الإلكتروني أو الروابط.';
+
+  @override
+  String get communityReport => 'إبلاغ';
+
+  @override
+  String get communityBlock => 'حظر';
+
+  @override
+  String get communityReportTitle => 'الإبلاغ عن هذا';
+
+  @override
+  String get communityReasonSpam => 'رسائل مزعجة';
+
+  @override
+  String get communityReasonAbuse => 'إساءة أو تنمر';
+
+  @override
+  String get communityReasonMedical => 'نصيحة طبية خاطئة';
+
+  @override
+  String get communityReasonOther => 'سبب آخر';
+
+  @override
+  String get communityReportSend => 'إرسال البلاغ';
+
+  @override
+  String get communityReportThanks => 'شكرًا لك. سنراجعه.';
+
+  @override
+  String get communityReportDenied => 'تعذر الإرسال. ربما أبلغت عنه من قبل.';
+
+  @override
+  String communityBlockTitle(String name) {
+    return 'حظر $name؟';
+  }
+
+  @override
+  String get communityBlockBody =>
+      'لن ترى منشوراته وتعليقاته بعد الآن. يمكنك إلغاء الحظر من قائمة المحظورين.';
+
+  @override
+  String get communityBlockedDone => 'تم الحظر.';
+
+  @override
+  String get communityBlockFailed => 'تعذر الحظر. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get communityBlockedTitle => 'المحظورون';
+
+  @override
+  String get communityBlockedEmpty => 'لم تحظر أحدًا.';
+
+  @override
+  String get communityUnblock => 'إلغاء الحظر';
+
+  @override
+  String get communityBlockedButton => 'المحظورون';
+
+  @override
+  String get communityWarnSelfHarmTitle => 'لست وحدك';
+
+  @override
+  String get communityWarnSelfHarmBody =>
+      'إذا كنت تفكر في إيذاء نفسك، تحدث إلى شخص تثق به أو اتصل الآن بخط مساعدة محلي أو بالطوارئ. لا يزال بإمكانك النشر إذا أردت.';
+
+  @override
+  String get communityWarnMedicalTitle => 'استشر طبيبك';
+
+  @override
+  String get communityWarnMedicalBody =>
+      'قد يكون إيقاف الأدوية أو تغييرها بنصيحة أحدهم خطيرًا. يرجى اقتراح التحدث إلى طبيب أو صيدلي. هل تريد النشر على أي حال؟';
+
+  @override
+  String get communityPostAnyway => 'انشر على أي حال';
+
+  @override
+  String get communityGoBack => 'رجوع';
+
+  @override
+  String get communityModerationButton => 'الإشراف';
+
+  @override
+  String get communityModerationTitle => 'البلاغات';
+
+  @override
+  String get communityModerationEmpty => 'لا توجد بلاغات. كل شيء على ما يرام.';
+
+  @override
+  String communityReportsCount(int n) {
+    return '$n بلاغات';
+  }
+
+  @override
+  String get communityHidePost => 'إخفاء المنشور';
+
+  @override
+  String get communityUnhidePost => 'إظهار المنشور مرة أخرى';
+
+  @override
+  String get communityDismissReports => 'تجاهل البلاغات';
+
+  @override
+  String get communityHiddenChip => 'مخفي';
+
+  @override
+  String get communityAlreadyRemoved => 'تمت إزالته بالفعل.';
+
+  @override
+  String get communityModerationFailed =>
+      'تعذر تنفيذ ذلك. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get communityReportedPost => 'منشور مُبلَّغ عنه';
+
+  @override
+  String get communityReportedComment => 'تعليق مُبلَّغ عنه';
 }

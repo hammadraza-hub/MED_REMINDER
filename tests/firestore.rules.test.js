@@ -16,6 +16,13 @@ const {
   deleteField,
   arrayRemove,
   writeBatch,
+  getDocs,
+  query,
+  where,
+  collection,
+  orderBy,
+  limit,
+  documentId,
 } = require("firebase/firestore");
 
 let testEnv;
@@ -2036,5 +2043,487 @@ describe("AI chat storage — M18 step 4", () => {
       })
     );
     await assertSucceeds(deleteDoc(msgDoc(db, "owner123", "old1", "m1")));
+  });
+});
+
+describe("Community — M19 step 1", () => {
+
+  const CPA = "A".repeat(20); // alice
+  const CPB = "B".repeat(20); // bob
+  const CPC = "C".repeat(20); // carol (no profile yet)
+  const CPD = "D".repeat(20); // nobody
+
+  const profile = (db, cpid) => doc(db, "communityProfiles", cpid);
+  const group = (db) => doc(db, "groups", "g1");
+  const post = (db, id) => doc(db, "groups", "g1", "posts", id);
+  const vote = (db, id, cpid) =>
+    doc(db, "groups", "g1", "posts", id, "votes", cpid);
+  const comment = (db, id, cid) =>
+    doc(db, "groups", "g1", "posts", id, "comments", cid);
+
+  const ctx = (uid, claims) =>
+    testEnv.authenticatedContext(uid, claims || {}).firestore();
+
+  const newPost = (over = {}) => ({
+    authorId: CPA,
+    body: "Has anyone tried taking it with food?",
+    createdAt: serverTimestamp(),
+    editedAt: null,
+    voteCount: 0,
+    hidden: false,
+    ...over,
+  });
+
+  const newComment = (over = {}) => ({
+    authorId: CPB,
+    body: "Yes, it helped me.",
+    createdAt: serverTimestamp(),
+    editedAt: null,
+    ...over,
+  });
+
+  const newProfile = (over = {}) => ({
+    pseudonym: "calm_river",
+    avatar: "a1",
+    bio: "Here to learn.",
+    createdAt: serverTimestamp(),
+    ...over,
+  });
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "users", "alice"), { email: "a@x.com", communityProfileId: CPA });
+      await setDoc(doc(db, "users", "bob"), { email: "b@x.com", communityProfileId: CPB });
+      await setDoc(doc(db, "users", "carol"), { email: "c@x.com", communityProfileId: CPC });
+      await setDoc(doc(db, "users", "dave"), { email: "d@x.com" });
+      await setDoc(profile(db, CPA), {
+        pseudonym: "alice_a", avatar: "a1", bio: "", createdAt: new Date("2026-11-01"),
+      });
+      await setDoc(profile(db, CPB), {
+        pseudonym: "bob_b", avatar: "a2", bio: "", createdAt: new Date("2026-11-01"),
+      });
+      await setDoc(group(db), { name: "Diabetes", description: "x", order: 1 });
+      await setDoc(post(db, "p1"), {
+        authorId: CPA, body: "first", createdAt: new Date("2026-11-02"),
+        editedAt: null, voteCount: 0, hidden: false,
+      });
+      await setDoc(post(db, "hid"), {
+        authorId: CPA, body: "hidden one", createdAt: new Date("2026-11-03"),
+        editedAt: null, voteCount: 0, hidden: true,
+      });
+      await setDoc(comment(db, "p1", "c1"), {
+        authorId: CPB, body: "hi", createdAt: new Date("2026-11-02"), editedAt: null,
+      });
+    });
+  });
+
+  // ------------------------------------------------------------
+  describe("community id (users/{uid}.communityProfileId)", () => {
+    test("is set once with a valid random id", async () => {
+      const db = ctx("dave");
+      await assertSucceeds(
+        updateDoc(doc(db, "users", "dave"), { communityProfileId: CPD, updatedAt: serverTimestamp() })
+      );
+    });
+
+    test("cannot be changed afterwards", async () => {
+      const db = ctx("alice");
+      await assertFails(
+        updateDoc(doc(db, "users", "alice"), { communityProfileId: CPD })
+      );
+    });
+
+    test("must be 20 letters or digits", async () => {
+      const db = ctx("dave");
+      await assertFails(updateDoc(doc(db, "users", "dave"), { communityProfileId: "short" }));
+      await assertFails(updateDoc(doc(db, "users", "dave"), { communityProfileId: "!".repeat(20) }));
+      await assertFails(updateDoc(doc(db, "users", "dave"), { communityProfileId: 12345 }));
+    });
+
+    test("other edits keep the id untouched", async () => {
+      const db = ctx("alice");
+      await assertSucceeds(
+        updateDoc(doc(db, "users", "alice"), { displayName: "Alice", updatedAt: serverTimestamp() })
+      );
+    });
+
+    test("nobody else can read the mapping", async () => {
+      await assertFails(getDoc(doc(ctx("bob"), "users", "alice")));
+      await assertSucceeds(getDoc(doc(ctx("alice"), "users", "alice")));
+    });
+  });
+
+  // ------------------------------------------------------------
+  describe("pseudonym profiles", () => {
+    test("owner creates the profile for their own id", async () => {
+      await assertSucceeds(setDoc(profile(ctx("carol"), CPC), newProfile()));
+    });
+
+    test("cannot create a profile for an id that is not yours", async () => {
+      await assertFails(setDoc(profile(ctx("carol"), CPD), newProfile()));
+      await assertFails(setDoc(profile(ctx("dave"), CPD), newProfile())); // dave has no id
+    });
+
+    test("bad pseudonym, long bio, extra field or client time are refused", async () => {
+      const db = ctx("carol");
+      await assertFails(setDoc(profile(db, CPC), newProfile({ pseudonym: "ab" })));
+      await assertFails(setDoc(profile(db, CPC), newProfile({ pseudonym: "has space" })));
+      await assertFails(setDoc(profile(db, CPC), newProfile({ pseudonym: "me@mail.com" })));
+      await assertFails(setDoc(profile(db, CPC), newProfile({ pseudonym: "x".repeat(25) })));
+      await assertFails(setDoc(profile(db, CPC), newProfile({ bio: "x".repeat(161) })));
+      await assertFails(setDoc(profile(db, CPC), newProfile({ avatar: "" })));
+      await assertFails(setDoc(profile(db, CPC), newProfile({ email: "c@x.com" })));
+      await assertFails(setDoc(profile(db, CPC), newProfile({ createdAt: new Date("2020-01-01") })));
+    });
+
+    test("owner edits pseudonym, avatar and bio only", async () => {
+      const db = ctx("alice");
+      await assertSucceeds(updateDoc(profile(db, CPA), { pseudonym: "new_name", bio: "hi" }));
+      await assertFails(updateDoc(profile(db, CPA), { createdAt: serverTimestamp() }));
+      await assertFails(updateDoc(profile(db, CPA), { pseudonym: "no" }));
+      await assertFails(updateDoc(profile(ctx("bob"), CPA), { bio: "hacked" }));
+    });
+
+    test("any signed-in user can read, a stranger cannot", async () => {
+      await assertSucceeds(getDoc(profile(ctx("bob"), CPA)));
+      await assertFails(getDoc(profile(testEnv.unauthenticatedContext().firestore(), CPA)));
+    });
+
+    test("owner can delete the pseudonym, others cannot", async () => {
+      await assertFails(deleteDoc(profile(ctx("bob"), CPA)));
+      await assertSucceeds(deleteDoc(profile(ctx("alice"), CPA)));
+    });
+  });
+
+  // ------------------------------------------------------------
+  describe("groups", () => {
+    test("signed-in users read groups, nobody writes from the app", async () => {
+      await assertSucceeds(getDoc(group(ctx("bob"))));
+      await assertFails(setDoc(doc(ctx("bob"), "groups", "g2"), { name: "x" }));
+      await assertFails(updateDoc(group(ctx("alice", { moderator: true })), { name: "y" }));
+    });
+  });
+
+  // ------------------------------------------------------------
+  describe("posts", () => {
+    test("author creates a post with their own community id", async () => {
+      await assertSucceeds(setDoc(post(ctx("alice"), "new1"), newPost()));
+    });
+
+    test("cannot post as someone else", async () => {
+      await assertFails(setDoc(post(ctx("alice"), "new1"), newPost({ authorId: CPB })));
+    });
+
+    test("cannot post without a pseudonym profile", async () => {
+      await assertFails(setDoc(post(ctx("carol"), "new1"), newPost({ authorId: CPC })));
+    });
+
+    test("bad body, extra fields, fake counters or time are refused", async () => {
+      const db = ctx("alice");
+      await assertFails(setDoc(post(db, "x1"), newPost({ body: "" })));
+      await assertFails(setDoc(post(db, "x2"), newPost({ body: "x".repeat(2001) })));
+      await assertFails(setDoc(post(db, "x3"), newPost({ voteCount: 5 })));
+      await assertFails(setDoc(post(db, "x4"), newPost({ hidden: true })));
+      await assertFails(setDoc(post(db, "x5"), newPost({ editedAt: new Date() })));
+      await assertFails(setDoc(post(db, "x6"), newPost({ uid: "alice" })));
+      await assertFails(setDoc(post(db, "x7"), newPost({ createdAt: new Date("2020-01-01") })));
+    });
+
+    test("a post has no uid or personal field", async () => {
+      await assertFails(setDoc(post(ctx("alice"), "x1"), newPost({ email: "a@x.com" })));
+    });
+
+    test("normal posts are readable, hidden ones only by author and moderator", async () => {
+      await assertSucceeds(getDoc(post(ctx("bob"), "p1")));
+      await assertFails(getDoc(post(ctx("bob"), "hid")));
+      await assertSucceeds(getDoc(post(ctx("alice"), "hid")));
+      await assertSucceeds(getDoc(post(ctx("mod1", { moderator: true }), "hid")));
+    });
+
+    test("the feed query (hidden == false) works", async () => {
+      const db = ctx("bob");
+      const snap = await assertSucceeds(
+        getDocs(query(collection(db, "groups", "g1", "posts"), where("hidden", "==", false)))
+      );
+      expect(snap.docs.map((d) => d.id)).toEqual(["p1"]);
+    });
+
+    test("feed as the app asks it: hidden == false, newest first, limited", async () => {
+      const snap = await assertSucceeds(
+        getDocs(query(
+          collection(ctx("bob"), "groups", "g1", "posts"),
+          where("hidden", "==", false),
+          orderBy("createdAt", "desc"),
+          limit(20)
+        ))
+      );
+      expect(snap.docs.map((d) => d.id)).toEqual(["p1"]);
+    });
+
+    test("a feed query that could return hidden posts is refused", async () => {
+      await assertFails(getDocs(collection(ctx("bob"), "groups", "g1", "posts")));
+      await assertFails(
+        getDocs(query(collection(ctx("bob"), "groups", "g1", "posts"), orderBy("createdAt", "desc")))
+      );
+      await assertFails(
+        getDocs(query(collection(ctx("bob"), "groups", "g1", "posts"), where("hidden", "==", true)))
+      );
+    });
+
+    test("a signed-out user cannot read the feed or the groups", async () => {
+      const anon = testEnv.unauthenticatedContext().firestore();
+      await assertFails(
+        getDocs(query(collection(anon, "groups", "g1", "posts"), where("hidden", "==", false)))
+      );
+      await assertFails(getDocs(collection(anon, "groups")));
+    });
+
+    test("groups list ordered by 'order' works for a signed-in user", async () => {
+      const snap = await assertSucceeds(
+        getDocs(query(collection(ctx("bob"), "groups"), orderBy("order")))
+      );
+      expect(snap.docs.map((d) => d.id)).toEqual(["g1"]);
+    });
+
+    test("authors can be read in one query by id (whereIn)", async () => {
+      const snap = await assertSucceeds(
+        getDocs(query(
+          collection(ctx("bob"), "communityProfiles"),
+          where(documentId(), "in", [CPA, CPB, "no-such-profile"])
+        ))
+      );
+      expect(snap.docs.map((d) => d.id).sort()).toEqual([CPA, CPB].sort());
+    });
+
+    test("author edits the text, nobody else", async () => {
+      await assertSucceeds(
+        updateDoc(post(ctx("alice"), "p1"), { body: "edited", editedAt: serverTimestamp() })
+      );
+      await assertFails(
+        updateDoc(post(ctx("bob"), "p1"), { body: "edited", editedAt: serverTimestamp() })
+      );
+      await assertFails(
+        updateDoc(post(ctx("alice"), "p1"), { authorId: CPB, editedAt: serverTimestamp() })
+      );
+      await assertFails(
+        updateDoc(post(ctx("alice"), "p1"), { body: "edited", editedAt: new Date("2020-01-01") })
+      );
+      await assertFails(
+        updateDoc(post(ctx("alice"), "p1"), { body: "", editedAt: serverTimestamp() })
+      );
+    });
+
+    test("author and moderator can delete, others cannot", async () => {
+      await assertFails(deleteDoc(post(ctx("bob"), "p1")));
+      await assertSucceeds(deleteDoc(post(ctx("alice"), "p1")));
+      await assertSucceeds(deleteDoc(post(ctx("mod1", { moderator: true }), "hid")));
+    });
+
+    test("only a moderator can hide a post", async () => {
+      await assertSucceeds(updateDoc(post(ctx("mod1", { moderator: true }), "p1"), { hidden: true }));
+      await assertFails(updateDoc(post(ctx("alice"), "p1"), { hidden: true }));
+      await assertFails(updateDoc(post(ctx("bob"), "p1"), { hidden: true }));
+      await assertFails(updateDoc(post(ctx("alice"), "hid"), { hidden: false }));
+    });
+
+    test("an unauthenticated user can do nothing", async () => {
+      const db = testEnv.unauthenticatedContext().firestore();
+      await assertFails(getDoc(post(db, "p1")));
+      await assertFails(setDoc(post(db, "z"), newPost()));
+    });
+  });
+
+  // ------------------------------------------------------------
+  describe("votes (counter and vote document move together)", () => {
+    test("vote: vote document + counter + 1 in one batch", async () => {
+      const db = ctx("bob");
+      const b = writeBatch(db);
+      b.set(vote(db, "p1", CPB), { createdAt: serverTimestamp() });
+      b.update(post(db, "p1"), { voteCount: 1 });
+      await assertSucceeds(b.commit());
+    });
+
+    test("a vote document without the counter, or the counter alone, is refused", async () => {
+      const db = ctx("bob");
+      await assertFails(setDoc(vote(db, "p1", CPB), { createdAt: serverTimestamp() }));
+      await assertFails(updateDoc(post(db, "p1"), { voteCount: 1 }));
+    });
+
+    test("the counter cannot jump by more than one", async () => {
+      const db = ctx("bob");
+      const b = writeBatch(db);
+      b.set(vote(db, "p1", CPB), { createdAt: serverTimestamp() });
+      b.update(post(db, "p1"), { voteCount: 5 });
+      await assertFails(b.commit());
+    });
+
+    test("cannot vote with someone else's id", async () => {
+      const db = ctx("bob");
+      const b = writeBatch(db);
+      b.set(vote(db, "p1", CPA), { createdAt: serverTimestamp() });
+      b.update(post(db, "p1"), { voteCount: 1 });
+      await assertFails(b.commit());
+    });
+
+    test("a second vote by the same user is refused", async () => {
+      const db = ctx("bob");
+      const first = writeBatch(db);
+      first.set(vote(db, "p1", CPB), { createdAt: serverTimestamp() });
+      first.update(post(db, "p1"), { voteCount: 1 });
+      await assertSucceeds(first.commit());
+
+      const second = writeBatch(db);
+      second.set(vote(db, "p1", CPB), { createdAt: serverTimestamp() });
+      second.update(post(db, "p1"), { voteCount: 2 });
+      await assertFails(second.commit());
+    });
+
+    test("removing a vote: delete the document and counter - 1 together", async () => {
+      const db = ctx("bob");
+      const first = writeBatch(db);
+      first.set(vote(db, "p1", CPB), { createdAt: serverTimestamp() });
+      first.update(post(db, "p1"), { voteCount: 1 });
+      await assertSucceeds(first.commit());
+
+      await assertFails(deleteDoc(vote(db, "p1", CPB)));
+      await assertFails(updateDoc(post(db, "p1"), { voteCount: 0 }));
+
+      const undo = writeBatch(db);
+      undo.delete(vote(db, "p1", CPB));
+      undo.update(post(db, "p1"), { voteCount: 0 });
+      await assertSucceeds(undo.commit());
+    });
+
+    test("only the voter can read their vote", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(vote(context.firestore(), "p1", CPB), { createdAt: new Date() });
+      });
+      await assertSucceeds(getDoc(vote(ctx("bob"), "p1", CPB)));
+      await assertFails(getDoc(vote(ctx("alice"), "p1", CPB)));
+    });
+  });
+
+  // ------------------------------------------------------------
+  describe("comments", () => {
+    test("author comments with their own id", async () => {
+      await assertSucceeds(setDoc(comment(ctx("bob"), "p1", "n1"), newComment()));
+    });
+
+    test("not as someone else, not too long, not empty, no extra fields", async () => {
+      const db = ctx("bob");
+      await assertFails(setDoc(comment(db, "p1", "n1"), newComment({ authorId: CPA })));
+      await assertFails(setDoc(comment(db, "p1", "n2"), newComment({ body: "" })));
+      await assertFails(setDoc(comment(db, "p1", "n3"), newComment({ body: "x".repeat(801) })));
+      await assertFails(setDoc(comment(db, "p1", "n4"), newComment({ uid: "bob" })));
+      await assertFails(setDoc(comment(db, "p1", "n5"), newComment({ createdAt: new Date("2020-01-01") })));
+    });
+
+    test("no comments on a hidden post", async () => {
+      await assertFails(setDoc(comment(ctx("bob"), "hid", "n1"), newComment()));
+    });
+
+    test("author edits own comment, others cannot", async () => {
+      await assertSucceeds(
+        updateDoc(comment(ctx("bob"), "p1", "c1"), { body: "edited", editedAt: serverTimestamp() })
+      );
+      await assertFails(
+        updateDoc(comment(ctx("alice"), "p1", "c1"), { body: "edited", editedAt: serverTimestamp() })
+      );
+    });
+
+    test("author and moderator delete, others cannot", async () => {
+      await assertFails(deleteDoc(comment(ctx("alice"), "p1", "c1")));
+      await assertSucceeds(deleteDoc(comment(ctx("bob"), "p1", "c1")));
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(comment(context.firestore(), "p1", "c2"), {
+          authorId: CPB, body: "x", createdAt: new Date(), editedAt: null,
+        });
+      });
+      await assertSucceeds(deleteDoc(comment(ctx("mod1", { moderator: true }), "p1", "c2")));
+    });
+  });
+
+  // ------------------------------------------------------------
+  describe("bookmarks and blocks (private to the owner)", () => {
+    const bookmark = (db, uid, pid) => doc(db, "users", uid, "bookmarks", pid);
+    const block = (db, uid, cpid) => doc(db, "users", uid, "blocks", cpid);
+
+    test("bookmark: own create, read, delete", async () => {
+      const db = ctx("bob");
+      await assertSucceeds(setDoc(bookmark(db, "bob", "p1"), { groupId: "g1", createdAt: serverTimestamp() }));
+      await assertSucceeds(getDoc(bookmark(db, "bob", "p1")));
+      await assertSucceeds(deleteDoc(bookmark(db, "bob", "p1")));
+    });
+
+    test("bookmarks: others cannot touch, extra fields refused", async () => {
+      await assertFails(
+        setDoc(bookmark(ctx("alice"), "bob", "p1"), { groupId: "g1", createdAt: serverTimestamp() })
+      );
+      await assertFails(
+        setDoc(bookmark(ctx("bob"), "bob", "p1"), { groupId: "g1", createdAt: serverTimestamp(), note: "x" })
+      );
+    });
+
+    test("block: own create, read, delete", async () => {
+      const db = ctx("bob");
+      await assertSucceeds(setDoc(block(db, "bob", CPA), { createdAt: serverTimestamp() }));
+      await assertSucceeds(getDoc(block(db, "bob", CPA)));
+      await assertSucceeds(deleteDoc(block(db, "bob", CPA)));
+    });
+
+    test("block: not yourself, not a bad id, not for someone else", async () => {
+      await assertFails(setDoc(block(ctx("bob"), "bob", CPB), { createdAt: serverTimestamp() }));
+      await assertFails(setDoc(block(ctx("bob"), "bob", "short"), { createdAt: serverTimestamp() }));
+      await assertFails(setDoc(block(ctx("alice"), "bob", CPA), { createdAt: serverTimestamp() }));
+    });
+
+    test("the block list of a user is private", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(block(context.firestore(), "bob", CPA), { createdAt: new Date() });
+      });
+      await assertFails(getDoc(block(ctx("alice"), "bob", CPA)));
+    });
+  });
+
+  // ------------------------------------------------------------
+  describe("reports", () => {
+    const report = (db, id) => doc(db, "reports", id);
+    const newReport = (over = {}) => ({
+      reporterId: CPB,
+      targetType: "post",
+      groupId: "g1",
+      postId: "p1",
+      reason: "spam",
+      createdAt: serverTimestamp(),
+      ...over,
+    });
+
+    test("anyone can report a post or a comment as themselves", async () => {
+      const db = ctx("bob");
+      await assertSucceeds(setDoc(report(db, "r1"), newReport()));
+      await assertSucceeds(
+        setDoc(report(db, "r2"), newReport({ targetType: "comment", commentId: "c1", reason: "abuse" }))
+      );
+    });
+
+    test("bad reports are refused", async () => {
+      const db = ctx("bob");
+      await assertFails(setDoc(report(db, "r1"), newReport({ reporterId: CPA })));
+      await assertFails(setDoc(report(db, "r2"), newReport({ reason: "i dislike it" })));
+      await assertFails(setDoc(report(db, "r3"), newReport({ targetType: "comment" }))); // no commentId
+      await assertFails(setDoc(report(db, "r4"), newReport({ targetType: "user" })));
+      await assertFails(setDoc(report(db, "r5"), newReport({ extra: 1 })));
+      await assertFails(setDoc(report(db, "r6"), newReport({ createdAt: new Date("2020-01-01") })));
+    });
+
+    test("only moderators read and clear reports", async () => {
+      await assertSucceeds(setDoc(report(ctx("bob"), "r1"), newReport()));
+      await assertFails(getDoc(report(ctx("bob"), "r1")));
+      await assertFails(getDoc(report(ctx("alice"), "r1")));
+      await assertSucceeds(getDoc(report(ctx("mod1", { moderator: true }), "r1")));
+      await assertFails(updateDoc(report(ctx("mod1", { moderator: true }), "r1"), { reason: "other" }));
+      await assertSucceeds(deleteDoc(report(ctx("mod1", { moderator: true }), "r1")));
+    });
   });
 });

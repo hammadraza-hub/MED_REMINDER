@@ -33,6 +33,10 @@ abstract class PurgeStore {
 
   /// Deletes the document at [docPath]. Missing documents are not an error.
   Future<void> deleteDoc(String docPath);
+
+  /// The user's random community id (`users/{uid}.communityProfileId`), or
+  /// null when they never joined the community. (M19 step 1)
+  Future<String?> communityProfileId(String uid) async => null;
 }
 
 class PurgeSummary {
@@ -101,6 +105,15 @@ class AccountDeletionEngine {
 
     onProgress?.call('chats');
     await _purgeChatThreads(uid);
+
+    // Community: the pseudonym goes (posts and comments stay and show as
+    // "[deleted]" because their author no longer exists), and the private
+    // bookmark and block lists go.
+    onProgress?.call('community');
+    final cpid = await _store.communityProfileId(uid);
+    if (cpid != null) await _delete('communityProfiles/$cpid');
+    await _purgeCollection('users/$uid/bookmarks');
+    await _purgeCollection('users/$uid/blocks');
 
     onProgress?.call('account');
     await _purgeCollection('users/$uid/devices');

@@ -3087,4 +3087,338 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get aiHistoryYesterday => 'कल';
+
+  @override
+  String get communityTitle => 'समुदाय';
+
+  @override
+  String get communityCreateTitle => 'अपना समुदाय प्रोफ़ाइल बनाएँ';
+
+  @override
+  String get communityEditTitle => 'प्रोफ़ाइल बदलें';
+
+  @override
+  String get communityPrivacyNote =>
+      'यह नाम सार्वजनिक है। अपना असली नाम, ईमेल या फ़ोन नंबर न डालें। यहाँ कोई भी आपकी दवाएँ या स्वास्थ्य जानकारी नहीं देख सकता।';
+
+  @override
+  String get communityPseudonymLabel => 'उपनाम';
+
+  @override
+  String get communityPseudonymHint => 'जैसे calm_river';
+
+  @override
+  String get communitySuggest => 'नाम सुझाएँ';
+
+  @override
+  String get communityAvatarLabel => 'अवतार चुनें';
+
+  @override
+  String get communityBioLabel => 'आपके बारे में (वैकल्पिक)';
+
+  @override
+  String get communityJoin => 'समुदाय से जुड़ें';
+
+  @override
+  String get communitySave => 'सहेजें';
+
+  @override
+  String get communitySaveFailed =>
+      'सहेजा नहीं जा सका। कृपया कनेक्शन जाँचें और फिर कोशिश करें।';
+
+  @override
+  String get communityLoadFailed =>
+      'समुदाय नहीं खुल सका। कृपया कनेक्शन जाँचें।';
+
+  @override
+  String get communityRetry => 'फिर कोशिश करें';
+
+  @override
+  String get communityYourProfile => 'आपका समुदाय प्रोफ़ाइल';
+
+  @override
+  String get communityEditAction => 'प्रोफ़ाइल बदलें';
+
+  @override
+  String get communityProfileSaved => 'प्रोफ़ाइल सहेजा गया';
+
+  @override
+  String get communityErrEmpty => 'कृपया एक नाम लिखें।';
+
+  @override
+  String get communityErrTooShort => 'कम से कम 3 अक्षर इस्तेमाल करें।';
+
+  @override
+  String get communityErrTooLong => 'यह बहुत लंबा है।';
+
+  @override
+  String get communityErrChars =>
+      'केवल अक्षर, अंक, बिंदु, डैश और अंडरस्कोर इस्तेमाल करें।';
+
+  @override
+  String get communityErrContact =>
+      'कृपया ईमेल, फ़ोन नंबर या वेब लिंक न डालें।';
+
+  @override
+  String get communityGroupsTitle => 'समूह';
+
+  @override
+  String get communityGroupsEmpty => 'अभी कोई समूह नहीं है।';
+
+  @override
+  String get communityFeedEmpty => 'इस समूह में अभी कोई पोस्ट नहीं है।';
+
+  @override
+  String get communityDeletedAuthor => '[हटाया गया]';
+
+  @override
+  String get communityEdited => 'संपादित';
+
+  @override
+  String get communityAgoNow => 'अभी';
+
+  @override
+  String communityAgoMinutes(int n) {
+    return '$n मिनट पहले';
+  }
+
+  @override
+  String communityAgoHours(int n) {
+    return '$n घंटे पहले';
+  }
+
+  @override
+  String communityAgoDays(int n) {
+    return '$n दिन पहले';
+  }
+
+  @override
+  String get communityLoadMoreFailed =>
+      'और लोड नहीं हो सका। फिर कोशिश करने के लिए टैप करें।';
+
+  @override
+  String communityVotesLabel(int n) {
+    return '$n वोट';
+  }
+
+  @override
+  String get communityNewPost => 'नई पोस्ट';
+
+  @override
+  String get communityEditPost => 'पोस्ट बदलें';
+
+  @override
+  String get communityPostHint => 'समूह के साथ कुछ साझा करें…';
+
+  @override
+  String get communityPostButton => 'पोस्ट करें';
+
+  @override
+  String get communityPostSafety =>
+      'कृपया यहाँ चिकित्सा सलाह न माँगें और न दें। अपने डॉक्टर या फ़ार्मासिस्ट से बात करें।';
+
+  @override
+  String get communityDenied =>
+      'सहेजा नहीं जा सका। हो सकता है पोस्ट अब उपलब्ध न हो।';
+
+  @override
+  String get communityNoProfile => 'पहले अपना समुदाय प्रोफ़ाइल बनाएँ।';
+
+  @override
+  String get communityDeletePostTitle => 'यह पोस्ट हटाएँ?';
+
+  @override
+  String get communityDeleteCommentTitle => 'यह टिप्पणी हटाएँ?';
+
+  @override
+  String get communityDeleteBody => 'इसे वापस नहीं किया जा सकता।';
+
+  @override
+  String get communityDelete => 'हटाएँ';
+
+  @override
+  String get communityEdit => 'बदलें';
+
+  @override
+  String get communityCommentsTitle => 'टिप्पणियाँ';
+
+  @override
+  String communityCommentsCount(int n) {
+    return '$n टिप्पणियाँ';
+  }
+
+  @override
+  String get communityNoComments => 'अभी कोई टिप्पणी नहीं। पहले आप लिखें।';
+
+  @override
+  String get communityCommentHint => 'टिप्पणी लिखें…';
+
+  @override
+  String get communitySend => 'भेजें';
+
+  @override
+  String get communityEditComment => 'टिप्पणी बदलें';
+
+  @override
+  String get communityPostGone => 'यह पोस्ट अब उपलब्ध नहीं है।';
+
+  @override
+  String get communityErrBodyEmpty => 'कृपया कुछ लिखें।';
+
+  @override
+  String communityErrBodyTooLong(int max) {
+    return 'यह बहुत लंबा है (अधिकतम $max अक्षर)।';
+  }
+
+  @override
+  String get communitySavedTitle => 'सहेजी गई पोस्ट';
+
+  @override
+  String get communitySavedEmpty => 'आपने अभी कोई पोस्ट सहेजी नहीं है।';
+
+  @override
+  String get communitySavePost => 'पोस्ट सहेजें';
+
+  @override
+  String get communityUnsavePost => 'सहेजी हुई सूची से हटाएँ';
+
+  @override
+  String get communityUpvote => 'पसंद करें';
+
+  @override
+  String get communityRemoveUpvote => 'पसंद हटाएँ';
+
+  @override
+  String get communityVoteFailed =>
+      'आपका वोट अपडेट नहीं हो सका। कृपया फिर कोशिश करें।';
+
+  @override
+  String get communityRemoveFromSaved => 'सूची से हटाएँ';
+
+  @override
+  String get communitySavedButton => 'सहेजी हुई';
+
+  @override
+  String get communityErrInappropriate =>
+      'कृपया विनम्र रहें। यह शब्दावली स्वीकार्य नहीं है।';
+
+  @override
+  String get communityErrContactPost => 'कृपया ईमेल पते या लिंक साझा न करें।';
+
+  @override
+  String get communityReport => 'रिपोर्ट करें';
+
+  @override
+  String get communityBlock => 'ब्लॉक करें';
+
+  @override
+  String get communityReportTitle => 'इसकी रिपोर्ट करें';
+
+  @override
+  String get communityReasonSpam => 'स्पैम';
+
+  @override
+  String get communityReasonAbuse => 'गाली-गलौज या बदसलूकी';
+
+  @override
+  String get communityReasonMedical => 'गलत चिकित्सा सलाह';
+
+  @override
+  String get communityReasonOther => 'कुछ और';
+
+  @override
+  String get communityReportSend => 'रिपोर्ट भेजें';
+
+  @override
+  String get communityReportThanks => 'धन्यवाद। हम इसे देखेंगे।';
+
+  @override
+  String get communityReportDenied =>
+      'भेजा नहीं जा सका। शायद आप पहले ही रिपोर्ट कर चुके हैं।';
+
+  @override
+  String communityBlockTitle(String name) {
+    return '$name को ब्लॉक करें?';
+  }
+
+  @override
+  String get communityBlockBody =>
+      'आपको उनकी पोस्ट और टिप्पणियाँ दिखना बंद हो जाएँगी। आप उन्हें ब्लॉक किए गए लोग में जाकर अनब्लॉक कर सकते हैं।';
+
+  @override
+  String get communityBlockedDone => 'ब्लॉक किया गया।';
+
+  @override
+  String get communityBlockFailed => 'ब्लॉक नहीं हो सका। कृपया फिर कोशिश करें।';
+
+  @override
+  String get communityBlockedTitle => 'ब्लॉक किए गए लोग';
+
+  @override
+  String get communityBlockedEmpty => 'आपने किसी को ब्लॉक नहीं किया है।';
+
+  @override
+  String get communityUnblock => 'अनब्लॉक करें';
+
+  @override
+  String get communityBlockedButton => 'ब्लॉक किए गए';
+
+  @override
+  String get communityWarnSelfHarmTitle => 'आप अकेले नहीं हैं';
+
+  @override
+  String get communityWarnSelfHarmBody =>
+      'अगर आप खुद को नुकसान पहुँचाने के बारे में सोच रहे हैं, तो किसी भरोसेमंद व्यक्ति से बात करें या अभी स्थानीय हेल्पलाइन या आपातकालीन सेवा से संपर्क करें। चाहें तो आप फिर भी पोस्ट कर सकते हैं।';
+
+  @override
+  String get communityWarnMedicalTitle => 'अपने डॉक्टर से पूछें';
+
+  @override
+  String get communityWarnMedicalBody =>
+      'किसी की सलाह पर दवाएँ बंद करना या बदलना खतरनाक हो सकता है। कृपया डॉक्टर या फ़ार्मासिस्ट से बात करने को कहें। फिर भी पोस्ट करें?';
+
+  @override
+  String get communityPostAnyway => 'फिर भी पोस्ट करें';
+
+  @override
+  String get communityGoBack => 'वापस जाएँ';
+
+  @override
+  String get communityModerationButton => 'मॉडरेशन';
+
+  @override
+  String get communityModerationTitle => 'रिपोर्ट';
+
+  @override
+  String get communityModerationEmpty => 'कोई रिपोर्ट नहीं। सब ठीक है।';
+
+  @override
+  String communityReportsCount(int n) {
+    return '$n रिपोर्ट';
+  }
+
+  @override
+  String get communityHidePost => 'पोस्ट छिपाएँ';
+
+  @override
+  String get communityUnhidePost => 'पोस्ट फिर दिखाएँ';
+
+  @override
+  String get communityDismissReports => 'रिपोर्ट खारिज करें';
+
+  @override
+  String get communityHiddenChip => 'छिपी हुई';
+
+  @override
+  String get communityAlreadyRemoved => 'पहले ही हटाया जा चुका है।';
+
+  @override
+  String get communityModerationFailed =>
+      'यह नहीं हो सका। कृपया फिर कोशिश करें।';
+
+  @override
+  String get communityReportedPost => 'रिपोर्ट की गई पोस्ट';
+
+  @override
+  String get communityReportedComment => 'रिपोर्ट की गई टिप्पणी';
 }

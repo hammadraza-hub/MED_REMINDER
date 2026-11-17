@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../../repositories/auth_repository.dart';
 import '../onboarding/splash_screen.dart';
 import '../../widgets/app_avatar.dart';
+import '../community/community_gate_screen.dart';
 import 'about_screen.dart';
 import 'allergy_screen.dart';
 import 'accessibility_screen.dart';
@@ -45,6 +46,7 @@ String _itemTitle(AppLocalizations l10n, String id) {
     'dataExport' => l10n.settingsDataExport,
     'helpSupport' => l10n.settingsHelpSupport,
     'allergies' => l10n.medsAllergies,
+    'community' => l10n.communityTitle,
     _ => l10n.settingsAbout,
   };
 }
@@ -281,6 +283,7 @@ class SettingsScreen extends StatelessWidget {
               'privacySecurity' => const PrivacySecurityScreen(),
               'accessibility' => const AccessibilityScreen(),
               'allergies' => AllergyScreen(profileId: 'current_profile'),
+              'community' => const CommunityGateScreen(),
               'dataExport' => const DataExportScreen(),
               'helpSupport' => const HelpSupportScreen(),
               'about' => const AboutScreen(),

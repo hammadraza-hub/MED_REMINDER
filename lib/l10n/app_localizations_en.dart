@@ -3091,4 +3091,351 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiHistoryYesterday => 'Yesterday';
+
+  @override
+  String get communityTitle => 'Community';
+
+  @override
+  String get communityCreateTitle => 'Create your community profile';
+
+  @override
+  String get communityEditTitle => 'Edit profile';
+
+  @override
+  String get communityPrivacyNote =>
+      'This name is public. Do not use your real name, email or phone number. Nobody can see your medicines or health data here.';
+
+  @override
+  String get communityPseudonymLabel => 'Pseudonym';
+
+  @override
+  String get communityPseudonymHint => 'e.g. calm_river';
+
+  @override
+  String get communitySuggest => 'Suggest a name';
+
+  @override
+  String get communityAvatarLabel => 'Choose an avatar';
+
+  @override
+  String get communityBioLabel => 'About you (optional)';
+
+  @override
+  String get communityJoin => 'Join the community';
+
+  @override
+  String get communitySave => 'Save';
+
+  @override
+  String get communitySaveFailed =>
+      'Could not save. Please check your connection and try again.';
+
+  @override
+  String get communityLoadFailed =>
+      'Could not open the community. Please check your connection.';
+
+  @override
+  String get communityRetry => 'Try again';
+
+  @override
+  String get communityYourProfile => 'Your community profile';
+
+  @override
+  String get communityEditAction => 'Edit profile';
+
+  @override
+  String get communityProfileSaved => 'Profile saved';
+
+  @override
+  String get communityErrEmpty => 'Please enter a name.';
+
+  @override
+  String get communityErrTooShort => 'Use at least 3 characters.';
+
+  @override
+  String get communityErrTooLong => 'This is too long.';
+
+  @override
+  String get communityErrChars =>
+      'Use only letters, numbers, dot, dash and underscore.';
+
+  @override
+  String get communityErrContact =>
+      'Please do not include an email, phone number or web link.';
+
+  @override
+  String get communityGroupsTitle => 'Groups';
+
+  @override
+  String get communityGroupsEmpty => 'No groups yet.';
+
+  @override
+  String get communityFeedEmpty => 'No posts in this group yet.';
+
+  @override
+  String get communityDeletedAuthor => '[deleted]';
+
+  @override
+  String get communityEdited => 'edited';
+
+  @override
+  String get communityAgoNow => 'just now';
+
+  @override
+  String communityAgoMinutes(int n) {
+    return '$n min ago';
+  }
+
+  @override
+  String communityAgoHours(int n) {
+    return '$n h ago';
+  }
+
+  @override
+  String communityAgoDays(int n) {
+    return '$n d ago';
+  }
+
+  @override
+  String get communityLoadMoreFailed =>
+      'Could not load more. Tap to try again.';
+
+  @override
+  String communityVotesLabel(int n) {
+    return '$n votes';
+  }
+
+  @override
+  String get communityNewPost => 'New post';
+
+  @override
+  String get communityEditPost => 'Edit post';
+
+  @override
+  String get communityPostHint => 'Share something with the group…';
+
+  @override
+  String get communityPostButton => 'Post';
+
+  @override
+  String get communityPostSafety =>
+      'Please do not ask for or give medical advice here. Talk to your doctor or pharmacist.';
+
+  @override
+  String get communityDenied =>
+      'This could not be saved. The post may no longer be available.';
+
+  @override
+  String get communityNoProfile => 'Create your community profile first.';
+
+  @override
+  String get communityDeletePostTitle => 'Delete this post?';
+
+  @override
+  String get communityDeleteCommentTitle => 'Delete this comment?';
+
+  @override
+  String get communityDeleteBody => 'This cannot be undone.';
+
+  @override
+  String get communityDelete => 'Delete';
+
+  @override
+  String get communityEdit => 'Edit';
+
+  @override
+  String get communityCommentsTitle => 'Comments';
+
+  @override
+  String communityCommentsCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n comments',
+      one: '1 comment',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get communityNoComments => 'No comments yet. Be the first.';
+
+  @override
+  String get communityCommentHint => 'Write a comment…';
+
+  @override
+  String get communitySend => 'Send';
+
+  @override
+  String get communityEditComment => 'Edit comment';
+
+  @override
+  String get communityPostGone => 'This post is no longer available.';
+
+  @override
+  String get communityErrBodyEmpty => 'Please write something.';
+
+  @override
+  String communityErrBodyTooLong(int max) {
+    return 'This is too long ($max characters at most).';
+  }
+
+  @override
+  String get communitySavedTitle => 'Saved posts';
+
+  @override
+  String get communitySavedEmpty => 'You have not saved any posts yet.';
+
+  @override
+  String get communitySavePost => 'Save post';
+
+  @override
+  String get communityUnsavePost => 'Remove from saved';
+
+  @override
+  String get communityUpvote => 'Upvote';
+
+  @override
+  String get communityRemoveUpvote => 'Remove upvote';
+
+  @override
+  String get communityVoteFailed =>
+      'Could not update your vote. Please try again.';
+
+  @override
+  String get communityRemoveFromSaved => 'Remove from list';
+
+  @override
+  String get communitySavedButton => 'Saved';
+
+  @override
+  String get communityErrInappropriate =>
+      'Please keep it kind. This wording is not allowed.';
+
+  @override
+  String get communityErrContactPost =>
+      'Please do not share e-mail addresses or links.';
+
+  @override
+  String get communityReport => 'Report';
+
+  @override
+  String get communityBlock => 'Block';
+
+  @override
+  String get communityReportTitle => 'Report this';
+
+  @override
+  String get communityReasonSpam => 'Spam';
+
+  @override
+  String get communityReasonAbuse => 'Abuse or bullying';
+
+  @override
+  String get communityReasonMedical => 'Wrong medical advice';
+
+  @override
+  String get communityReasonOther => 'Something else';
+
+  @override
+  String get communityReportSend => 'Send report';
+
+  @override
+  String get communityReportThanks => 'Thank you. We will look at it.';
+
+  @override
+  String get communityReportDenied =>
+      'This could not be sent. You may have reported it already.';
+
+  @override
+  String communityBlockTitle(String name) {
+    return 'Block $name?';
+  }
+
+  @override
+  String get communityBlockBody =>
+      'You will no longer see their posts and comments. You can unblock them under Blocked people.';
+
+  @override
+  String get communityBlockedDone => 'Blocked.';
+
+  @override
+  String get communityBlockFailed => 'Could not block. Please try again.';
+
+  @override
+  String get communityBlockedTitle => 'Blocked people';
+
+  @override
+  String get communityBlockedEmpty => 'You have not blocked anyone.';
+
+  @override
+  String get communityUnblock => 'Unblock';
+
+  @override
+  String get communityBlockedButton => 'Blocked';
+
+  @override
+  String get communityWarnSelfHarmTitle => 'You are not alone';
+
+  @override
+  String get communityWarnSelfHarmBody =>
+      'If you are thinking about hurting yourself, please talk to someone you trust, or contact a local helpline or emergency service right now. You can still post this if you want to.';
+
+  @override
+  String get communityWarnMedicalTitle => 'Check with your doctor';
+
+  @override
+  String get communityWarnMedicalBody =>
+      'Stopping or changing medicines on someone’s advice can be dangerous. Please suggest talking to a doctor or pharmacist instead. Post anyway?';
+
+  @override
+  String get communityPostAnyway => 'Post anyway';
+
+  @override
+  String get communityGoBack => 'Go back';
+
+  @override
+  String get communityModerationButton => 'Moderation';
+
+  @override
+  String get communityModerationTitle => 'Reports';
+
+  @override
+  String get communityModerationEmpty => 'No reports. All clear.';
+
+  @override
+  String communityReportsCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n reports',
+      one: '1 report',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get communityHidePost => 'Hide post';
+
+  @override
+  String get communityUnhidePost => 'Show post again';
+
+  @override
+  String get communityDismissReports => 'Dismiss reports';
+
+  @override
+  String get communityHiddenChip => 'Hidden';
+
+  @override
+  String get communityAlreadyRemoved => 'Already removed.';
+
+  @override
+  String get communityModerationFailed =>
+      'Could not do that. Please try again.';
+
+  @override
+  String get communityReportedPost => 'Reported post';
+
+  @override
+  String get communityReportedComment => 'Reported comment';
 }

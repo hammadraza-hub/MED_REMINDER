@@ -3125,4 +3125,357 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiHistoryYesterday => 'Hier';
+
+  @override
+  String get communityTitle => 'Communauté';
+
+  @override
+  String get communityCreateTitle => 'Créez votre profil de communauté';
+
+  @override
+  String get communityEditTitle => 'Modifier le profil';
+
+  @override
+  String get communityPrivacyNote =>
+      'Ce nom est public. N’utilisez pas votre vrai nom, e-mail ou numéro de téléphone. Personne ne peut voir vos médicaments ni vos données de santé ici.';
+
+  @override
+  String get communityPseudonymLabel => 'Pseudonyme';
+
+  @override
+  String get communityPseudonymHint => 'p. ex. calm_river';
+
+  @override
+  String get communitySuggest => 'Suggérer un nom';
+
+  @override
+  String get communityAvatarLabel => 'Choisissez un avatar';
+
+  @override
+  String get communityBioLabel => 'À propos de vous (facultatif)';
+
+  @override
+  String get communityJoin => 'Rejoindre la communauté';
+
+  @override
+  String get communitySave => 'Enregistrer';
+
+  @override
+  String get communitySaveFailed =>
+      'Impossible d’enregistrer. Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get communityLoadFailed =>
+      'Impossible d’ouvrir la communauté. Vérifiez votre connexion.';
+
+  @override
+  String get communityRetry => 'Réessayer';
+
+  @override
+  String get communityYourProfile => 'Votre profil de communauté';
+
+  @override
+  String get communityEditAction => 'Modifier le profil';
+
+  @override
+  String get communityProfileSaved => 'Profil enregistré';
+
+  @override
+  String get communityErrEmpty => 'Veuillez saisir un nom.';
+
+  @override
+  String get communityErrTooShort => 'Utilisez au moins 3 caractères.';
+
+  @override
+  String get communityErrTooLong => 'C’est trop long.';
+
+  @override
+  String get communityErrChars =>
+      'Utilisez uniquement des lettres, chiffres, point, tiret et tiret bas.';
+
+  @override
+  String get communityErrContact =>
+      'N’incluez pas d’e-mail, de numéro de téléphone ni de lien web.';
+
+  @override
+  String get communityGroupsTitle => 'Groupes';
+
+  @override
+  String get communityGroupsEmpty => 'Aucun groupe pour le moment.';
+
+  @override
+  String get communityFeedEmpty =>
+      'Aucune publication dans ce groupe pour le moment.';
+
+  @override
+  String get communityDeletedAuthor => '[supprimé]';
+
+  @override
+  String get communityEdited => 'modifié';
+
+  @override
+  String get communityAgoNow => 'à l’instant';
+
+  @override
+  String communityAgoMinutes(int n) {
+    return 'il y a $n min';
+  }
+
+  @override
+  String communityAgoHours(int n) {
+    return 'il y a $n h';
+  }
+
+  @override
+  String communityAgoDays(int n) {
+    return 'il y a $n j';
+  }
+
+  @override
+  String get communityLoadMoreFailed =>
+      'Impossible de charger plus. Touchez pour réessayer.';
+
+  @override
+  String communityVotesLabel(int n) {
+    return '$n votes';
+  }
+
+  @override
+  String get communityNewPost => 'Nouvelle publication';
+
+  @override
+  String get communityEditPost => 'Modifier la publication';
+
+  @override
+  String get communityPostHint => 'Partagez quelque chose avec le groupe…';
+
+  @override
+  String get communityPostButton => 'Publier';
+
+  @override
+  String get communityPostSafety =>
+      'Ne demandez ni ne donnez de conseils médicaux ici. Parlez-en à votre médecin ou pharmacien.';
+
+  @override
+  String get communityDenied =>
+      'Impossible d’enregistrer. La publication n’est peut-être plus disponible.';
+
+  @override
+  String get communityNoProfile => 'Créez d’abord votre profil de communauté.';
+
+  @override
+  String get communityDeletePostTitle => 'Supprimer cette publication ?';
+
+  @override
+  String get communityDeleteCommentTitle => 'Supprimer ce commentaire ?';
+
+  @override
+  String get communityDeleteBody => 'Cette action est irréversible.';
+
+  @override
+  String get communityDelete => 'Supprimer';
+
+  @override
+  String get communityEdit => 'Modifier';
+
+  @override
+  String get communityCommentsTitle => 'Commentaires';
+
+  @override
+  String communityCommentsCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n commentaires',
+      one: '1 commentaire',
+      zero: '0 commentaire',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get communityNoComments =>
+      'Pas encore de commentaires. Soyez le premier.';
+
+  @override
+  String get communityCommentHint => 'Écrivez un commentaire…';
+
+  @override
+  String get communitySend => 'Envoyer';
+
+  @override
+  String get communityEditComment => 'Modifier le commentaire';
+
+  @override
+  String get communityPostGone => 'Cette publication n’est plus disponible.';
+
+  @override
+  String get communityErrBodyEmpty => 'Veuillez écrire quelque chose.';
+
+  @override
+  String communityErrBodyTooLong(int max) {
+    return 'C’est trop long ($max caractères maximum).';
+  }
+
+  @override
+  String get communitySavedTitle => 'Publications enregistrées';
+
+  @override
+  String get communitySavedEmpty =>
+      'Vous n’avez encore enregistré aucune publication.';
+
+  @override
+  String get communitySavePost => 'Enregistrer la publication';
+
+  @override
+  String get communityUnsavePost => 'Retirer des enregistrements';
+
+  @override
+  String get communityUpvote => 'Voter pour';
+
+  @override
+  String get communityRemoveUpvote => 'Retirer le vote';
+
+  @override
+  String get communityVoteFailed =>
+      'Impossible de mettre à jour votre vote. Veuillez réessayer.';
+
+  @override
+  String get communityRemoveFromSaved => 'Retirer de la liste';
+
+  @override
+  String get communitySavedButton => 'Enregistrées';
+
+  @override
+  String get communityErrInappropriate =>
+      'Soyez bienveillant. Ces termes ne sont pas autorisés.';
+
+  @override
+  String get communityErrContactPost =>
+      'Ne partagez pas d’adresses e-mail ni de liens.';
+
+  @override
+  String get communityReport => 'Signaler';
+
+  @override
+  String get communityBlock => 'Bloquer';
+
+  @override
+  String get communityReportTitle => 'Signaler ceci';
+
+  @override
+  String get communityReasonSpam => 'Spam';
+
+  @override
+  String get communityReasonAbuse => 'Abus ou harcèlement';
+
+  @override
+  String get communityReasonMedical => 'Mauvais conseil médical';
+
+  @override
+  String get communityReasonOther => 'Autre chose';
+
+  @override
+  String get communityReportSend => 'Envoyer le signalement';
+
+  @override
+  String get communityReportThanks => 'Merci. Nous allons l’examiner.';
+
+  @override
+  String get communityReportDenied =>
+      'Envoi impossible. Vous l’avez peut-être déjà signalé.';
+
+  @override
+  String communityBlockTitle(String name) {
+    return 'Bloquer $name ?';
+  }
+
+  @override
+  String get communityBlockBody =>
+      'Vous ne verrez plus ses publications ni ses commentaires. Vous pouvez le débloquer dans Personnes bloquées.';
+
+  @override
+  String get communityBlockedDone => 'Bloqué.';
+
+  @override
+  String get communityBlockFailed =>
+      'Impossible de bloquer. Veuillez réessayer.';
+
+  @override
+  String get communityBlockedTitle => 'Personnes bloquées';
+
+  @override
+  String get communityBlockedEmpty => 'Vous n’avez bloqué personne.';
+
+  @override
+  String get communityUnblock => 'Débloquer';
+
+  @override
+  String get communityBlockedButton => 'Bloqués';
+
+  @override
+  String get communityWarnSelfHarmTitle => 'Vous n’êtes pas seul';
+
+  @override
+  String get communityWarnSelfHarmBody =>
+      'Si vous pensez à vous faire du mal, parlez à quelqu’un de confiance ou contactez dès maintenant une ligne d’aide locale ou les urgences. Vous pouvez quand même publier si vous le souhaitez.';
+
+  @override
+  String get communityWarnMedicalTitle => 'Demandez à votre médecin';
+
+  @override
+  String get communityWarnMedicalBody =>
+      'Arrêter ou changer des médicaments sur le conseil de quelqu’un peut être dangereux. Suggérez plutôt d’en parler à un médecin ou pharmacien. Publier quand même ?';
+
+  @override
+  String get communityPostAnyway => 'Publier quand même';
+
+  @override
+  String get communityGoBack => 'Retour';
+
+  @override
+  String get communityModerationButton => 'Modération';
+
+  @override
+  String get communityModerationTitle => 'Signalements';
+
+  @override
+  String get communityModerationEmpty => 'Aucun signalement. Tout va bien.';
+
+  @override
+  String communityReportsCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n signalements',
+      one: '1 signalement',
+      zero: '0 signalement',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get communityHidePost => 'Masquer la publication';
+
+  @override
+  String get communityUnhidePost => 'Réafficher';
+
+  @override
+  String get communityDismissReports => 'Ignorer les signalements';
+
+  @override
+  String get communityHiddenChip => 'Masquée';
+
+  @override
+  String get communityAlreadyRemoved => 'Déjà supprimé.';
+
+  @override
+  String get communityModerationFailed =>
+      'Action impossible. Veuillez réessayer.';
+
+  @override
+  String get communityReportedPost => 'Publication signalée';
+
+  @override
+  String get communityReportedComment => 'Commentaire signalé';
 }

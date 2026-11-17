@@ -5329,6 +5329,612 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yesterday'**
   String get aiHistoryYesterday;
+
+  /// No description provided for @communityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get communityTitle;
+
+  /// No description provided for @communityCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your community profile'**
+  String get communityCreateTitle;
+
+  /// No description provided for @communityEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get communityEditTitle;
+
+  /// No description provided for @communityPrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This name is public. Do not use your real name, email or phone number. Nobody can see your medicines or health data here.'**
+  String get communityPrivacyNote;
+
+  /// No description provided for @communityPseudonymLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pseudonym'**
+  String get communityPseudonymLabel;
+
+  /// No description provided for @communityPseudonymHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. calm_river'**
+  String get communityPseudonymHint;
+
+  /// No description provided for @communitySuggest.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest a name'**
+  String get communitySuggest;
+
+  /// No description provided for @communityAvatarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an avatar'**
+  String get communityAvatarLabel;
+
+  /// No description provided for @communityBioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'About you (optional)'**
+  String get communityBioLabel;
+
+  /// No description provided for @communityJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join the community'**
+  String get communityJoin;
+
+  /// No description provided for @communitySave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get communitySave;
+
+  /// No description provided for @communitySaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save. Please check your connection and try again.'**
+  String get communitySaveFailed;
+
+  /// No description provided for @communityLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the community. Please check your connection.'**
+  String get communityLoadFailed;
+
+  /// No description provided for @communityRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get communityRetry;
+
+  /// No description provided for @communityYourProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Your community profile'**
+  String get communityYourProfile;
+
+  /// No description provided for @communityEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get communityEditAction;
+
+  /// No description provided for @communityProfileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile saved'**
+  String get communityProfileSaved;
+
+  /// No description provided for @communityErrEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a name.'**
+  String get communityErrEmpty;
+
+  /// No description provided for @communityErrTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 3 characters.'**
+  String get communityErrTooShort;
+
+  /// No description provided for @communityErrTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'This is too long.'**
+  String get communityErrTooLong;
+
+  /// No description provided for @communityErrChars.
+  ///
+  /// In en, this message translates to:
+  /// **'Use only letters, numbers, dot, dash and underscore.'**
+  String get communityErrChars;
+
+  /// No description provided for @communityErrContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Please do not include an email, phone number or web link.'**
+  String get communityErrContact;
+
+  /// No description provided for @communityGroupsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get communityGroupsTitle;
+
+  /// No description provided for @communityGroupsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No groups yet.'**
+  String get communityGroupsEmpty;
+
+  /// No description provided for @communityFeedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts in this group yet.'**
+  String get communityFeedEmpty;
+
+  /// No description provided for @communityDeletedAuthor.
+  ///
+  /// In en, this message translates to:
+  /// **'[deleted]'**
+  String get communityDeletedAuthor;
+
+  /// No description provided for @communityEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'edited'**
+  String get communityEdited;
+
+  /// No description provided for @communityAgoNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get communityAgoNow;
+
+  /// No description provided for @communityAgoMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} min ago'**
+  String communityAgoMinutes(int n);
+
+  /// No description provided for @communityAgoHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} h ago'**
+  String communityAgoHours(int n);
+
+  /// No description provided for @communityAgoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} d ago'**
+  String communityAgoDays(int n);
+
+  /// No description provided for @communityLoadMoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load more. Tap to try again.'**
+  String get communityLoadMoreFailed;
+
+  /// No description provided for @communityVotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} votes'**
+  String communityVotesLabel(int n);
+
+  /// No description provided for @communityNewPost.
+  ///
+  /// In en, this message translates to:
+  /// **'New post'**
+  String get communityNewPost;
+
+  /// No description provided for @communityEditPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit post'**
+  String get communityEditPost;
+
+  /// No description provided for @communityPostHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share something with the group…'**
+  String get communityPostHint;
+
+  /// No description provided for @communityPostButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get communityPostButton;
+
+  /// No description provided for @communityPostSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Please do not ask for or give medical advice here. Talk to your doctor or pharmacist.'**
+  String get communityPostSafety;
+
+  /// No description provided for @communityDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'This could not be saved. The post may no longer be available.'**
+  String get communityDenied;
+
+  /// No description provided for @communityNoProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your community profile first.'**
+  String get communityNoProfile;
+
+  /// No description provided for @communityDeletePostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this post?'**
+  String get communityDeletePostTitle;
+
+  /// No description provided for @communityDeleteCommentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this comment?'**
+  String get communityDeleteCommentTitle;
+
+  /// No description provided for @communityDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone.'**
+  String get communityDeleteBody;
+
+  /// No description provided for @communityDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get communityDelete;
+
+  /// No description provided for @communityEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get communityEdit;
+
+  /// No description provided for @communityCommentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get communityCommentsTitle;
+
+  /// No description provided for @communityCommentsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 comment} other{{n} comments}}'**
+  String communityCommentsCount(int n);
+
+  /// No description provided for @communityNoComments.
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet. Be the first.'**
+  String get communityNoComments;
+
+  /// No description provided for @communityCommentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a comment…'**
+  String get communityCommentHint;
+
+  /// No description provided for @communitySend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get communitySend;
+
+  /// No description provided for @communityEditComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit comment'**
+  String get communityEditComment;
+
+  /// No description provided for @communityPostGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This post is no longer available.'**
+  String get communityPostGone;
+
+  /// No description provided for @communityErrBodyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please write something.'**
+  String get communityErrBodyEmpty;
+
+  /// No description provided for @communityErrBodyTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'This is too long ({max} characters at most).'**
+  String communityErrBodyTooLong(int max);
+
+  /// No description provided for @communitySavedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved posts'**
+  String get communitySavedTitle;
+
+  /// No description provided for @communitySavedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not saved any posts yet.'**
+  String get communitySavedEmpty;
+
+  /// No description provided for @communitySavePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Save post'**
+  String get communitySavePost;
+
+  /// No description provided for @communityUnsavePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from saved'**
+  String get communityUnsavePost;
+
+  /// No description provided for @communityUpvote.
+  ///
+  /// In en, this message translates to:
+  /// **'Upvote'**
+  String get communityUpvote;
+
+  /// No description provided for @communityRemoveUpvote.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove upvote'**
+  String get communityRemoveUpvote;
+
+  /// No description provided for @communityVoteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update your vote. Please try again.'**
+  String get communityVoteFailed;
+
+  /// No description provided for @communityRemoveFromSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list'**
+  String get communityRemoveFromSaved;
+
+  /// No description provided for @communitySavedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get communitySavedButton;
+
+  /// No description provided for @communityErrInappropriate.
+  ///
+  /// In en, this message translates to:
+  /// **'Please keep it kind. This wording is not allowed.'**
+  String get communityErrInappropriate;
+
+  /// No description provided for @communityErrContactPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Please do not share e-mail addresses or links.'**
+  String get communityErrContactPost;
+
+  /// No description provided for @communityReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get communityReport;
+
+  /// No description provided for @communityBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get communityBlock;
+
+  /// No description provided for @communityReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this'**
+  String get communityReportTitle;
+
+  /// No description provided for @communityReasonSpam.
+  ///
+  /// In en, this message translates to:
+  /// **'Spam'**
+  String get communityReasonSpam;
+
+  /// No description provided for @communityReasonAbuse.
+  ///
+  /// In en, this message translates to:
+  /// **'Abuse or bullying'**
+  String get communityReasonAbuse;
+
+  /// No description provided for @communityReasonMedical.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong medical advice'**
+  String get communityReasonMedical;
+
+  /// No description provided for @communityReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Something else'**
+  String get communityReasonOther;
+
+  /// No description provided for @communityReportSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send report'**
+  String get communityReportSend;
+
+  /// No description provided for @communityReportThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you. We will look at it.'**
+  String get communityReportThanks;
+
+  /// No description provided for @communityReportDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'This could not be sent. You may have reported it already.'**
+  String get communityReportDenied;
+
+  /// No description provided for @communityBlockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Block {name}?'**
+  String communityBlockTitle(String name);
+
+  /// No description provided for @communityBlockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You will no longer see their posts and comments. You can unblock them under Blocked people.'**
+  String get communityBlockBody;
+
+  /// No description provided for @communityBlockedDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked.'**
+  String get communityBlockedDone;
+
+  /// No description provided for @communityBlockFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not block. Please try again.'**
+  String get communityBlockFailed;
+
+  /// No description provided for @communityBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked people'**
+  String get communityBlockedTitle;
+
+  /// No description provided for @communityBlockedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not blocked anyone.'**
+  String get communityBlockedEmpty;
+
+  /// No description provided for @communityUnblock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get communityUnblock;
+
+  /// No description provided for @communityBlockedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get communityBlockedButton;
+
+  /// No description provided for @communityWarnSelfHarmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not alone'**
+  String get communityWarnSelfHarmTitle;
+
+  /// No description provided for @communityWarnSelfHarmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If you are thinking about hurting yourself, please talk to someone you trust, or contact a local helpline or emergency service right now. You can still post this if you want to.'**
+  String get communityWarnSelfHarmBody;
+
+  /// No description provided for @communityWarnMedicalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check with your doctor'**
+  String get communityWarnMedicalTitle;
+
+  /// No description provided for @communityWarnMedicalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping or changing medicines on someone’s advice can be dangerous. Please suggest talking to a doctor or pharmacist instead. Post anyway?'**
+  String get communityWarnMedicalBody;
+
+  /// No description provided for @communityPostAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Post anyway'**
+  String get communityPostAnyway;
+
+  /// No description provided for @communityGoBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get communityGoBack;
+
+  /// No description provided for @communityModerationButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderation'**
+  String get communityModerationButton;
+
+  /// No description provided for @communityModerationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get communityModerationTitle;
+
+  /// No description provided for @communityModerationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No reports. All clear.'**
+  String get communityModerationEmpty;
+
+  /// No description provided for @communityReportsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 report} other{{n} reports}}'**
+  String communityReportsCount(int n);
+
+  /// No description provided for @communityHidePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide post'**
+  String get communityHidePost;
+
+  /// No description provided for @communityUnhidePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Show post again'**
+  String get communityUnhidePost;
+
+  /// No description provided for @communityDismissReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss reports'**
+  String get communityDismissReports;
+
+  /// No description provided for @communityHiddenChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get communityHiddenChip;
+
+  /// No description provided for @communityAlreadyRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Already removed.'**
+  String get communityAlreadyRemoved;
+
+  /// No description provided for @communityModerationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not do that. Please try again.'**
+  String get communityModerationFailed;
+
+  /// No description provided for @communityReportedPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported post'**
+  String get communityReportedPost;
+
+  /// No description provided for @communityReportedComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported comment'**
+  String get communityReportedComment;
 }
 
 class _AppLocalizationsDelegate

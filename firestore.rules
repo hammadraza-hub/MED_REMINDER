@@ -813,6 +813,158 @@ service cloud.firestore {
         && d.createdAt == request.time;
     }
 
+    // =====================================
+    // M19 step 1: COMMUNITY
+    //
+    // The community identity is a random id (communityProfileId) kept in the
+    // user's own document. Posts and comments carry that id, never the uid,
+    // so nothing public ties a post to an account or to health data. Only
+    // the owner can read the mapping (users/{uid} is private).
+    // =====================================
+
+    // A communityProfileId is set once and never changed: 20 letters / digits.
+    function communityIdOkOnUpdate() {
+      let before = resource.data;
+      let after = request.resource.data;
+
+      return !after.diff(before).affectedKeys().hasAny(['communityProfileId'])
+        || (!('communityProfileId' in before)
+            && after.communityProfileId is string
+            && after.communityProfileId.matches('^[A-Za-z0-9]{20}$'));
+    }
+
+    function myCpid() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid))
+        .data.get('communityProfileId', null);
+    }
+
+    function isMyCpid(cpid) {
+      return signedIn() && cpid is string && myCpid() == cpid;
+    }
+
+    // Set from a PC with the Admin SDK (works on the Spark plan).
+    function isModerator() {
+      return signedIn() && request.auth.token.get('moderator', false) == true;
+    }
+
+    function validCommunityProfile() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly(['pseudonym', 'avatar', 'bio', 'createdAt'])
+        && d.keys().hasAll(['pseudonym', 'avatar', 'bio', 'createdAt'])
+        && d.pseudonym is string
+        && d.pseudonym.matches('^[A-Za-z0-9_.-]{3,24}$')
+        && d.avatar is string
+        && d.avatar.size() >= 1 && d.avatar.size() <= 40
+        && d.bio is string && d.bio.size() <= 160
+        && d.createdAt == request.time;
+    }
+
+    function validCommunityProfileUpdate() {
+      let d = request.resource.data;
+
+      return d.diff(resource.data).affectedKeys()
+          .hasOnly(['pseudonym', 'avatar', 'bio'])
+        && d.pseudonym is string
+        && d.pseudonym.matches('^[A-Za-z0-9_.-]{3,24}$')
+        && d.avatar is string
+        && d.avatar.size() >= 1 && d.avatar.size() <= 40
+        && d.bio is string && d.bio.size() <= 160;
+    }
+
+    function communityPostPath(groupId, postId) {
+      return /databases/$(database)/documents/groups/$(groupId)/posts/$(postId);
+    }
+
+    function validCommunityPostCreate() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly(
+          ['authorId', 'body', 'createdAt', 'editedAt', 'voteCount', 'hidden'])
+        && d.keys().hasAll(
+          ['authorId', 'body', 'createdAt', 'editedAt', 'voteCount', 'hidden'])
+        && isMyCpid(d.authorId)
+        && exists(/databases/$(database)/documents/communityProfiles/$(d.authorId))
+        && d.body is string
+        && d.body.size() >= 1 && d.body.size() <= 2000
+        && d.createdAt == request.time
+        && d.editedAt == null
+        && d.voteCount == 0
+        && d.hidden == false;
+    }
+
+    // The author changes the text (and only the text).
+    function validCommunityPostEdit() {
+      let d = request.resource.data;
+
+      return d.diff(resource.data).affectedKeys().hasOnly(['body', 'editedAt'])
+        && isMyCpid(resource.data.authorId)
+        && d.body is string
+        && d.body.size() >= 1 && d.body.size() <= 2000
+        && d.editedAt == request.time;
+    }
+
+    // The vote counter moves by exactly one, together with the voter's own
+    // vote document (id = the voter's community id) in the same write.
+    function validCommunityVoteCount(groupId, postId) {
+      let d = request.resource.data;
+      let before = resource.data.voteCount;
+      let votePath = /databases/$(database)/documents/groups/$(groupId)/posts/$(postId)/votes/$(myCpid());
+
+      return d.diff(resource.data).affectedKeys().hasOnly(['voteCount'])
+        && signedIn() && myCpid() != null
+        && (
+          (d.voteCount == before + 1
+            && !exists(votePath) && existsAfter(votePath))
+          ||
+          (d.voteCount == before - 1 && before > 0
+            && exists(votePath) && !existsAfter(votePath))
+        );
+    }
+
+    function validCommunityComment() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly(['authorId', 'body', 'createdAt', 'editedAt'])
+        && d.keys().hasAll(['authorId', 'body', 'createdAt', 'editedAt'])
+        && isMyCpid(d.authorId)
+        && d.body is string
+        && d.body.size() >= 1 && d.body.size() <= 800
+        && d.createdAt == request.time
+        && d.editedAt == null;
+    }
+
+    function validCommunityCommentEdit() {
+      let d = request.resource.data;
+
+      return d.diff(resource.data).affectedKeys().hasOnly(['body', 'editedAt'])
+        && isMyCpid(resource.data.authorId)
+        && d.body is string
+        && d.body.size() >= 1 && d.body.size() <= 800
+        && d.editedAt == request.time;
+    }
+
+    function validCommunityReport() {
+      let d = request.resource.data;
+
+      return d.keys().hasOnly(
+          ['reporterId', 'targetType', 'groupId', 'postId', 'commentId',
+           'reason', 'createdAt'])
+        && d.keys().hasAll(
+          ['reporterId', 'targetType', 'groupId', 'postId', 'reason',
+           'createdAt'])
+        && isMyCpid(d.reporterId)
+        && d.targetType in ['post', 'comment']
+        && d.groupId is string && d.groupId.size() > 0 && d.groupId.size() <= 100
+        && d.postId is string && d.postId.size() > 0 && d.postId.size() <= 100
+        && (!('commentId' in d)
+            || (d.commentId is string && d.commentId.size() > 0
+                && d.commentId.size() <= 100))
+        && (d.targetType == 'post' || 'commentId' in d)
+        && d.reason in ['spam', 'abuse', 'medical', 'other']
+        && d.createdAt == request.time;
+    }
+
     // M2: User can update their own document but ONLY
     // non-sensitive fields. hasOnly() already blocks
     // plan, role, deletionRequestedAt — they're not in the list.
@@ -832,8 +984,10 @@ service cloud.firestore {
           'selectedMemberId',
           'selectedDisplayName',
           'selectedProfileImageUrl',
+          'communityProfileId',
           'updatedAt'
-        ]);
+        ])
+        && communityIdOkOnUpdate();
     }
 
     // M14 step 4: account deletion request / cancel.
@@ -936,6 +1090,38 @@ service cloud.firestore {
 
         allow read, write: if signedIn()
           && request.auth.uid == uid;
+      }
+
+      // M19 step 1: saved posts (private to the owner)
+      match /bookmarks/{postId} {
+
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['groupId', 'createdAt'])
+          && request.resource.data.keys().hasAll(['groupId', 'createdAt'])
+          && request.resource.data.groupId is string
+          && request.resource.data.groupId.size() > 0
+          && request.resource.data.groupId.size() <= 100
+          && request.resource.data.createdAt == request.time;
+
+        allow update: if false;
+      }
+
+      // M19 step 1: people this user has blocked (by community id)
+      match /blocks/{blockedCpid}{
+
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && blockedCpid.matches('^[A-Za-z0-9]{20}$')
+          && blockedCpid != myCpid()
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time;
+
+        allow update: if false;
       }
 
       // M18 step 4: AI chat history
@@ -1280,6 +1466,96 @@ service cloud.firestore {
             'doctorNotes'
           ];
       }
+    }
+
+    // =====================================
+    // COMMUNITY (M19 step 1)
+    // =====================================
+
+    // Pseudonymous public profile. The id is the random communityProfileId.
+    match /communityProfiles/{cpid} {
+
+      allow read: if signedIn();
+
+      allow create: if isMyCpid(cpid)
+        && validCommunityProfile();
+
+      allow update: if isMyCpid(cpid)
+        && validCommunityProfileUpdate();
+
+      // Account deletion removes the pseudonym; posts stay as "[deleted]".
+      allow delete: if isMyCpid(cpid);
+    }
+
+    // Groups are created from a PC with the Admin SDK only.
+    match /groups/{groupId} {
+
+      allow read: if signedIn();
+      allow write: if false;
+
+      match /posts/{postId} {
+
+        // The feed asks for hidden == false. The author and moderators can
+        // still open a hidden post.
+        allow read: if signedIn()
+          && (resource.data.hidden == false
+              || isModerator()
+              || isMyCpid(resource.data.authorId));
+
+        allow create: if validCommunityPostCreate();
+
+        allow update: if validCommunityPostEdit()
+          || validCommunityVoteCount(groupId, postId)
+          || (isModerator()
+              && request.resource.data.diff(resource.data)
+                  .affectedKeys().hasOnly(['hidden'])
+              && request.resource.data.hidden is bool);
+
+        allow delete: if isMyCpid(resource.data.authorId)
+          || isModerator();
+
+        // One vote per community id; the id of the document is the voter.
+        match /votes/{voterCpid} {
+
+          allow read: if isMyCpid(voterCpid);
+
+          allow create: if isMyCpid(voterCpid)
+            && request.resource.data.keys().hasOnly(['createdAt'])
+            && request.resource.data.createdAt == request.time
+            && getAfter(communityPostPath(groupId, postId)).data.voteCount
+               == get(communityPostPath(groupId, postId)).data.voteCount + 1;
+
+          allow update: if false;
+
+          allow delete: if isMyCpid(voterCpid)
+            && getAfter(communityPostPath(groupId, postId)).data.voteCount
+               == get(communityPostPath(groupId, postId)).data.voteCount - 1;
+        }
+
+        match /comments/{commentId} {
+
+          allow read: if signedIn();
+
+          allow create: if validCommunityComment()
+            && get(communityPostPath(groupId, postId)).data.hidden == false;
+
+          allow update: if validCommunityCommentEdit();
+
+          allow delete: if isMyCpid(resource.data.authorId)
+            || isModerator();
+        }
+      }
+    }
+
+    // Reports: anyone can file one (as their community id); only moderators
+    // can read or clear them.
+    match /reports/{reportId} {
+
+      allow create: if validCommunityReport();
+
+      allow read, delete: if isModerator();
+
+      allow update: if false;
     }
 
     // =====================================
