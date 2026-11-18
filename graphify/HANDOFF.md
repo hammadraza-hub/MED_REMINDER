@@ -18,26 +18,32 @@ flutter pub get
 flutter gen-l10n                      # after editing lib/l10n/*.arb
 dart run build_runner build --delete-conflicting-outputs   # after editing Drift tables (app_database.dart)
 flutter analyze
-flutter test                          # 3 smoke tests only
+flutter test                          # 1094 unit + widget tests (about 90 s)
 flutter run --dart-define=ENV=staging
 flutter run --dart-define=ENV=staging --dart-define=USE_EMULATOR=true   # emulators: Firestore 8080, Auth 9099, Functions 5001; Android reaches PC at 10.0.2.2
 flutter run --dart-define=REVENUECAT_API_KEY=<key>                     # M12; default is a placeholder
 ```
-Firestore rules tests (needs Java + firebase-tools; 30 cases):
+Firestore rules tests (needs Java + firebase-tools; 443 tests; they WIPE the emulator Firestore, so reseed afterwards):
 ```bash
 npm ci
-firebase emulators:exec --only firestore --project medapp-staging "npx jest tests/firestore.rules.test.js --runInBand --testTimeout=30000"
+firebase emulators:exec --only firestore --project medapp-staging "npx jest tests --runInBand"
+node tools/audit_rules_probe.js        # needs the emulators running; expects 0 gaps
 ```
-CI: `.github/workflows/firebase.yml` runs the same on PRs and deploys rules+indexes to staging on push to `main`.
+Emulator integration tests (real repositories + real rules; needs `firebase emulators:start --only auth,firestore --project medapp-staging`, an Android emulator, and the seed scripts; reseed after running the whole folder because the tests leave throw-away profiles):
+```bash
+flutter test integration_test/<file>_test.dart -d emulator-5554 --dart-define=ENV=staging --dart-define=USE_EMULATOR=true
+```
+Test users on the emulator: `owner2@example.com`, `care@example.com`, `mod@example.com` (password `Test1234!`; create the moderator with `node tools/set_moderator.js --project medapp-staging --email mod@example.com --create`).
+CI: `.github/workflows/firebase.yml` runs the rules tests on PRs and deploys rules+indexes to staging on push to `main`. The Flutter and integration tests are run by hand.
 
 **Fresh-clone gotcha:** `lib/config/app_config.dart` imports `lib/firebase_options_prod.dart`, which is gitignored. A fresh clone will not compile until you create it (`flutterfire configure --project=med-reminder-38e5c`, output renamed) or a stub exporting `DefaultFirebaseOptions`/`FirebaseOptions` for prod. Same for `android/app/google-services.json`.
 
 ## 3. Code conventions (follow these)
 - **Layering:** `features/*/screen.dart` → `*_data.dart` (view-model/adapter) → repository → Firestore/Drift. Screens never call Firestore directly except legacy spots in `calendar`, `home/streaks_stats`, `meds/*`, `profile/*` (they still import `cloud_firestore`; migrate toward repos when touched).
 - **Repositories:** Firebase impls in `lib/repositories/firebase_*_repository.dart`, singleton via `.instance`; interfaces/domain types for newer modules in `lib/core/<area>/`. Errors → `AppException` (`lib/core/app_exception.dart`). Callable functions go through `FunctionsClient` (`lib/core/functions_client.dart`).
-- **Doses:** doc id = `{medId}_{yyyyMMddHHmm}`; generated client-side by `DoseEngine` (`lib/core/dose_engine.dart`: `generateDoses`, `generate14DayDoses`, daily/weekdays/cyclical/taper; PRN ids via `generatePrnDoseId`). `MedicationRepository` writes doses on create/update and deletes future pending ones.
+- **Doses:** doc id = `{medId}_{yyyyMMddHHmm}` (the INTENDED slot in the PROFILE's time zone); generated client-side by `DoseEngine` (`generateDoses`, `generate14DayDoses`, daily / weekdays / cyclical / taper; PRN ids via `generatePrnDoseId`; DST-safe, `DoseZone` resolves the zone). `MedicationRepository` writes only the MISSING doses on create / update / `topUpDoses` (never overwrites an existing dose) and a schedule change deletes and regenerates only FUTURE pending doses.
 - **Dose logging:** `DoseRepository.logDose / logPrnDose / snoozeDose / undoDose / markOverdueDosesMissed / getDailySummary / getAdherence{7,30,90}Days`. Rules block clients from writing `dailySummaries` (`allow write: if false`) — summaries are computed by repo reads, so do not add client writes there.
-- **Reminders:** `ReminderScheduler.instance` (local notifications, Android only, 48 h window, max 100, escalation count 3, minutes read from `users/{uid}.settings`). Call `rescheduleAll()` after any med/dose change. Notification actions are queued via `reminder_action_queue.dart`.
+- **Reminders:** `ReminderScheduler.instance` (local notifications; Android verified on the emulator, iOS not tested on a device) asks the pure `DoseAlarmPlanner` which alarms to set (48 h window, main alarm + 3 escalations every N min from `users/{uid}.settings`, iOS 64 / Android 200 alarm cap, `doseEnabled` switch). Quiet hours (`QuietHours`) move only appointment reminders, never dose reminders. Call `rescheduleAll()` after any med / dose change. Notification actions are queued via `reminder_action_queue.dart`.
 - **Profile context:** `ProfileController.instance` holds the selected profile/member; `AuthRepository` creates `users/{uid}` + "self" profile on sign-up and restores selection on login.
 - **Localization:** add keys to **all five** `lib/l10n/app_{en,es,fr,ar,hi}.arb` (en has `@key` metadata), run `flutter gen-l10n`, use `AppLocalizations.of(context)`. Initialize l10n in `didChangeDependencies`, not `initState` (past crash). es/fr/ar are currently ~34 keys behind en/hi.
 - **Colors/theme:** use `lib/core/constants/app_colors.dart`; avoid raw hex.
@@ -53,37 +59,35 @@ CI: `.github/workflows/firebase.yml` runs the same on PRs and deploys rules+inde
 | Firebase repos | `lib/repositories/*` |
 | Domain interfaces + legacy local Drift repos | `lib/core/**` |
 | Drift DB | `lib/core/database/app_database.dart` (+ generated `.g.dart`) |
-| Services | `lib/core/services/*` (scheduler, push, OCR, camera, AI) |
+| Services | `lib/core/services/*` (29: scheduler, action queue, push stub, health sync, OCR, export / purge, community, guards) |
+| Pure logic (unit-tested) | `lib/core/{dose_engine,dose_zone,streak_calculator}.dart`, `lib/core/reminders/*`, `lib/core/{ai,community,export,reports,vitals}/` |
 | Screens | `lib/features/<area>/` — see [feature-map.md](feature-map.md) |
-| Rules / tests / indexes | `firestore.rules`, `tests/firestore.rules.test.js`, `firestore.indexes.json` |
+| Rules / tests / indexes | `firestore.rules` (1855 lines), `tests/firestore.rules*.test.js` (443), `tools/audit_rules_probe.js`, `firestore.indexes.json` (5 groups, 7 indexes), `integration_test/` (15 emulator files) |
+| Docs | `docs/firestore-schema.md`, `docs/PRODUCTION_RUNBOOK.md`, `docs/REMINDER_DEVICE_MATRIX.md` |
 | Schema | `docs/firestore-schema.md`, [firebase-map.md](firebase-map.md) |
 
 ## 5. Known issues / traps
-- Two parallel repo layers (`lib/core/*` vs `lib/repositories/*`) with duplicate interface names (`dose_repository.dart` in both). Check which one a screen imports before editing.
-- Leftover files: `meds_screen_restored.dart`, `add_manual_screen.dart` (vs `add_medication_manual_screen.dart`), `settings/allergy_screen.dart` (vs `meds/allergies_screen.dart`). Verify usage with grep before deleting.
-- M11 caregiver repo (`lib/repositories/firebase_caregiver_repository.dart`) is a stub that throws — invite/permission screens cannot work on Spark.
-- `ROADMAP.md` (Oct 2026) is stale; the PDF plan and this folder supersede it.
-- Dart analyzer previously reported ~15 info/warn issues (`activeColor` deprecations, doc-comment lints).
-- `.env` must not be listed under `flutter: assets:` in pubspec (check before release).
+- Two parallel repo layers (`lib/core/*` vs `lib/repositories/*`) with duplicate interface names. Four files are confirmed UNREFERENCED (grep, 2026-11-18): `lib/features/meds/meds_screen_restored.dart` (4019 lines), `lib/features/home/dashboard_screen.dart`, `lib/repositories/firebase_dose_repository.dart`, `lib/core/doses/dose_repository.dart`. `add_manual_screen.dart` and `settings/allergy_screen.dart` look like leftovers too. Check with grep before deleting.
+- M11: `invites` has NO rules and `firebase_caregiver_repository.dart` is a stub: invite / accept cannot work on Spark (accepting changes `memberUids`, which only a server may do). Roles and permissions themselves work (caregiver loop is tested).
+- Reminders are scheduled for the selected profile only (M22 finding 8). Only the next 48 h are scheduled and only while the app is opened (Spark limit).
+- The two jest runs wipe the Firestore emulator: reseed (`seed_m16.py`, `verify_users.py`, `seed_report.py`, `tools/seed_community.js --demo`, `tools/set_moderator.js`) before the integration tests.
+- Rules and the new `doses` index (`status` + `missDeadline`) are NOT deployed to staging yet; App Check is not enforced (console step).
+- `ROADMAP.md` (Oct 2026) is stale; the PDF plan and this folder supersede it. `.env` must not be listed under `flutter: assets:` (check before release). Test fonts are wider than real ones: a layout that overflows in a widget test is a real bug for large text.
 
-## 6. Work queue (in order)
-**A. M12 Subscriptions — finishing without Blaze/RevenueCat key (in progress, user doing step by step)**
-1. ✅ `customers/{uid}` rule + 4 tests (commit `0d60195`).
-2. ✅ (done, uncommitted) `cancelSubscription`: remove Firestore `update` in `firebase_subscription_repository.dart`; open Play Store subscriptions page via `url_launcher` (`https://play.google.com/store/account/subscriptions`); wire from `subscription_screen.dart` (~line 110).
-3. ✅ (done, uncommitted) Placeholder-key guard (`SubscriptionService.isConfigured`, `SubscriptionUnavailableException`) in `subscription_service.dart`: if key is empty/`your_revenuecat_api_key_here`, skip `Purchases.configure`, keep `_initialized=false`, and make other methods throw a clear error so the upgrade screen shows "plans unavailable".
-4. ✅ (done 2026-11-12, Android emulator + Firebase emulators) UI test by writing `customers/{uid}` docs in the emulator UI (`active/trial/canceled/expired`).
-5. After a RevenueCat key (or Test Store key) exists: `Purchases.logIn(uid)`/`logOut` on auth changes; derive premium from `CustomerInfo` entitlements; verify purchase on device.
-6. Needs Blaze (blocked): RevenueCat webhook → `customers/{uid}`; server-enforced profile limit.
-
-**B. Next modules by value:** M2 Google sign-in (`login_screen.dart:403`) + Terms/Privacy screen (`signup_screen.dart:727`) → M22 unit tests for `DoseEngine`, `ReminderScheduler`, repos → M8 iOS notifications → M10 safety checks beyond the static map → M13/M14 (support tickets, export, delete account) → Phase 2/3 UI-only modules.
-
-**C. Housekeeping:** localization of remaining ~80 feature files; remove dead files; consolidate repo layers; refresh `graphify/` after each module.
+## 6. Work queue (in order, 2026-11-18)
+M0-M22 are done for Spark; M23 (this folder) is in progress (section 19).
+1. Deploy to staging: `firebase deploy --only firestore:rules,firestore:indexes --project medapp-staging` (rules changed in M21, new `doses` index in M22).
+2. Real-phone reminder matrix (`docs/REMINDER_DEVICE_MATRIX.md`), iOS included.
+3. Switch App Check enforcement on in the console (runbook), after the matrix.
+4. M2: Google / Apple sign-in (`login_screen.dart:406`, `:408`). M12 step 5: RevenueCat key.
+5. Housekeeping: delete the dead files (section 5), consolidate the repo layers, schedule reminders for every profile the user can see (finding 8), localise the remaining hard-coded screens.
+6. Decide Blaze. It unlocks: M11 invites, server push, nightly dose generation, refill job, Trigger Email / Twilio, RevenueCat webhook, server-side AI, RxNorm sync, export jobs.
 
 ## 7. Definition of done for a module step
 `flutter analyze` clean for touched files · rules tests green (if rules touched) · strings in 5 ARBs · feature works on staging/emulator · `graphify/modules-progress.md`, `progress.json`, `CHANGELOG.md` updated · committed with `M<n>:` message.
 
 ## 8. Code knowledge graph (Graphify tool)
-Generated with [Graphify](https://github.com/Graphify-Labs/graphify) (`pip install graphifyy`, CLI `graphify`). Output is in `graphify-out/`: `GRAPH_REPORT.md` (hubs/communities), `graph.json` (queryable), `graph.html` (visual, aggregated). Last rebuilt 2026-11-12 after commit `211a0ff` (M12 steps 1-4): 4,903 nodes, 6,222 edges, 207 communities, Dart supported, no LLM/API cost. `.graphifyignore` excludes platform folders, build output and generated files.
+Generated with [Graphify](https://github.com/Graphify-Labs/graphify) (`pip install graphifyy`, CLI `graphify`). Output is in `graphify-out/`: `GRAPH_REPORT.md` (hubs/communities), `graph.json` (queryable), `graph.html` (visual, aggregated). Rebuilt 2026-11-18 from commit `727ebd7` (M22): 455 files, 8,605 nodes, 11,447 edges, 388 communities, 100 % extracted (AST only, no LLM / API cost). `graphifyy` 0.9.72 is installed as a Python module but the `graphify` script is not on PATH on this PC: use `python -m graphify update .`. Community NAMES were not refreshed (that needs the LLM: `graphify label`); new communities are named by their hub file. `.graphifyignore` excludes platform folders, build output and generated files.
 ```bash
 graphify update .                         # refresh after code changes (free, AST only)
 graphify query "how are doses logged?"    # traverse the graph
@@ -464,4 +468,58 @@ The three open questions are settled by what the PDF (M6 page 8, M8 page 10) say
 - **`docs/REMINDER_DEVICE_MATRIX.md`:** what is proved on the emulator, a 15-row hand checklist for real phones (Doze, battery killers of Xiaomi / Oppo / Vivo / Huawei / Samsung, reboot, denied permissions, exact alarm off, action buttons, escalation, time zone, DST, DND, privacy, many doses, quiet hours vs appointments, profile switch) plus 3 iOS rows, and the known Spark limits (48 h window only while the app is opened, iOS 64, selected profile only, inexact alarms late).
 - **Final retest:** Flutter 1094 pass, analyzer 0 errors, rules tests 443 pass, rules probe 0 gaps (133 read probes), emulator integration: all 16 files green. NOTE: `chat_repository_test` ("data export includes the chats") timed out once after my tests had created hundreds of throw-away profiles for owner2 (the export walks every profile); on a freshly reseeded emulator it passes (8/8). Test data pollution, not a product bug; reseed the emulator after running the whole integration folder.
 - **M22 summary:** found and fixed 9 audit findings (DST day loop, device zone vs profile zone, gap-hour id collision, cyclical across DST, 14-day window never extended, schedule change overwriting taken doses, `doseEnabled` ignored, iOS 64 cap, hard-coded streak 12) plus the overdue-sweep bug (200 finished doses hid the pending ones) and two layout overflows. Tests added across M22: roughly +160 unit / widget tests and 14 emulator tests. **Still open:** finding 8 (reminders only for the selected profile), finding 10 (dead code, e.g. `meds_screen_restored.dart`), `invites` rules design, App Check not enforced, rules and the new composite index (`doses`: `status` + `missDeadline`) NOT yet deployed to staging, real-phone matrix not yet run.
+
+## 19. M23 — Graphify architecture update (FINAL, Spark-only, COMPLETE)
+PDF M23: update the knowledge graph to show the REAL, final architecture, after implementation, not the plan. It must show: Auth, Firestore collections + rules, Cloud Functions (only if built), FCM + local reminders, Storage, Remote Config, App Check, RevenueCat / Trigger Email / Twilio (only if built), the drug catalog, the repository layer and screens, the AI function only if it was built.
+
+### Step 1 — audit (done 2026-11-18, nothing changed except this text)
+Compared every file in `graphify/` and the generated graph with the code at commit `727ebd7` (M22). **Result: the docs describe the app of 2026-11-12 (M12); M13-M22 are missing or wrong.**
+
+**A. Facts as they are now (use these in step 2)**
+- Code: 338 Dart files in `lib/`; screens `lib/features/*` = assistant 5, auth 3, calendar 5, community 13, doctors 2, home 13, meds 39, onboarding 6, profile 10, reports 2, settings 29 (127 files; first written as 167 by mistake, corrected in step 4); 32 files in `lib/repositories` (Firebase repos + Firestore stores for AI consent, community, chats); `lib/core` has ai, caregiver, community, export, reminders, reports, vitals, subscription ... and `lib/core/services` has 29 services.
+- Tests: 76 Flutter test files + 15 integration test files (emulator, real rules) + 2 jest files (443 rules tests) + `tools/audit_rules_probe.js` (0 gaps). CI runs `npx jest tests --runInBand`.
+- Rules: `firestore.rules` 1855 lines, 32 `match` blocks: users (+devices, limits), profiles (+medications, inventoryEvents, pharmacies, doses, dailySummaries, allergies, vitals, vitalsDaily, symptoms, prescribers, appointments, doctorNotes), customers, config, supportTickets, chatThreads (+messages), communityProfiles, groups, posts (+comments, votes, bookmarks), blocks, reports; default deny. Daily limits via `users/{uid}/limits/{day}`.
+- Backend: `functions/src/index.ts` is still a 32-line scaffold, NO functions. `storage.rules` = deny all, no bucket. Spark only.
+- Local reminders: Android done and tested on the emulator (real alarms fire); iOS code path exists but is not tested on a device. `LocalOnlyPushService` (no server push). App Check: client code ready, enforcement is a console step. Remote Config used (kill switch, version gate, FAQ). Crashlytics + `SafeLog` scrub.
+- Docs that exist: `docs/PRODUCTION_RUNBOOK.md`, `docs/REMINDER_DEVICE_MATRIX.md`, `docs/firestore-schema.md`, `docs/config-faq.example.json`.
+- Dead / duplicate code (finding 10, confirmed unreferenced by grep): `lib/features/meds/meds_screen_restored.dart` (4019 lines), `lib/features/home/dashboard_screen.dart`, `lib/repositories/firebase_dose_repository.dart`, `lib/core/doses/dose_repository.dart`. Legacy Drift path (`lib/core/database`, `lib/core/medications/local_*`, `LocalMemberRepository`) is still used by Home's member bar. 114 `TODO Backend` markers in `lib/`.
+
+**B. What is wrong or missing in each file**
+| File | Problem |
+|------|---------|
+| `README.md` | Snapshot 2026-11-12 "M12 steps 1-4"; headline says vitals, reports, AI, community are UI-only on dummy data (all built on Spark since); says it is the M23 doc. |
+| `modules-progress.md` | Every row is from 2026-11-12: M13 95 % (done), M14 "not started" (done: export + deletion), M15-M19 "UI only" (all built, M19 complete), M20 25 % / M21 35 % / M22 25 % (all done on Spark), M6 "381 lines" (rewritten), M8 "Android only" detail, M11 still blocked (true), M23 50 %; legend of evidence wrong (26 rules tests, 30 cases, 3 smoke tests); tech-debt and "next steps" lists are stale; localization counts (495 / 461 keys) are now 993 / 959; "Generated desktop plugin registrants modified" no longer true. |
+| `progress.json` | Snapshot 2026-11-12, commit `747bc77`; statuses of M13-M22 all wrong (M13 45 %, M14 not started, M15-M19 UI only). Must be regenerated from the corrected board. |
+| `architecture.md` | Layers diagram lacks: core engines (account deletion, daily limits, AI safety layers, export, reports, vitals, reminders planner, streaks), community, AI assistant, App Check, FCM-less push, lock / privacy; startup order lacks `AppStartup` tasks, app lock, legal gate, session guard; the "Core loop" diagram lacks the top-up of the 14-day window, quiet hours and the planner; "tests: 3 smoke + 26 cases" is wrong; directory sizes are wrong (150 feature files, 17 repos, 30 core). Mentions Drift as a main layer. |
+| `feature-map.md` | 17 lines from M12: `doctors`, `reports`, `assistant`, `community` "dummy"; vitals "Drift"; no screens for export, account purge, legal consent, app lock, AI consent / chat, community (feed, post, comments, profile, moderation), report builder / preview, doctors / appointments / notes; `profile` invites noted as stub (still true). |
+| `firebase-map.md` | Collections table covers 8 paths of 32; says generic fallback rule, `invites`, `supportTickets`, `exportJobs`, `config` have no block (supportTickets and config do now); "435 lines, 26 cases"; `customers` "uncommitted"; no indexes list, no daily limits, no App Check, no Remote Config keys, no CI details (`--runInBand`), no Spark vs Blaze table (what needs Blaze: functions, Trigger Email, Twilio, RevenueCat webhook, server push, scheduled jobs). |
+| `HANDOFF.md` §2-§8 | Old text: "flutter test = 3 smoke tests", "30 cases", `ReminderScheduler` "max 100"; section 4 / 5 / 6 (work queue still lists M12 and "M22 unit tests"), section 8 graph numbers (4,903 nodes, commit `211a0ff`). Sections 9-18 (M13-M22) are accurate and stay. |
+| `CHANGELOG.md` | Fine (append only). |
+| `graphify-out/` (graph) | Built from commit `211a0ffc` on 2026-11-13: 207 files, 4,949 nodes. It misses most of M13-M22 (about 130 new Dart files, tests, docs). Needs `graphify update .` in step 3. The two dated folders `graphify-out/2026-11-12/` and `2026-11-13/` are old snapshots (untracked). |
+
+**C. Things the graph must say honestly (not built)**
+Cloud Functions (triggers, callables, scheduled jobs, task queues), Trigger Email, Twilio, RevenueCat webhook, server push (FCM fan-out), Storage / bucket, server-side AI, server-side RxNorm sync / label parse, `invites` (accept flow), Google / Apple sign-in (TODOs at `login_screen.dart:406` and `:408`), iOS device test. All need Blaze or a device / key.
+
+**D. Open decisions for the next steps**
+1. Dead files: delete them in step 4 (they are confirmed unreferenced) or only mark them dead in the docs? Deleting is a code change outside M23's scope, so default = MARK, not delete, unless the user asks.
+2. The `graphify` CLI (`pip install graphifyy`) must be present on this PC for step 3; check `graphify --version` first. If it is missing, the docs are still updated and the graph rebuild is listed as a manual command.
+
+### Step 2 — docs rewritten (done 2026-11-18, docs only, no code changed)
+- Rewritten from the audit: `README.md`, `modules-progress.md` (M0-M23 with evidence and a "needs Blaze / key / device" column), `feature-map.md` (11 feature dirs, data source, logic, module), `firebase-map.md` (services used / not used, 32 rule blocks, 7 indexes, tests, CI, what needs Blaze), `architecture.md` (new layer diagram with the pure-logic layer, real startup order, core-loop diagram with top-up / planner / quiet hours, trust model), `progress.json` (2026-11-18, commit `727ebd7`).
+- `HANDOFF.md` sections 2, 3, 4, 5, 6 and 8 corrected (commands, 443 rules tests, 1094 Flutter tests, reminders description, dead files, work queue). Sections 9-18 untouched.
+- Decision kept: dead files are MARKED in the docs, not deleted.
+- Facts to re-check in step 4: file counts (338 / 167 / 33 / 29), key counts (993 / 959), `login_screen.dart` TODO lines 406 / 408.
+
+### Step 3 — code graph rebuilt (done 2026-11-18)
+- Ran `python -m graphify update .` (AST, free). Before: 207 files, 4,949 nodes, 6,285 edges, 213 communities (commit `211a0ffc`). After: **455 files, 8,605 nodes, 11,447 edges, 388 communities**, built from commit `727ebd70`, 100 % extracted. The tool saved the previous graph to `graphify-out/2026-11-18/` (untracked, like the two older dated folders: keep them out of commits).
+- Checked that the M13-M22 code is in `graph.json`: `DoseAlarmPlanner`, `StreakCalculator`, `QuietHours`, `DoseEngine`, `DoseZone`, `HomeDoseSource`, `AccountDeletionEngine`, `CommunityFeedController`, `AiSafetyGuard`, `ReportBuilderController`, `ReminderScheduler` each found.
+- Limits: it is a CODE graph (files, classes, calls). Firebase services, rules, indexes and the "not built" list live in the hand-written `firebase-map.md` / `modules-progress.md`, not in the graph. `graph.html` is an aggregated community view (388 nodes) because the graph is above 5,000 nodes. Community names were not refreshed with the LLM.
+- Tracked files changed by the rebuild: `graphify-out/GRAPH_REPORT.md`, `graph.json`, `graph.html`, `manifest.json`, `.graphify_labels.json(.sig)`.
+
+### Step 4 — final check (done 2026-11-18) = M23 COMPLETE
+- **Numbers re-counted against the code:** 338 Dart files in `lib/`; `lib/features` = **127** (step 2 wrongly said 167: the per-folder numbers were added up wrongly; fixed in `architecture.md`, `feature-map.md`, this file); `lib/repositories` = **32** (was 33); `lib/core/services` = 29; 76 Flutter test files; 15 integration files; ARB keys en / hi 993, es / fr / ar 959; `firestore.rules` 1855 lines, 32 `match` blocks; 7 indexes in 5 groups; `functions/src/index.ts` 32 lines (scaffold); Google / Apple sign-in TODO at `login_screen.dart:406` / `:408`; 114 `TODO Backend` markers.
+- **Index claims checked in code:** meds list orders by `updatedAt`, chat history is `users/{uid}/chatThreads` ordered by `updatedAt`, the community feed needs `hidden` + `createdAt`. All match `firestore.indexes.json`.
+- **PDF M23 checklist** (what the graph / docs must show): Auth ✅ (firebase-map), Firestore collections + rules ✅, Cloud Functions ✅ listed as NOT built (nothing deployed), FCM + local reminders ✅, Storage ✅ (deny all, no bucket), Remote Config ✅, App Check ✅ (client only), RevenueCat ✅ (key + webhook pending), Trigger Email + Twilio ✅ listed as NOT built, drug catalog ✅, Flutter repository layer + screens ✅ (architecture, feature-map, graph), AI function ✅ stated NOT built (client-side AI only).
+- **Links:** every `[...](x.md)` link in `graphify/*.md` points to an existing file. Mermaid blocks use only quoted labels.
+- Known limits of M23: the graph is a code graph (no Firebase nodes); community names are not LLM-refreshed; a doc is only true on the day it is written: update the board and `progress.json` after every module and run `python -m graphify update .`.
 

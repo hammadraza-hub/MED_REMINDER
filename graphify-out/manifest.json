@@ -1,8 +1,8 @@
 {
   ".github/workflows/firebase.yml": {
-    "mtime": 1792579686.031624,
-    "seen": 1794504061.31375,
-    "ast_hash": "dbd9dcfbe6a7b6c803c3b0569ac3ab96",
+    "mtime": 1794934594.0041437,
+    "seen": 1795003380.2891135,
+    "ast_hash": "15ea3a3b329f6dcb96ecde52b81f4bcf",
     "semantic_hash": ""
   },
   "analysis_options.yaml": {
@@ -24,9 +24,9 @@
     "semantic_hash": ""
   },
   "firestore.indexes.json": {
-    "mtime": 1794319616.0841105,
-    "seen": 1794504061.313776,
-    "ast_hash": "bbbe54d2ffe8cf893f7b32f8ea6f66b9",
+    "mtime": 1794996011.7197254,
+    "seen": 1795003380.2885187,
+    "ast_hash": "bfbc83c091969ebf0df240c19ee00d93",
     "semantic_hash": ""
   },
   "functions/.eslintrc.js": {
@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "graphify/progress.json": {
-    "mtime": 1794501678.875285,
-    "seen": 1794504061.313786,
-    "ast_hash": "93c7cac712cced47eebb38619b70c2fc",
+    "mtime": 1795003066.160519,
+    "seen": 1795003380.2885299,
+    "ast_hash": "413ea2d837424f6472ac67ed2d3257c4",
     "semantic_hash": ""
   },
   "l10n.yaml": {
@@ -78,21 +78,21 @@
     "semantic_hash": ""
   },
   "lib/config/remote_config_service.dart": {
-    "mtime": 1794567576.2841127,
-    "seen": 1794568897.0120623,
-    "ast_hash": "d099014b3ca7084224fdcc555a52d34e",
+    "mtime": 1794915102.195456,
+    "seen": 1795003380.2885537,
+    "ast_hash": "c0b763ebae10e32c923aac3bc11ca3a5",
     "semantic_hash": ""
   },
   "lib/core/accessibility/accessibility_controller.dart": {
-    "mtime": 1791894650.2668765,
-    "seen": 1794504061.3138025,
-    "ast_hash": "ba978b8d64709af9ddfa461c5378a70f",
+    "mtime": 1794652652.9698734,
+    "seen": 1795003380.288555,
+    "ast_hash": "17c2e84fd72eb807feb04da48910f97a",
     "semantic_hash": ""
   },
   "lib/core/app_exception.dart": {
-    "mtime": 1792582950.8663561,
-    "seen": 1794504061.3138044,
-    "ast_hash": "18d9db4cc88aec3dd25d379bb976f688",
+    "mtime": 1794912824.1426802,
+    "seen": 1795003380.2885776,
+    "ast_hash": "0d2e0c208faccea7f1be9736113f31e9",
     "semantic_hash": ""
   },
   "lib/core/caregiver/caregiver_repository.dart": {
@@ -102,9 +102,9 @@
     "semantic_hash": ""
   },
   "lib/core/caregiver/firebase_caregiver_repository.dart": {
-    "mtime": 1794494404.2706807,
-    "seen": 1794504061.3138072,
-    "ast_hash": "2de32beab6cd4e2d9a2c0d1380f932b1",
+    "mtime": 1794652652.9988766,
+    "seen": 1795003380.2885878,
+    "ast_hash": "53b06fffe263b3980813214ad4f4e376",
     "semantic_hash": ""
   },
   "lib/core/constants/app_colors.dart": {
@@ -126,9 +126,9 @@
     "semantic_hash": ""
   },
   "lib/core/dose_engine.dart": {
-    "mtime": 1794316436.9803817,
-    "seen": 1794504061.3138154,
-    "ast_hash": "b47189f2a9275af21ec7e9dc9c03cd5e",
+    "mtime": 1794996274.7755136,
+    "seen": 1795003380.288624,
+    "ast_hash": "390bd968d6f5f2ed413e7b9e625bfc2d",
     "semantic_hash": ""
   },
   "lib/core/doses/dose_repository.dart": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   "lib/core/locale/locale_controller.dart": {
-    "mtime": 1791897794.6445847,
-    "seen": 1794504061.3138216,
-    "ast_hash": "57de18633956a667effa0751de2bf444",
+    "mtime": 1794652653.4011447,
+    "seen": 1795003380.2886462,
+    "ast_hash": "e14c569413353a9e9dd82d246b35fa0e",
     "semantic_hash": ""
   },
   "lib/core/medications/local_medication_repository.dart": {
@@ -215,12 +215,6 @@
     "ast_hash": "7d3fe71fb39935ce19567009c987d5e9",
     "semantic_hash": ""
   },
-  "lib/core/services/ai_service.dart": {
-    "mtime": 1791549157.1295261,
-    "seen": 1794504061.3138404,
-    "ast_hash": "5ff164b46a00342997837a9b91e306f1",
-    "semantic_hash": ""
-  },
   "lib/core/services/camera_service.dart": {
     "mtime": 1790781875.0303547,
     "seen": 1794504061.3138418,
@@ -228,39 +222,39 @@
     "semantic_hash": ""
   },
   "lib/core/services/ocr_service.dart": {
-    "mtime": 1790769763.3575144,
-    "seen": 1794504061.3138435,
-    "ast_hash": "efc563e2db23cbb10d4b53f4fa719d78",
+    "mtime": 1794928154.4286458,
+    "seen": 1795003380.288716,
+    "ast_hash": "c68b49e5f813fe824af0149b63e87434",
     "semantic_hash": ""
   },
   "lib/core/services/push_service.dart": {
-    "mtime": 1794417830.2143807,
-    "seen": 1794504061.313845,
-    "ast_hash": "f32c01586457d3069add7cfb0ca8ebe8",
+    "mtime": 1794937400.176993,
+    "seen": 1795003380.2887197,
+    "ast_hash": "a21b1efa3d9d12545d2bfa556f2e8be1",
     "semantic_hash": ""
   },
   "lib/core/services/reminder_action_queue.dart": {
-    "mtime": 1794407432.2564387,
-    "seen": 1794504061.3138466,
-    "ast_hash": "d768a7fa136ee9e143c588fb0d2b3fa3",
+    "mtime": 1794996057.2030456,
+    "seen": 1795003380.288721,
+    "ast_hash": "1f1cf4e47cd7dbba8c0891890474b349",
     "semantic_hash": ""
   },
   "lib/core/services/reminder_scheduler.dart": {
-    "mtime": 1794476618.4801428,
-    "seen": 1794504061.313848,
-    "ast_hash": "653b6bac368b336e5da304b7f1bda05d",
+    "mtime": 1794996274.777514,
+    "seen": 1795003380.2887225,
+    "ast_hash": "3efd10b6a0dd02f994594e1f3458f8ea",
     "semantic_hash": ""
   },
   "lib/core/subscription/subscription_repository.dart": {
-    "mtime": 1794506002.1102939,
-    "seen": 1794506214.1909297,
-    "ast_hash": "f8cdb628d3b05d56afea494fa8345e1b",
+    "mtime": 1794652653.5336258,
+    "seen": 1795003380.2887282,
+    "ast_hash": "4db21aaee3804e2f8f8ed8ec7a8a138f",
     "semantic_hash": ""
   },
   "lib/core/subscription/subscription_service.dart": {
-    "mtime": 1794505629.9340384,
-    "seen": 1794506214.190934,
-    "ast_hash": "efc46dd2e4fe3b6d2331a59a279e91af",
+    "mtime": 1794652653.536165,
+    "seen": 1795003380.28873,
+    "ast_hash": "178027236b45885b907d257ff49b1e4d",
     "semantic_hash": ""
   },
   "lib/core/theme/app_theme.dart": {
@@ -269,40 +263,22 @@
     "ast_hash": "92f121d238405b5607794d5921e90171",
     "semantic_hash": ""
   },
-  "lib/features/assistant/assistant_chat_data.dart": {
-    "mtime": 1791549285.2674387,
-    "seen": 1794504061.3138542,
-    "ast_hash": "43b00638569b12a77a977056e74b58f6",
-    "semantic_hash": ""
-  },
   "lib/features/assistant/assistant_chat_screen.dart": {
-    "mtime": 1791567449.511361,
-    "seen": 1794504061.3138556,
-    "ast_hash": "44affb4591f69d100a1e69bc5f0c34f7",
-    "semantic_hash": ""
-  },
-  "lib/features/assistant/assistant_context.dart": {
-    "mtime": 1791897759.315493,
-    "seen": 1794504061.3138573,
-    "ast_hash": "191147a595d06f87368af60822b32c43",
-    "semantic_hash": ""
-  },
-  "lib/features/assistant/assistant_history_data.dart": {
-    "mtime": 1791546007.7604773,
-    "seen": 1794504061.3138587,
-    "ast_hash": "8f2526c744574ecb76eda90392b3d116",
+    "mtime": 1794837355.0602717,
+    "seen": 1795003380.28875,
+    "ast_hash": "f2ac4bf05e28fd4a65325a69389fb88a",
     "semantic_hash": ""
   },
   "lib/features/assistant/assistant_history_screen.dart": {
-    "mtime": 1791545855.4186604,
-    "seen": 1794504061.3138604,
-    "ast_hash": "61da48eb033b0416ea3a81089988e545",
+    "mtime": 1794916052.1133945,
+    "seen": 1795003380.2887526,
+    "ast_hash": "18f27fe64562a0452945c238e66ac389",
     "semantic_hash": ""
   },
   "lib/features/auth/login_screen.dart": {
-    "mtime": 1793203118.1050982,
-    "seen": 1794504061.3138618,
-    "ast_hash": "5fb8030c083dc1cc499c513c6f39a686",
+    "mtime": 1794569958.4123166,
+    "seen": 1795003380.2887554,
+    "ast_hash": "16edb5698941a43bf146f3fa05914ce7",
     "semantic_hash": ""
   },
   "lib/features/auth/reset_password_screen.dart": {
@@ -312,9 +288,9 @@
     "semantic_hash": ""
   },
   "lib/features/auth/signup_screen.dart": {
-    "mtime": 1793204092.8268528,
-    "seen": 1794504061.3138652,
-    "ast_hash": "2d5281f6b5031be71af15600e098ebb0",
+    "mtime": 1794928166.564827,
+    "seen": 1795003380.2887585,
+    "ast_hash": "482c4076f4ec1d93901d53775f24a350",
     "semantic_hash": ""
   },
   "lib/features/calendar/adherence_data.dart": {
@@ -324,9 +300,9 @@
     "semantic_hash": ""
   },
   "lib/features/calendar/adherence_detail_screen.dart": {
-    "mtime": 1794395788.4225945,
-    "seen": 1794504061.3138683,
-    "ast_hash": "42115cbb77686973ccdbcbb5b385485c",
+    "mtime": 1794826890.7905679,
+    "seen": 1795003380.2887616,
+    "ast_hash": "45d9f66f4a9980400aa0038b486333a5",
     "semantic_hash": ""
   },
   "lib/features/calendar/calendar_data.dart": {
@@ -336,9 +312,9 @@
     "semantic_hash": ""
   },
   "lib/features/calendar/calendar_screen.dart": {
-    "mtime": 1794393563.299634,
-    "seen": 1794504061.3138785,
-    "ast_hash": "2554e9f5d19bdb07076349a54d205803",
+    "mtime": 1794919462.3584104,
+    "seen": 1795003380.288765,
+    "ast_hash": "4a8d7640ba00796de6d4355122e913fd",
     "semantic_hash": ""
   },
   "lib/features/calendar/missed_dose_reason_modal.dart": {
@@ -347,34 +323,16 @@
     "ast_hash": "18ed0774d1ac588f13868a5031999d31",
     "semantic_hash": ""
   },
-  "lib/features/community/community_data.dart": {
-    "mtime": 1791564552.8831797,
-    "seen": 1794504061.3138816,
-    "ast_hash": "d75ce3ee0b829cc16007536ed2d6591a",
-    "semantic_hash": ""
-  },
-  "lib/features/community/community_screen.dart": {
-    "mtime": 1791564646.8628676,
-    "seen": 1794504061.3138833,
-    "ast_hash": "6e396a8832291665368fe404220cf5ec",
-    "semantic_hash": ""
-  },
   "lib/features/doctors/add_doctor_screen.dart": {
-    "mtime": 1792064862.2862062,
-    "seen": 1794504061.3138852,
-    "ast_hash": "1f90231d7aabb91bdbefc01dd9113447",
-    "semantic_hash": ""
-  },
-  "lib/features/doctors/doctors_data.dart": {
-    "mtime": 1792063780.2737024,
-    "seen": 1794504061.3138866,
-    "ast_hash": "554bde688200a0a9c07c5a041ddcbd00",
+    "mtime": 1794918160.278954,
+    "seen": 1795003380.288783,
+    "ast_hash": "a922d6e2c4621501cf4aecb11bd21573",
     "semantic_hash": ""
   },
   "lib/features/doctors/doctors_screen.dart": {
-    "mtime": 1792064782.5869658,
-    "seen": 1794504061.3138883,
-    "ast_hash": "11f12e4d2d15c26f7a00118954383eff",
+    "mtime": 1794673788.9753606,
+    "seen": 1795003380.2887847,
+    "ast_hash": "b4b5bea93f1e3b9dcedc4ee71592b809",
     "semantic_hash": ""
   },
   "lib/features/home/add_vitals_entry_data.dart": {
@@ -384,9 +342,9 @@
     "semantic_hash": ""
   },
   "lib/features/home/add_vitals_entry_screen.dart": {
-    "mtime": 1790956207.3344793,
-    "seen": 1794504061.3138914,
-    "ast_hash": "3fc85fb9e50c9e7235e47a973e5be36b",
+    "mtime": 1794918062.9299538,
+    "seen": 1795003380.2887874,
+    "ast_hash": "69b4c2fb671f9c1ba2633d2f8c82ed74",
     "semantic_hash": ""
   },
   "lib/features/home/dashboard_screen.dart": {
@@ -396,21 +354,21 @@
     "semantic_hash": ""
   },
   "lib/features/home/dose_action_sheet.dart": {
-    "mtime": 1791897734.1370757,
-    "seen": 1794504061.3138945,
+    "mtime": 1794997928.9773786,
+    "seen": 1795003380.2887902,
     "ast_hash": "1502fd513d8e8b5e38fe5492257f84ed",
     "semantic_hash": ""
   },
   "lib/features/home/home_data.dart": {
-    "mtime": 1791897506.015305,
-    "seen": 1794504061.313896,
-    "ast_hash": "448bd4dd33064c1e309f12b165230c96",
+    "mtime": 1794995898.2193425,
+    "seen": 1795003380.288792,
+    "ast_hash": "aa7b2228ef851de049e6b181a97296a1",
     "semantic_hash": ""
   },
   "lib/features/home/home_screen.dart": {
-    "mtime": 1794408653.3286674,
-    "seen": 1794504061.3138974,
-    "ast_hash": "cbbc848a9350e40a62a760013f2da992",
+    "mtime": 1794997908.453781,
+    "seen": 1795003380.2887945,
+    "ast_hash": "3e8c27c8991ce5a98e1a57df8fa5f996",
     "semantic_hash": ""
   },
   "lib/features/home/streaks_stats_data.dart": {
@@ -420,45 +378,45 @@
     "semantic_hash": ""
   },
   "lib/features/home/streaks_stats_screen.dart": {
-    "mtime": 1794397285.790455,
-    "seen": 1794504061.3139007,
-    "ast_hash": "fb4f591c7bedc8f46ac6322f3f763009",
+    "mtime": 1794997908.4961233,
+    "seen": 1795003380.2887976,
+    "ast_hash": "45fd546be19a58e821a7b6763c1d6766",
     "semantic_hash": ""
   },
   "lib/features/home/vitals_chart_data.dart": {
-    "mtime": 1791197620.6766758,
-    "seen": 1794504061.3139024,
-    "ast_hash": "83de9442c7b772e643b167c2596cb943",
+    "mtime": 1794658544.5080884,
+    "seen": 1795003380.288799,
+    "ast_hash": "c6abdf561afa336af85a7b014d2b278b",
     "semantic_hash": ""
   },
   "lib/features/home/vitals_chart_screen.dart": {
-    "mtime": 1791197665.8248346,
-    "seen": 1794504061.3139038,
-    "ast_hash": "e631bd83bae697b6ddd856c04a6c1171",
+    "mtime": 1794658699.7263074,
+    "seen": 1795003380.2888002,
+    "ast_hash": "321bf8e5da64a7aabb80e9328b89bd83",
     "semantic_hash": ""
   },
   "lib/features/home/vitals_data.dart": {
-    "mtime": 1790954306.5471666,
-    "seen": 1794504061.3139055,
-    "ast_hash": "4f1fdf219791dd3c04c0861c0389ba08",
+    "mtime": 1794658547.097144,
+    "seen": 1795003380.2888014,
+    "ast_hash": "e942b17469cdd19939dd91eeac7944bc",
     "semantic_hash": ""
   },
   "lib/features/home/vitals_list_screen.dart": {
-    "mtime": 1791199002.9793508,
-    "seen": 1794504061.3139083,
-    "ast_hash": "751bc2c6aacf2454eb6da91ba5eb3207",
+    "mtime": 1794660609.672383,
+    "seen": 1795003380.2888029,
+    "ast_hash": "70323825928d77aef79496fbd8085576",
     "semantic_hash": ""
   },
   "lib/features/meds/add_allergy_screen.dart": {
-    "mtime": 1793208822.8403914,
-    "seen": 1794504061.3139098,
-    "ast_hash": "19d0ab070eecdaef44bff9b8d4d54e18",
+    "mtime": 1794918192.8901174,
+    "seen": 1795003380.288804,
+    "ast_hash": "39f7eb34730a9a9fe1ea49e7986f0ab0",
     "semantic_hash": ""
   },
   "lib/features/meds/add_appointment_screen.dart": {
-    "mtime": 1791915472.9328077,
-    "seen": 1794504061.3139112,
-    "ast_hash": "0b802cff9bb10709a6406246e290cdc3",
+    "mtime": 1794918149.7490463,
+    "seen": 1795003380.288805,
+    "ast_hash": "cd5dc82ddfc44cb7cf73bf9ddb55020f",
     "semantic_hash": ""
   },
   "lib/features/meds/add_edit_pharmacy_data.dart": {
@@ -474,21 +432,21 @@
     "semantic_hash": ""
   },
   "lib/features/meds/add_manual_screen.dart": {
-    "mtime": 1792083064.3187077,
-    "seen": 1794504061.3139162,
+    "mtime": 1794916987.2085524,
+    "seen": 1795003380.28881,
     "ast_hash": "97f47672066ed48be906853ff4f5e62f",
     "semantic_hash": ""
   },
   "lib/features/meds/add_medication_data.dart": {
-    "mtime": 1792082072.040824,
-    "seen": 1794504061.3139176,
-    "ast_hash": "3778a3eaa169706826dac9afd9fb2e23",
+    "mtime": 1794916987.2798398,
+    "seen": 1795003380.2888114,
+    "ast_hash": "805f3c116b46788b9596552cf7085b04",
     "semantic_hash": ""
   },
   "lib/features/meds/add_medication_manual_screen.dart": {
-    "mtime": 1794308418.9818406,
-    "seen": 1794504061.3139193,
-    "ast_hash": "aae2ae30725832d1083fcce9e2c8bbf6",
+    "mtime": 1794997844.8795946,
+    "seen": 1795003380.2888126,
+    "ast_hash": "ba439418686872fc1288bf1abe108f0b",
     "semantic_hash": ""
   },
   "lib/features/meds/add_medication_scan_screen.dart": {
@@ -498,8 +456,8 @@
     "semantic_hash": ""
   },
   "lib/features/meds/add_medication_screen.dart": {
-    "mtime": 1794493569.4878497,
-    "seen": 1794504061.3139226,
+    "mtime": 1794916987.3549113,
+    "seen": 1795003380.2888155,
     "ast_hash": "3fb11ac5586b7efba8f3935cf2797407",
     "semantic_hash": ""
   },
@@ -510,9 +468,9 @@
     "semantic_hash": ""
   },
   "lib/features/meds/add_symptom_screen.dart": {
-    "mtime": 1791289350.5350716,
-    "seen": 1794504061.313926,
-    "ast_hash": "3c23e6734ddfa5603331075c5278fe1e",
+    "mtime": 1794918062.9780104,
+    "seen": 1795003380.2888184,
+    "ast_hash": "bec55679ac1f284821176f5daec8ffaa",
     "semantic_hash": ""
   },
   "lib/features/meds/adjust_inventory_count_data.dart": {
@@ -522,8 +480,8 @@
     "semantic_hash": ""
   },
   "lib/features/meds/adjust_inventory_count_sheet.dart": {
-    "mtime": 1792067760.8130925,
-    "seen": 1794504061.3139288,
+    "mtime": 1794916987.4284954,
+    "seen": 1795003380.2888215,
     "ast_hash": "5a771d4913c396775dd690cd5319bef6",
     "semantic_hash": ""
   },
@@ -540,15 +498,9 @@
     "semantic_hash": ""
   },
   "lib/features/meds/appointment_screen.dart": {
-    "mtime": 1791301131.634035,
-    "seen": 1794504061.3139338,
-    "ast_hash": "9b1f94f7e61ae66e72d23df319a7f053",
-    "semantic_hash": ""
-  },
-  "lib/features/meds/appointments_data.dart": {
-    "mtime": 1791296731.908786,
-    "seen": 1794504061.313935,
-    "ast_hash": "1c8f39f491a0ef0040d351998ae43795",
+    "mtime": 1794673788.9773796,
+    "seen": 1795003380.2888255,
+    "ast_hash": "f6ec8122a4c5a01c750f92d502d4fecd",
     "semantic_hash": ""
   },
   "lib/features/meds/discontinue_medication_screen.dart": {
@@ -557,34 +509,28 @@
     "ast_hash": "8876d9943f13063d4b5a6c0c153282a8",
     "semantic_hash": ""
   },
-  "lib/features/meds/doctor_notes_data.dart": {
-    "mtime": 1791302469.1679225,
-    "seen": 1794504061.3139381,
-    "ast_hash": "ada73c744c8dcb52cc7b398b8c30d292",
-    "semantic_hash": ""
-  },
   "lib/features/meds/doctor_notes_screen.dart": {
-    "mtime": 1791302684.670997,
-    "seen": 1794504061.3139398,
-    "ast_hash": "6a91af2297667c58d2f219db6cb163e8",
+    "mtime": 1794918159.0010378,
+    "seen": 1795003380.2888284,
+    "ast_hash": "83138c934a49c085126d058ef1c26f57",
     "semantic_hash": ""
   },
   "lib/features/meds/edit_medication_screen.dart": {
-    "mtime": 1794308414.095384,
-    "seen": 1794504061.3139415,
-    "ast_hash": "9162472c5f06bc86193f31f5702f1254",
+    "mtime": 1794916945.4428642,
+    "seen": 1795003380.2888298,
+    "ast_hash": "513eb9d5c51a7dc8d5877c6da044da09",
     "semantic_hash": ""
   },
   "lib/features/meds/interaction_checker.dart": {
-    "mtime": 1794493590.875848,
-    "seen": 1794504061.3139427,
+    "mtime": 1794916987.5034263,
+    "seen": 1795003380.288831,
     "ast_hash": "8bbbebf79e5ee5ab1312efacbda36c49",
     "semantic_hash": ""
   },
   "lib/features/meds/interaction_warning_data.dart": {
-    "mtime": 1794492326.2038815,
-    "seen": 1794504061.3139446,
-    "ast_hash": "5c8ffcd5b4b16ad754195fb4d6a80603",
+    "mtime": 1794916987.5775876,
+    "seen": 1795003380.2888322,
+    "ast_hash": "4b0b979959190f5e3e34ba241b1151e9",
     "semantic_hash": ""
   },
   "lib/features/meds/interaction_warning_screen.dart": {
@@ -600,15 +546,15 @@
     "semantic_hash": ""
   },
   "lib/features/meds/inventory_screen.dart": {
-    "mtime": 1792070447.0554981,
-    "seen": 1794504061.3139493,
+    "mtime": 1794916987.6534555,
+    "seen": 1795003380.288837,
     "ast_hash": "59ac844c5aa0fa43d4636e310a681836",
     "semantic_hash": ""
   },
   "lib/features/meds/medication_detail_screen.dart": {
-    "mtime": 1794493133.774143,
-    "seen": 1794504061.313951,
-    "ast_hash": "05c72fbdc0a57e0eb237fd4144636c95",
+    "mtime": 1794916964.7637136,
+    "seen": 1795003380.2888381,
+    "ast_hash": "a9c376cf032b4a9efee69c48dedf47fe",
     "semantic_hash": ""
   },
   "lib/features/meds/meds_data.dart": {
@@ -618,9 +564,9 @@
     "semantic_hash": ""
   },
   "lib/features/meds/meds_screen.dart": {
-    "mtime": 1794330130.5073645,
-    "seen": 1794504061.3139544,
-    "ast_hash": "228c668b3d60c75e6e0c34d6e3ed936f",
+    "mtime": 1794919462.3563678,
+    "seen": 1795003380.288841,
+    "ast_hash": "257bc798f79ff195e3c223239d988e0f",
     "semantic_hash": ""
   },
   "lib/features/meds/meds_screen_restored.dart": {
@@ -630,9 +576,9 @@
     "semantic_hash": ""
   },
   "lib/features/meds/missed_dose_reason_sheet.dart": {
-    "mtime": 1794330495.977126,
-    "seen": 1794504061.3139575,
-    "ast_hash": "bd5e219451b2c5aa1babd7e9b7404fc4",
+    "mtime": 1794916987.737974,
+    "seen": 1795003380.2888439,
+    "ast_hash": "d31b079125b16253b9aa36a7da0e5e0d",
     "semantic_hash": ""
   },
   "lib/features/meds/pharmacy_info_data.dart": {
@@ -666,9 +612,9 @@
     "semantic_hash": ""
   },
   "lib/features/meds/scan_label_screen.dart": {
-    "mtime": 1792085410.1443317,
-    "seen": 1794504061.3139668,
-    "ast_hash": "deff8851dcae53417dd4d6548c98360c",
+    "mtime": 1794916987.8483381,
+    "seen": 1795003380.2888525,
+    "ast_hash": "2fefcedf1840d8e999270e861ca47a4a",
     "semantic_hash": ""
   },
   "lib/features/meds/schedule_picker_screen.dart": {
@@ -684,15 +630,15 @@
     "semantic_hash": ""
   },
   "lib/features/meds/side_effects_data.dart": {
-    "mtime": 1791286715.8005707,
-    "seen": 1794504061.3139715,
-    "ast_hash": "5d111fe50564ecac7d8796b0a97c99ed",
+    "mtime": 1794659172.8046641,
+    "seen": 1795003380.2888565,
+    "ast_hash": "0421deff4f4248f5dc725b40701ef0ec",
     "semantic_hash": ""
   },
   "lib/features/meds/side_effects_screen.dart": {
-    "mtime": 1791287394.7339642,
-    "seen": 1794504061.3139732,
-    "ast_hash": "bcac173ff9a31151b14678e7d39c9858",
+    "mtime": 1794659904.7361956,
+    "seen": 1795003380.2888582,
+    "ast_hash": "670b445a44633226e629f160c6829651",
     "semantic_hash": ""
   },
   "lib/features/onboarding/create_account_screen.dart": {
@@ -708,9 +654,9 @@
     "semantic_hash": ""
   },
   "lib/features/onboarding/splash_screen.dart": {
-    "mtime": 1794565856.8513186,
-    "seen": 1794568897.012236,
-    "ast_hash": "891f852d9ce08cfc5dd46de526d1f05b",
+    "mtime": 1794928042.4316251,
+    "seen": 1795003380.288867,
+    "ast_hash": "c4383a3694c78e85ed3fe9350ef13dbd",
     "semantic_hash": ""
   },
   "lib/features/profile/family_setup_screen.dart": {
@@ -726,9 +672,9 @@
     "semantic_hash": ""
   },
   "lib/features/profile/invite_member_screen.dart": {
-    "mtime": 1791375587.3060503,
-    "seen": 1794504061.3139827,
-    "ast_hash": "0768aa65a67836f20edb606051bc4db7",
+    "mtime": 1794997596.7956765,
+    "seen": 1795003380.2888715,
+    "ast_hash": "592f0f48fd9e772c8fb5eb3fcaed2976",
     "semantic_hash": ""
   },
   "lib/features/profile/invites_data.dart": {
@@ -738,21 +684,21 @@
     "semantic_hash": ""
   },
   "lib/features/profile/member_permissions_data.dart": {
-    "mtime": 1791376205.9831336,
-    "seen": 1794504061.313986,
-    "ast_hash": "7f60d0010cb226c0b472752537ddec02",
+    "mtime": 1794916987.925327,
+    "seen": 1795003380.2888741,
+    "ast_hash": "53d90106d8dcbfa854dede860280fe59",
     "semantic_hash": ""
   },
   "lib/features/profile/member_permissions_screen.dart": {
-    "mtime": 1791386545.9295049,
-    "seen": 1794504061.3139877,
-    "ast_hash": "4f978e9e238a3af414a125992f7388df",
+    "mtime": 1794916988.0096178,
+    "seen": 1795003380.2888756,
+    "ast_hash": "b5bb9b82252ce12f51ad0ea9aa10ddeb",
     "semantic_hash": ""
   },
   "lib/features/profile/notification_setup_screen.dart": {
-    "mtime": 1794479161.4933298,
-    "seen": 1794504061.3139894,
-    "ast_hash": "be96f6a6e7a5df8316d1b95698b96f74",
+    "mtime": 1794916988.0912554,
+    "seen": 1795003380.2888768,
+    "ast_hash": "d66e0c59b66deb177266a3510550c347",
     "semantic_hash": ""
   },
   "lib/features/profile/profiles_data.dart": {
@@ -762,27 +708,21 @@
     "semantic_hash": ""
   },
   "lib/features/profile/profiles_screen.dart": {
-    "mtime": 1793110584.1682787,
-    "seen": 1794504061.3139923,
-    "ast_hash": "dfa802120edd5aadbbd80574febcc6ca",
+    "mtime": 1794916907.6234086,
+    "seen": 1795003380.2888796,
+    "ast_hash": "d5190d3936580b66b8bd697552e4b3fd",
     "semantic_hash": ""
   },
   "lib/features/profile/received_invites_screen.dart": {
-    "mtime": 1794494406.5637343,
-    "seen": 1794504061.3140032,
-    "ast_hash": "c6e7a1f0dc304538255f812ec4cf63cd",
-    "semantic_hash": ""
-  },
-  "lib/features/reports/report_preview_data.dart": {
-    "mtime": 1791382799.333812,
-    "seen": 1794504061.3140047,
-    "ast_hash": "301d87a9a62ad1d137f05f737c6fbcc8",
+    "mtime": 1794916907.632727,
+    "seen": 1795003380.2888808,
+    "ast_hash": "30cd026cfa89bade3c843445c049f74c",
     "semantic_hash": ""
   },
   "lib/features/reports/report_preview_screen.dart": {
-    "mtime": 1791388139.5807567,
-    "seen": 1794504061.3140063,
-    "ast_hash": "f9cce28d0ec6c86fdc579ff9c91c85ac",
+    "mtime": 1794828931.1034315,
+    "seen": 1795003380.2888837,
+    "ast_hash": "be82198936b5f9cc89b0df34903607db",
     "semantic_hash": ""
   },
   "lib/features/settings/about_data.dart": {
@@ -792,9 +732,9 @@
     "semantic_hash": ""
   },
   "lib/features/settings/about_screen.dart": {
-    "mtime": 1794565866.631439,
-    "seen": 1794568897.0122588,
-    "ast_hash": "4f7c8d52265ecc1b5ae0bdc4c2370f28",
+    "mtime": 1794569958.418422,
+    "seen": 1795003380.2888865,
+    "ast_hash": "facac56800b5d76bc4a924906f246be2",
     "semantic_hash": ""
   },
   "lib/features/settings/accessibility_data.dart": {
@@ -804,9 +744,9 @@
     "semantic_hash": ""
   },
   "lib/features/settings/accessibility_screen.dart": {
-    "mtime": 1791894667.7503462,
-    "seen": 1794504061.3140125,
-    "ast_hash": "f9c79006926a2e6d8d965ed223d6808e",
+    "mtime": 1794571181.3667345,
+    "seen": 1795003380.2888894,
+    "ast_hash": "dc16977820c6e390405137062d30a757",
     "semantic_hash": ""
   },
   "lib/features/settings/account_data.dart": {
@@ -816,9 +756,9 @@
     "semantic_hash": ""
   },
   "lib/features/settings/account_screen.dart": {
-    "mtime": 1793097665.4319694,
-    "seen": 1794504061.3140154,
-    "ast_hash": "76515c88da66f61bab7818e5b10967cb",
+    "mtime": 1794654076.9071622,
+    "seen": 1795003380.2888937,
+    "ast_hash": "fa36e43120932aabe5a483be5f30f032",
     "semantic_hash": ""
   },
   "lib/features/settings/allergy_screen.dart": {
@@ -846,21 +786,21 @@
     "semantic_hash": ""
   },
   "lib/features/settings/data_export_screen.dart": {
-    "mtime": 1791898767.5253615,
-    "seen": 1794504061.3140237,
-    "ast_hash": "548d87c56a80ce9e94681451e5545d4d",
+    "mtime": 1794649662.2378552,
+    "seen": 1795003380.288901,
+    "ast_hash": "f3cec18fb57c07b79ca5fe766fdf7c7d",
     "semantic_hash": ""
   },
   "lib/features/settings/help_support_data.dart": {
-    "mtime": 1791899493.0174642,
-    "seen": 1794504061.3140254,
-    "ast_hash": "005c77816b40d9a6842932cf375e0c12",
+    "mtime": 1794573528.7937686,
+    "seen": 1795003380.2889028,
+    "ast_hash": "39d7d869ca4dbdf47bd1d25ab508089e",
     "semantic_hash": ""
   },
   "lib/features/settings/help_support_screen.dart": {
-    "mtime": 1791899550.1058705,
-    "seen": 1794504061.314027,
-    "ast_hash": "7d3f50a0d373f83f81e7879695f66ecd",
+    "mtime": 1794581851.868914,
+    "seen": 1795003380.2889037,
+    "ast_hash": "330962ef4a031d70ad4200946cd824ce",
     "semantic_hash": ""
   },
   "lib/features/settings/language_data.dart": {
@@ -882,9 +822,9 @@
     "semantic_hash": ""
   },
   "lib/features/settings/notifications_screen.dart": {
-    "mtime": 1794478375.6551397,
-    "seen": 1794504061.3140335,
-    "ast_hash": "46c7db1e8cb2d5c6e057133955e7623f",
+    "mtime": 1794995772.4672463,
+    "seen": 1795003380.28891,
+    "ast_hash": "f22e9b26670d7832eed5a66b0e3784c6",
     "semantic_hash": ""
   },
   "lib/features/settings/payment_success_data.dart": {
@@ -894,9 +834,9 @@
     "semantic_hash": ""
   },
   "lib/features/settings/payment_success_screen.dart": {
-    "mtime": 1791902640.3937008,
-    "seen": 1794504061.3140364,
-    "ast_hash": "a7fcaa33c4ec2426a5d31107768dd86b",
+    "mtime": 1794997734.734818,
+    "seen": 1795003380.2889123,
+    "ast_hash": "c1049664c28e81ab85107b04e13d07b2",
     "semantic_hash": ""
   },
   "lib/features/settings/privacy_security_data.dart": {
@@ -906,21 +846,21 @@
     "semantic_hash": ""
   },
   "lib/features/settings/privacy_security_screen.dart": {
-    "mtime": 1791893440.1802487,
-    "seen": 1794504061.3140397,
-    "ast_hash": "586d0bfc303db80a73dc73a1ccd7d71c",
+    "mtime": 1794832339.1678646,
+    "seen": 1795003380.2889154,
+    "ast_hash": "ac602983f392b3687fc8ea14f0352e39",
     "semantic_hash": ""
   },
   "lib/features/settings/settings_data.dart": {
-    "mtime": 1794487247.7258024,
-    "seen": 1794504061.3140416,
-    "ast_hash": "111fc441ad858e4ebaf20bdb60843f60",
+    "mtime": 1794845512.0699215,
+    "seen": 1795003380.2889166,
+    "ast_hash": "ef997fb06abed96bd8c05ad4b00cea86",
     "semantic_hash": ""
   },
   "lib/features/settings/settings_screen.dart": {
-    "mtime": 1794567824.3207824,
-    "seen": 1794568897.012295,
-    "ast_hash": "e14d76d3cb7f92411e369aca90901ab5",
+    "mtime": 1794845512.4456444,
+    "seen": 1795003380.2889178,
+    "ast_hash": "bdd527ee35799c58dd743d7bc25e0be1",
     "semantic_hash": ""
   },
   "lib/features/settings/subscription_data.dart": {
@@ -942,9 +882,9 @@
     "semantic_hash": ""
   },
   "lib/features/settings/upgrade_screen.dart": {
-    "mtime": 1794505641.044225,
-    "seen": 1794506214.1912751,
-    "ast_hash": "229702becdd217224283d46fd38f22de",
+    "mtime": 1794997681.661232,
+    "seen": 1795003380.2889252,
+    "ast_hash": "1f40255712d67f77b7004f38838284ec",
     "semantic_hash": ""
   },
   "lib/firebase_options_staging.dart": {
@@ -954,9 +894,9 @@
     "semantic_hash": ""
   },
   "lib/main.dart": {
-    "mtime": 1794565802.0014455,
-    "seen": 1794568897.0123107,
-    "ast_hash": "545d48f90cff086dd34ceb055be95d57",
+    "mtime": 1794930077.7764263,
+    "seen": 1795003380.288928,
+    "ast_hash": "051f8395765e11e90621e9455183bbfd",
     "semantic_hash": ""
   },
   "lib/main_shell.dart": {
@@ -990,9 +930,9 @@
     "semantic_hash": ""
   },
   "lib/models/notification_settings.dart": {
-    "mtime": 1794412578.859347,
-    "seen": 1794504061.3140743,
-    "ast_hash": "cb0eec4903e7a5ccd6a8e6b32f8bfb9c",
+    "mtime": 1794928483.5833483,
+    "seen": 1795003380.2889397,
+    "ast_hash": "40fbba82d7e5e4e120b80d774481ae8f",
     "semantic_hash": ""
   },
   "lib/models/profile.dart": {
@@ -1008,15 +948,15 @@
     "semantic_hash": ""
   },
   "lib/repositories/allergy_repository.dart": {
-    "mtime": 1794493607.8987887,
-    "seen": 1794504061.314079,
-    "ast_hash": "82eebf6636d2bbd2d0868ca55972c51f",
+    "mtime": 1794911315.5413225,
+    "seen": 1795003380.2889466,
+    "ast_hash": "028b502c716ba6418ada54abf5638117",
     "semantic_hash": ""
   },
   "lib/repositories/auth_repository.dart": {
-    "mtime": 1794408230.614694,
-    "seen": 1794504061.3140805,
-    "ast_hash": "003f82b1553befda7898e7d4cd596dd4",
+    "mtime": 1794937398.6498246,
+    "seen": 1795003380.288948,
+    "ast_hash": "5c13cc0df50379369e517e69a35e67a3",
     "semantic_hash": ""
   },
   "lib/repositories/device_token_repository.dart": {
@@ -1026,9 +966,9 @@
     "semantic_hash": ""
   },
   "lib/repositories/dose_repository.dart": {
-    "mtime": 1794481354.6534932,
-    "seen": 1794504061.3140833,
-    "ast_hash": "aca81907fba9dd82488c87eceb48de57",
+    "mtime": 1794996040.6045723,
+    "seen": 1795003380.2889535,
+    "ast_hash": "bc71ab8b5ba8cee8abc7e902902cf2e2",
     "semantic_hash": ""
   },
   "lib/repositories/drug_repository.dart": {
@@ -1055,12 +995,6 @@
     "ast_hash": "4a5138575490f0fa6c0f98047d66df22",
     "semantic_hash": ""
   },
-  "lib/repositories/firebase_medication_repository.dart": {
-    "mtime": 1792587485.6655264,
-    "seen": 1794504061.3140914,
-    "ast_hash": "42d4a3024ac82b437290e7de91fba374",
-    "semantic_hash": ""
-  },
   "lib/repositories/firebase_profile_repository.dart": {
     "mtime": 1792586193.984934,
     "seen": 1794504061.314093,
@@ -1068,27 +1002,27 @@
     "semantic_hash": ""
   },
   "lib/repositories/firebase_subscription_repository.dart": {
-    "mtime": 1794505630.0612154,
-    "seen": 1794506214.1913362,
-    "ast_hash": "6fe72a4498e3c287ea73e453a0eccbc6",
+    "mtime": 1794911315.5423226,
+    "seen": 1795003380.288968,
+    "ast_hash": "356c7c74fcd6e774c042dae4e2753542",
     "semantic_hash": ""
   },
   "lib/repositories/medication_repository.dart": {
-    "mtime": 1794409661.79566,
-    "seen": 1794504061.3140984,
-    "ast_hash": "0dae6f57a53e2740bc74873ac6f73a02",
+    "mtime": 1794996275.932744,
+    "seen": 1795003380.2889805,
+    "ast_hash": "6beeb85c9374b845b72353026f8140c9",
     "semantic_hash": ""
   },
   "lib/repositories/pharmacy_repository.dart": {
-    "mtime": 1794480908.7723572,
-    "seen": 1794504061.3141,
-    "ast_hash": "fff2a2ac4d4164b49311896119027d7c",
+    "mtime": 1794911315.5433216,
+    "seen": 1795003380.288982,
+    "ast_hash": "f7a1ab07d9c9a6d86135b6c04c09a357",
     "semantic_hash": ""
   },
   "lib/repositories/settings_repository.dart": {
-    "mtime": 1794412336.6449008,
-    "seen": 1794504061.3141015,
-    "ast_hash": "4d9171219af2af4c8370e1a73aec6013",
+    "mtime": 1794571152.9104621,
+    "seen": 1795003380.2889855,
+    "ast_hash": "0fa155ac66695125bd737caff116ec51",
     "semantic_hash": ""
   },
   "lib/widgets/app_avatar.dart": {
@@ -1122,9 +1056,9 @@
     "semantic_hash": ""
   },
   "lib/widgets/language_flag.dart": {
-    "mtime": 1791899230.2236,
-    "seen": 1794504061.314111,
-    "ast_hash": "a4b9e75060746d0d673bb9815ddf614d",
+    "mtime": 1794918175.0456054,
+    "seen": 1795003380.289002,
+    "ast_hash": "a4e804858bb15da6718a1b9b22091b1c",
     "semantic_hash": ""
   },
   "lib/widgets/onboarding_header.dart": {
@@ -1146,39 +1080,27 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1792406205.0133722,
-    "seen": 1794504061.314133,
-    "ast_hash": "1607666f3c4d6382f3c4dc03304068af",
+    "mtime": 1794923311.9219801,
+    "seen": 1795003380.2890134,
+    "ast_hash": "5174c35be056cc582b32e5cb40282d14",
     "semantic_hash": ""
   },
   "pubspec.yaml": {
-    "mtime": 1794565771.9673247,
-    "seen": 1794568897.01239,
-    "ast_hash": "6d13465a5edfa3d8d828706342fd337e",
-    "semantic_hash": ""
-  },
-  "test/assistant_chat_smoke_test.dart": {
-    "mtime": 1791384100.650776,
-    "seen": 1794504061.3141363,
-    "ast_hash": "c626729a092992e076a105078b878482",
-    "semantic_hash": ""
-  },
-  "test/report_preview_smoke_test.dart": {
-    "mtime": 1791382932.117517,
-    "seen": 1794504061.314138,
-    "ast_hash": "7c073349c9474a682f9d2ac6dc852dbe",
+    "mtime": 1794913302.8934672,
+    "seen": 1795003380.289136,
+    "ast_hash": "aabda6f2b27b17953d6b294556d0def8",
     "semantic_hash": ""
   },
   "test/widget_test.dart": {
-    "mtime": 1790255100.4060538,
-    "seen": 1794504061.3141394,
-    "ast_hash": "6f912703c9127d9f88c51ea13f3fe4d8",
+    "mtime": 1794921646.3342838,
+    "seen": 1795003380.2891035,
+    "ast_hash": "39a9ad7238fadb08d29e649cd3ac88cb",
     "semantic_hash": ""
   },
   "tests/firestore.rules.test.js": {
-    "mtime": 1794502959.9575117,
-    "seen": 1794504061.3141406,
-    "ast_hash": "07d5490c14b948c0aac74ead79dc2d72",
+    "mtime": 1794930997.452756,
+    "seen": 1795003380.2891061,
+    "ast_hash": "00acfd6d9baff6b9c7eb655bcc61db53",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1194,56 +1116,56 @@
     "semantic_hash": ""
   },
   "docs/firestore-schema.md": {
-    "mtime": 1792405542.2078602,
-    "seen": 1794504061.314163,
-    "ast_hash": "7f34e5344e32c9cfcb0cda56e0734eea",
+    "mtime": 1794934665.606158,
+    "seen": 1795003380.2891235,
+    "ast_hash": "404f882b09cf1fc26972a04135c2ab05",
     "semantic_hash": ""
   },
   "graphify/CHANGELOG.md": {
-    "mtime": 1794568500.3561275,
-    "seen": 1794568897.0123785,
-    "ast_hash": "8696328a502750a99fb9177f663c0ec0",
+    "mtime": 1795003101.0690656,
+    "seen": 1795003380.289125,
+    "ast_hash": "cb1a94aacf85f036fc05380f5d177222",
     "semantic_hash": ""
   },
   "graphify/HANDOFF.md": {
-    "mtime": 1794568500.3549273,
-    "seen": 1794568897.0123796,
-    "ast_hash": "ad0fa28b1c083512eea49be9e7175a1d",
+    "mtime": 1795003101.067468,
+    "seen": 1795003380.2891262,
+    "ast_hash": "3c654ff11cea63286a226147962cce01",
     "semantic_hash": ""
   },
   "graphify/README.md": {
-    "mtime": 1794506221.6748788,
-    "seen": 1794568897.0123806,
-    "ast_hash": "457953912f19cb0699ef7487753408a5",
+    "mtime": 1795003066.1595225,
+    "seen": 1795003380.2891273,
+    "ast_hash": "3b4c4cf10ed94147407fc366bdbfa174",
     "semantic_hash": ""
   },
   "graphify/architecture.md": {
-    "mtime": 1794501677.4464433,
-    "seen": 1794504061.3141692,
-    "ast_hash": "a59a7bdb013d4c72df579a590e2891a8",
+    "mtime": 1795003066.1583035,
+    "seen": 1795003380.289129,
+    "ast_hash": "e4a0777fa0173182cd28bf30a991fc47",
     "semantic_hash": ""
   },
   "graphify/feature-map.md": {
-    "mtime": 1794501678.0922835,
-    "seen": 1794504061.3141706,
-    "ast_hash": "edc52e25a948e1b3f7cadd94a0ab62fd",
+    "mtime": 1795003066.157197,
+    "seen": 1795003380.2891302,
+    "ast_hash": "3b85a5f8e86a0bc81f78e57122583230",
     "semantic_hash": ""
   },
   "graphify/firebase-map.md": {
-    "mtime": 1794503820.0571103,
-    "seen": 1794504061.3141725,
-    "ast_hash": "e6905d1c5f36b79b6f259bd221f07f78",
+    "mtime": 1795003066.157197,
+    "seen": 1795003380.2891314,
+    "ast_hash": "88c5100ccbacfd3a912cd03511bb7de1",
     "semantic_hash": ""
   },
   "graphify/modules-progress.md": {
-    "mtime": 1794566986.8514633,
-    "seen": 1794568897.0123868,
-    "ast_hash": "f10d5984d2615628a9e7c3ee05637a43",
+    "mtime": 1795003066.1595225,
+    "seen": 1795003380.2891328,
+    "ast_hash": "ab8b3a529cb6e74a9bc3c38bb8c0c0cc",
     "semantic_hash": ""
   },
   "Medicine-App-Backend-Modules-Firebase.pdf": {
-    "mtime": 1792066292.1129663,
-    "seen": 1794504061.3141882,
+    "mtime": 1794569958.5665176,
+    "seen": 1795003380.2891371,
     "ast_hash": "96b09ddea81cb5e4e0edbba441ece9b1",
     "semantic_hash": ""
   },
@@ -1416,9 +1338,9 @@
     "semantic_hash": ""
   },
   "lib/core/services/app_info_service.dart": {
-    "mtime": 1794566896.306725,
-    "seen": 1794568897.0121043,
-    "ast_hash": "f843434a53f547a6a409ff9ec0bd8227",
+    "mtime": 1794652653.4694917,
+    "seen": 1795003380.2886975,
+    "ast_hash": "b784d88b0d7d0d6df7c207d10edd5323",
     "semantic_hash": ""
   },
   "lib/features/onboarding/app_blocked_screen.dart": {
@@ -1428,9 +1350,1575 @@
     "semantic_hash": ""
   },
   "test/app_gate_test.dart": {
-    "mtime": 1794565866.840271,
-    "seen": 1794568897.0123625,
-    "ast_hash": "037de0b9c3178eceb037a57fd2943e1d",
+    "mtime": 1794834040.7478783,
+    "seen": 1795003380.2890265,
+    "ast_hash": "200a92c8defd94d2ca8cf1880bc140ce",
+    "semantic_hash": ""
+  },
+  "audit_rules_probe.json": {
+    "mtime": 1795001090.4963267,
+    "seen": 1795003380.2885094,
+    "ast_hash": "47d2a65e8f483a53bed6d6df58eff865",
+    "semantic_hash": ""
+  },
+  "docs/config-faq.example.json": {
+    "mtime": 1794572204.923625,
+    "seen": 1795003380.2885127,
+    "ast_hash": "ccbf7e12cdda59dd6c9f967c40c25e56",
+    "semantic_hash": ""
+  },
+  "integration_test/ai_context_test.dart": {
+    "mtime": 1794833360.625608,
+    "seen": 1795003380.2885318,
+    "ast_hash": "bd912039d50c3c3eabf742762c845b3f",
+    "semantic_hash": ""
+  },
+  "integration_test/caregiver_loop_test.dart": {
+    "mtime": 1794998701.0939293,
+    "seen": 1795003380.2885332,
+    "ast_hash": "6870a091072ed2f5ce48b50f0fff3df8",
+    "semantic_hash": ""
+  },
+  "integration_test/chat_repository_test.dart": {
+    "mtime": 1794835254.8540466,
+    "seen": 1795003380.2885349,
+    "ast_hash": "f16ed46b108bfb10346e6186a9f45f9e",
+    "semantic_hash": ""
+  },
+  "integration_test/community_account_delete_test.dart": {
+    "mtime": 1794910319.1778815,
+    "seen": 1795003380.2885363,
+    "ast_hash": "9cf37928a5bc7be8fb44126942cbbd82",
+    "semantic_hash": ""
+  },
+  "integration_test/community_moderation_test.dart": {
+    "mtime": 1794909756.0795052,
+    "seen": 1795003380.2885375,
+    "ast_hash": "94caeb6a9aa3701d4d723ac2c7d35c3a",
+    "semantic_hash": ""
+  },
+  "integration_test/community_posts_test.dart": {
+    "mtime": 1794848345.4569101,
+    "seen": 1795003380.288539,
+    "ast_hash": "64c5750af4f13bc111ab4adc33444050",
+    "semantic_hash": ""
+  },
+  "integration_test/community_profile_test.dart": {
+    "mtime": 1794845629.1912916,
+    "seen": 1795003380.2885401,
+    "ast_hash": "b71cb6e3e3ecf81a9232df4a31de9514",
+    "semantic_hash": ""
+  },
+  "integration_test/community_reactions_test.dart": {
+    "mtime": 1794849740.9545732,
+    "seen": 1795003380.2885416,
+    "ast_hash": "c21d535341889502ce2ac80e9f9a75f1",
+    "semantic_hash": ""
+  },
+  "integration_test/community_safety_test.dart": {
+    "mtime": 1794850716.0666475,
+    "seen": 1795003380.2885427,
+    "ast_hash": "9b3a5f2f33005c5f4c16cee1830ea157",
+    "semantic_hash": ""
+  },
+  "integration_test/daily_limits_test.dart": {
+    "mtime": 1794932122.4216268,
+    "seen": 1795003380.2885437,
+    "ast_hash": "86ca00e2784ab81a16657d8a642aa3b1",
+    "semantic_hash": ""
+  },
+  "integration_test/doctor_repositories_test.dart": {
+    "mtime": 1794673852.4667413,
+    "seen": 1795003380.2885451,
+    "ast_hash": "390513f6e67fab1869b0de0b605471c2",
+    "semantic_hash": ""
+  },
+  "integration_test/medication_doses_test.dart": {
+    "mtime": 1794996825.171115,
+    "seen": 1795003380.2885463,
+    "ast_hash": "bac886b7a6edb0782719cad2cdf7171a",
+    "semantic_hash": ""
+  },
+  "integration_test/reminder_scheduler_test.dart": {
+    "mtime": 1794999146.0236306,
+    "seen": 1795003380.2885473,
+    "ast_hash": "d8db95b4b747f47de152e19914fc023b",
+    "semantic_hash": ""
+  },
+  "integration_test/report_data_source_test.dart": {
+    "mtime": 1794824863.971636,
+    "seen": 1795003380.2885487,
+    "ast_hash": "1665d9c587fee3ddc4dd8394f0ef88c7",
+    "semantic_hash": ""
+  },
+  "integration_test/vitals_repositories_test.dart": {
+    "mtime": 1794911315.5377452,
+    "seen": 1795003380.2885501,
+    "ast_hash": "16435949cb74f89792380d5f6456d8a1",
+    "semantic_hash": ""
+  },
+  "lib/core/account_deletion_engine.dart": {
+    "mtime": 1794931492.1903076,
+    "seen": 1795003380.2885566,
+    "ast_hash": "010ea2db317a6cb434c78cfee6fb7ef3",
+    "semantic_hash": ""
+  },
+  "lib/core/account_deletion_policy.dart": {
+    "mtime": 1794652615.9269927,
+    "seen": 1795003380.2885578,
+    "ast_hash": "a9ffe7b6859055bed701bf5a8a909b4c",
+    "semantic_hash": ""
+  },
+  "lib/core/account_deletion_summary.dart": {
+    "mtime": 1794654010.3362079,
+    "seen": 1795003380.2885592,
+    "ast_hash": "c145e2d3fb3b5de08874fd11eac7fe76",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/ai_chat_backend.dart": {
+    "mtime": 1794837174.3874896,
+    "seen": 1795003380.2885604,
+    "ast_hash": "40a3933b86da4aa00b49f892ddcfbc90",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/ai_consent.dart": {
+    "mtime": 1794832258.4895878,
+    "seen": 1795003380.2885613,
+    "ast_hash": "4de3a55a55aa8c58118a3eac791f3b66",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/ai_context.dart": {
+    "mtime": 1794833221.1941817,
+    "seen": 1795003380.2885628,
+    "ast_hash": "019a5d1e5ab67177676c93b03c64a292",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/ai_prompt_rules.dart": {
+    "mtime": 1794833804.2683377,
+    "seen": 1795003380.288564,
+    "ast_hash": "f38fade748095ab3f7632da4e0e39d2c",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/ai_reply_checker.dart": {
+    "mtime": 1794833914.3734753,
+    "seen": 1795003380.2885654,
+    "ast_hash": "814c4ac3d14195c7a98aef2f4196005d",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/ai_safety_guard.dart": {
+    "mtime": 1794833893.4694867,
+    "seen": 1795003380.2885666,
+    "ast_hash": "6c9987d0c5a9c360afc1cc884272dac7",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/ai_text_scrubber.dart": {
+    "mtime": 1794833186.9867966,
+    "seen": 1795003380.2885675,
+    "ast_hash": "ddd858057a7955e618e7b524d737e8fb",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/chat_controller.dart": {
+    "mtime": 1794837174.386459,
+    "seen": 1795003380.2885687,
+    "ast_hash": "288479299bb8a9976cdf726be955381c",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/chat_models.dart": {
+    "mtime": 1794834962.7591946,
+    "seen": 1795003380.2885702,
+    "ast_hash": "17ed0e917034fce485c20ee3a5d48d40",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/chat_title.dart": {
+    "mtime": 1794834962.901145,
+    "seen": 1795003380.2885714,
+    "ast_hash": "eda256dad40a624e7e4b4f788bff2b3f",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/fda_label.dart": {
+    "mtime": 1794837722.6186974,
+    "seen": 1795003380.2885723,
+    "ast_hash": "f9d54cd0033520e963a4e78fd83d484c",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/fda_label_client.dart": {
+    "mtime": 1794836603.650546,
+    "seen": 1795003380.2885737,
+    "ast_hash": "5998234c88ca7815fa621bed70b5398f",
+    "semantic_hash": ""
+  },
+  "lib/core/ai/label_question_router.dart": {
+    "mtime": 1794837174.386459,
+    "seen": 1795003380.288575,
+    "ast_hash": "590abb8e0df1038616917564c4dad0ab",
+    "semantic_hash": ""
+  },
+  "lib/core/app_error_text.dart": {
+    "mtime": 1794912814.552285,
+    "seen": 1795003380.288576,
+    "ast_hash": "0504f6e2ff1cc851711fbdb95d0602f1",
+    "semantic_hash": ""
+  },
+  "lib/core/app_lock_policy.dart": {
+    "mtime": 1794652652.9845796,
+    "seen": 1795003380.288581,
+    "ast_hash": "6e816e260e6ea8a5a6d66b33ccbb6fc8",
+    "semantic_hash": ""
+  },
+  "lib/core/app_navigator.dart": {
+    "mtime": 1794919262.0769012,
+    "seen": 1795003380.2885818,
+    "ast_hash": "7f5464870ca51c5ada66a5c555d67483",
+    "semantic_hash": ""
+  },
+  "lib/core/app_startup.dart": {
+    "mtime": 1794915151.4021873,
+    "seen": 1795003380.2885833,
+    "ast_hash": "60a7af9daabe9013519f50289bd074d3",
+    "semantic_hash": ""
+  },
+  "lib/core/async_state.dart": {
+    "mtime": 1794912824.137691,
+    "seen": 1795003380.2885842,
+    "ast_hash": "58e940716e487668bd1fc0aa378a3fe0",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_content_filter.dart": {
+    "mtime": 1794850134.8480182,
+    "seen": 1795003380.288589,
+    "ast_hash": "3c3813bee20bbcd32f6742001ef6379e",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_feed.dart": {
+    "mtime": 1794850314.7690637,
+    "seen": 1795003380.2885902,
+    "ast_hash": "5095f0ce8746e181680e549f592390fd",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_models.dart": {
+    "mtime": 1794841157.085396,
+    "seen": 1795003380.2885914,
+    "ast_hash": "4f5f2875bf59ad26284962d3cc60eb88",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_moderation.dart": {
+    "mtime": 1794909163.4644356,
+    "seen": 1795003380.2885926,
+    "ast_hash": "55e7c86498299dc8ef8635cdf26a5720",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_name_suggester.dart": {
+    "mtime": 1794845427.8674407,
+    "seen": 1795003380.288594,
+    "ast_hash": "30eeebcdae465ceec98a9970722687f4",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_posts.dart": {
+    "mtime": 1794850314.787171,
+    "seen": 1795003380.288595,
+    "ast_hash": "e6ac465f9da363db9939f66c7f0fcb9d",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_profile_controller.dart": {
+    "mtime": 1794848061.783528,
+    "seen": 1795003380.2885962,
+    "ast_hash": "2a5a3f894b28cb0c41bd3e2412ce5309",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_reactions.dart": {
+    "mtime": 1794850442.1253927,
+    "seen": 1795003380.2885976,
+    "ast_hash": "dcc8a1d154007345567527ab809f2227",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_safety.dart": {
+    "mtime": 1794850121.4219265,
+    "seen": 1795003380.2885985,
+    "ast_hash": "630779900476d68580f0570060f09bfd",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_time.dart": {
+    "mtime": 1794846992.3921895,
+    "seen": 1795003380.2885997,
+    "ast_hash": "00ccb8eaaf1d20b3f7b8acaa02501c25",
+    "semantic_hash": ""
+  },
+  "lib/core/community/community_validator.dart": {
+    "mtime": 1794850207.92333,
+    "seen": 1795003380.2886012,
+    "ast_hash": "99188b72af32af44a4927c378a254492",
+    "semantic_hash": ""
+  },
+  "lib/core/daily_limits.dart": {
+    "mtime": 1794930755.2389967,
+    "seen": 1795003380.288604,
+    "ast_hash": "d140866d39835e9859090996cd38bd33",
+    "semantic_hash": ""
+  },
+  "lib/core/doctors/appointment_models.dart": {
+    "mtime": 1794668067.6447055,
+    "seen": 1795003380.2886088,
+    "ast_hash": "501db2fe6a7308bb03860233650d5a3a",
+    "semantic_hash": ""
+  },
+  "lib/core/doctors/appointment_reminder_service.dart": {
+    "mtime": 1794671863.2645094,
+    "seen": 1795003380.2886102,
+    "ast_hash": "7f66ad4385c12e380c28a0ea9d2366f8",
+    "semantic_hash": ""
+  },
+  "lib/core/doctors/appointment_validator.dart": {
+    "mtime": 1794668067.4946983,
+    "seen": 1795003380.2886114,
+    "ast_hash": "50b955701ff13405ed19c3d89384c70a",
+    "semantic_hash": ""
+  },
+  "lib/core/doctors/doctor_link_diff.dart": {
+    "mtime": 1794669562.9395454,
+    "seen": 1795003380.2886126,
+    "ast_hash": "c6a095da00947be0982931f2411889d0",
+    "semantic_hash": ""
+  },
+  "lib/core/doctors/doctor_note_models.dart": {
+    "mtime": 1794668068.026939,
+    "seen": 1795003380.2886136,
+    "ast_hash": "0cb43591cf760062493e38f72f89d459",
+    "semantic_hash": ""
+  },
+  "lib/core/doctors/doctor_note_validator.dart": {
+    "mtime": 1794668067.86343,
+    "seen": 1795003380.288615,
+    "ast_hash": "03b553dbbf07d3c6151e92b7fabab97e",
+    "semantic_hash": ""
+  },
+  "lib/core/doctors/note_day.dart": {
+    "mtime": 1794672165.8549917,
+    "seen": 1795003380.288616,
+    "ast_hash": "cbdf7d6cdc489cfa2978dabf5dffa498",
+    "semantic_hash": ""
+  },
+  "lib/core/doctors/prescriber_models.dart": {
+    "mtime": 1794668067.3924923,
+    "seen": 1795003380.2886174,
+    "ast_hash": "183bc3c92ad0ddbc3b0a6d0d9a24b4c2",
+    "semantic_hash": ""
+  },
+  "lib/core/doctors/prescriber_validator.dart": {
+    "mtime": 1794668067.2914217,
+    "seen": 1795003380.2886195,
+    "ast_hash": "eebb724a36dbd8cfce3d5b357875f217",
+    "semantic_hash": ""
+  },
+  "lib/core/doctors/reminder_planner.dart": {
+    "mtime": 1794668067.7580018,
+    "seen": 1795003380.288622,
+    "ast_hash": "ec84f30cb7cba12274049f0ec10c4a75",
+    "semantic_hash": ""
+  },
+  "lib/core/dose_zone.dart": {
+    "mtime": 1794937624.495373,
+    "seen": 1795003380.2886264,
+    "ast_hash": "07c6b5c54f2e09f2773daffbfc474699",
+    "semantic_hash": ""
+  },
+  "lib/core/export/export_builder.dart": {
+    "mtime": 1794835132.1776786,
+    "seen": 1795003380.2886314,
+    "ast_hash": "d8e70b898dd7675f6615396835abfe52",
+    "semantic_hash": ""
+  },
+  "lib/core/export/export_collector.dart": {
+    "mtime": 1794835132.1798632,
+    "seen": 1795003380.2886343,
+    "ast_hash": "a0f21e3d7dfe62b06f4afd66aee82a7f",
+    "semantic_hash": ""
+  },
+  "lib/core/export/export_data_source.dart": {
+    "mtime": 1794587715.219905,
+    "seen": 1795003380.288636,
+    "ast_hash": "07d0701fd28d9011666cbfac2bd4ba0b",
+    "semantic_hash": ""
+  },
+  "lib/core/export/export_service.dart": {
+    "mtime": 1794587556.7757208,
+    "seen": 1795003380.2886372,
+    "ast_hash": "a0704ffd567c21f9bb858a27e46cb6ac",
+    "semantic_hash": ""
+  },
+  "lib/core/export/export_zip.dart": {
+    "mtime": 1794588238.6675508,
+    "seen": 1795003380.288638,
+    "ast_hash": "f7d512981fe48a65a28d881eccf666cf",
+    "semantic_hash": ""
+  },
+  "lib/core/export/firestore_value_converter.dart": {
+    "mtime": 1794587000.8827424,
+    "seen": 1795003380.2886395,
+    "ast_hash": "ee1044a198f6aa06b82da3cdf19d4fab",
+    "semantic_hash": ""
+  },
+  "lib/core/legal_gate.dart": {
+    "mtime": 1794569958.6394303,
+    "seen": 1795003380.2886446,
+    "ast_hash": "e2904da57557a849c8c8eb472f08fa80",
+    "semantic_hash": ""
+  },
+  "lib/core/notification_privacy.dart": {
+    "mtime": 1794928459.4375112,
+    "seen": 1795003380.288659,
+    "ast_hash": "20e691215bb0acbe385b07563b8a8298",
+    "semantic_hash": ""
+  },
+  "lib/core/queued_write.dart": {
+    "mtime": 1794919268.2052648,
+    "seen": 1795003380.288665,
+    "ast_hash": "62de4044b0e5ab4b51408ffc92f4789c",
+    "semantic_hash": ""
+  },
+  "lib/core/reminders/dose_alarm_planner.dart": {
+    "mtime": 1794995750.2316575,
+    "seen": 1795003380.288666,
+    "ast_hash": "11404e7f2407da5e10d9e675f9cb0798",
+    "semantic_hash": ""
+  },
+  "lib/core/reminders/quiet_hours.dart": {
+    "mtime": 1794995750.562271,
+    "seen": 1795003380.2886674,
+    "ast_hash": "f44ae9cb7b890fa83e0257c0654cca92",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/adherence_calculator.dart": {
+    "mtime": 1794824208.9046073,
+    "seen": 1795003380.2886686,
+    "ast_hash": "79283b8dd844bb98c19feaa8cc22c065",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/dose_report_mapper.dart": {
+    "mtime": 1794824705.4086454,
+    "seen": 1795003380.28867,
+    "ast_hash": "b4d36a8915c1b3777184e850262abbaa",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_builder_controller.dart": {
+    "mtime": 1794826725.033715,
+    "seen": 1795003380.288671,
+    "ast_hash": "312b9e8f9ab9756d69af94238220439f",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_csv_builder.dart": {
+    "mtime": 1794826113.7239802,
+    "seen": 1795003380.2886722,
+    "ast_hash": "f64560c6c2c00a763d359de17a25524f",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_csv_labels.dart": {
+    "mtime": 1794825220.3894298,
+    "seen": 1795003380.2886736,
+    "ast_hash": "575a08238093801e85d9fcc0dd9e807e",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_data_source.dart": {
+    "mtime": 1794824739.9405835,
+    "seen": 1795003380.2886748,
+    "ast_hash": "4503754b87cfefff279278af2fa907e1",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_files_builder.dart": {
+    "mtime": 1794826723.7399106,
+    "seen": 1795003380.2886758,
+    "ast_hash": "fd363f8e990e59baa41dd016495ffbae",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_format.dart": {
+    "mtime": 1794826061.2083635,
+    "seen": 1795003380.2886772,
+    "ast_hash": "ac15e7c5c6a0b3452bf4a908552c7ee9",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_l10n.dart": {
+    "mtime": 1794826723.693484,
+    "seen": 1795003380.2886782,
+    "ast_hash": "86205496cc2fd8f2e8e420ab012648b7",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_models.dart": {
+    "mtime": 1794824705.36664,
+    "seen": 1795003380.2886794,
+    "ast_hash": "01f81ee4964f3724b0727866f6e057a6",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_options.dart": {
+    "mtime": 1794824208.9079292,
+    "seen": 1795003380.2886808,
+    "ast_hash": "17d49742c261b39b5724299e01fd45fd",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_pdf_builder.dart": {
+    "mtime": 1794830278.312291,
+    "seen": 1795003380.2886817,
+    "ast_hash": "955927e63e1c25ead945a86af923c294",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_pdf_fonts.dart": {
+    "mtime": 1794826274.0460894,
+    "seen": 1795003380.288683,
+    "ast_hash": "f35b965f640c63ebfbb047db46a93bd2",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_pdf_labels.dart": {
+    "mtime": 1794826061.3888881,
+    "seen": 1795003380.2886841,
+    "ast_hash": "77b6290c6addbb1f43d60e759c57c330",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_pro_rule.dart": {
+    "mtime": 1794828901.362358,
+    "seen": 1795003380.2886853,
+    "ast_hash": "e9c23b1a832af2bee88a2a570550998e",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_range.dart": {
+    "mtime": 1794824208.909939,
+    "seen": 1795003380.2886863,
+    "ast_hash": "2a4ee1c0afcbae80e9385547051afc10",
+    "semantic_hash": ""
+  },
+  "lib/core/reports/report_sharer.dart": {
+    "mtime": 1794827898.4439175,
+    "seen": 1795003380.2886877,
+    "ast_hash": "7f40455c541a79af25791333f9202d5f",
+    "semantic_hash": ""
+  },
+  "lib/core/safe_log.dart": {
+    "mtime": 1794928031.0780602,
+    "seen": 1795003380.2886887,
+    "ast_hash": "0d40f31029792f63fd2a835dc587acb0",
+    "semantic_hash": ""
+  },
+  "lib/core/services/access_guard.dart": {
+    "mtime": 1794919462.3315165,
+    "seen": 1795003380.2886899,
+    "ast_hash": "b054df76483b2ad681b8e377ffb09f7b",
+    "semantic_hash": ""
+  },
+  "lib/core/services/account_deletion_service.dart": {
+    "mtime": 1794654067.6823163,
+    "seen": 1795003380.2886913,
+    "ast_hash": "8dffca01137f53820ced4e30d0d5a093",
+    "semantic_hash": ""
+  },
+  "lib/core/services/account_purge_service.dart": {
+    "mtime": 1794919398.712848,
+    "seen": 1795003380.2886922,
+    "ast_hash": "355afd56bd2d74ad61cd1877b41daef7",
+    "semantic_hash": ""
+  },
+  "lib/core/services/ai_consent_service.dart": {
+    "mtime": 1794832256.5579898,
+    "seen": 1795003380.2886934,
+    "ast_hash": "1bb37984d9fa94a404088016ebde1a1f",
+    "semantic_hash": ""
+  },
+  "lib/core/services/app_check_setup.dart": {
+    "mtime": 1794930046.4060154,
+    "seen": 1795003380.288695,
+    "ast_hash": "e088a63dc6accc2f98cf7e27118f70e1",
+    "semantic_hash": ""
+  },
+  "lib/core/services/app_guards.dart": {
+    "mtime": 1794920508.592343,
+    "seen": 1795003380.2886963,
+    "ast_hash": "44a9449afbcd00eb7c32d25843d9c67b",
+    "semantic_hash": ""
+  },
+  "lib/core/services/app_lock_service.dart": {
+    "mtime": 1794652653.4770694,
+    "seen": 1795003380.2886987,
+    "ast_hash": "f26349999a8ae7dc6b709d170102410c",
+    "semantic_hash": ""
+  },
+  "lib/core/services/appointment_reminders.dart": {
+    "mtime": 1794995751.9853387,
+    "seen": 1795003380.2886999,
+    "ast_hash": "1b683b0c10fb126baa01fee11a3b9baa",
+    "semantic_hash": ""
+  },
+  "lib/core/services/community_feed_service.dart": {
+    "mtime": 1794846893.2606962,
+    "seen": 1795003380.288703,
+    "ast_hash": "da3d8b6b7988eb80565c5abbdf40fdd4",
+    "semantic_hash": ""
+  },
+  "lib/core/services/community_moderation_service.dart": {
+    "mtime": 1794909134.2779455,
+    "seen": 1795003380.288704,
+    "ast_hash": "ce2268b2824a555e47ca32b373652fa3",
+    "semantic_hash": ""
+  },
+  "lib/core/services/community_post_service.dart": {
+    "mtime": 1794848073.978459,
+    "seen": 1795003380.2887053,
+    "ast_hash": "c6fdc23208771a92e638c6755181a73b",
+    "semantic_hash": ""
+  },
+  "lib/core/services/community_profile_service.dart": {
+    "mtime": 1794845443.5225267,
+    "seen": 1795003380.2887063,
+    "ast_hash": "3bfbd065cd4280bce441878907a47c48",
+    "semantic_hash": ""
+  },
+  "lib/core/services/community_reaction_service.dart": {
+    "mtime": 1794849229.2625613,
+    "seen": 1795003380.2887075,
+    "ast_hash": "2581b6129e8b9b8498a34a12f7bbb37d",
+    "semantic_hash": ""
+  },
+  "lib/core/services/community_safety_service.dart": {
+    "mtime": 1794850267.3624623,
+    "seen": 1795003380.2887087,
+    "ast_hash": "ece56cf48c5c2f7c671ee7b2c64d0af3",
+    "semantic_hash": ""
+  },
+  "lib/core/services/connectivity_service.dart": {
+    "mtime": 1794913385.1683164,
+    "seen": 1795003380.2887099,
+    "ast_hash": "0c37115018ac0cb84c00ceac82809b2f",
+    "semantic_hash": ""
+  },
+  "lib/core/services/fda_label_service.dart": {
+    "mtime": 1794836401.7436004,
+    "seen": 1795003380.288711,
+    "ast_hash": "b12efb1fb08e1ecbb8cb186e5802460d",
+    "semantic_hash": ""
+  },
+  "lib/core/services/health_plugin_source.dart": {
+    "mtime": 1794673788.974353,
+    "seen": 1795003380.2887123,
+    "ast_hash": "87da9c3f7f9dad003a08c540356e3e8b",
+    "semantic_hash": ""
+  },
+  "lib/core/services/health_sync_service.dart": {
+    "mtime": 1794660501.134537,
+    "seen": 1795003380.2887135,
+    "ast_hash": "da37572635049fd0e5337489918fe7f9",
+    "semantic_hash": ""
+  },
+  "lib/core/services/legal_service.dart": {
+    "mtime": 1794569958.6404307,
+    "seen": 1795003380.2887144,
+    "ast_hash": "01037e3c2188977278fdc49b06d0be3b",
+    "semantic_hash": ""
+  },
+  "lib/core/services/preferences_sync_service.dart": {
+    "mtime": 1794652653.5056531,
+    "seen": 1795003380.2887173,
+    "ast_hash": "c1815336d1d101b5f1ddc295374f89fb",
+    "semantic_hash": ""
+  },
+  "lib/core/services/pro_access.dart": {
+    "mtime": 1794673737.242956,
+    "seen": 1795003380.2887182,
+    "ast_hash": "917b910302b938c4f9a521614922bf6b",
+    "semantic_hash": ""
+  },
+  "lib/core/services/report_service.dart": {
+    "mtime": 1794911315.5393026,
+    "seen": 1795003380.2887235,
+    "ast_hash": "30f8a41fe04dd0ce649a7ae6b4b47a91",
+    "semantic_hash": ""
+  },
+  "lib/core/services/session_guard.dart": {
+    "mtime": 1794920508.5882466,
+    "seen": 1795003380.2887247,
+    "ast_hash": "3c146a634ffbf730a9b27011bbcc650c",
+    "semantic_hash": ""
+  },
+  "lib/core/streak_calculator.dart": {
+    "mtime": 1794995876.6286764,
+    "seen": 1795003380.2887259,
+    "ast_hash": "9e71fb92d950c54b1c40e75cbeebc9ed",
+    "semantic_hash": ""
+  },
+  "lib/core/subscription/pro_gate.dart": {
+    "mtime": 1794673706.9243994,
+    "seen": 1795003380.288727,
+    "ast_hash": "62d70158b29545cdcd76ee8c89a98c55",
+    "semantic_hash": ""
+  },
+  "lib/core/vitals/health_sync_mapper.dart": {
+    "mtime": 1794660441.3029332,
+    "seen": 1795003380.288733,
+    "ast_hash": "06869e27e1778ffa82547f75c551108e",
+    "semantic_hash": ""
+  },
+  "lib/core/vitals/symptom_entry.dart": {
+    "mtime": 1794656905.5597692,
+    "seen": 1795003380.288739,
+    "ast_hash": "3934f7f3453ff91a17d46d33135d5c95",
+    "semantic_hash": ""
+  },
+  "lib/core/vitals/symptom_validator.dart": {
+    "mtime": 1794655886.2406445,
+    "seen": 1795003380.2887404,
+    "ast_hash": "7f421970c11dbca5be5ef1fed0998c1e",
+    "semantic_hash": ""
+  },
+  "lib/core/vitals/vital_input.dart": {
+    "mtime": 1794657585.3645198,
+    "seen": 1795003380.2887414,
+    "ast_hash": "eb48bab5f530fc399afde227b7ba11e0",
+    "semantic_hash": ""
+  },
+  "lib/core/vitals/vital_models.dart": {
+    "mtime": 1794656905.4644356,
+    "seen": 1795003380.2887425,
+    "ast_hash": "fc9135caf6cd5b2810bf0fa79008fbb6",
+    "semantic_hash": ""
+  },
+  "lib/core/vitals/vital_summary.dart": {
+    "mtime": 1794656905.9796638,
+    "seen": 1795003380.2887437,
+    "ast_hash": "1c7b4d4ffa5bc2faae7f556aa94d5716",
+    "semantic_hash": ""
+  },
+  "lib/core/vitals/vital_types.dart": {
+    "mtime": 1794655734.408868,
+    "seen": 1795003380.288745,
+    "ast_hash": "7d078daefc9e8b3ce12bbe3ba70370e7",
+    "semantic_hash": ""
+  },
+  "lib/core/vitals/vital_units.dart": {
+    "mtime": 1794655820.0253246,
+    "seen": 1795003380.2887459,
+    "ast_hash": "4939228967618e5c6585bc47dd8e1aea",
+    "semantic_hash": ""
+  },
+  "lib/core/vitals/vital_validator.dart": {
+    "mtime": 1794655737.6904495,
+    "seen": 1795003380.2887473,
+    "ast_hash": "6498e827ae44514cfd74897fe6509352",
+    "semantic_hash": ""
+  },
+  "lib/features/assistant/ai_consent_screen.dart": {
+    "mtime": 1794836726.4033592,
+    "seen": 1795003380.2887485,
+    "ast_hash": "d45f28098f217ea144b1759393b7fbde",
+    "semantic_hash": ""
+  },
+  "lib/features/assistant/assistant_gate.dart": {
+    "mtime": 1794832339.147928,
+    "seen": 1795003380.2887511,
+    "ast_hash": "76ffd3ab478a0c349aa8abb13b6a530e",
+    "semantic_hash": ""
+  },
+  "lib/features/assistant/chat_texts_l10n.dart": {
+    "mtime": 1794837312.1121542,
+    "seen": 1795003380.288754,
+    "ast_hash": "4061684bc14c4494177a4ae1895f3c59",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_avatar.dart": {
+    "mtime": 1794845504.0490901,
+    "seen": 1795003380.2887676,
+    "ast_hash": "59c810cef43545f508c9f196cd087319",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_blocked_screen.dart": {
+    "mtime": 1794916018.0552654,
+    "seen": 1795003380.2887688,
+    "ast_hash": "2339999d0404445bc7f83d642d7d4d16",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_compose_screen.dart": {
+    "mtime": 1794917908.5921526,
+    "seen": 1795003380.2887702,
+    "ast_hash": "60983356fba5bca9f7191b6d988553ed",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_gate_screen.dart": {
+    "mtime": 1794917871.0148635,
+    "seen": 1795003380.2887716,
+    "ast_hash": "df2d5381cf4fff09a3b95581a57aa876",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_group_screen.dart": {
+    "mtime": 1794917871.0168633,
+    "seen": 1795003380.2887726,
+    "ast_hash": "5acd55da7406b3c2bdf7823ba80e3893",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_groups_list.dart": {
+    "mtime": 1794917871.0178633,
+    "seen": 1795003380.2887738,
+    "ast_hash": "b17090f27825981cb7861a8ddad689a9",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_moderation_screen.dart": {
+    "mtime": 1794917871.0203724,
+    "seen": 1795003380.288775,
+    "ast_hash": "e40cadf49a88de0e1f9625c1cd68c918",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_post_card.dart": {
+    "mtime": 1794849348.417176,
+    "seen": 1795003380.2887762,
+    "ast_hash": "0b1c0a765afa6fc299e834fe352f5bf8",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_post_screen.dart": {
+    "mtime": 1794917908.5931797,
+    "seen": 1795003380.288777,
+    "ast_hash": "94b211396a6a4e1aebc2220ae3569c37",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_profile_screen.dart": {
+    "mtime": 1794917925.6148453,
+    "seen": 1795003380.2887783,
+    "ast_hash": "32f60bc0e0f507858b8391d7544a21d5",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_safety_ui.dart": {
+    "mtime": 1794850366.628218,
+    "seen": 1795003380.2887795,
+    "ast_hash": "a20b4bba1fbb42d01abb0d1be6827fcc",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_saved_screen.dart": {
+    "mtime": 1794917871.0158648,
+    "seen": 1795003380.2887807,
+    "ast_hash": "23f8047187959b0188f1ae5802c5aaae",
+    "semantic_hash": ""
+  },
+  "lib/features/community/community_texts.dart": {
+    "mtime": 1794931338.284384,
+    "seen": 1795003380.288782,
+    "ast_hash": "c7e87026d6add6e057a861e8cd90a536",
+    "semantic_hash": ""
+  },
+  "lib/features/home/home_dose_source.dart": {
+    "mtime": 1794997906.696775,
+    "seen": 1795003380.288793,
+    "ast_hash": "dd2b8f42d924c39bf2272fbb857d8663",
+    "semantic_hash": ""
+  },
+  "lib/features/onboarding/legal_reconsent_screen.dart": {
+    "mtime": 1794570649.2598732,
+    "seen": 1795003380.2888627,
+    "ast_hash": "7daab9c9a739888f47152a2f5e81f2ff",
+    "semantic_hash": ""
+  },
+  "lib/features/onboarding/post_auth_router.dart": {
+    "mtime": 1794915440.5457375,
+    "seen": 1795003380.2888658,
+    "ast_hash": "0e2d3274ee3975d860354aaa81ee5fda",
+    "semantic_hash": ""
+  },
+  "lib/features/reports/report_pdf_viewer_screen.dart": {
+    "mtime": 1794827954.2384548,
+    "seen": 1795003380.2888823,
+    "ast_hash": "4020c3b143eae90ef78c050c66ef9d8a",
+    "semantic_hash": ""
+  },
+  "lib/features/settings/account_purge_screen.dart": {
+    "mtime": 1794919398.712848,
+    "seen": 1795003380.2888923,
+    "ast_hash": "b56f3bfcc0c00bc5543391ca45d3ad28",
+    "semantic_hash": ""
+  },
+  "lib/features/settings/submit_request_screen.dart": {
+    "mtime": 1794931344.3961287,
+    "seen": 1795003380.288919,
+    "ast_hash": "0379f44e9ac3dac177f48a2ea0dff704",
+    "semantic_hash": ""
+  },
+  "lib/models/app_preferences.dart": {
+    "mtime": 1794571163.3672056,
+    "seen": 1795003380.288932,
+    "ast_hash": "84cfb6edc813ce7d89e583d78c954118",
+    "semantic_hash": ""
+  },
+  "lib/models/faq_item.dart": {
+    "mtime": 1794572157.739444,
+    "seen": 1795003380.2889366,
+    "ast_hash": "c72b159bb1928224ee8d9bfed285db04",
+    "semantic_hash": ""
+  },
+  "lib/models/support_ticket.dart": {
+    "mtime": 1794573470.5641496,
+    "seen": 1795003380.2889442,
+    "ast_hash": "308617fd52e335866edd758db6b8e10d",
+    "semantic_hash": ""
+  },
+  "lib/repositories/ai_context_wiring.dart": {
+    "mtime": 1794833258.7364826,
+    "seen": 1795003380.2889454,
+    "ast_hash": "a30bde97cebec7d708c914091989f029",
+    "semantic_hash": ""
+  },
+  "lib/repositories/chat_repository.dart": {
+    "mtime": 1794837162.4843917,
+    "seen": 1795003380.2889493,
+    "ast_hash": "c58ef4c10cba559f3119cdedde0d09a9",
+    "semantic_hash": ""
+  },
+  "lib/repositories/doctor_firestore.dart": {
+    "mtime": 1794668780.8624833,
+    "seen": 1795003380.2889524,
+    "ast_hash": "f07dd7fc9623fe415f507a3e245edbe7",
+    "semantic_hash": ""
+  },
+  "lib/repositories/faq_repository.dart": {
+    "mtime": 1794580276.949131,
+    "seen": 1795003380.2889564,
+    "ast_hash": "c9e9fbeabd4a573cd2f2236461ec5247",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firebase_appointment_repository.dart": {
+    "mtime": 1794918114.1699533,
+    "seen": 1795003380.2889576,
+    "ast_hash": "3cc6cd92fadbe950161410c0040bbf5c",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firebase_doctor_note_repository.dart": {
+    "mtime": 1794918114.1719542,
+    "seen": 1795003380.2889605,
+    "ast_hash": "6a0564f7a260ae2cf3a9f06771922202",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firebase_prescriber_repository.dart": {
+    "mtime": 1794918114.170953,
+    "seen": 1795003380.2889652,
+    "ast_hash": "cf6205ea6435f16b776b81915ce02014",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firebase_symptom_repository.dart": {
+    "mtime": 1794656950.1525664,
+    "seen": 1795003380.2889695,
+    "ast_hash": "f82aa5a93e7e1425f7d4589d15a27aaf",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firebase_vitals_repository.dart": {
+    "mtime": 1794656950.150498,
+    "seen": 1795003380.2889707,
+    "ast_hash": "ccccb4b6b24e6a7901173d9b6f45f6f8",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firestore_ai_consent_store.dart": {
+    "mtime": 1794832258.49906,
+    "seen": 1795003380.2889717,
+    "ast_hash": "fbfbe426d3eb946f7c25f864bd316309",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firestore_community_feed_store.dart": {
+    "mtime": 1794846941.5981207,
+    "seen": 1795003380.2889733,
+    "ast_hash": "92cdc2ccc24ceaa3f0cd98fa307751d1",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firestore_community_moderation_store.dart": {
+    "mtime": 1794909163.5013428,
+    "seen": 1795003380.2889745,
+    "ast_hash": "ed61769723c4002dd457b9eb199a27f0",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firestore_community_post_store.dart": {
+    "mtime": 1794931338.2818816,
+    "seen": 1795003380.2889757,
+    "ast_hash": "39efcd9def7b9c64e581de86da7ce0cf",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firestore_community_profile_store.dart": {
+    "mtime": 1794845516.2074132,
+    "seen": 1795003380.288977,
+    "ast_hash": "8a19d6adc29a9495c45770c0999a87bb",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firestore_community_reaction_stores.dart": {
+    "mtime": 1794849228.7551894,
+    "seen": 1795003380.2889779,
+    "ast_hash": "a0f967d203a0370b8680b54977195e1b",
+    "semantic_hash": ""
+  },
+  "lib/repositories/firestore_community_safety_stores.dart": {
+    "mtime": 1794931338.2828758,
+    "seen": 1795003380.2889793,
+    "ast_hash": "eec00069d6a871722231b34567e21c0e",
+    "semantic_hash": ""
+  },
+  "lib/repositories/prefs_fda_label_cache.dart": {
+    "mtime": 1794836401.694041,
+    "seen": 1795003380.288983,
+    "ast_hash": "3661e5140932cb823fdc039e6a145d8e",
+    "semantic_hash": ""
+  },
+  "lib/repositories/report_data_wiring.dart": {
+    "mtime": 1794824741.149087,
+    "seen": 1795003380.2889843,
+    "ast_hash": "02859af70228ab3661d338480d0aefc8",
+    "semantic_hash": ""
+  },
+  "lib/repositories/support_repository.dart": {
+    "mtime": 1794931338.2828758,
+    "seen": 1795003380.2889872,
+    "ast_hash": "a94e941331b06b50bb508d3fafc0b161",
+    "semantic_hash": ""
+  },
+  "lib/widgets/app_lock_gate.dart": {
+    "mtime": 1794575335.7599447,
+    "seen": 1795003380.2889917,
+    "ast_hash": "3e8d0f1f481fd0f05250890dbe8e5010",
+    "semantic_hash": ""
+  },
+  "lib/widgets/async_state_view.dart": {
+    "mtime": 1794915986.05557,
+    "seen": 1795003380.2889948,
+    "ast_hash": "3e210ef4f8d37f16f4892f427f557e94",
+    "semantic_hash": ""
+  },
+  "lib/widgets/empty_state_view.dart": {
+    "mtime": 1794915985.863034,
+    "seen": 1795003380.2889993,
+    "ast_hash": "7b0e7d1759450dba899c0e3f75836bb4",
+    "semantic_hash": ""
+  },
+  "lib/widgets/error_retry_view.dart": {
+    "mtime": 1794917986.119425,
+    "seen": 1795003380.2890007,
+    "ast_hash": "a806b4ec1ffd7df08c37270ead540938",
+    "semantic_hash": ""
+  },
+  "lib/widgets/legal_doc_sheet.dart": {
+    "mtime": 1794918175.0456054,
+    "seen": 1795003380.289003,
+    "ast_hash": "850bc2a2e70c9d73111ea2a3afd7ed7d",
+    "semantic_hash": ""
+  },
+  "lib/widgets/offline_banner.dart": {
+    "mtime": 1794914067.775305,
+    "seen": 1795003380.2890043,
+    "ast_hash": "5412924bf29ec6af6e571c03147e4264",
+    "semantic_hash": ""
+  },
+  "lib/widgets/pro_gate_widgets.dart": {
+    "mtime": 1794673790.576432,
+    "seen": 1795003380.2890074,
+    "ast_hash": "4a772a36d9dd4537c268fc8daeec89f7",
+    "semantic_hash": ""
+  },
+  "lib/widgets/skeleton.dart": {
+    "mtime": 1794916087.858964,
+    "seen": 1795003380.2890103,
+    "ast_hash": "5dd30e26e8cf40fa321efdca5df8e35c",
+    "semantic_hash": ""
+  },
+  "test/account_deletion_engine_test.dart": {
+    "mtime": 1794931496.5382602,
+    "seen": 1795003380.2890148,
+    "ast_hash": "fa34738d06f9e6c792536b98bcac7ce6",
+    "semantic_hash": ""
+  },
+  "test/account_deletion_policy_test.dart": {
+    "mtime": 1794652615.9280024,
+    "seen": 1795003380.2890158,
+    "ast_hash": "6ea2fcd33742773c1d6aaf56f29a9dc6",
+    "semantic_hash": ""
+  },
+  "test/account_deletion_summary_test.dart": {
+    "mtime": 1794834040.7463422,
+    "seen": 1795003380.2890172,
+    "ast_hash": "c8d3189acd2a050389a346dc1c44e8c8",
+    "semantic_hash": ""
+  },
+  "test/add_medication_manual_test.dart": {
+    "mtime": 1794997872.4981635,
+    "seen": 1795003380.2890184,
+    "ast_hash": "bc6437174ac8679cbebafdbd462b4a7c",
+    "semantic_hash": ""
+  },
+  "test/ai_consent_screen_test.dart": {
+    "mtime": 1794832470.748977,
+    "seen": 1795003380.2890193,
+    "ast_hash": "fdeea0e7e8eabcf1f25746303c12faa9",
+    "semantic_hash": ""
+  },
+  "test/ai_consent_test.dart": {
+    "mtime": 1794832258.520193,
+    "seen": 1795003380.2890203,
+    "ast_hash": "5890584a3c4e9d8f48c7056a2a18a126",
+    "semantic_hash": ""
+  },
+  "test/ai_context_test.dart": {
+    "mtime": 1794833242.0939593,
+    "seen": 1795003380.2890217,
+    "ast_hash": "55bc109d18daca1085d9e9f3613d9742",
+    "semantic_hash": ""
+  },
+  "test/ai_safety_test.dart": {
+    "mtime": 1794834038.5293186,
+    "seen": 1795003380.289023,
+    "ast_hash": "0540e2e8799ab435aa5694742fb893e4",
+    "semantic_hash": ""
+  },
+  "test/app_check_setup_test.dart": {
+    "mtime": 1794930079.251083,
+    "seen": 1795003380.289024,
+    "ast_hash": "11c05ed93c657984654f13f178a3dd5d",
+    "semantic_hash": ""
+  },
+  "test/app_error_text_test.dart": {
+    "mtime": 1794913042.8095658,
+    "seen": 1795003380.2890253,
+    "ast_hash": "da5bac63cc6367991383922c683f1bc8",
+    "semantic_hash": ""
+  },
+  "test/app_lock_policy_test.dart": {
+    "mtime": 1794575132.8825693,
+    "seen": 1795003380.289028,
+    "ast_hash": "3ac53fb6c9bd38b4950b7b972715ea97",
+    "semantic_hash": ""
+  },
+  "test/app_lock_service_test.dart": {
+    "mtime": 1794834040.7493315,
+    "seen": 1795003380.2890291,
+    "ast_hash": "4d6130b287a2bfa2550e6f2cb6462cbc",
+    "semantic_hash": ""
+  },
+  "test/app_preferences_test.dart": {
+    "mtime": 1794834040.750591,
+    "seen": 1795003380.28903,
+    "ast_hash": "6a1f8b0f9b6d4691e042407842d710fd",
+    "semantic_hash": ""
+  },
+  "test/app_startup_test.dart": {
+    "mtime": 1794915242.1795964,
+    "seen": 1795003380.2890315,
+    "ast_hash": "15a8488a2bead4bf7fe0614a88762d4f",
+    "semantic_hash": ""
+  },
+  "test/appointment_reminder_service_test.dart": {
+    "mtime": 1794671864.9952204,
+    "seen": 1795003380.2890327,
+    "ast_hash": "dc3cd7654b0b1fff626bdb67f147a107",
+    "semantic_hash": ""
+  },
+  "test/assistant_screens_test.dart": {
+    "mtime": 1794916131.7408745,
+    "seen": 1795003380.2890337,
+    "ast_hash": "c1768940fd766265140831dd484eaedf",
+    "semantic_hash": ""
+  },
+  "test/async_state_test.dart": {
+    "mtime": 1794913042.8227766,
+    "seen": 1795003380.289035,
+    "ast_hash": "f93079d53216b6a09d7cebd4df1acbe0",
+    "semantic_hash": ""
+  },
+  "test/chat_controller_test.dart": {
+    "mtime": 1794837211.4827113,
+    "seen": 1795003380.289036,
+    "ast_hash": "f4deae94e5957a4005dd4b7e091371e9",
+    "semantic_hash": ""
+  },
+  "test/chat_models_test.dart": {
+    "mtime": 1794834975.5542092,
+    "seen": 1795003380.289037,
+    "ast_hash": "8296ba10e469f21584b9905e59688114",
+    "semantic_hash": ""
+  },
+  "test/community_feed_test.dart": {
+    "mtime": 1794846992.3921895,
+    "seen": 1795003380.2890382,
+    "ast_hash": "8bcec975c335130e1afb048682d04b7f",
+    "semantic_hash": ""
+  },
+  "test/community_models_test.dart": {
+    "mtime": 1794841159.2271118,
+    "seen": 1795003380.2890394,
+    "ast_hash": "3e9549f685eb5dc6641e45cf82f8c51c",
+    "semantic_hash": ""
+  },
+  "test/community_moderation_test.dart": {
+    "mtime": 1794909671.9620712,
+    "seen": 1795003380.2890406,
+    "ast_hash": "14424d44b69f91e0a2ae26f67420eb06",
+    "semantic_hash": ""
+  },
+  "test/community_posts_test.dart": {
+    "mtime": 1794848806.7825823,
+    "seen": 1795003380.289042,
+    "ast_hash": "9db46ec8ac68dbe1035b64bffba7c3eb",
+    "semantic_hash": ""
+  },
+  "test/community_profile_test.dart": {
+    "mtime": 1794845598.4883006,
+    "seen": 1795003380.289043,
+    "ast_hash": "d3ff050d723b8b3e00eaf008d9b326f0",
+    "semantic_hash": ""
+  },
+  "test/community_reactions_test.dart": {
+    "mtime": 1794849573.3022346,
+    "seen": 1795003380.2890441,
+    "ast_hash": "fc964ffcf5907ee793ecba5fe34ffdd5",
+    "semantic_hash": ""
+  },
+  "test/community_safety_test.dart": {
+    "mtime": 1794850684.476126,
+    "seen": 1795003380.2890453,
+    "ast_hash": "21666101fb64c87ab5494e8f03d2355d",
+    "semantic_hash": ""
+  },
+  "test/connectivity_service_test.dart": {
+    "mtime": 1794913432.3576558,
+    "seen": 1795003380.2890465,
+    "ast_hash": "4f32baecae9a8aa4bae4f1d24904bc1d",
+    "semantic_hash": ""
+  },
+  "test/daily_limits_test.dart": {
+    "mtime": 1794931426.292984,
+    "seen": 1795003380.2890475,
+    "ast_hash": "5a4ba07a4cbc789449a1146b292c5c17",
+    "semantic_hash": ""
+  },
+  "test/data/ai_risky_prompts.json": {
+    "mtime": 1794833840.3908882,
+    "seen": 1795003380.289049,
+    "ast_hash": "7f0c4b6b62b77b2f8375fe1e00f49510",
+    "semantic_hash": ""
+  },
+  "test/data/openfda_metformin.json": {
+    "mtime": 1794836341.6881187,
+    "seen": 1795003380.2890499,
+    "ast_hash": "036fdc22d28f98be89665353db9d1f9e",
+    "semantic_hash": ""
+  },
+  "test/doctor_link_diff_test.dart": {
+    "mtime": 1794669711.9955683,
+    "seen": 1795003380.2890508,
+    "ast_hash": "445865f070ccc135ffcdec9ddbe73b9c",
+    "semantic_hash": ""
+  },
+  "test/doctors_logic_test.dart": {
+    "mtime": 1794668094.8088307,
+    "seen": 1795003380.2890522,
+    "ast_hash": "e2548600e4b2df89d87e81720d944524",
+    "semantic_hash": ""
+  },
+  "test/dose_alarm_planner_test.dart": {
+    "mtime": 1794995751.9559903,
+    "seen": 1795003380.2890532,
+    "ast_hash": "6e33aafe34a88498de841cfa1a56753a",
+    "semantic_hash": ""
+  },
+  "test/dose_engine_test.dart": {
+    "mtime": 1794937608.7776496,
+    "seen": 1795003380.2890542,
+    "ast_hash": "33acddf262f672354597767111f07023",
+    "semantic_hash": ""
+  },
+  "test/dose_window_test.dart": {
+    "mtime": 1794996298.799851,
+    "seen": 1795003380.2890556,
+    "ast_hash": "f9c26831e4cdc31ff3171cd873369c62",
+    "semantic_hash": ""
+  },
+  "test/dose_zone_test.dart": {
+    "mtime": 1794937644.143023,
+    "seen": 1795003380.2890568,
+    "ast_hash": "064d064bc8681df291f8d9eace3c0fa2",
+    "semantic_hash": ""
+  },
+  "test/export_builder_test.dart": {
+    "mtime": 1794835223.6860054,
+    "seen": 1795003380.2890577,
+    "ast_hash": "1d4d24087edd7b0630bab392c9bda3a4",
+    "semantic_hash": ""
+  },
+  "test/export_collector_test.dart": {
+    "mtime": 1794835193.366601,
+    "seen": 1795003380.2890592,
+    "ast_hash": "e5413906ddfa7c14655abda619093e36",
+    "semantic_hash": ""
+  },
+  "test/export_zip_test.dart": {
+    "mtime": 1794834040.75562,
+    "seen": 1795003380.28906,
+    "ast_hash": "0dd0c448bb6fa135dac9e0ab40acf879",
+    "semantic_hash": ""
+  },
+  "test/faq_item_test.dart": {
+    "mtime": 1794834040.7566204,
+    "seen": 1795003380.2890613,
+    "ast_hash": "e8fded3672e0f69fff050bd9f44ba5e8",
+    "semantic_hash": ""
+  },
+  "test/fda_label_live_test.dart": {
+    "mtime": 1794836698.0921202,
+    "seen": 1795003380.2890625,
+    "ast_hash": "70743a9fd382ee60a5868462e757d29c",
+    "semantic_hash": ""
+  },
+  "test/fda_label_test.dart": {
+    "mtime": 1794837722.6201642,
+    "seen": 1795003380.2890635,
+    "ast_hash": "c5e74d345ff345cbaaf22ebd977a6a52",
+    "semantic_hash": ""
+  },
+  "test/health_sync_mapper_test.dart": {
+    "mtime": 1794661923.3713899,
+    "seen": 1795003380.2890646,
+    "ast_hash": "bdc5e2f7a0283345c8f93ecac10b16dd",
+    "semantic_hash": ""
+  },
+  "test/health_sync_service_test.dart": {
+    "mtime": 1794660501.1467588,
+    "seen": 1795003380.289066,
+    "ast_hash": "a7140bd4a46087f40f592e9ce19fcc2c",
+    "semantic_hash": ""
+  },
+  "test/home_screen_test.dart": {
+    "mtime": 1794998112.6540635,
+    "seen": 1795003380.289067,
+    "ast_hash": "44910170704b2e4f8ba5832efb4b723e",
+    "semantic_hash": ""
+  },
+  "test/invite_member_screen_test.dart": {
+    "mtime": 1794997681.603542,
+    "seen": 1795003380.289068,
+    "ast_hash": "f19c6205fc491cde519c1c0111e0d4c2",
+    "semantic_hash": ""
+  },
+  "test/legal_gate_test.dart": {
+    "mtime": 1794834040.7583783,
+    "seen": 1795003380.2890694,
+    "ast_hash": "e6b0493acb9e54a220494d34b72da372",
+    "semantic_hash": ""
+  },
+  "test/note_day_test.dart": {
+    "mtime": 1794672248.1201603,
+    "seen": 1795003380.2890706,
+    "ast_hash": "e6003e67207bd5d8fcf3501c854c89dd",
+    "semantic_hash": ""
+  },
+  "test/notification_privacy_test.dart": {
+    "mtime": 1794928610.2857392,
+    "seen": 1795003380.2890716,
+    "ast_hash": "7f503ffb3ace70929260ac108949b715",
+    "semantic_hash": ""
+  },
+  "test/offline_banner_test.dart": {
+    "mtime": 1794913884.3070605,
+    "seen": 1795003380.289073,
+    "ast_hash": "54044bb5f05f24567f363f546afd2869",
+    "semantic_hash": ""
+  },
+  "test/overdue_sweep_test.dart": {
+    "mtime": 1794996011.9772806,
+    "seen": 1795003380.289074,
+    "ast_hash": "a54119b0ae8864aa28ac23b51e16c084",
+    "semantic_hash": ""
+  },
+  "test/pro_gate_test.dart": {
+    "mtime": 1794673708.814981,
+    "seen": 1795003380.2890751,
+    "ast_hash": "95df16cfe07f8593fea03e30b3196eb3",
+    "semantic_hash": ""
+  },
+  "test/quiet_hours_test.dart": {
+    "mtime": 1794995751.9499443,
+    "seen": 1795003380.2890763,
+    "ast_hash": "29ec92b70b91eebc338e05d1ed22980c",
+    "semantic_hash": ""
+  },
+  "test/reminder_action_queue_test.dart": {
+    "mtime": 1794996057.1613698,
+    "seen": 1795003380.2890775,
+    "ast_hash": "0caebaeebe39a8791677d96782ab89ef",
+    "semantic_hash": ""
+  },
+  "test/report_builder_controller_test.dart": {
+    "mtime": 1794826607.0342207,
+    "seen": 1795003380.2890782,
+    "ast_hash": "be0108908ca1337bb25b8888d5c81aa1",
+    "semantic_hash": ""
+  },
+  "test/report_builder_screen_test.dart": {
+    "mtime": 1794829223.114559,
+    "seen": 1795003380.2890797,
+    "ast_hash": "74d1e3d9b040a8efb311ff5427020385",
+    "semantic_hash": ""
+  },
+  "test/report_csv_builder_test.dart": {
+    "mtime": 1794825273.6395457,
+    "seen": 1795003380.2890806,
+    "ast_hash": "326b261491806c81a7d88090a23622eb",
+    "semantic_hash": ""
+  },
+  "test/report_data_source_test.dart": {
+    "mtime": 1794824794.82344,
+    "seen": 1795003380.289082,
+    "ast_hash": "dcaafb414eb2cca119df12a289dcc68f",
+    "semantic_hash": ""
+  },
+  "test/report_pdf_builder_test.dart": {
+    "mtime": 1794826274.0465937,
+    "seen": 1795003380.2890832,
+    "ast_hash": "ac10bfbe6ad96a48248d054e16eeb65d",
+    "semantic_hash": ""
+  },
+  "test/report_pro_rule_test.dart": {
+    "mtime": 1794828901.5134072,
+    "seen": 1795003380.2890844,
+    "ast_hash": "cd84a7de2be4c600ee3db6c6bd9b93cd",
+    "semantic_hash": ""
+  },
+  "test/report_sharer_test.dart": {
+    "mtime": 1794827898.4597907,
+    "seen": 1795003380.2890854,
+    "ast_hash": "bb06b2ad895c768a16742e495fbfc3d7",
+    "semantic_hash": ""
+  },
+  "test/reports_logic_test.dart": {
+    "mtime": 1794824208.93024,
+    "seen": 1795003380.2890866,
+    "ast_hash": "6fdea608a8ce1d96cc22bc32760330a4",
+    "semantic_hash": ""
+  },
+  "test/safe_log_test.dart": {
+    "mtime": 1794928315.800075,
+    "seen": 1795003380.2890875,
+    "ast_hash": "3dcee430afa3cd40f0ec1787c8862699",
+    "semantic_hash": ""
+  },
+  "test/secrets_guard_test.dart": {
+    "mtime": 1794931459.868546,
+    "seen": 1795003380.2890887,
+    "ast_hash": "3f4806e7600c279229fad5fa586fac91",
+    "semantic_hash": ""
+  },
+  "test/session_access_guard_test.dart": {
+    "mtime": 1794919500.7114942,
+    "seen": 1795003380.2890897,
+    "ast_hash": "f819ffc9d7a50966627e16a0c168d984",
+    "semantic_hash": ""
+  },
+  "test/shared_state_widgets_test.dart": {
+    "mtime": 1794918493.6330163,
+    "seen": 1795003380.289091,
+    "ast_hash": "a87847cc759af634598b7aed33dec59e",
+    "semantic_hash": ""
+  },
+  "test/side_effects_data_test.dart": {
+    "mtime": 1794659172.8173723,
+    "seen": 1795003380.289092,
+    "ast_hash": "4c2aeaa60c44e652fb7342807d593cf6",
+    "semantic_hash": ""
+  },
+  "test/streak_calculator_test.dart": {
+    "mtime": 1794995946.6637743,
+    "seen": 1795003380.2890935,
+    "ast_hash": "3dc3e521ff3aafe822fdcdcd90ee9eac",
+    "semantic_hash": ""
+  },
+  "test/support_ticket_test.dart": {
+    "mtime": 1794834040.75954,
+    "seen": 1795003380.2890944,
+    "ast_hash": "9563027510a049d243e1a475533612b8",
+    "semantic_hash": ""
+  },
+  "test/upgrade_screen_test.dart": {
+    "mtime": 1794997767.224997,
+    "seen": 1795003380.2890954,
+    "ast_hash": "0f475629f33ce05af099a46ad4511e24",
+    "semantic_hash": ""
+  },
+  "test/vital_input_test.dart": {
+    "mtime": 1794657433.2400324,
+    "seen": 1795003380.2890966,
+    "ast_hash": "970415b6aa4b0a88ed5c9b82e595e0f1",
+    "semantic_hash": ""
+  },
+  "test/vital_models_test.dart": {
+    "mtime": 1794834040.7605393,
+    "seen": 1795003380.2890978,
+    "ast_hash": "974d82d11d77f756cc2624dfe18fea38",
+    "semantic_hash": ""
+  },
+  "test/vital_summary_test.dart": {
+    "mtime": 1794655904.4764893,
+    "seen": 1795003380.289099,
+    "ast_hash": "62cb9db21e9e20e28ace9c617f0c4b2d",
+    "semantic_hash": ""
+  },
+  "test/vital_units_test.dart": {
+    "mtime": 1794655904.4687955,
+    "seen": 1795003380.2891,
+    "ast_hash": "ffc834896850ac67143ba3d11679fd14",
+    "semantic_hash": ""
+  },
+  "test/vital_validator_test.dart": {
+    "mtime": 1794655904.4662378,
+    "seen": 1795003380.2891011,
+    "ast_hash": "c03f9094d302a759d14fdea4966a66a6",
+    "semantic_hash": ""
+  },
+  "test/vitals_screen_data_test.dart": {
+    "mtime": 1794658597.8721223,
+    "seen": 1795003380.2891023,
+    "ast_hash": "d97b1555155034b72644719922c5042d",
+    "semantic_hash": ""
+  },
+  "tests/firestore.rules.m21.test.js": {
+    "mtime": 1794931219.999577,
+    "seen": 1795003380.289105,
+    "ast_hash": "c8614d1017b1cc39b7e098bd9b62e46c",
+    "semantic_hash": ""
+  },
+  "tools/audit_rules_probe.js": {
+    "mtime": 1794923226.0852964,
+    "seen": 1795003380.2891076,
+    "ast_hash": "9eb48e9ce135fa238449c7b4a8fc8728",
+    "semantic_hash": ""
+  },
+  "tools/cleanup_community.js": {
+    "mtime": 1794909095.891924,
+    "seen": 1795003380.2891088,
+    "ast_hash": "ead1d6311c8d431be52d3e0054e21967",
+    "semantic_hash": ""
+  },
+  "tools/seed_community.js": {
+    "mtime": 1794851043.4628572,
+    "seen": 1795003380.2891097,
+    "ast_hash": "637ef4580a3c30ff63cbfba31a67bebe",
+    "semantic_hash": ""
+  },
+  "tools/set_moderator.js": {
+    "mtime": 1794910913.1777196,
+    "seen": 1795003380.2891111,
+    "ast_hash": "df27b7800407fed93e401f6f8344a0f8",
+    "semantic_hash": ""
+  },
+  "tools/test_cleanup_community.js": {
+    "mtime": 1794910157.5129752,
+    "seen": 1795003380.289112,
+    "ast_hash": "7bac6db30f113d261ae7c8b5e78cc1b8",
+    "semantic_hash": ""
+  },
+  "assets/fonts/README.md": {
+    "mtime": 1794826343.9848924,
+    "seen": 1795003380.2891197,
+    "ast_hash": "29e5eed4f27a5bac17a412d52b0a1bf7",
+    "semantic_hash": ""
+  },
+  "docs/PRODUCTION_RUNBOOK.md": {
+    "mtime": 1794934665.602715,
+    "seen": 1795003380.289121,
+    "ast_hash": "26a81ba19d37616ee51342639d8bbf7d",
+    "semantic_hash": ""
+  },
+  "docs/REMINDER_DEVICE_MATRIX.md": {
+    "mtime": 1794999512.3797708,
+    "seen": 1795003380.2891223,
+    "ast_hash": "466eb4111d81ac9f6fc6e8af6b29d030",
     "semantic_hash": ""
   }
 }
