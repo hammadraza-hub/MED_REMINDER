@@ -1,4 +1,4 @@
-import '../../core/streak_calculator.dart';
+import '../settings/reminder_readiness_card.dart';
 
 import 'dart:async';
 
@@ -12,7 +12,12 @@ import '../../core/app_exception.dart';
 import '../../core/queued_write.dart';
 import '../../core/app_error_text.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/members/local_member_repository.dart';
+import '../../core/members/firestore_member_repository.dart';
+import '../../core/home_day.dart';
+import '../../core/dose_time.dart';
+import 'home_dose_filter.dart';
+import 'home_summary.dart';
+import '../../core/streak_history.dart';
 import '../../core/members/member_repository.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../l10n/app_localizations.dart';
@@ -39,25 +44,32 @@ import '../meds/missed_dose_reason_sheet.dart';
 /// through persist hote hain — local setState nahi.
 /// ============================================================
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.doseSource, this.uidProvider});
+  const HomeScreen({
+    super.key,
+    this.doseSource,
+    this.uidProvider,
+    this.memberRepository,
+  });
 
   /// Test seams (null = Firestore and the signed-in user).
   final HomeDoseSource? doseSource;
   final String? Function()? uidProvider;
+  final MemberRepository? memberRepository;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  String _selectedFilter = 'all';
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  HomeFilter _filter = HomeFilter.all;
 
   late final HomeDoseSource _dose =
       widget.doseSource ?? HomeDoseSource.firestore();
   String? get _uid =>
       (widget.uidProvider ?? () => AuthRepository.instance.currentUid)();
 
-  final MemberRepository _memberRepository = LocalMemberRepository();
+  late final MemberRepository _memberRepository =
+      widget.memberRepository ?? FirestoreMemberRepository();
 
   StreamSubscription<List<MemberProfile>>? _membersSubscription;
   StreamSubscription<List<dose_model.Dose>>? _dosesSubscription;
@@ -74,25 +86,35 @@ class _HomeScreenState extends State<HomeScreen> {
   /// nothing rather than a made-up number).
   int? _streak;
   int _streakTakenSeen = -1;
+
+  /// The past days of the selected profile, read once (see [StreakHistory]).
+  StreakHistory? _history;
   bool _dosesLoading = true;
   Object? _dosesError;
   Timer? _dosesSlowTimer;
 
-  // ============ COMPUTED — DOSES (M7) ============
+  /// The day the list shows (in the profile's zone), the timer that re-reads
+  /// it when the day ends, and a once-a-minute tick so a dose that has just
+  /// become late looks late without waiting for new data.
+  HomeDay? _day;
+  Timer? _dayTimer;
+  Timer? _lateTick;
+  int _subscribeGeneration = 0;
 
-  int get _takenCount => _doses
-      .where((d) => !d.isPrn && d.status == dose_model.DoseStatus.taken)
-      .length;
+  // ============ DERIVED FROM THE DOSE LIST ============
+  //
+  // Computed ONCE when the list (or the filter) changes, not on every rebuild.
 
-  int get _pendingCount => _doses.where((d) => !d.isPrn && d.isPending).length;
+  /// The long date in the header, formatted once per day and language.
+  String _dateLabelKey = '';
+  String _dateLabel = '';
 
-  int get _missedCount =>
-      _doses.where((d) => !d.isPrn && (d.isMissed || d.isOverdue)).length;
+  HomeSummary _summary = HomeSummary.empty;
+  List<dose_model.Dose> _visible = const [];
 
-  double get _progress {
-    final total = _takenCount + _pendingCount + _missedCount;
-    if (total == 0) return 0.0;
-    return _takenCount / total;
+  void _recompute() {
+    _summary = HomeSummary.of(_doses);
+    _visible = HomeDoseFilter.apply(_doses, _filter);
   }
 
   // ============ SELECTED MEMBER ============
@@ -125,27 +147,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ============ FILTERED DOSES (M7) ============
 
-  List<dose_model.Dose> get _filteredDoses {
-    final nonPrn = _doses.where((d) => !d.isPrn).toList();
-    switch (_selectedFilter) {
-      case 'pending':
-        return nonPrn
-            .where(
-              (d) =>
-                  d.status == dose_model.DoseStatus.pending ||
-                  d.status == dose_model.DoseStatus.snoozed ||
-                  d.status == dose_model.DoseStatus.missed,
-            )
-            .toList();
-      case 'taken':
-        return nonPrn
-            .where((d) => d.status == dose_model.DoseStatus.taken)
-            .toList();
-      default:
-        return nonPrn;
-    }
-  }
-
   // ============================================================
   // LIFECYCLE
   // ============================================================
@@ -153,14 +154,40 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     ProfileController.instance.addListener(_handleProfileChanged);
     _initializeMembers();
     _subscribeDoses();
+    _lateTick = Timer.periodic(const Duration(minutes: 1), (_) {
+      _refreshLateCount();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back after the phone slept past midnight: today is a different day.
+    if (state != AppLifecycleState.resumed) return;
+    final day = _day;
+    if (day != null && !DateTime.now().toUtc().isBefore(day.endUtc)) {
+      _subscribeDoses();
+    } else {
+      _refreshLateCount();
+    }
+  }
+
+  /// Time alone can make a dose late. Rebuild only when the numbers changed.
+  void _refreshLateCount() {
+    if (!mounted) return;
+    final next = HomeSummary.of(_doses);
+    if (next != _summary) setState(() => _summary = next);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ProfileController.instance.removeListener(_handleProfileChanged);
+    _dayTimer?.cancel();
+    _lateTick?.cancel();
     _membersSubscription?.cancel();
     _dosesSubscription?.cancel();
     _dosesSlowTimer?.cancel();
@@ -198,6 +225,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (memberId == null || memberId.isEmpty) {
       setState(() {
         _doses = [];
+        _recompute();
+        _history = null;
         _dosesLoading = false;
         _streak = null;
       });
@@ -222,14 +251,37 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     });
 
+    final generation = ++_subscribeGeneration;
+    unawaited(_attachDoseStream(memberId, generation));
+  }
+
+  /// Reads the profile's zone, cuts "today" there, listens to that day and
+  /// sets a timer for when it ends.
+  Future<void> _attachDoseStream(String memberId, int generation) async {
+    final zone = await _dose.zoneOf(memberId);
+    if (!mounted || generation != _subscribeGeneration) return;
+
+    final day = HomeDay.of(zone);
+    _day = day;
+    _history = StreakHistoryRegistry.instance.forProfile(
+      memberId,
+      zone,
+      (start, end) => _dose.getDosesBetween(memberId, start, end),
+    );
+    _dayTimer?.cancel();
+    _dayTimer = Timer(day.untilEnd(), () {
+      if (mounted) _subscribeDoses();
+    });
+
     _dosesSubscription = _dose
-        .watchTodaysDoses(memberId)
+        .watchDoses(memberId, day.startUtc, day.endUtc)
         .listen(
           (doses) {
-            if (!mounted) return;
+            if (!mounted || generation != _subscribeGeneration) return;
             _dosesSlowTimer?.cancel();
             setState(() {
               _doses = doses;
+              _recompute();
               _dosesLoading = false;
               _dosesError = null;
             });
@@ -238,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onError: (Object error, StackTrace stackTrace) {
             debugPrint('Home dose stream failed: $error');
             AccessGuard.reportIfDenied(error);
-            if (!mounted) return;
+            if (!mounted || generation != _subscribeGeneration) return;
             setState(() {
               _dosesLoading = false;
               _dosesError = error;
@@ -247,26 +299,34 @@ class _HomeScreenState extends State<HomeScreen> {
         );
   }
 
-  /// The streak only changes when a dose is taken, missed or skipped, so it is
-  /// recomputed (60 days of doses) when today's decided count changes.
+  /// The streak only changes when a dose is taken, missed or skipped. The past
+  /// days are read once and kept ([StreakHistory]); today's doses are the ones
+  /// already on screen, so a change costs no Firestore read.
   void _refreshStreakIfNeeded(String memberId, List<dose_model.Dose> today) {
     final decided = today
-        .where((d) => d.status != dose_model.DoseStatus.pending)
+        .where(
+          (d) =>
+              d.status == dose_model.DoseStatus.taken ||
+              d.status == dose_model.DoseStatus.skipped ||
+              d.status == dose_model.DoseStatus.missed,
+        )
         .length;
     if (decided == _streakTakenSeen) return;
     _streakTakenSeen = decided;
-    unawaited(_loadStreak(memberId));
+    unawaited(_loadStreak(memberId, today));
   }
 
-  Future<void> _loadStreak(String memberId) async {
+  Future<void> _loadStreak(String memberId, List<dose_model.Dose> today) async {
+    final history = _history;
+    if (history == null) return;
     try {
-      final now = DateTime.now();
-      final from = DateTime(now.year, now.month, now.day - 59);
-      final doses = await _dose.getDosesForDateRange(memberId, from, now);
-      if (!mounted || ProfileController.instance.memberId != memberId) return;
-      setState(() {
-        _streak = StreakCalculator.compute(doses, now: now).current;
-      });
+      final days = await history.current(today);
+      if (!mounted ||
+          !identical(history, _history) ||
+          ProfileController.instance.memberId != memberId) {
+        return;
+      }
+      setState(() => _streak = days);
     } catch (e) {
       debugPrint('Home streak failed: $e');
     }
@@ -294,7 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
       );
-    } catch (error, stackTrace) {
+    } catch (error) {
       debugPrint('Home member initialization failed: $error');
       if (!mounted) return;
       setState(() {
@@ -341,13 +401,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    // Keep a valid selection that is not in the local list (e.g. the
-    // Firestore-backed self profile); only auto-pick when nothing is set.
-    final hasControllerSelection =
-        (profileController.memberId ?? '').isNotEmpty;
-    memberToSelect ??= hasControllerSelection
-        ? null
-        : (members.isNotEmpty ? members.first : null);
+    // The list is the person's real profiles, so a remembered selection that
+    // is not in it is stale (an old made-up "local_mom", or access that was
+    // removed): fall back to the first one, which is their own profile.
+    memberToSelect ??= members.isNotEmpty ? members.first : null;
     setState(() {
       _members = members;
       _selectedMemberId = memberToSelect?.id;
@@ -425,19 +482,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _confirmSkipFromSheet(dose_model.Dose dose) async {
-    final dt = dose.scheduledAt.toLocal();
-    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
-    final minute = dt.minute.toString().padLeft(2, '0');
-    final amPm = dt.hour >= 12 ? 'PM' : 'AM';
-    final timeLabel = '$hour:$minute $amPm';
+    final timeLabel = formatDoseTime(context, dose.scheduledAt);
 
-    final reason = await MissedDoseReasonSheet.show(
+    final choice = await MissedDoseReasonSheet.show(
       context,
       medName: dose.medName,
       scheduledTimeLabel: timeLabel,
     );
-    if (!mounted) return;
-    await _skipDose(dose, reason: reason);
+    // Sheet closed without choosing: the dose is NOT skipped.
+    if (choice == null || !mounted) return;
+    await _skipDose(dose, reason: choice.reason);
   }
 
   Future<void> _skipDose(dose_model.Dose dose, {String? reason}) async {
@@ -483,6 +537,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        final l10n = AppLocalizations.of(context);
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -514,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _markTaken(dose);
                     },
                     icon: const Icon(Icons.check_rounded),
-                    label: const Text('Mark Taken'),
+                    label: Text(l10n.homeSheetMarkTaken),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.formAccent,
                       foregroundColor: AppColors.surface,
@@ -528,7 +583,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _confirmSkipFromSheet(dose);
                     },
                     icon: const Icon(Icons.skip_next_rounded),
-                    label: const Text('Skip'),
+                    label: Text(l10n.homeActionSkip),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.formAccent,
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -543,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _snoozeDose(dose, 15);
                     },
                     icon: const Icon(Icons.snooze_rounded),
-                    label: const Text('Snooze 15 min'),
+                    label: Text(l10n.homeSheetSnooze15),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.formAccent,
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -558,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _markUntaken(dose);
                     },
                     icon: const Icon(Icons.undo_rounded),
-                    label: const Text('Undo'),
+                    label: Text(l10n.homeSheetUndo),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -568,7 +623,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.cancel),
                 ),
               ],
             ),
@@ -585,7 +640,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openStreaksStats() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => StreaksStatsScreen(userName: _selectedMemberName),
+        builder: (_) => StreaksStatsScreen(
+          userName: _selectedMemberName,
+          profileId: ProfileController.instance.memberId,
+          doseSource: _dose,
+        ),
       ),
     );
   }
@@ -671,8 +730,14 @@ class _HomeScreenState extends State<HomeScreen> {
       _ => l10n.homeGreetingEvening,
     };
 
-    final dateLabel = MaterialLocalizations.of(context)
-        .formatFullDate(DateTime.now());
+    final now = DateTime.now();
+    final dateKey =
+        '${now.year}-${now.month}-${now.day}-${Localizations.localeOf(context)}';
+    if (dateKey != _dateLabelKey) {
+      _dateLabelKey = dateKey;
+      _dateLabel = MaterialLocalizations.of(context).formatFullDate(now);
+    }
+    final dateLabel = _dateLabel;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -731,88 +796,127 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHomeContent() {
     final l10n = AppLocalizations.of(context);
 
-    String filterLabel(String code) {
-      return switch (code) {
-        'pending' => l10n.homeFilterPending,
-        'taken' => l10n.homeFilterTaken,
-        _ => l10n.homeFilterAll,
+    String filterLabel(HomeFilter f) {
+      return switch (f) {
+        HomeFilter.pending => l10n.homeFilterPending,
+        HomeFilter.taken => l10n.homeFilterTaken,
+        HomeFilter.all => l10n.homeFilterAll,
       };
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 90),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _ProgressCard(
-            progress: _progress,
-            taken: _takenCount,
-            pending: _pendingCount,
-            missed: _missedCount,
+    // A scroll view of slivers: the doses are built as they come into view
+    // (a profile with many doses does not build them all), each card keeps its
+    // identity by the dose id.
+    final visible = _visible;
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Reminders blocked or at risk (notifications, exact alarms, battery
+                // saving): asks for the permission from inside the app.
+                const ReminderReadinessCard(autoPrompt: true),
+                _ProgressCard(
+                  progress: _summary.progress,
+                  taken: _summary.taken,
+                  pending: _summary.pending,
+                  missed: _summary.missed,
+                ),
+                const SizedBox(height: 16),
+                _QuickAccessSection(
+                  onVitalsTap: _openVitals,
+                  onDoctorsTap: _openDoctors,
+                  onAssistantTap: _openAssistant,
+                  onProfilesTap: _openProfiles,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.homeTodaySchedule,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.formAccent,
+                        ),
+                      ),
+                    ),
+                    for (final filter in HomeFilter.values)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: _FilterChip(
+                          label: filterLabel(filter),
+                          isSelected: filter == _filter,
+                          onTap: () {
+                            setState(() {
+                              _filter = filter;
+                              _visible = HomeDoseFilter.apply(_doses, filter);
+                            });
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          _QuickAccessSection(
-            onVitalsTap: _openVitals,
-            onDoctorsTap: _openDoctors,
-            onAssistantTap: _openAssistant,
-            onProfilesTap: _openProfiles,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l10n.homeTodaySchedule,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.formAccent,
+        ),
+        if (_dosesLoading)
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 90),
+            sliver: SliverToBoxAdapter(child: SkeletonList(count: 3)),
+          )
+        else if (_dosesError != null)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+            sliver: SliverToBoxAdapter(
+              child: SizedBox(
+                height: 220,
+                child: ErrorRetryView(
+                  error: AppException.fromAny(_dosesError!),
+                  retryKey: const Key('home-doses-retry'),
+                  onRetry: _subscribeDoses,
+                ),
+              ),
+            ),
+          )
+        else if (visible.isEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+            sliver: SliverToBoxAdapter(child: _buildEmptyDoses()),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+            sliver: SliverList.builder(
+              itemCount: visible.length,
+              findChildIndexCallback: (key) {
+                if (key is! ValueKey<String>) return null;
+                final i = visible.indexWhere((d) => d.id == key.value);
+                return i < 0 ? null : i;
+              },
+              itemBuilder: (context, i) {
+                final dose = visible[i];
+                return Padding(
+                  key: ValueKey<String>(dose.id),
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _DoseCard(
+                    dose: dose,
+                    onTaken: () => _markTaken(dose),
+                    onSkip: (reason) => _skipDose(dose, reason: reason),
+                    onSnooze: (minutes) => _snoozeDose(dose, minutes),
+                    onCardTap: () => _openDoseSheet(dose),
                   ),
-                ),
-              ),
-              for (final filter in ['all', 'pending', 'taken'])
-                Padding(
-                  padding: const EdgeInsets.only(left: 5),
-                  child: _FilterChip(
-                    label: filterLabel(filter),
-                    isSelected: filter == _selectedFilter,
-                    onTap: () {
-                      setState(() {
-                        _selectedFilter = filter;
-                      });
-                    },
-                  ),
-                ),
-            ],
+                );
+              },
+            ),
           ),
-          const SizedBox(height: 12),
-          if (_dosesLoading)
-            const SkeletonList(count: 3)
-          else if (_dosesError != null)
-            SizedBox(
-              height: 220,
-              child: ErrorRetryView(
-                error: AppException.fromAny(_dosesError!),
-                retryKey: const Key('home-doses-retry'),
-                onRetry: _subscribeDoses,
-              ),
-            )
-          else if (_filteredDoses.isEmpty)
-            _buildEmptyDoses()
-          else
-            for (final dose in _filteredDoses)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _DoseCard(
-                  dose: dose,
-                  onTaken: () => _markTaken(dose),
-                  onSkip: (reason) => _skipDose(dose, reason: reason),
-                  onSnooze: (minutes) => _snoozeDose(dose, minutes),
-                  onCardTap: () => _openDoseSheet(dose),
-                ),
-              ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -836,9 +940,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'No doses scheduled for today.',
-            style: TextStyle(fontSize: 12, color: AppColors.fieldHint),
+          Text(
+            AppLocalizations.of(context).homeNoDosesToday,
+            style: const TextStyle(fontSize: 12, color: AppColors.fieldHint),
             textAlign: TextAlign.center,
           ),
         ],
@@ -884,14 +988,17 @@ class _HomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
         statusBarColor: AppColors.transparent,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
+      child: _content(context, l10n),
     );
+  }
 
+  Widget _content(BuildContext context, AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       color: AppColors.headerDark,
@@ -1239,12 +1346,16 @@ class _ProgressCard extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 7),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+        // Flexible: a longer translation must not overflow the card.
+        Flexible(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -1399,23 +1510,30 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      excludeSemantics: true,
       onTap: onTap,
-      child: Container(
-        height: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 11),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.formAccent : AppColors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.formAccent),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? AppColors.surface : AppColors.formAccent,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 11),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.formAccent : AppColors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.formAccent),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? AppColors.surface : AppColors.formAccent,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ),
@@ -1442,21 +1560,18 @@ class _DoseCard extends StatelessWidget {
   final void Function(int minutes) onSnooze;
   final VoidCallback onCardTap;
 
-  String get _timeLabel {
-    final dt = dose.scheduledAt.toLocal();
-    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
-    final minute = dt.minute.toString().padLeft(2, '0');
-    final amPm = dt.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $amPm';
-  }
+  String _timeLabel(BuildContext context) =>
+      formatDoseTime(context, dose.scheduledAt);
 
   Future<void> _confirmSkipWithReason(BuildContext context) async {
-    final reason = await MissedDoseReasonSheet.show(
+    final choice = await MissedDoseReasonSheet.show(
       context,
       medName: dose.medName,
-      scheduledTimeLabel: _timeLabel,
+      scheduledTimeLabel: _timeLabel(context),
     );
-    onSkip(reason);
+    // Sheet closed without choosing: the dose is NOT skipped.
+    if (choice == null) return;
+    onSkip(choice.reason);
   }
 
   String get _detailsLabel {
@@ -1561,7 +1676,7 @@ class _DoseCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            _timeLabel,
+                            _timeLabel(context),
                             style: TextStyle(
                               color: isTaken
                                   ? AppColors.success
@@ -1628,22 +1743,54 @@ class _DoseCard extends StatelessWidget {
     required VoidCallback onTap,
     bool filled = false,
   }) {
-    return GestureDetector(
+    return _DoseActionButton(label: label, onTap: onTap, filled: filled);
+  }
+}
+
+/// One of the Taken / Skip / Snooze buttons: a real button for screen readers,
+/// with a ripple and a touch target of at least 48 px.
+class _DoseActionButton extends StatelessWidget {
+  const _DoseActionButton({
+    required this.label,
+    required this.onTap,
+    this.filled = false,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
       onTap: onTap,
-      child: Container(
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: filled ? AppColors.formAccent : AppColors.surface,
+      child: Material(
+        color: filled ? AppColors.formAccent : AppColors.surface,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.formAccent),
+          side: const BorderSide(color: AppColors.formAccent),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: filled ? AppColors.surface : AppColors.formAccent,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Center(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: filled ? AppColors.surface : AppColors.formAccent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
         ),
       ),

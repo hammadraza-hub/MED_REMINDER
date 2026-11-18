@@ -1,3 +1,5 @@
+import '../../core/setup_flow.dart';
+import '../../repositories/auth_repository.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -57,6 +59,9 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
   }
 
   void _skipForNow() {
+    // First-time setup finished: it must not show again.
+    final uid = AuthRepository.instance.currentUid;
+    if (uid != null) SetupFlow.clear(uid);
     // Onboarding complete — open the full app shell with bottom navigation.
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const MedRemindShell()),

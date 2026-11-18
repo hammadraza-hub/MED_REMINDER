@@ -10,6 +10,7 @@ import '../../models/schedule.dart';
 import '../../repositories/medication_repository.dart';
 import '../../repositories/auth_repository.dart';
 import 'add_medication_scan_screen.dart';
+import 'scan_label_screen.dart';
 import 'add_medication_search_screen.dart';
 import 'schedule_picker_screen.dart';
 
@@ -159,7 +160,7 @@ class _AddMedicationManualScreenState extends State<AddMedicationManualScreen> {
   Future<void> _scanLabel() async {
     final result = await Navigator.push<MedicationScanResult>(
       context,
-      MaterialPageRoute(builder: (_) => const AddMedicationScanScreen()),
+      MaterialPageRoute(builder: (_) => const ScanLabelScreen()),
     );
 
     if (result != null) {

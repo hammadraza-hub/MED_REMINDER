@@ -16,6 +16,8 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- User-grantable exact alarms. USE_EXACT_ALARM is Play-policy restricted, so not used. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Lets the app show the system "allow background activity" dialog so reminders are not delayed by battery saving. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:label="med_remind_app"

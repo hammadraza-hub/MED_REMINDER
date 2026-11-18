@@ -4,7 +4,9 @@ import '../../core/account_deletion_policy.dart';
 import '../../core/services/account_deletion_service.dart';
 import '../../core/services/connectivity_service.dart';
 import '../../core/services/legal_service.dart';
+import '../../core/setup_flow.dart';
 import '../../main_shell.dart';
+import '../profile/health_profile_screen.dart';
 import '../settings/account_purge_screen.dart';
 import 'legal_reconsent_screen.dart';
 
@@ -15,14 +17,21 @@ import 'legal_reconsent_screen.dart';
 /// 2. M13 step 2: if the user has not accepted the current Terms / Privacy
 ///    versions, the re-consent screen first (it opens the dashboard after
 ///    acceptance).
-/// 3. Otherwise the dashboard.
+/// 3. A NEW account that has not finished the first-time setup (health
+///    profile -> notifications -> family) goes through it first.
+/// 4. Otherwise the dashboard.
 ///
 /// Both checks fail open — see [AccountDeletionService] and [LegalService].
 Future<Widget> resolvePostAuthHome(String uid) async {
+  // A new account sees the setup once; the mark is local, so this is cheap.
+  final Widget home = await SetupFlow.isPending(uid)
+      ? const HealthProfileScreen()
+      : const MedRemindShell();
+
   // M20 step 3: offline, both checks need the network and would only wait for
   // their time limit. They fail open anyway, so go straight to the app; the
   // next start with a connection checks again.
-  if (ConnectivityService.instance.isOffline) return const MedRemindShell();
+  if (ConnectivityService.instance.isOffline) return home;
 
   // Online but the server may not answer (down, or a Wi-Fi without internet):
   // the two checks run side by side and each gets only a few seconds, so the
@@ -47,7 +56,7 @@ Future<Widget> resolvePostAuthHome(String uid) async {
     return const AccountPurgeScreen();
   }
   if (results[1] as bool) {
-    return LegalReconsentScreen(uid: uid, next: (_) => const MedRemindShell());
+    return LegalReconsentScreen(uid: uid, next: (_) => home);
   }
-  return const MedRemindShell();
+  return home;
 }

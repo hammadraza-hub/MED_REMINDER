@@ -1,3 +1,4 @@
+import 'reminder_readiness_card.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -256,6 +257,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        const ReminderReadinessCard(),
                         _buildContextCard(),
                         const SizedBox(height: 16),
                         _buildSectionLabel(l10n.sectionAlertTypes),

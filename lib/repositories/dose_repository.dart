@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/app_exception.dart';
 import '../core/dose_engine.dart';
 import '../core/services/reminder_scheduler.dart';
+import '../core/streak_history.dart';
 import '../models/dose.dart';
 import '../models/medication.dart';
 import '../repositories/firebase_inventory_repository.dart';
@@ -58,6 +59,25 @@ class DoseRepository {
         );
   }
 
+  /// Stream of the doses whose `scheduledAt` is in [startUtc, endUtc).
+  /// (The day is cut by the caller, in the PROFILE's time zone.)
+  Stream<List<Dose>> watchDosesBetween(
+    String profileId,
+    DateTime startUtc,
+    DateTime endUtc,
+  ) {
+    return _dosesRef(profileId)
+        .where('scheduledAt', isGreaterThanOrEqualTo: startUtc.toUtc())
+        .where('scheduledAt', isLessThan: endUtc.toUtc())
+        .orderBy('scheduledAt')
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Dose.fromJson(doc.data(), id: doc.id))
+              .toList(),
+        );
+  }
+
   /// Stream of today's doses (Dashboard — live updates).
   Stream<List<Dose>> watchTodaysDoses(String profileId) {
     return watchDosesForDay(profileId, DateTime.now());
@@ -91,6 +111,23 @@ class DoseRepository {
               .map((doc) => Dose.fromJson(doc.data(), id: doc.id))
               .toList(),
         );
+  }
+
+  /// One-time read of the doses whose `scheduledAt` is in [startUtc, endUtc).
+  /// (The caller cuts the days, in the PROFILE's time zone.)
+  Future<List<Dose>> getDosesBetween(
+    String profileId,
+    DateTime startUtc,
+    DateTime endUtc,
+  ) async {
+    final snapshot = await _dosesRef(profileId)
+        .where('scheduledAt', isGreaterThanOrEqualTo: startUtc.toUtc())
+        .where('scheduledAt', isLessThan: endUtc.toUtc())
+        .orderBy('scheduledAt')
+        .get();
+    return snapshot.docs
+        .map((doc) => Dose.fromJson(doc.data(), id: doc.id))
+        .toList();
   }
 
   /// Get doses for a date range (Calendar view).
@@ -177,6 +214,8 @@ class DoseRepository {
 
     try {
       await _dosesRef(profileId).doc(doseId).update(updateData);
+      // A change to a day before today makes the cached streak history stale.
+      StreakHistoryRegistry.instance.noteDoseChange(profileId, doseId);
       unawaited(ReminderScheduler.instance.rescheduleAll());
 
       // M9: Deduct stock when dose is logged as taken
@@ -329,6 +368,7 @@ class DoseRepository {
         'reasonText': null,
         'snoozedUntil': null,
       });
+      StreakHistoryRegistry.instance.noteDoseChange(profileId, doseId);
       unawaited(ReminderScheduler.instance.rescheduleAll());
     } on FirebaseException catch (e) {
       throw AppException.fromFirebaseException(e);

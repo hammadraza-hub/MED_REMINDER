@@ -1,4 +1,12 @@
+import '../../core/dose_engine.dart';
+import '../../core/home_day.dart';
+import '../../core/profile/profile_controller.dart';
 import '../../core/streak_calculator.dart';
+import '../../core/streak_history.dart';
+
+import 'package:timezone/timezone.dart' as tz;
+
+import 'home_dose_source.dart';
 
 import 'dart:math' as math;
 
@@ -9,7 +17,6 @@ import '../../core/constants/app_colors.dart';
 import '../../main_shell.dart';
 import '../../models/dose.dart';
 import '../../repositories/auth_repository.dart';
-import '../../repositories/dose_repository.dart';
 import '../../widgets/app_bottom_navigation.dart';
 import 'streaks_stats_data.dart';
 
@@ -34,9 +41,21 @@ import 'streaks_stats_data.dart';
 /// • UI 100% preserved — only data source swapped.
 /// ============================================================
 class StreaksStatsScreen extends StatefulWidget {
-  const StreaksStatsScreen({super.key, this.userName = 'Sarah'});
+  const StreaksStatsScreen({
+    super.key,
+    this.userName = 'Sarah',
+    this.profileId,
+    this.doseSource,
+  });
 
   final String userName;
+
+  /// The profile to show. Home passes the one it is showing, so both screens
+  /// always agree; null = look it up (the old way).
+  final String? profileId;
+
+  /// Test seam (null = Firestore).
+  final HomeDoseSource? doseSource;
 
   @override
   State<StreaksStatsScreen> createState() => _StreaksStatsScreenState();
@@ -59,6 +78,10 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
   /// All Firestore doses for the last 90 days (fetched once on init).
   /// Used for streak, trend, and achievements computation.
   List<Dose> _allDoses = const [];
+
+  /// The profile's zone and the streak numbers, computed once per load.
+  tz.Location? _zone;
+  StreakResult? _result;
 
   // ============================================================
   // INIT
@@ -83,6 +106,10 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
     });
 
     try {
+      _profileId ??= widget.profileId;
+      if (_profileId == null || _profileId!.isEmpty) {
+        _profileId = ProfileController.instance.memberId;
+      }
       if (_profileId == null || _profileId!.isEmpty) {
         final uid = AuthRepository.instance.currentUid;
         if (uid == null) {
@@ -143,9 +170,12 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
     }
   }
 
-  /// Fetch last 90 days of doses — enough for streak + 90D trend.
+  /// The past 89 days come from the shared [StreakHistory] (read once per
+  /// profile and day, the same cache Home uses); today's doses are a small
+  /// read. Opening the screen again costs only that small read.
   Future<void> _loadDoses() async {
     if (_profileId == null || _profileId!.isEmpty) return;
+    final profileId = _profileId!;
 
     setState(() {
       _loading = true;
@@ -153,22 +183,27 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
     });
 
     try {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final from = today.subtract(
-        const Duration(days: 89),
-      ); // 90 days incl today
-
-      final doses = await DoseRepository.instance.getDosesForDateRange(
-        _profileId!,
-        from,
-        today,
+      final source = widget.doseSource ?? HomeDoseSource.firestore();
+      final zone = await source.zoneOf(profileId);
+      final history = StreakHistoryRegistry.instance.forProfile(
+        profileId,
+        zone,
+        (start, end) => source.getDosesBetween(profileId, start, end),
       );
+      final day = HomeDay.of(zone);
+      final today = await source.getDosesBetween(
+        profileId,
+        day.startUtc,
+        day.endUtc,
+      );
+      final result = await history.result(today);
 
       if (!mounted) return;
 
       setState(() {
-        _allDoses = doses;
+        _zone = zone;
+        _result = result;
+        _allDoses = [...history.past, ...today];
         _loading = false;
       });
     } catch (e) {
@@ -202,12 +237,14 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
 
   StreakStatsSummary _computeSummary() {
     final now = DateTime.now();
-    final result = StreakCalculator.compute(_allDoses, now: now);
+    final result =
+        _result ?? StreakCalculator.compute(_allDoses, now: now, zone: _zone);
     final currentStreak = result.current;
     final longestStreak = result.longest;
     final monthAdherence = StreakCalculator.monthAdherencePercent(
       result,
       now: now,
+      zone: _zone,
     );
     final totalTaken = result.totalTaken;
     // === GOAL ===
@@ -327,17 +364,19 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
         ? 90
         : 30;
 
+    final zone = _zone;
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final startDate = today.subtract(Duration(days: rangeDays - 1));
+    final today = zone == null
+        ? DateTime.utc(now.year, now.month, now.day)
+        : DoseEngine.todayIn(zone, now: now);
 
-    // Bucket doses by day.
+    // Bucket doses by day (in the profile's zone, like the streak on Home).
     final Map<String, _DayBucket> dayMap = {};
     for (final dose in _allDoses) {
       if (dose.isPrn) continue;
-      final local = dose.scheduledAt.toLocal();
-      final key = _dayKey(local);
-      dayMap.putIfAbsent(key, () => _DayBucket(date: local));
+      final day = StreakCalculator.dayIn(dose.scheduledAt, zone);
+      final key = _dayKey(day);
+      dayMap.putIfAbsent(key, () => _DayBucket(date: day));
       switch (dose.status) {
         case DoseStatus.taken:
           dayMap[key]!.taken++;
@@ -349,24 +388,33 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
           dayMap[key]!.missed++;
           break;
         case DoseStatus.pending:
-          if (dose.isOverdue) dayMap[key]!.missed++;
+          if (dose.missDeadline.isBefore(now.toUtc())) dayMap[key]!.missed++;
           break;
         case DoseStatus.snoozed:
           break;
       }
     }
 
-    // Build one trend point per day in the range.
+    // One trend point per calendar day in the range (calendar arithmetic, so a
+    // daylight-saving day is not skipped or doubled).
     final points = <StreakTrendPoint>[];
     for (int i = 0; i < rangeDays; i++) {
-      final date = startDate.add(Duration(days: i));
-      final key = _dayKey(date);
-      final bucket = dayMap[key];
+      final day = DateTime.utc(
+        today.year,
+        today.month,
+        today.day - (rangeDays - 1) + i,
+      );
+      final bucket = dayMap[_dayKey(day)];
 
       final total = bucket?.total ?? 0;
       final percent = total == 0 ? 0 : ((bucket!.taken / total) * 100).round();
 
-      points.add(StreakTrendPoint(date: date, percent: percent));
+      points.add(
+        StreakTrendPoint(
+          date: DateTime(day.year, day.month, day.day),
+          percent: percent,
+        ),
+      );
     }
 
     return points;

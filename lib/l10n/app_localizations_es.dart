@@ -10,6 +10,114 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
+  String get homeSheetMarkTaken => 'Marcar como tomada';
+
+  @override
+  String get homeSheetSnooze15 => 'Posponer 15 min';
+
+  @override
+  String get homeSheetUndo => 'Deshacer';
+
+  @override
+  String get homeNoDosesToday => 'No hay dosis programadas para hoy.';
+
+  @override
+  String get skipSheetTitle => '¿Por qué omites esta dosis?';
+
+  @override
+  String get skipSheetNoReason => 'Omitir sin motivo';
+
+  @override
+  String get skipSheetSave => 'Guardar';
+
+  @override
+  String get skipSheetOther => 'Otro';
+
+  @override
+  String get skipSheetOtherHint => 'Cuéntanos por qué (opcional)';
+
+  @override
+  String get skipReasonForgot => 'Se me olvidó';
+
+  @override
+  String get skipReasonSideEffect => 'Efecto secundario';
+
+  @override
+  String get skipReasonFeltBetter => 'Me sentí mejor';
+
+  @override
+  String get skipReasonFeltWorse => 'Me sentí peor';
+
+  @override
+  String get skipReasonOutOfStock => 'Sin existencias';
+
+  @override
+  String get skipReasonAway => 'Fuera de casa';
+
+  @override
+  String get reminderSetupCardTitle =>
+      'Los recordatorios pueden no sonar a tiempo';
+
+  @override
+  String get reminderSetupCardBody =>
+      'Permite algunos ajustes del teléfono para que tus recordatorios suenen a su hora.';
+
+  @override
+  String get reminderSetupCardButton => 'Arreglar ahora';
+
+  @override
+  String get reminderSetupTitle => 'Haz fiables los recordatorios';
+
+  @override
+  String get reminderSetupIntro =>
+      'Tu teléfono decide si un recordatorio puede sonar. Toca Permitir en cada línea y elige Permitir en la pantalla del teléfono.';
+
+  @override
+  String get reminderStepNotifications => 'Mostrar notificaciones';
+
+  @override
+  String get reminderStepNotificationsDesc =>
+      'Sin esto no puede aparecer ningún recordatorio.';
+
+  @override
+  String get reminderStepExact => 'Alarmas y recordatorios';
+
+  @override
+  String get reminderStepExactDesc =>
+      'Hace que suenen en el minuto exacto, sin minutos de retraso.';
+
+  @override
+  String get reminderStepBattery => 'Ejecutar en segundo plano';
+
+  @override
+  String get reminderStepBatteryDesc =>
+      'Evita que el ahorro de batería retrase o bloquee los recordatorios.';
+
+  @override
+  String get reminderStepAutostart =>
+      'Inicio automático / apps en segundo plano';
+
+  @override
+  String get reminderStepAutostartDesc =>
+      'La marca de tu teléfono puede cerrar apps. Activa MedRemind en la página que se abre.';
+
+  @override
+  String get reminderStepAllow => 'Permitir';
+
+  @override
+  String get reminderStepDone => 'Listo';
+
+  @override
+  String get reminderSetupAllDone =>
+      'Todo listo. Tus recordatorios sonarán a tiempo.';
+
+  @override
+  String get reminderSetupClose => 'Cerrar';
+
+  @override
+  String get reminderSetupLater => 'Más tarde';
+
+  @override
   String comingSoon(String title) {
     return '$title — próximamente';
   }

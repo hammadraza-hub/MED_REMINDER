@@ -10,6 +10,112 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get homeSheetMarkTaken => 'Mark Taken';
+
+  @override
+  String get homeSheetSnooze15 => 'Snooze 15 min';
+
+  @override
+  String get homeSheetUndo => 'Undo';
+
+  @override
+  String get homeNoDosesToday => 'No doses scheduled for today.';
+
+  @override
+  String get skipSheetTitle => 'Why are you skipping this dose?';
+
+  @override
+  String get skipSheetNoReason => 'Skip without reason';
+
+  @override
+  String get skipSheetSave => 'Save';
+
+  @override
+  String get skipSheetOther => 'Other';
+
+  @override
+  String get skipSheetOtherHint => 'Tell us why (optional)';
+
+  @override
+  String get skipReasonForgot => 'Forgot';
+
+  @override
+  String get skipReasonSideEffect => 'Side effect';
+
+  @override
+  String get skipReasonFeltBetter => 'Felt better';
+
+  @override
+  String get skipReasonFeltWorse => 'Felt worse';
+
+  @override
+  String get skipReasonOutOfStock => 'Out of stock';
+
+  @override
+  String get skipReasonAway => 'Away from home';
+
+  @override
+  String get reminderSetupCardTitle => 'Reminders may not ring on time';
+
+  @override
+  String get reminderSetupCardBody =>
+      'Allow a few phone settings so your dose reminders ring on time.';
+
+  @override
+  String get reminderSetupCardButton => 'Fix now';
+
+  @override
+  String get reminderSetupTitle => 'Make reminders reliable';
+
+  @override
+  String get reminderSetupIntro =>
+      'Your phone decides whether a reminder may ring. Tap Allow on each line, then choose Allow on the phone screen.';
+
+  @override
+  String get reminderStepNotifications => 'Show notifications';
+
+  @override
+  String get reminderStepNotificationsDesc =>
+      'Without this no reminder can appear.';
+
+  @override
+  String get reminderStepExact => 'Alarms & reminders';
+
+  @override
+  String get reminderStepExactDesc =>
+      'Lets reminders ring at the exact minute, not minutes late.';
+
+  @override
+  String get reminderStepBattery => 'Run in the background';
+
+  @override
+  String get reminderStepBatteryDesc =>
+      'Stops battery saving from delaying or blocking reminders.';
+
+  @override
+  String get reminderStepAutostart => 'Autostart / background apps';
+
+  @override
+  String get reminderStepAutostartDesc =>
+      'Your phone brand may close apps. Switch MedRemind on in the page that opens.';
+
+  @override
+  String get reminderStepAllow => 'Allow';
+
+  @override
+  String get reminderStepDone => 'Done';
+
+  @override
+  String get reminderSetupAllDone =>
+      'All set. Your reminders will ring on time.';
+
+  @override
+  String get reminderSetupClose => 'Close';
+
+  @override
+  String get reminderSetupLater => 'Later';
+
+  @override
   String comingSoon(String title) {
     return '$title — coming soon';
   }

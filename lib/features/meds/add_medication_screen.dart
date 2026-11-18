@@ -11,6 +11,7 @@ import '../../widgets/app_bottom_navigation.dart';
 import '../../widgets/app_avatar.dart';
 import 'add_medication_manual_screen.dart';
 import 'add_medication_scan_screen.dart';
+import 'scan_label_screen.dart';
 import 'interaction_warning_data.dart';
 import 'interaction_warning_screen.dart';
 import 'interaction_checker.dart';
@@ -170,7 +171,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   Future<void> _scanLabel() async {
     final result = await Navigator.of(context).push<MedicationScanResult>(
-      MaterialPageRoute(builder: (_) => const AddMedicationScanScreen()),
+      MaterialPageRoute(builder: (_) => const ScanLabelScreen()),
     );
     if (!mounted || result == null) return;
     await Navigator.of(context).push(

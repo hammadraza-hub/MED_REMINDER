@@ -51,8 +51,8 @@ Phase 1 (M0–M14): 10 of 15 modules done for Spark, 4 partial, 1 blocked. Phase
 5 locales (en, hi: 993 keys; es / fr / ar: 959). The 34 keys behind in es / fr / ar fall back to English. Most feature screens use `AppLocalizations`; some older screens still hard-code English (for example parts of Add Medication and Invite Member).
 
 ## Tech debt (known)
-- Dead / unreferenced files (confirmed by grep): `lib/features/meds/meds_screen_restored.dart` (4019 lines), `lib/features/home/dashboard_screen.dart`, `lib/repositories/firebase_dose_repository.dart`, `lib/core/doses/dose_repository.dart`. Also `add_manual_screen.dart` and `settings/allergy_screen.dart` look like leftovers. Marked, not deleted.
-- Two repository styles: Firebase repos in `lib/repositories/*` and a legacy local Drift path (`lib/core/database`, `lib/core/medications/local_*`, `LocalMemberRepository` still used by the Home member bar).
+- Dead / unreferenced files (confirmed by grep): `lib/features/meds/meds_screen_restored.dart` (4019 lines), `lib/repositories/firebase_dose_repository.dart`, `lib/core/doses/dose_repository.dart`. Also `add_manual_screen.dart` and `settings/allergy_screen.dart` look like leftovers. Marked, not deleted.
+- Two repository styles: Firebase repos in `lib/repositories/*` and a legacy local Drift path (`lib/core/database`, `lib/core/medications/local_*`, `LocalMemberRepository` no longer used by Home since the member bar reads real profiles).
 - 114 `TODO Backend` markers in `lib/`.
 - Reminders are scheduled for the selected profile only.
 - `ROADMAP.md` (Oct 2026, pre-Firebase) is stale; `firestore-debug.log` / `pubsub-debug.log` at the root are untracked noise.

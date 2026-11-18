@@ -10,6 +10,113 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
+  String get homeSheetMarkTaken => 'Marquer comme prise';
+
+  @override
+  String get homeSheetSnooze15 => 'Reporter de 15 min';
+
+  @override
+  String get homeSheetUndo => 'Annuler';
+
+  @override
+  String get homeNoDosesToday => 'Aucune prise prévue aujourd\'hui.';
+
+  @override
+  String get skipSheetTitle => 'Pourquoi sautez-vous cette prise ?';
+
+  @override
+  String get skipSheetNoReason => 'Sauter sans motif';
+
+  @override
+  String get skipSheetSave => 'Enregistrer';
+
+  @override
+  String get skipSheetOther => 'Autre';
+
+  @override
+  String get skipSheetOtherHint => 'Dites-nous pourquoi (facultatif)';
+
+  @override
+  String get skipReasonForgot => 'Oublié';
+
+  @override
+  String get skipReasonSideEffect => 'Effet secondaire';
+
+  @override
+  String get skipReasonFeltBetter => 'Je me sentais mieux';
+
+  @override
+  String get skipReasonFeltWorse => 'Je me sentais moins bien';
+
+  @override
+  String get skipReasonOutOfStock => 'Rupture de stock';
+
+  @override
+  String get skipReasonAway => 'Absent de la maison';
+
+  @override
+  String get reminderSetupCardTitle =>
+      'Les rappels peuvent ne pas sonner à l\'heure';
+
+  @override
+  String get reminderSetupCardBody =>
+      'Autorisez quelques réglages du téléphone pour que vos rappels sonnent à l\'heure.';
+
+  @override
+  String get reminderSetupCardButton => 'Corriger';
+
+  @override
+  String get reminderSetupTitle => 'Rendre les rappels fiables';
+
+  @override
+  String get reminderSetupIntro =>
+      'Votre téléphone décide si un rappel peut sonner. Touchez Autoriser sur chaque ligne, puis choisissez Autoriser sur l\'écran du téléphone.';
+
+  @override
+  String get reminderStepNotifications => 'Afficher les notifications';
+
+  @override
+  String get reminderStepNotificationsDesc =>
+      'Sans cela, aucun rappel ne peut apparaître.';
+
+  @override
+  String get reminderStepExact => 'Alarmes et rappels';
+
+  @override
+  String get reminderStepExactDesc =>
+      'Les rappels sonnent à la minute exacte, sans minutes de retard.';
+
+  @override
+  String get reminderStepBattery => 'Fonctionner en arrière-plan';
+
+  @override
+  String get reminderStepBatteryDesc =>
+      'Empêche l\'économie de batterie de retarder ou bloquer les rappels.';
+
+  @override
+  String get reminderStepAutostart => 'Démarrage auto / applis en arrière-plan';
+
+  @override
+  String get reminderStepAutostartDesc =>
+      'La marque de votre téléphone peut fermer des applis. Activez MedRemind dans la page qui s\'ouvre.';
+
+  @override
+  String get reminderStepAllow => 'Autoriser';
+
+  @override
+  String get reminderStepDone => 'Fait';
+
+  @override
+  String get reminderSetupAllDone =>
+      'Tout est prêt. Vos rappels sonneront à l\'heure.';
+
+  @override
+  String get reminderSetupClose => 'Fermer';
+
+  @override
+  String get reminderSetupLater => 'Plus tard';
+
+  @override
   String comingSoon(String title) {
     return '$title — bientôt disponible';
   }

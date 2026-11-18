@@ -174,8 +174,22 @@ class ReminderScheduler with WidgetsBindingObserver {
   // PERMISSIONS (UI calls this from onboarding — M8 step 5)
   // ────────────────────────────────────────────────────────────
 
-  /// Returns false only when notifications were explicitly denied.
+  /// Shows the system permission prompt(s). Returns false only when
+  /// notifications were explicitly denied. Works on Android 13-16 and iOS.
   Future<bool> requestPermissions() async {
+    final ios = _plugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
+    if (ios != null) {
+      return await ios.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          ) ??
+          false;
+    }
+
     final android = _android;
     if (android == null) return true;
 
@@ -184,6 +198,48 @@ class ReminderScheduler with WidgetsBindingObserver {
       await android.requestExactAlarmsPermission();
     }
     return allowed;
+  }
+
+  /// Are notifications allowed right now (system switch + runtime permission)?
+  Future<bool> notificationsAllowed() async {
+    if (!_initialized) await init();
+    final android = _android;
+    if (android != null) return await android.areNotificationsEnabled() ?? true;
+    final ios = _plugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
+    if (ios != null) {
+      final p = await ios.checkPermissions();
+      return p?.isEnabled ?? false;
+    }
+    return true;
+  }
+
+  /// Can exact alarms be set (Android 12+ "Alarms & reminders")? True on
+  /// platforms that have no such switch.
+  Future<bool> exactAlarmsAllowed() async {
+    final android = _android;
+    if (android == null) return true;
+    try {
+      return await android.canScheduleExactNotifications() ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Opens the system "Alarms & reminders" page for this app.
+  Future<void> requestExactAlarms() async {
+    await _android?.requestExactAlarmsPermission();
+  }
+
+  /// Asks for the notification permission only (no second page opens).
+  Future<bool> requestNotificationsOnly() async {
+    final android = _android;
+    if (android != null) {
+      return await android.requestNotificationsPermission() ?? true;
+    }
+    return requestPermissions();
   }
 
   // ────────────────────────────────────────────────────────────
@@ -314,18 +370,30 @@ class ReminderScheduler with WidgetsBindingObserver {
     required String payload,
     required AndroidScheduleMode mode,
   }) async {
+    // The plan was made a moment ago; by now an alarm that was seconds away
+    // can be in the past, and the plugin throws for a past date. One such
+    // alarm must not abort the whole reschedule (real phone log: "Must be a
+    // date in the future" cancelled everything after it).
+    if (!at.isAfter(DateTime.now().add(const Duration(seconds: 2)))) {
+      return 0;
+    }
     final hide = NotificationPrivacy.instance.hideNames;
     final l10n = lookupAppLocalizations(LocaleController.instance.locale);
-    await _plugin.zonedSchedule(
-      id: id,
-      title: ReminderText.title(l10n, hide: hide, medName: dose.medName),
-      body: ReminderText.body(l10n, hide: hide, doseLabel: dose.doseLabel),
-      scheduledDate: tz.TZDateTime.from(at.toLocal(), tz.local),
-      notificationDetails: _detailsFor(hide),
-      androidScheduleMode: mode,
-      payload: payload,
-    );
-    return 1;
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: ReminderText.title(l10n, hide: hide, medName: dose.medName),
+        body: ReminderText.body(l10n, hide: hide, doseLabel: dose.doseLabel),
+        scheduledDate: tz.TZDateTime.from(at.toLocal(), tz.local),
+        notificationDetails: _detailsFor(hide),
+        androidScheduleMode: mode,
+        payload: payload,
+      );
+      return 1;
+    } catch (e) {
+      debugPrint('ReminderScheduler: one alarm failed (${e.runtimeType})');
+      return 0;
+    }
   }
 
   /// Exact alarms need a user grant on Android 14+; fall back to inexact.

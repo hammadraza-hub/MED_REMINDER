@@ -10,6 +10,110 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get homeSheetMarkTaken => 'تحديد كمأخوذة';
+
+  @override
+  String get homeSheetSnooze15 => 'تأجيل 15 دقيقة';
+
+  @override
+  String get homeSheetUndo => 'تراجع';
+
+  @override
+  String get homeNoDosesToday => 'لا توجد جرعات مجدولة لهذا اليوم.';
+
+  @override
+  String get skipSheetTitle => 'لماذا تتخطى هذه الجرعة؟';
+
+  @override
+  String get skipSheetNoReason => 'تخطي بدون سبب';
+
+  @override
+  String get skipSheetSave => 'حفظ';
+
+  @override
+  String get skipSheetOther => 'أخرى';
+
+  @override
+  String get skipSheetOtherHint => 'أخبرنا لماذا (اختياري)';
+
+  @override
+  String get skipReasonForgot => 'نسيت';
+
+  @override
+  String get skipReasonSideEffect => 'أثر جانبي';
+
+  @override
+  String get skipReasonFeltBetter => 'شعرت بتحسن';
+
+  @override
+  String get skipReasonFeltWorse => 'شعرت بتدهور';
+
+  @override
+  String get skipReasonOutOfStock => 'نفد المخزون';
+
+  @override
+  String get skipReasonAway => 'بعيد عن المنزل';
+
+  @override
+  String get reminderSetupCardTitle => 'قد لا تعمل التذكيرات في وقتها';
+
+  @override
+  String get reminderSetupCardBody =>
+      'اسمح ببعض إعدادات الهاتف حتى تعمل تذكيرات الجرعات في وقتها.';
+
+  @override
+  String get reminderSetupCardButton => 'إصلاح الآن';
+
+  @override
+  String get reminderSetupTitle => 'اجعل التذكيرات موثوقة';
+
+  @override
+  String get reminderSetupIntro =>
+      'يقرر هاتفك ما إذا كان يمكن للتذكير أن يعمل. اضغط «سماح» في كل سطر ثم اختر «سماح» على شاشة الهاتف.';
+
+  @override
+  String get reminderStepNotifications => 'عرض الإشعارات';
+
+  @override
+  String get reminderStepNotificationsDesc => 'بدون ذلك لا يمكن ظهور أي تذكير.';
+
+  @override
+  String get reminderStepExact => 'المنبهات والتذكيرات';
+
+  @override
+  String get reminderStepExactDesc =>
+      'تجعل التذكيرات تعمل في الدقيقة المحددة دون تأخير.';
+
+  @override
+  String get reminderStepBattery => 'العمل في الخلفية';
+
+  @override
+  String get reminderStepBatteryDesc =>
+      'يمنع توفير البطارية من تأخير التذكيرات أو حظرها.';
+
+  @override
+  String get reminderStepAutostart => 'التشغيل التلقائي / التطبيقات في الخلفية';
+
+  @override
+  String get reminderStepAutostartDesc =>
+      'قد تغلق شركة هاتفك التطبيقات. فعّل MedRemind في الصفحة التي ستفتح.';
+
+  @override
+  String get reminderStepAllow => 'سماح';
+
+  @override
+  String get reminderStepDone => 'تم';
+
+  @override
+  String get reminderSetupAllDone => 'كل شيء جاهز. ستعمل تذكيراتك في وقتها.';
+
+  @override
+  String get reminderSetupClose => 'إغلاق';
+
+  @override
+  String get reminderSetupLater => 'لاحقًا';
+
+  @override
   String comingSoon(String title) {
     return '$title — قريبًا';
   }

@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import '../../core/setup_flow.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -135,11 +136,13 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       // Account, display name, verification email aur profile
       // repository mein ek hi martaba create honge.
-      await AuthRepository.instance.signUpWithEmailPassword(
+      final created = await AuthRepository.instance.signUpWithEmailPassword(
         email: email,
         password: password,
         displayName: name,
       );
+      // The first-time setup runs at the first sign-in after verification.
+      await SetupFlow.markPending(created.uid);
 
       if (!mounted) return;
 
@@ -305,6 +308,8 @@ class _SignupScreenState extends State<SignupScreen> {
       }
 
       if (result.isNewUser) {
+        final newUid = AuthRepository.instance.currentUid;
+        if (newUid != null) await SetupFlow.markPending(newUid);
         debugPrint(
           'ðŸ” GOOGLE SIGN-UP: Navigating to HealthProfileScreen (new user)',
         );

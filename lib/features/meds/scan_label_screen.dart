@@ -9,8 +9,9 @@ import '../../l10n/app_localizations.dart';
 import '../../widgets/app_avatar.dart';
 import '../../core/services/camera_service.dart';
 import '../../core/services/ocr_service.dart';
-import 'review_scan_screen.dart';
-import 'add_manual_screen.dart';
+import '../../models/drug.dart';
+import '../../repositories/drug_repository.dart';
+import 'add_medication_scan_screen.dart' show MedicationScanResult;
 
 class ScanLabelScreen extends StatefulWidget {
   const ScanLabelScreen({super.key});
@@ -256,9 +257,8 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
       if (photo == null) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.scanCaptureFailed)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.scanCaptureFailed)));
         return;
       }
 
@@ -279,9 +279,8 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
       final l10n = AppLocalizations.of(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.scanCaptureError)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.scanCaptureError)));
     } finally {
       if (mounted) {
         setState(() {
@@ -334,9 +333,8 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
       final l10n = AppLocalizations.of(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.scanGalleryError)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.scanGalleryError)));
 
       if (_cameraReady && _capturedPhoto == null) {
         await _startLiveDetection();
@@ -472,30 +470,48 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
   // ============================================================
 
   void _enterManually() {
-    // Manual form — scan fallback!
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const AddManualScreen()));
+    // No scan: hand back an empty result so the Add Medication form opens
+    // blank, ready to type into.
+    Navigator.of(context).pop(
+      const MedicationScanResult(
+        drugName: '',
+        strength: '',
+        doseForm: '',
+        quantity: '',
+        directions: '',
+        rawText: '',
+      ),
+    );
   }
+
   // ============================================================
   // REVIEW
   // ============================================================
 
-  void _confirmMedicine(DetectedMedicine medicine) {
-    final XFile? photo = _capturedPhoto;
-
-    if (photo == null) {
-      final l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.scanRescanAgain)),
+  /// The person confirmed one detected medicine: give it back to the Add
+  /// Medication flow (the same result the old photo screen produced), which
+  /// opens the form pre-filled and saves through MedicationRepository.
+  Future<void> _confirmMedicine(DetectedMedicine medicine) async {
+    Drug? matched;
+    try {
+      final found = await DrugRepository.instance.searchDrugs(
+        medicine.name,
+        limit: 1,
       );
-
-      return;
+      if (found.isNotEmpty) matched = found.first;
+    } catch (_) {
+      matched = null; // matching is a bonus, never a blocker
     }
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            ReviewScanScreen(medicine: medicine, imagePath: photo.path),
+    if (!mounted) return;
+    Navigator.of(context).pop(
+      MedicationScanResult(
+        drugName: matched?.name ?? medicine.name,
+        strength: medicine.strength ?? matched?.strength ?? '',
+        doseForm: medicine.form ?? matched?.doseForm ?? '',
+        quantity: '',
+        directions: medicine.instructions ?? medicine.frequency ?? '',
+        matchedDrug: matched,
+        rawText: '',
       ),
     );
   }
@@ -1080,19 +1096,19 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
 
               const SizedBox(width: 8),
 
-                Expanded(
-                  child: Text(
-                    _detectedMedicines.length > 1
-                        ? l10n.scanMedicineBadgeNumber(index + 1)
-                        : l10n.scanMedicineBadgeSingular,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
-                      color: AppColors.success,
-                    ),
+              Expanded(
+                child: Text(
+                  _detectedMedicines.length > 1
+                      ? l10n.scanMedicineBadgeNumber(index + 1)
+                      : l10n.scanMedicineBadgeSingular,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                    color: AppColors.success,
                   ),
                 ),
+              ),
             ],
           ),
 
@@ -1166,7 +1182,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> {
               ),
               child: Text(
                 l10n.scanReviewAdd,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),

@@ -337,7 +337,11 @@ class _HealthProfileScreenState extends State<HealthProfileScreen> {
   }
 
   void _skip() {
-    Navigator.of(context).maybePop();
+    // Skip = go on to the next setup step (this screen can be the first one
+    // after sign-in, so there may be nothing to go back to).
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const NotificationSetupScreen()),
+    );
   }
 
   @override

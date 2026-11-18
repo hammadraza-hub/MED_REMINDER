@@ -104,6 +104,204 @@ abstract class AppLocalizations {
     Locale('hi'),
   ];
 
+  /// No description provided for @homeSheetMarkTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Taken'**
+  String get homeSheetMarkTaken;
+
+  /// No description provided for @homeSheetSnooze15.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze 15 min'**
+  String get homeSheetSnooze15;
+
+  /// No description provided for @homeSheetUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get homeSheetUndo;
+
+  /// No description provided for @homeNoDosesToday.
+  ///
+  /// In en, this message translates to:
+  /// **'No doses scheduled for today.'**
+  String get homeNoDosesToday;
+
+  /// No description provided for @skipSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why are you skipping this dose?'**
+  String get skipSheetTitle;
+
+  /// No description provided for @skipSheetNoReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip without reason'**
+  String get skipSheetNoReason;
+
+  /// No description provided for @skipSheetSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get skipSheetSave;
+
+  /// No description provided for @skipSheetOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get skipSheetOther;
+
+  /// No description provided for @skipSheetOtherHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us why (optional)'**
+  String get skipSheetOtherHint;
+
+  /// No description provided for @skipReasonForgot.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot'**
+  String get skipReasonForgot;
+
+  /// No description provided for @skipReasonSideEffect.
+  ///
+  /// In en, this message translates to:
+  /// **'Side effect'**
+  String get skipReasonSideEffect;
+
+  /// No description provided for @skipReasonFeltBetter.
+  ///
+  /// In en, this message translates to:
+  /// **'Felt better'**
+  String get skipReasonFeltBetter;
+
+  /// No description provided for @skipReasonFeltWorse.
+  ///
+  /// In en, this message translates to:
+  /// **'Felt worse'**
+  String get skipReasonFeltWorse;
+
+  /// No description provided for @skipReasonOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get skipReasonOutOfStock;
+
+  /// No description provided for @skipReasonAway.
+  ///
+  /// In en, this message translates to:
+  /// **'Away from home'**
+  String get skipReasonAway;
+
+  /// No description provided for @reminderSetupCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders may not ring on time'**
+  String get reminderSetupCardTitle;
+
+  /// No description provided for @reminderSetupCardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow a few phone settings so your dose reminders ring on time.'**
+  String get reminderSetupCardBody;
+
+  /// No description provided for @reminderSetupCardButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix now'**
+  String get reminderSetupCardButton;
+
+  /// No description provided for @reminderSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make reminders reliable'**
+  String get reminderSetupTitle;
+
+  /// No description provided for @reminderSetupIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone decides whether a reminder may ring. Tap Allow on each line, then choose Allow on the phone screen.'**
+  String get reminderSetupIntro;
+
+  /// No description provided for @reminderStepNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Show notifications'**
+  String get reminderStepNotifications;
+
+  /// No description provided for @reminderStepNotificationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Without this no reminder can appear.'**
+  String get reminderStepNotificationsDesc;
+
+  /// No description provided for @reminderStepExact.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarms & reminders'**
+  String get reminderStepExact;
+
+  /// No description provided for @reminderStepExactDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets reminders ring at the exact minute, not minutes late.'**
+  String get reminderStepExactDesc;
+
+  /// No description provided for @reminderStepBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Run in the background'**
+  String get reminderStepBattery;
+
+  /// No description provided for @reminderStepBatteryDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops battery saving from delaying or blocking reminders.'**
+  String get reminderStepBatteryDesc;
+
+  /// No description provided for @reminderStepAutostart.
+  ///
+  /// In en, this message translates to:
+  /// **'Autostart / background apps'**
+  String get reminderStepAutostart;
+
+  /// No description provided for @reminderStepAutostartDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone brand may close apps. Switch MedRemind on in the page that opens.'**
+  String get reminderStepAutostartDesc;
+
+  /// No description provided for @reminderStepAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get reminderStepAllow;
+
+  /// No description provided for @reminderStepDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get reminderStepDone;
+
+  /// No description provided for @reminderSetupAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All set. Your reminders will ring on time.'**
+  String get reminderSetupAllDone;
+
+  /// No description provided for @reminderSetupClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get reminderSetupClose;
+
+  /// No description provided for @reminderSetupLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get reminderSetupLater;
+
   /// Snackbar jab koi feature abhi available na ho.
   ///
   /// In en, this message translates to:

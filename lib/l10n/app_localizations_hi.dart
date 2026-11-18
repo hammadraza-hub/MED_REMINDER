@@ -10,6 +10,112 @@ class AppLocalizationsHi extends AppLocalizations {
   AppLocalizationsHi([String locale = 'hi']) : super(locale);
 
   @override
+  String get homeSheetMarkTaken => 'ली गई चिह्नित करें';
+
+  @override
+  String get homeSheetSnooze15 => '15 मिनट के लिए टालें';
+
+  @override
+  String get homeSheetUndo => 'पूर्ववत करें';
+
+  @override
+  String get homeNoDosesToday => 'आज के लिए कोई खुराक निर्धारित नहीं है।';
+
+  @override
+  String get skipSheetTitle => 'आप यह खुराक क्यों छोड़ रहे हैं?';
+
+  @override
+  String get skipSheetNoReason => 'बिना कारण छोड़ें';
+
+  @override
+  String get skipSheetSave => 'सहेजें';
+
+  @override
+  String get skipSheetOther => 'अन्य';
+
+  @override
+  String get skipSheetOtherHint => 'हमें कारण बताएँ (वैकल्पिक)';
+
+  @override
+  String get skipReasonForgot => 'भूल गया';
+
+  @override
+  String get skipReasonSideEffect => 'साइड इफ़ेक्ट';
+
+  @override
+  String get skipReasonFeltBetter => 'बेहतर महसूस हुआ';
+
+  @override
+  String get skipReasonFeltWorse => 'बुरा महसूस हुआ';
+
+  @override
+  String get skipReasonOutOfStock => 'स्टॉक खत्म';
+
+  @override
+  String get skipReasonAway => 'घर से बाहर';
+
+  @override
+  String get reminderSetupCardTitle => 'रिमाइंडर समय पर नहीं बज सकते';
+
+  @override
+  String get reminderSetupCardBody =>
+      'फ़ोन की कुछ सेटिंग्स की अनुमति दें ताकि खुराक के रिमाइंडर समय पर बजें।';
+
+  @override
+  String get reminderSetupCardButton => 'अभी ठीक करें';
+
+  @override
+  String get reminderSetupTitle => 'रिमाइंडर भरोसेमंद बनाएँ';
+
+  @override
+  String get reminderSetupIntro =>
+      'रिमाइंडर बज सकता है या नहीं, यह आपका फ़ोन तय करता है। हर पंक्ति में अनुमति दें दबाएँ, फिर फ़ोन की स्क्रीन पर अनुमति दें चुनें।';
+
+  @override
+  String get reminderStepNotifications => 'नोटिफ़िकेशन दिखाएँ';
+
+  @override
+  String get reminderStepNotificationsDesc =>
+      'इसके बिना कोई रिमाइंडर नहीं दिख सकता।';
+
+  @override
+  String get reminderStepExact => 'अलार्म और रिमाइंडर';
+
+  @override
+  String get reminderStepExactDesc =>
+      'रिमाइंडर ठीक उसी मिनट बजते हैं, देरी से नहीं।';
+
+  @override
+  String get reminderStepBattery => 'बैकग्राउंड में चलने दें';
+
+  @override
+  String get reminderStepBatteryDesc =>
+      'बैटरी बचत को रिमाइंडर में देरी या रुकावट डालने से रोकता है।';
+
+  @override
+  String get reminderStepAutostart => 'ऑटोस्टार्ट / बैकग्राउंड ऐप्स';
+
+  @override
+  String get reminderStepAutostartDesc =>
+      'आपके फ़ोन का ब्रांड ऐप्स बंद कर सकता है। खुलने वाले पेज में MedRemind चालू करें।';
+
+  @override
+  String get reminderStepAllow => 'अनुमति दें';
+
+  @override
+  String get reminderStepDone => 'हो गया';
+
+  @override
+  String get reminderSetupAllDone =>
+      'सब तैयार है। आपके रिमाइंडर समय पर बजेंगे।';
+
+  @override
+  String get reminderSetupClose => 'बंद करें';
+
+  @override
+  String get reminderSetupLater => 'बाद में';
+
+  @override
   String comingSoon(String title) {
     return '$title — जल्द आ रहा है';
   }
