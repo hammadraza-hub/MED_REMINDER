@@ -1,5 +1,6 @@
 {
   "@@locale": "es",
+  "quietHoursDoseNote": "El horario de silencio solo retrasa los avisos de reposición y de citas. Tus recordatorios de dosis siempre suenan a su hora.",
   "comingSoon": "{title} — próximamente",
   "cancel": "Cancelar",
   "navHome": "Inicio",

@@ -1,3 +1,4 @@
+import '../core/dose_zone.dart';
 import '../core/services/session_guard.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -348,7 +349,8 @@ class AuthRepository {
     required String authProvider,
   }) async {
     final now = FieldValue.serverTimestamp();
-    final timezone = DateTime.now().timeZoneName ?? 'UTC';
+    // An IANA name ("Asia/Karachi"): doses are generated in this zone.
+    final timezone = await DoseZone.phoneZoneNameOrUtc();
 
     await _db.collection('users').doc(uid).set({
       'email': email,
@@ -379,7 +381,8 @@ class AuthRepository {
     required String email,
   }) async {
     final now = FieldValue.serverTimestamp();
-    final timezone = DateTime.now().timeZoneName ?? 'UTC';
+    // An IANA name ("Asia/Karachi"): doses are generated in this zone.
+    final timezone = await DoseZone.phoneZoneNameOrUtc();
     final profileRef = _db.collection('profiles').doc();
     final profileId = profileRef.id;
 

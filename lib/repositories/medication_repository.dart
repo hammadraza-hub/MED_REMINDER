@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../core/app_exception.dart';
 import '../core/services/reminder_scheduler.dart';
 import '../models/medication.dart';
 import '../core/dose_engine.dart';
+import '../core/dose_zone.dart';
 import '../models/schedule.dart';
 
 /// Medication Repository — Firestore CRUD operations for medications.
@@ -191,7 +194,12 @@ class MedicationRepository {
       // 3. If schedule changed, regenerate future doses
       if (_scheduleChanged(oldMedication.schedule, medication.schedule)) {
         await _deleteFuturePendingDoses(profileId, medication.id);
-        await _generateAndWriteDoses(profileId, medication);
+        // Only the future, and never over a dose that already exists.
+        await _generateAndWriteDoses(
+          profileId,
+          medication,
+          notBefore: DateTime.now(),
+        );
       }
 
       unawaited(ReminderScheduler.instance.rescheduleAll());
@@ -355,35 +363,116 @@ class MedicationRepository {
     }
   }
 
-  /// Generates 14-day doses for a medication and writes them to Firestore.
-  /// Uses batch write with deterministic IDs (set, not add) to prevent duplicates.
-  Future<void> _generateAndWriteDoses(
-    String profileId,
-    Medication medication,
-  ) async {
-    final missedAfterMin = await _getProfileMissedAfterMin(profileId);
+  /// The profile's time zone (IANA name; the phone's zone for an old profile
+  /// that stored an abbreviation like "PKT", UTC as the last resort).
+  Future<tz.Location> _getProfileZone(String profileId) async {
+    String? name;
+    try {
+      final doc = await _db.collection('profiles').doc(profileId).get();
+      name = doc.data()?['timezone'] as String?;
+    } catch (_) {
+      name = null;
+    }
+    return DoseZone.forProfile(name);
+  }
 
-    final doses = DoseEngine.generate14DayDoses(
+  /// Generates the 14-day window for a medication and writes ONLY the doses
+  /// that are not there yet (deterministic ids). A dose that already exists,
+  /// for example one taken today, is never overwritten (M22 finding 2).
+  /// [notBefore] limits it to the future (used after a schedule change).
+  /// Returns how many doses were written.
+  Future<int> _generateAndWriteDoses(
+    String profileId,
+    Medication medication, {
+    DateTime? notBefore,
+    int? missedAfterMin,
+    tz.Location? zone,
+  }) async {
+    missedAfterMin ??= await _getProfileMissedAfterMin(profileId);
+    // PDF M6: doses are generated in the PROFILE's time zone.
+    zone ??= await _getProfileZone(profileId);
+
+    final generated = DoseEngine.generate14DayDoses(
       medication: medication,
       profileId: profileId,
       missedAfterMin: missedAfterMin,
+      zone: zone,
     );
+    if (generated.isEmpty) return 0;
 
-    if (doses.isEmpty) return;
-
-    // Batch write — use set() with deterministic IDs
-    final batch = _db.batch();
     final dosesRef = _db
         .collection('profiles')
         .doc(profileId)
         .collection('doses');
 
-    for (final dose in doses) {
-      batch.set(dosesRef.doc(dose.id), dose.toJson());
-    }
+    // Which of these ids exist already (one query per medicine).
+    final first = generated
+        .map((d) => d.scheduledAt)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+    final last = generated
+        .map((d) => d.scheduledAt)
+        .reduce((a, b) => a.isAfter(b) ? a : b);
+    final existing = await dosesRef
+        .where('medicationId', isEqualTo: medication.id)
+        .where('scheduledAt', isGreaterThanOrEqualTo: Timestamp.fromDate(first))
+        .where('scheduledAt', isLessThanOrEqualTo: Timestamp.fromDate(last))
+        .get();
 
-    await batch.commit();
+    final toWrite = DoseEngine.onlyMissing(
+      generated,
+      existing.docs.map((d) => d.id).toSet(),
+      notBefore: notBefore,
+    );
+    if (toWrite.isEmpty) return 0;
+
+    // Batches stay far below the 500-write limit.
+    for (var i = 0; i < toWrite.length; i += 400) {
+      final batch = _db.batch();
+      for (final dose in toWrite.skip(i).take(400)) {
+        batch.set(dosesRef.doc(dose.id), dose.toJson());
+      }
+      await batch.commit();
+    }
+    return toWrite.length;
   }
+
+  /// Keeps every active medicine topped up to today + 14 days (the old code
+  /// wrote the window once, so doses ran out after 14 days; PDF M6 extends it
+  /// every night with a Blaze function, this is the Spark replacement). Called
+  /// on app start / resume; at most once an hour per profile. Writes only
+  /// missing doses. Returns how many were written. Never throws.
+  Future<int> topUpDoses(String profileId, {bool force = false}) async {
+    final last = _lastTopUp[profileId];
+    if (!force &&
+        last != null &&
+        DateTime.now().difference(last) < const Duration(hours: 1)) {
+      return 0;
+    }
+    try {
+      final snapshot = await _medicationsRef(profileId)
+          .where('status', isEqualTo: 'active')
+          .get();
+      final missedAfterMin = await _getProfileMissedAfterMin(profileId);
+      final zone = await _getProfileZone(profileId);
+      var written = 0;
+      for (final doc in snapshot.docs) {
+        final medication = Medication.fromJson(doc.data(), id: doc.id);
+        written += await _generateAndWriteDoses(
+          profileId,
+          medication,
+          missedAfterMin: missedAfterMin,
+          zone: zone,
+        );
+      }
+      _lastTopUp[profileId] = DateTime.now();
+      return written;
+    } catch (e) {
+      debugPrint('MedicationRepository: top-up failed: $e');
+      return 0;
+    }
+  }
+
+  final Map<String, DateTime> _lastTopUp = {};
 
   /// Deletes future pending doses for a medication.
   /// Used when schedule changes (regenerate) or medication is archived.

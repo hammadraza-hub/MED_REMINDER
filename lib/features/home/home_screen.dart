@@ -1,3 +1,5 @@
+import '../../core/streak_calculator.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -16,7 +18,7 @@ import '../../core/profile/profile_controller.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/dose.dart' as dose_model;
 import '../../repositories/auth_repository.dart';
-import '../../repositories/dose_repository.dart';
+import 'home_dose_source.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_photo_picker.dart';
 import '../assistant/assistant_gate.dart';
@@ -37,7 +39,11 @@ import '../meds/missed_dose_reason_sheet.dart';
 /// through persist hote hain — local setState nahi.
 /// ============================================================
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.doseSource, this.uidProvider});
+
+  /// Test seams (null = Firestore and the signed-in user).
+  final HomeDoseSource? doseSource;
+  final String? Function()? uidProvider;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -45,6 +51,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedFilter = 'all';
+
+  late final HomeDoseSource _dose =
+      widget.doseSource ?? HomeDoseSource.firestore();
+  String? get _uid =>
+      (widget.uidProvider ?? () => AuthRepository.instance.currentUid)();
 
   final MemberRepository _memberRepository = LocalMemberRepository();
 
@@ -58,6 +69,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ============ DOSES (M7 — Firestore stream) ============
   List<dose_model.Dose> _doses = [];
+
+  /// Real streak of the selected profile; null until known (the header shows
+  /// nothing rather than a made-up number).
+  int? _streak;
+  int _streakTakenSeen = -1;
   bool _dosesLoading = true;
   Object? _dosesError;
   Timer? _dosesSlowTimer;
@@ -183,9 +199,11 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _doses = [];
         _dosesLoading = false;
+        _streak = null;
       });
       return;
     }
+    _streakTakenSeen = -1;
 
     setState(() {
       _dosesLoading = true;
@@ -204,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     });
 
-    _dosesSubscription = DoseRepository.instance
+    _dosesSubscription = _dose
         .watchTodaysDoses(memberId)
         .listen(
           (doses) {
@@ -215,6 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _dosesLoading = false;
               _dosesError = null;
             });
+            _refreshStreakIfNeeded(memberId, doses);
           },
           onError: (Object error, StackTrace stackTrace) {
             debugPrint('Home dose stream failed: $error');
@@ -226,6 +245,31 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           },
         );
+  }
+
+  /// The streak only changes when a dose is taken, missed or skipped, so it is
+  /// recomputed (60 days of doses) when today's decided count changes.
+  void _refreshStreakIfNeeded(String memberId, List<dose_model.Dose> today) {
+    final decided = today
+        .where((d) => d.status != dose_model.DoseStatus.pending)
+        .length;
+    if (decided == _streakTakenSeen) return;
+    _streakTakenSeen = decided;
+    unawaited(_loadStreak(memberId));
+  }
+
+  Future<void> _loadStreak(String memberId) async {
+    try {
+      final now = DateTime.now();
+      final from = DateTime(now.year, now.month, now.day - 59);
+      final doses = await _dose.getDosesForDateRange(memberId, from, now);
+      if (!mounted || ProfileController.instance.memberId != memberId) return;
+      setState(() {
+        _streak = StreakCalculator.compute(doses, now: now).current;
+      });
+    } catch (e) {
+      debugPrint('Home streak failed: $e');
+    }
   }
 
   // ============================================================
@@ -359,9 +403,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _markTaken(dose_model.Dose dose) async {
     final memberId = ProfileController.instance.memberId;
     if (memberId == null) return;
-    final userId = AuthRepository.instance.currentUid ?? 'unknown';
+    final userId = _uid ?? 'unknown';
     await _doseWrite(
-      () => DoseRepository.instance.logDose(
+      () => _dose.logDose(
         profileId: memberId,
         doseId: dose.id,
         status: dose_model.DoseStatus.taken,
@@ -375,10 +419,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final memberId = ProfileController.instance.memberId;
     if (memberId == null) return;
     await _doseWrite(
-      () => DoseRepository.instance.undoDose(
-        profileId: memberId,
-        doseId: dose.id,
-      ),
+      () => _dose.undoDose(profileId: memberId, doseId: dose.id),
       (l10n) => l10n.homeMarkedUntaken(dose.medName),
     );
   }
@@ -402,9 +443,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _skipDose(dose_model.Dose dose, {String? reason}) async {
     final memberId = ProfileController.instance.memberId;
     if (memberId == null) return;
-    final userId = AuthRepository.instance.currentUid ?? 'unknown';
+    final userId = _uid ?? 'unknown';
     await _doseWrite(
-      () => DoseRepository.instance.logDose(
+      () => _dose.logDose(
         profileId: memberId,
         doseId: dose.id,
         status: dose_model.DoseStatus.skipped,
@@ -421,7 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final memberId = ProfileController.instance.memberId;
     if (memberId == null) return;
     await _doseWrite(
-      () => DoseRepository.instance.snoozeDose(
+      () => _dose.snoozeDose(
         profileId: memberId,
         doseId: dose.id,
         snoozeDuration: Duration(minutes: minutes),
@@ -640,7 +681,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _HomeHeader(
             greeting: greeting,
             dateLabel: dateLabel,
-            streakDays: HomeData.streakDays(),
+            streakDays: _streak,
             selectedMemberImagePath: _selectedMemberImagePath,
             selectedMemberName: _selectedMemberName,
             selectedMemberId: _selectedMemberId,
@@ -828,7 +869,7 @@ class _HomeHeader extends StatelessWidget {
 
   final String greeting;
   final String dateLabel;
-  final int streakDays;
+  final int? streakDays;
   final String? selectedMemberImagePath;
   final String selectedMemberName;
   final String? selectedMemberId;
@@ -956,46 +997,47 @@ class _HomeHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Material(
-                    color: AppColors.transparent,
-                    child: InkWell(
-                      onTap: onStreakTap,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        height: 30,
-                        padding: const EdgeInsets.symmetric(horizontal: 11),
-                        decoration: BoxDecoration(
-                          color: AppColors.formAccent,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.local_fire_department_rounded,
-                              color: AppColors.homeStreakFlame,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              l10n.homeDayStreak(streakDays),
-                              style: const TextStyle(
-                                color: AppColors.surface,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                  if (streakDays != null)
+                    Material(
+                      color: AppColors.transparent,
+                      child: InkWell(
+                        onTap: onStreakTap,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          height: 30,
+                          padding: const EdgeInsets.symmetric(horizontal: 11),
+                          decoration: BoxDecoration(
+                            color: AppColors.formAccent,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.local_fire_department_rounded,
+                                color: AppColors.homeStreakFlame,
+                                size: 18,
                               ),
-                            ),
-                            const SizedBox(width: 3),
-                            const Icon(
-                              Icons.chevron_right_rounded,
-                              color: AppColors.surface,
-                              size: 15,
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                l10n.homeDayStreak(streakDays!),
+                                style: const TextStyle(
+                                  color: AppColors.surface,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                color: AppColors.surface,
+                                size: 15,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ],

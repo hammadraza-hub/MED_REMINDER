@@ -42,7 +42,15 @@ class AddMedicationManualScreen extends StatefulWidget {
     required this.profileId,
     this.preselectedDrug,
     this.scanResult,
+    this.initialSchedule,
+    this.onCreate,
+    this.uidProvider,
   });
+
+  /// Test seams (null = the real schedule picker, repository and auth).
+  final Schedule? initialSchedule;
+  final Future<String> Function(Medication medication)? onCreate;
+  final String? Function()? uidProvider;
 
   @override
   State<AddMedicationManualScreen> createState() =>
@@ -67,6 +75,7 @@ class _AddMedicationManualScreenState extends State<AddMedicationManualScreen> {
   void initState() {
     super.initState();
     _source = MedicationSource.manual;
+    _schedule = widget.initialSchedule;
   }
 
   @override
@@ -183,8 +192,10 @@ class _AddMedicationManualScreenState extends State<AddMedicationManualScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final user = AuthRepository.instance.currentUser;
-      final userId = user?.uid ?? 'unknown';
+      final userId =
+          (widget.uidProvider ??
+              () => AuthRepository.instance.currentUser?.uid)() ??
+          'unknown';
       final now = DateTime.now();
 
       // Parse doseAmount (nullable)
@@ -229,10 +240,12 @@ class _AddMedicationManualScreenState extends State<AddMedicationManualScreen> {
 
       String? medId;
       final outcome = await queuedWrite(() async {
-        medId = await MedicationRepository.instance.createMedication(
-          profileId: widget.profileId,
-          medication: medication,
-        );
+        medId =
+            await (widget.onCreate?.call(medication) ??
+                MedicationRepository.instance.createMedication(
+                  profileId: widget.profileId,
+                  medication: medication,
+                ));
       });
 
       if (mounted) {

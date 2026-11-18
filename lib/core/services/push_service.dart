@@ -1,3 +1,5 @@
+import '../dose_zone.dart';
+
 import 'dart:io' show Platform;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -61,7 +63,7 @@ class LocalOnlyPushService implements PushService {
         platform: Platform.operatingSystem, // 'android'
         appVersion:
             '1.0.0', // keep constant; package_info dep avoided per YAGNI
-        timezone: DateTime.now().timeZoneName,
+        timezone: await DoseZone.phoneZoneName(),
       );
 
       _currentToken = token;

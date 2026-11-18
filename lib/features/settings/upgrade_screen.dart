@@ -37,7 +37,18 @@ import 'upgrade_data.dart';
 /// restore aur payment confirmation wire honge.
 /// ============================================================
 class UpgradeScreen extends StatefulWidget {
-  const UpgradeScreen({super.key, this.initialPlanId});
+  const UpgradeScreen({
+    super.key,
+    this.initialPlanId,
+    this.uidProvider,
+    this.onSubscribe,
+    this.onRestore,
+  });
+
+  /// Test seams (null = the real auth and store).
+  final String? Function()? uidProvider;
+  final Future<void> Function(String uid, SubscriptionPlan plan)? onSubscribe;
+  final Future<SubscriptionInfo?> Function(String uid)? onRestore;
 
   /// Compare Plans screen se pre-selected plan id ('solo' / 'family').
   final String? initialPlanId;
@@ -80,32 +91,37 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
   }
 
   void _onRestore() {
-    final uid = AuthRepository.instance.currentUid;
+    final uid =
+        (widget.uidProvider ?? () => AuthRepository.instance.currentUid)();
     if (uid == null || uid.isEmpty) {
       _showMessage(AppLocalizations.of(context).upgradeRestoreToast);
       return;
     }
 
     // Restore purchases via RevenueCat
-    FirebaseSubscriptionRepository.instance
-        .restorePurchases(uid)
+    (widget.onRestore ??
+            FirebaseSubscriptionRepository.instance.restorePurchases)(uid)
         .then((subInfo) {
-      if (!mounted) return;
-      if (subInfo != null && subInfo.hasPremiumAccess) {
-        _showMessage('Purchases restored successfully!');
-      } else {
-        _showMessage('No purchases found to restore.');
-      }
-    }).catchError((e) {
-      if (!mounted) return;
-      _showMessage(e is SubscriptionUnavailableException
-          ? e.message
-          : 'Restore failed: $e');
-    });
+          if (!mounted) return;
+          if (subInfo != null && subInfo.hasPremiumAccess) {
+            _showMessage('Purchases restored successfully!');
+          } else {
+            _showMessage('No purchases found to restore.');
+          }
+        })
+        .catchError((e) {
+          if (!mounted) return;
+          _showMessage(
+            e is SubscriptionUnavailableException
+                ? e.message
+                : 'Restore failed: $e',
+          );
+        });
   }
 
   void _onStartTrial() {
-    final uid = AuthRepository.instance.currentUid;
+    final uid =
+        (widget.uidProvider ?? () => AuthRepository.instance.currentUid)();
     if (uid == null || uid.isEmpty) {
       _showMessage('Please sign in first');
       return;
@@ -128,24 +144,30 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
     }
 
     // Initiate purchase via RevenueCat
-    FirebaseSubscriptionRepository.instance
-        .subscribe(uid: uid, plan: plan)
+    (widget.onSubscribe ??
+            (u, p) => FirebaseSubscriptionRepository.instance.subscribe(
+              uid: u,
+              plan: p,
+            ))(uid, plan)
         .then((_) {
-      if (!mounted) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PaymentSuccessScreen(
-            planId: _selectedPlan,
-            isAnnual: _isAnnual,
-          ),
-        ),
-      );
-    }).catchError((e) {
-      if (!mounted) return;
-      _showMessage(e is SubscriptionUnavailableException
-          ? e.message
-          : 'Purchase failed: $e');
-    });
+          if (!mounted) return;
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PaymentSuccessScreen(
+                planId: _selectedPlan,
+                isAnnual: _isAnnual,
+              ),
+            ),
+          );
+        })
+        .catchError((e) {
+          if (!mounted) return;
+          _showMessage(
+            e is SubscriptionUnavailableException
+                ? e.message
+                : 'Purchase failed: $e',
+          );
+        });
   }
 
   // ============================================================
@@ -582,10 +604,7 @@ class _UpgradeScreenState extends State<UpgradeScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 6),
-                trailing,
-              ],
+              if (trailing != null) ...[const SizedBox(width: 6), trailing],
             ],
           ),
         ),

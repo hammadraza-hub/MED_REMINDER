@@ -33,6 +33,12 @@ class ReminderActionQueue {
 
   bool _replaying = false;
 
+  /// Test seams: who is signed in, and where a replayed action goes.
+  @visibleForTesting
+  String? Function()? uidProvider;
+  @visibleForTesting
+  DoseActionTarget? target;
+
   /// Records an action taken from a notification. Safe in a background isolate.
   Future<void> enqueue({
     required String doseId,
@@ -64,7 +70,8 @@ class ReminderActionQueue {
       final queued = prefs.getStringList(_key) ?? <String>[];
       if (queued.isEmpty) return;
 
-      final uid = FirebaseAuth.instance.currentUser?.uid;
+      final uid =
+          (uidProvider ?? () => FirebaseAuth.instance.currentUser?.uid)();
       if (uid == null) {
         // Signed out: keep the queue, it replays after the next sign-in.
         return;
@@ -111,7 +118,7 @@ class ReminderActionQueue {
     final doseId = data['doseId'] as String;
     final profileId = data['profileId'] as String;
     final action = data['action'] as String;
-    final repository = DoseRepository.instance;
+    final repository = target ?? DoseActionTarget.firestore();
 
     try {
       switch (action) {
@@ -157,4 +164,53 @@ class ReminderActionQueue {
       return false;
     }
   }
+}
+
+/// What a replayed notification action does. The default talks to Firestore.
+abstract class DoseActionTarget {
+  factory DoseActionTarget.firestore() = _FirestoreDoseActionTarget;
+
+  Future<void> logDose({
+    required String profileId,
+    required String doseId,
+    required DoseStatus status,
+    required String loggedBy,
+    MissedDoseReason? reasonCode,
+  });
+
+  Future<void> snoozeDose({
+    required String profileId,
+    required String doseId,
+    required Duration snoozeDuration,
+  });
+}
+
+class _FirestoreDoseActionTarget implements DoseActionTarget {
+  _FirestoreDoseActionTarget();
+
+  @override
+  Future<void> logDose({
+    required String profileId,
+    required String doseId,
+    required DoseStatus status,
+    required String loggedBy,
+    MissedDoseReason? reasonCode,
+  }) => DoseRepository.instance.logDose(
+    profileId: profileId,
+    doseId: doseId,
+    status: status,
+    loggedBy: loggedBy,
+    reasonCode: reasonCode,
+  );
+
+  @override
+  Future<void> snoozeDose({
+    required String profileId,
+    required String doseId,
+    required Duration snoozeDuration,
+  }) => DoseRepository.instance.snoozeDose(
+    profileId: profileId,
+    doseId: doseId,
+    snoozeDuration: snoozeDuration,
+  );
 }

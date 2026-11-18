@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:flutter/widgets.dart';
@@ -12,9 +13,12 @@ import '../../l10n/app_localizations.dart';
 import '../../repositories/auth_repository.dart';
 import '../locale/locale_controller.dart';
 import '../notification_privacy.dart';
+import '../reminders/dose_alarm_planner.dart';
+import '../reminders/quiet_hours.dart';
 import '../profile/profile_controller.dart';
 import '../../models/dose.dart';
 import '../../repositories/dose_repository.dart';
+import '../../repositories/medication_repository.dart';
 import '../doctors/appointment_reminder_service.dart';
 import 'appointment_reminders.dart';
 import 'reminder_action_queue.dart';
@@ -44,18 +48,13 @@ class ReminderScheduler with WidgetsBindingObserver {
   static const String _channelDescription = 'Scheduled medication reminders';
   static const String _icon = 'ic_stat_medication';
 
-  /// Rolling window (PDF M8 step 2: never schedule the whole course).
-  static const Duration _window = Duration(hours: 48);
-
-  /// Hard cap so a large family profile does not flood the OS.
-  static const int _maxScheduled = 100;
-
   /// Escalation repeats (PDF M8: default 10 min, from settings).
-  static const int _escalationCount = 3;
+  static const int _escalationCount = DoseAlarmPlanner.escalationCount;
 
   /// Escalation interval in minutes — loaded from users/{uid}.settings,
   /// falls back to 10 if preferences haven't been saved yet.
   int _escalationMinutes = 10;
+  bool _doseEnabled = true;
 
   static const List<AndroidNotificationAction> _actions = [
     AndroidNotificationAction('taken', 'Taken'),
@@ -229,6 +228,14 @@ class ReminderScheduler with WidgetsBindingObserver {
       if (uid != null && uid.isNotEmpty) {
         final settings = await SettingsRepository.instance.getSettings(uid);
         _escalationMinutes = settings.escalationMinutes;
+        _doseEnabled = settings.doseEnabled;
+        PluginAppointmentBackend.quietHours = QuietHours.fromParts(
+          enabled: settings.quietHoursEnabled,
+          startHour: settings.quietStartHour,
+          startMinute: settings.quietStartMinute,
+          endHour: settings.quietEndHour,
+          endMinute: settings.quietEndMinute,
+        );
         NotificationPrivacy.instance.hideNames =
             settings.hideMedicineNamesOnLockScreen;
       }
@@ -248,6 +255,9 @@ class ReminderScheduler with WidgetsBindingObserver {
       debugPrint('ReminderScheduler: overdue sweep failed: $e');
     }
 
+    // Keep the 14-day dose window filled (finding 1); cheap, throttled.
+    await MedicationRepository.instance.topUpDoses(profileId);
+
     final now = DateTime.now();
     // Query is day-granular, so this returns today 00:00 → day after tomorrow.
     final doses = await DoseRepository.instance.getDosesForDateRange(
@@ -256,14 +266,15 @@ class ReminderScheduler with WidgetsBindingObserver {
       now.add(const Duration(days: 1)),
     );
 
-    final upcoming = doses
-        .where((dose) {
-          if (dose.status != DoseStatus.pending) return false;
-          final alertAt = dose.snoozedUntil ?? dose.scheduledAt;
-          return alertAt.isAfter(now) && alertAt.isBefore(now.add(_window));
-        })
-        .take(_maxScheduled)
-        .toList();
+    final plan = DoseAlarmPlanner.plan(
+      doses: doses,
+      now: now,
+      escalationMinutes: _escalationMinutes,
+      doseEnabled: _doseEnabled,
+      maxAlarms: Platform.isIOS
+          ? DoseAlarmPlanner.iosAlarmCap
+          : DoseAlarmPlanner.androidAlarmCap,
+    );
 
     // Simple + idempotent; also clears dose notifications left from a previous
     // run. Appointment reminders (M16) are kept: they have their own sync.
@@ -274,49 +285,26 @@ class ReminderScheduler with WidgetsBindingObserver {
     }
 
     final mode = await _scheduleMode();
-    var alarms = 0;
-    for (final dose in upcoming) {
-      alarms += await _scheduleDose(dose, mode);
+    for (final alarm in plan) {
+      await _schedule(
+        id: _idFor(alarm.key),
+        at: alarm.at,
+        dose: alarm.dose,
+        payload: jsonEncode({
+          'doseId': alarm.dose.id,
+          'profileId': alarm.dose.profileId,
+        }),
+        mode: mode,
+      );
     }
 
     debugPrint(
-      'ReminderScheduler: ${upcoming.length} dose(s), $alarms alarm(s) '
-      'for $profileId (${mode.name})',
+      'ReminderScheduler: ${plan.length} alarm(s) for $profileId '
+      '(${mode.name}, dose reminders ${_doseEnabled ? "on" : "off"})',
     );
 
     // Appointment reminders follow the same triggers (start, resume, profile).
     await AppointmentReminders.instance.syncProfile(profileId);
-  }
-
-  /// Schedules the reminder plus escalation repeats for one dose.
-  /// Returns how many alarms were set.
-  Future<int> _scheduleDose(Dose dose, AndroidScheduleMode mode) async {
-    final first = dose.snoozedUntil ?? dose.scheduledAt;
-    final payload = jsonEncode({
-      'doseId': dose.id,
-      'profileId': dose.profileId,
-    });
-
-    var count = await _schedule(
-      id: _idFor(dose.id),
-      at: first,
-      dose: dose,
-      payload: payload,
-      mode: mode,
-    );
-
-    for (var i = 1; i <= _escalationCount; i++) {
-      final at = first.add(Duration(minutes: _escalationMinutes * i));
-      if (!at.isBefore(dose.missDeadline)) break; // never nag past the deadline
-      count += await _schedule(
-        id: _idFor('${dose.id}#$i'),
-        at: at,
-        dose: dose,
-        payload: payload,
-        mode: mode,
-      );
-    }
-    return count;
   }
 
   Future<int> _schedule({
@@ -438,9 +426,24 @@ class ReminderScheduler with WidgetsBindingObserver {
       createdAt: now,
     );
     final mode = await _scheduleMode();
-    final alarms = await _scheduleDose(fake, mode);
+    final plan = DoseAlarmPlanner.plan(
+      doses: [fake],
+      now: now,
+      escalationMinutes: _escalationMinutes,
+      doseEnabled: true,
+      maxAlarms: 10,
+    );
+    for (final alarm in plan) {
+      await _schedule(
+        id: _idFor(alarm.key),
+        at: alarm.at,
+        dose: fake,
+        payload: jsonEncode({'doseId': fake.id, 'profileId': fake.profileId}),
+        mode: mode,
+      );
+    }
     debugPrint(
-      'ReminderScheduler: $alarms test alarm(s) from +${seconds}s '
+      'ReminderScheduler: ${plan.length} test alarm(s) from +${seconds}s '
       '(${mode.name})',
     );
   }

@@ -731,8 +731,9 @@ class _InviteMemberScreenState extends State<InviteMemberScreen> {
     return GestureDetector(
       onTap: _openMemberPermissions,
       child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        // Grows with large text instead of overflowing (was a fixed 48).
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),

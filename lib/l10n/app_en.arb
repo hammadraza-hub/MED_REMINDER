@@ -1414,6 +1414,8 @@
   "escalationMinutesDesc": "If a dose is unconfirmed, remind again",
   "quietHoursLabel": "Quiet Hours",
   "quietHoursRange": "10:00 PM – 7:00 AM",
+  "quietHoursDoseNote": "Quiet hours only delay refill and appointment alerts. Your own dose reminders always ring on time.",
+  "@quietHoursDoseNote": {"description": "Hint under the quiet hours switch: dose reminders are never delayed."},
   "btnSavePreferences": "Save Preferences",
   "snackbarSaved": "Preferences saved",
   "snackbarSavedDone": "Preferences Saved!",

@@ -1,3 +1,5 @@
+import 'package:timezone/timezone.dart' as tz;
+
 import '../models/dose.dart';
 import '../models/medication.dart';
 import '../models/schedule.dart';
@@ -17,18 +19,35 @@ import '../models/schedule.dart';
 ///   • PRN        — No scheduled doses (created on-demand when logged)
 ///
 /// Deterministic ID: {medId}_{yyyyMMddHHmm} — prevents duplicates on regenerate.
-/// Each local time converts to a UTC Timestamp for Firestore storage.
+/// The id is the INTENDED wall-clock slot of the profile's zone (a 02:30 dose
+/// is `..._0230` even on the day 02:30 does not exist), so two slots can never
+/// get the same id. Each local time converts to a UTC Timestamp for Firestore.
+///
+/// M22 step 2 (PDF M6): doses are generated in the PROFILE's time zone
+/// (`zone`), the day loop walks CALENDAR dates (never "+24 hours", which is
+/// wrong on a 23 h or 25 h daylight-saving day), a non-existent local time
+/// moves forward (02:30 -> 03:30) and an ambiguous one resolves to its FIRST
+/// occurrence.
+///
+/// Dates: `from`, `to`, `schedule.startDate`, `endDate` and `cycleStart` are
+/// CALENDAR dates; only their year / month / day count (they are what the
+/// person picked in the date picker). Both ends are inclusive.
 class DoseEngine {
-  /// Generates doses for a medication from [from] to [to] date range.
+  /// How many days after today the default window reaches.
+  static const int windowDays = 14;
+
+  /// Generates doses for a medication from [from] to [to] (calendar dates,
+  /// inclusive) in [zone].
   ///
   /// Parameters:
   ///   • medication — The medication to generate doses for
   ///   • profileId — Parent profile ID
   ///   • missedAfterMin — Minutes after scheduledAt before dose is missed
-  ///   • from — Start date (inclusive)
-  ///   • to — End date (inclusive)
+  ///   • from / to — First and last calendar day
+  ///   • zone — The profile's time zone (`DoseZone.forProfile`)
+  ///   • now — Only for `createdAt` (tests pass a fixed value)
   ///
-  /// Returns a list of Dose objects with deterministic IDs.
+  /// Returns a list of Dose objects with deterministic IDs, oldest first.
   /// PRN medications return an empty list.
   static List<Dose> generateDoses({
     required Medication medication,
@@ -36,262 +55,185 @@ class DoseEngine {
     required int missedAfterMin,
     required DateTime from,
     required DateTime to,
+    required tz.Location zone,
+    DateTime? now,
   }) {
     final schedule = medication.schedule;
-
-    // Don't generate doses before schedule start date
-    final effectiveFrom = from.isBefore(schedule.startDate)
-        ? schedule.startDate
-        : from;
-
-    // Don't generate doses after schedule end date (if set)
-    DateTime effectiveTo = to;
-    if (schedule.endDate != null && to.isAfter(schedule.endDate!)) {
-      effectiveTo = schedule.endDate!;
+    if (schedule.type == ScheduleType.prn) {
+      return []; // PRN doses are created on-demand when logged
     }
 
-    if (effectiveFrom.isAfter(effectiveTo)) return [];
+    var first = _date(from);
+    var last = _date(to);
 
-    switch (schedule.type) {
-      case ScheduleType.daily:
-        return _generateDaily(
-          medication: medication,
-          profileId: profileId,
-          missedAfterMin: missedAfterMin,
-          from: effectiveFrom,
-          to: effectiveTo,
-        );
-      case ScheduleType.weekdays:
-        return _generateWeekdays(
-          medication: medication,
-          profileId: profileId,
-          missedAfterMin: missedAfterMin,
-          from: effectiveFrom,
-          to: effectiveTo,
-        );
-      case ScheduleType.cyclical:
-        return _generateCyclical(
-          medication: medication,
-          profileId: profileId,
-          missedAfterMin: missedAfterMin,
-          from: effectiveFrom,
-          to: effectiveTo,
-        );
-      case ScheduleType.taper:
-        return _generateTaper(
-          medication: medication,
-          profileId: profileId,
-          missedAfterMin: missedAfterMin,
-          from: effectiveFrom,
-          to: effectiveTo,
-        );
-      case ScheduleType.prn:
-        return []; // PRN doses are created on-demand when logged
-    }
-  }
+    // Not before the schedule starts, not after it ends (both inclusive).
+    final start = _date(schedule.startDate);
+    if (first.isBefore(start)) first = start;
+    final end = schedule.endDate == null ? null : _date(schedule.endDate!);
+    if (end != null && last.isAfter(end)) last = end;
+    if (first.isAfter(last)) return [];
 
-  /// Generates doses for the default 14-day window (today + 14 days).
-  /// Per M6 plan: "Turn schedules into concrete dose documents 14 days ahead."
-  static List<Dose> generate14DayDoses({
-    required Medication medication,
-    required String profileId,
-    required int missedAfterMin,
-  }) {
-    final now = DateTime.now();
-    final from = DateTime(now.year, now.month, now.day);
-    final to = from.add(const Duration(days: 14));
-
-    return generateDoses(
-      medication: medication,
-      profileId: profileId,
-      missedAfterMin: missedAfterMin,
-      from: from,
-      to: to,
-    );
-  }
-
-  // ============================================================
-  // DAILY — every day × times
-  // ============================================================
-
-  static List<Dose> _generateDaily({
-    required Medication medication,
-    required String profileId,
-    required int missedAfterMin,
-    required DateTime from,
-    required DateTime to,
-  }) {
+    final createdAt = (now ?? DateTime.now()).toUtc();
     final doses = <Dose>[];
-    final schedule = medication.schedule;
 
-    DateTime currentDay = DateTime(from.year, from.month, from.day);
-    final endDay = DateTime(to.year, to.month, to.day);
-
-    while (!currentDay.isAfter(endDay)) {
-      for (final time in schedule.times) {
+    void addDay(DateTime day, List<String> times, double? amount) {
+      for (final time in times) {
         doses.add(
           _createDose(
             medication: medication,
             profileId: profileId,
             missedAfterMin: missedAfterMin,
-            date: currentDay,
+            date: day,
             timeStr: time,
-            doseAmount: medication.doseAmount,
+            doseAmount: amount,
+            zone: zone,
+            createdAt: createdAt,
           ),
         );
       }
-      currentDay = currentDay.add(const Duration(days: 1));
     }
 
-    return doses;
-  }
-
-  // ============================================================
-  // WEEKDAYS — specific days × times
-  // ============================================================
-
-  static List<Dose> _generateWeekdays({
-    required Medication medication,
-    required String profileId,
-    required int missedAfterMin,
-    required DateTime from,
-    required DateTime to,
-  }) {
-    final doses = <Dose>[];
-    final schedule = medication.schedule;
-
-    DateTime currentDay = DateTime(from.year, from.month, from.day);
-    final endDay = DateTime(to.year, to.month, to.day);
-
-    while (!currentDay.isAfter(endDay)) {
-      // DateTime.weekday: 1=Mon, 7=Sun (matches schedule.weekdays format)
-      if (schedule.weekdays.contains(currentDay.weekday)) {
-        for (final time in schedule.times) {
-          doses.add(
-            _createDose(
-              medication: medication,
-              profileId: profileId,
-              missedAfterMin: missedAfterMin,
-              date: currentDay,
-              timeStr: time,
-              doseAmount: medication.doseAmount,
-            ),
-          );
+    switch (schedule.type) {
+      case ScheduleType.daily:
+        for (var d = first; !d.isAfter(last); d = _nextDay(d)) {
+          addDay(d, schedule.times, medication.doseAmount);
         }
-      }
-      currentDay = currentDay.add(const Duration(days: 1));
-    }
-
-    return doses;
-  }
-
-  // ============================================================
-  // CYCLICAL — days on/off cycle × times
-  // ============================================================
-
-  static List<Dose> _generateCyclical({
-    required Medication medication,
-    required String profileId,
-    required int missedAfterMin,
-    required DateTime from,
-    required DateTime to,
-  }) {
-    final doses = <Dose>[];
-    final schedule = medication.schedule;
-
-    final cycleStart = schedule.cycleStart ?? schedule.startDate;
-    final cycleOn = schedule.cycleOn ?? 0;
-    final cycleOff = schedule.cycleOff ?? 0;
-    final cycleLength = cycleOn + cycleOff;
-
-    if (cycleLength == 0) return [];
-
-    final cycleStartDay = DateTime(
-      cycleStart.year,
-      cycleStart.month,
-      cycleStart.day,
-    );
-
-    DateTime currentDay = DateTime(from.year, from.month, from.day);
-    final endDay = DateTime(to.year, to.month, to.day);
-
-    while (!currentDay.isAfter(endDay)) {
-      // Calculate days since cycle start
-      final daysSinceStart = currentDay.difference(cycleStartDay).inDays;
-
-      // Check if this day is in the "on" period
-      // daysSinceStart % cycleLength gives position in cycle
-      // If < cycleOn, it's an "on" day
-      final dayInCycle = daysSinceStart % cycleLength;
-      if (dayInCycle >= 0 && dayInCycle < cycleOn) {
-        for (final time in schedule.times) {
-          doses.add(
-            _createDose(
-              medication: medication,
-              profileId: profileId,
-              missedAfterMin: missedAfterMin,
-              date: currentDay,
-              timeStr: time,
-              doseAmount: medication.doseAmount,
-            ),
-          );
-        }
-      }
-      currentDay = currentDay.add(const Duration(days: 1));
-    }
-
-    return doses;
-  }
-
-  // ============================================================
-  // TAPER — taper steps (days × doseAmount × times)
-  // ============================================================
-
-  static List<Dose> _generateTaper({
-    required Medication medication,
-    required String profileId,
-    required int missedAfterMin,
-    required DateTime from,
-    required DateTime to,
-  }) {
-    final doses = <Dose>[];
-    final schedule = medication.schedule;
-
-    final startDate = DateTime(
-      schedule.startDate.year,
-      schedule.startDate.month,
-      schedule.startDate.day,
-    );
-    DateTime currentStepDay = startDate;
-    final endDay = DateTime(to.year, to.month, to.day);
-
-    for (final step in schedule.taperSteps) {
-      // Each step lasts `step.days` days
-      for (int dayInStep = 0; dayInStep < step.days; dayInStep++) {
-        // Skip days before "from" or after "to"
-        if (currentStepDay.isAfter(endDay)) break;
-        if (!currentStepDay.isBefore(
-          DateTime(from.year, from.month, from.day),
-        )) {
-          for (final time in step.times) {
-            doses.add(
-              _createDose(
-                medication: medication,
-                profileId: profileId,
-                missedAfterMin: missedAfterMin,
-                date: currentStepDay,
-                timeStr: time,
-                doseAmount: step.doseAmount, // Use step's doseAmount
-              ),
-            );
+      case ScheduleType.weekdays:
+        for (var d = first; !d.isAfter(last); d = _nextDay(d)) {
+          // DateTime.weekday: 1=Mon, 7=Sun (matches schedule.weekdays format)
+          if (schedule.weekdays.contains(d.weekday)) {
+            addDay(d, schedule.times, medication.doseAmount);
           }
         }
-        currentStepDay = currentStepDay.add(const Duration(days: 1));
-      }
-      if (currentStepDay.isAfter(endDay)) break;
+      case ScheduleType.cyclical:
+        // PDF M6: a day is kept when daysSince(cycleStart) mod (on + off) < on.
+        // Days BEFORE the cycle starts get no dose.
+        final cycleOn = schedule.cycleOn ?? 0;
+        final cycleLength = cycleOn + (schedule.cycleOff ?? 0);
+        if (cycleLength <= 0) return [];
+        final cycleStart = _date(schedule.cycleStart ?? schedule.startDate);
+        for (var d = first; !d.isAfter(last); d = _nextDay(d)) {
+          // Both are UTC midnights, so this is an exact number of days.
+          final daysSince = d.difference(cycleStart).inDays;
+          if (daysSince >= 0 && daysSince % cycleLength < cycleOn) {
+            addDay(d, schedule.times, medication.doseAmount);
+          }
+        }
+      case ScheduleType.taper:
+        // Steps follow each other from the start date, `days` days each.
+        var day = start;
+        for (final step in schedule.taperSteps) {
+          for (var i = 0; i < step.days; i++) {
+            if (day.isAfter(last)) break;
+            if (!day.isBefore(first)) addDay(day, step.times, step.doseAmount);
+            day = _nextDay(day);
+          }
+          if (day.isAfter(last)) break;
+        }
+      case ScheduleType.prn:
+        return [];
     }
-
     return doses;
+  }
+
+  /// Generates doses for the default window: today .. today + 14 days in the
+  /// profile's zone (15 calendar days, both ends inclusive).
+  /// Per M6 plan: "Turn schedules into concrete dose documents 14 days ahead."
+  static List<Dose> generate14DayDoses({
+    required Medication medication,
+    required String profileId,
+    required int missedAfterMin,
+    required tz.Location zone,
+    DateTime? now,
+  }) {
+    final today = todayIn(zone, now: now);
+    return generateDoses(
+      medication: medication,
+      profileId: profileId,
+      missedAfterMin: missedAfterMin,
+      from: today,
+      to: _addDays(today, windowDays),
+      zone: zone,
+      now: now,
+    );
+  }
+
+  /// The doses of [generated] that must be WRITTEN: those whose id is not in
+  /// [existingIds] (never overwrite a dose that is already there, it may be
+  /// taken or skipped), and, when [notBefore] is given, only those at or after
+  /// it (a schedule change touches the FUTURE only). M22 step 4.
+  static List<Dose> onlyMissing(
+    Iterable<Dose> generated,
+    Set<String> existingIds, {
+    DateTime? notBefore,
+  }) => [
+    for (final d in generated)
+      if (!existingIds.contains(d.id) &&
+          (notBefore == null || !d.scheduledAt.isBefore(notBefore)))
+        d,
+  ];
+
+  /// Today's calendar date in [zone] (as a UTC midnight date value).
+  static DateTime todayIn(tz.Location zone, {DateTime? now}) {
+    final t = tz.TZDateTime.from((now ?? DateTime.now()).toUtc(), zone);
+    return DateTime.utc(t.year, t.month, t.day);
+  }
+
+  // ============================================================
+  // CALENDAR DATES
+  // ============================================================
+
+  /// Only year / month / day of [d], as a UTC midnight: date arithmetic on
+  /// these never meets a daylight-saving shift.
+  static DateTime _date(DateTime d) => DateTime.utc(d.year, d.month, d.day);
+
+  static DateTime _nextDay(DateTime d) => _addDays(d, 1);
+
+  static DateTime _addDays(DateTime d, int n) =>
+      DateTime.utc(d.year, d.month, d.day + n);
+
+  // ============================================================
+  // ONE SLOT -> ONE INSTANT
+  // ============================================================
+
+  /// The instant of the wall-clock time [y]-[m]-[d] [hour]:[minute] in [zone].
+  ///
+  ///  * normal time: that instant;
+  ///  * does not exist (spring forward, 02:30): moves forward by the gap
+  ///    (03:30), like Luxon;
+  ///  * happens twice (fall back, 01:30): the FIRST occurrence.
+  static DateTime resolveSlot(
+    tz.Location zone,
+    int y,
+    int m,
+    int d,
+    int hour,
+    int minute,
+  ) {
+    final wall = DateTime.utc(y, m, d, hour, minute).millisecondsSinceEpoch;
+    const dayMs = Duration.millisecondsPerDay;
+
+    // The two offsets around the slot (they differ only near a transition).
+    final before = zone.timeZone(wall - dayMs).offset.inMilliseconds;
+    final after = zone.timeZone(wall + dayMs).offset.inMilliseconds;
+
+    final valid = <int>[];
+    for (final offset in {before, after}) {
+      final instant = wall - offset;
+      if (zone.timeZone(instant).offset.inMilliseconds == offset) {
+        valid.add(instant);
+      }
+    }
+    final int instant;
+    if (valid.isEmpty) {
+      // Gap: the wall time never showed on a clock. Read it with the offset
+      // from BEFORE the jump; that lands after the jump (02:30 EST = 03:30 EDT).
+      instant = wall - before;
+    } else {
+      valid.sort();
+      instant = valid.first; // ambiguous: the first occurrence
+    }
+    return DateTime.fromMillisecondsSinceEpoch(instant, isUtc: true);
   }
 
   // ============================================================
@@ -305,27 +247,34 @@ class DoseEngine {
     required DateTime date,
     required String timeStr,
     required double? doseAmount,
+    required tz.Location zone,
+    required DateTime createdAt,
   }) {
     // Parse time string "HH:mm"
     final parts = timeStr.split(':');
     final hour = int.parse(parts[0]);
     final minute = int.parse(parts[1]);
 
-    // Create scheduledAt in local time, then convert to UTC
-    final scheduledLocal = DateTime(
+    final scheduledUtc = resolveSlot(
+      zone,
       date.year,
       date.month,
       date.day,
       hour,
       minute,
     );
-    final scheduledUtc = scheduledLocal.toUtc();
 
     // missDeadline = scheduledAt + missedAfterMin
     final missDeadlineUtc = scheduledUtc.add(Duration(minutes: missedAfterMin));
 
-    // Deterministic ID: {medId}_{yyyyMMddHHmm}
-    final idDateStr = _formatDateForId(scheduledLocal);
+    // Deterministic ID from the INTENDED slot: {medId}_{yyyyMMddHHmm}
+    final idDateStr = _formatSlotForId(
+      date.year,
+      date.month,
+      date.day,
+      hour,
+      minute,
+    );
     final doseId = '${medication.id}_$idDateStr';
 
     // Dose label (e.g., "1 tablet at 08:00")
@@ -346,7 +295,7 @@ class DoseEngine {
       scheduledAt: scheduledUtc,
       missDeadline: missDeadlineUtc,
       status: DoseStatus.pending,
-      createdAt: DateTime.now().toUtc(),
+      createdAt: createdAt,
     );
   }
 
@@ -354,14 +303,13 @@ class DoseEngine {
   // HELPERS
   // ============================================================
 
-  /// Format date for deterministic ID: yyyyMMddHHmm
-  static String _formatDateForId(DateTime dt) {
-    final y = dt.year.toString().padLeft(4, '0');
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    final h = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return '$y$m$d$h$min';
+  /// Format a slot for the deterministic ID: yyyyMMddHHmm
+  static String _formatSlotForId(int y, int m, int d, int h, int min) {
+    return '${y.toString().padLeft(4, '0')}'
+        '${m.toString().padLeft(2, '0')}'
+        '${d.toString().padLeft(2, '0')}'
+        '${h.toString().padLeft(2, '0')}'
+        '${min.toString().padLeft(2, '0')}';
   }
 
   /// Format dose amount (remove trailing .0 for integers)

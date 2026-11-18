@@ -2382,6 +2382,10 @@ class AppLocalizationsHi extends AppLocalizations {
   String get quietHoursRange => 'रात 10:00 बजे – सुबह 7:00 बजे';
 
   @override
+  String get quietHoursDoseNote =>
+      'शांत समय केवल रिफ़िल और अपॉइंटमेंट अलर्ट में देरी करता है। आपकी अपनी खुराक के रिमाइंडर हमेशा समय पर बजते हैं।';
+
+  @override
   String get btnSavePreferences => 'प्राथमिकताएं सहेजें';
 
   @override

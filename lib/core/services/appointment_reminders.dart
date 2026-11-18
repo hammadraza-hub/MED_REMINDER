@@ -1,3 +1,4 @@
+import '../reminders/quiet_hours.dart';
 import '../notification_privacy.dart';
 
 import 'dart:ui' show Locale;
@@ -109,6 +110,10 @@ class PluginAppointmentBackend implements AppointmentNotificationBackend {
     iOS: const DarwinNotificationDetails(),
   );
 
+  /// Quiet hours delay appointment reminders (never dose reminders).
+  /// Set by the scheduler from the user's settings.
+  static QuietHours quietHours = QuietHours.off;
+
   AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
   set l10n(AppLocalizations value) => _l10n = value;
 
@@ -126,7 +131,10 @@ class PluginAppointmentBackend implements AppointmentNotificationBackend {
       id: id,
       title: title,
       body: body,
-      scheduledDate: tz.TZDateTime.from(at.toLocal(), tz.local),
+      scheduledDate: tz.TZDateTime.from(
+        quietHours.shift(at).toLocal(),
+        tz.local,
+      ),
       notificationDetails: _details(_l10n),
       androidScheduleMode: await _scheduleMode(),
       payload: payload,

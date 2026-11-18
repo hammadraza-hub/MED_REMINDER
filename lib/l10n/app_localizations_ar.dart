@@ -2368,6 +2368,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quietHoursRange => '10:00 PM – 7:00 AM';
 
   @override
+  String get quietHoursDoseNote =>
+      'تؤخر ساعات الهدوء تنبيهات إعادة التعبئة والمواعيد فقط. تذكيرات جرعاتك تعمل دائمًا في وقتها.';
+
+  @override
   String get btnSavePreferences => 'Save Preferences';
 
   @override

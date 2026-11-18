@@ -563,6 +563,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  l10n.quietHoursDoseNote,
+                  key: const Key('notif-quiet-dose-note'),
+                  style: TextStyle(
+                    color: AppColors.permissionsSecondary,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),

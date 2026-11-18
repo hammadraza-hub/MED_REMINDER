@@ -95,9 +95,9 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
       ..showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context).comingSoon(
-              AppLocalizations.of(context).paymentViewFullReceipt,
-            ),
+            AppLocalizations.of(
+              context,
+            ).comingSoon(AppLocalizations.of(context).paymentViewFullReceipt),
           ),
         ),
       );
@@ -222,10 +222,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                     decoration: BoxDecoration(
                       color: AppColors.shareTileFill,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.formAccent,
-                        width: 3,
-                      ),
+                      border: Border.all(color: AppColors.formAccent, width: 3),
                     ),
                     child: const Icon(
                       Icons.check_rounded,
@@ -295,13 +292,15 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                   children: [
                     const _PulsingDot(),
                     const SizedBox(width: 6),
-                    Text(
-                      l10n.paymentPlanActive.toUpperCase(),
-                      style: const TextStyle(
-                        color: AppColors.permissionsHeader,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
+                    Flexible(
+                      child: Text(
+                        l10n.paymentPlanActive.toUpperCase(),
+                        style: const TextStyle(
+                          color: AppColors.permissionsHeader,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                        ),
                       ),
                     ),
                   ],
@@ -350,10 +349,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.shareTileFill,
                   borderRadius: BorderRadius.circular(999),
@@ -430,10 +426,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
           const SizedBox(height: 10),
           _buildPaymentMethodRow(l10n),
           const SizedBox(height: 10),
-          _buildInfoRow(
-            l10n.paymentReceiptSentLabel,
-            PaymentSuccessData.email,
-          ),
+          _buildInfoRow(l10n.paymentReceiptSentLabel, PaymentSuccessData.email),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(

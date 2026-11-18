@@ -2401,6 +2401,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get quietHoursRange => '10:00 PM – 7:00 AM';
 
   @override
+  String get quietHoursDoseNote =>
+      'El horario de silencio solo retrasa los avisos de reposición y de citas. Tus recordatorios de dosis siempre suenan a su hora.';
+
+  @override
   String get btnSavePreferences => 'Save Preferences';
 
   @override

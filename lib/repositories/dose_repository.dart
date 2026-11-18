@@ -343,6 +343,21 @@ class DoseRepository {
 
   // OVERDUE SWEEP (client-side — Spark has no scheduled functions)
 
+  /// Docs handled per sweep run.
+  static const int sweepLimit = 200;
+
+  /// A dose is swept to `missed` only when it is still pending and its miss
+  /// deadline is STRICTLY before [now] (deadline == now is not overdue yet,
+  /// a snoozed dose keeps its later deadline, finished doses are left alone).
+  static bool isOverdueForSweep({
+    required String? status,
+    required DateTime? missDeadline,
+    required DateTime now,
+  }) =>
+      status == DoseStatus.pending.value &&
+      missDeadline != null &&
+      missDeadline.isBefore(now);
+
   /// Marks pending doses whose `missDeadline` has passed as missed.
   ///
   /// Called on app start/resume. Bounded to 200 docs per run; a second run
@@ -351,13 +366,25 @@ class DoseRepository {
     final cutoff = (now ?? DateTime.now()).toUtc();
 
     try {
+      // Only pending doses are asked for: with old taken/missed doses in the
+      // same range a plain `missDeadline < now` query with limit 200 could be
+      // filled by finished doses and never reach the pending ones.
+      // (Needs the composite index status + missDeadline.)
       final snapshot = await _dosesRef(profileId)
+          .where('status', isEqualTo: DoseStatus.pending.value)
           .where('missDeadline', isLessThan: cutoff)
-          .limit(200)
+          .limit(sweepLimit)
           .get();
 
       final overdue = snapshot.docs
-          .where((doc) => doc.data()['status'] == DoseStatus.pending.value)
+          .where(
+            (doc) => isOverdueForSweep(
+              status: doc.data()['status'] as String?,
+              missDeadline: (doc.data()['missDeadline'] as Timestamp?)
+                  ?.toDate(),
+              now: cutoff,
+            ),
+          )
           .toList();
       if (overdue.isEmpty) return 0;
 

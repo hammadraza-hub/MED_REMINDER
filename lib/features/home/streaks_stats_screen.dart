@@ -1,3 +1,5 @@
+import '../../core/streak_calculator.dart';
+
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -199,42 +201,15 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
   // ============================================================
 
   StreakStatsSummary _computeSummary() {
-    // Bucket doses by day (excluding PRN).
-    final Map<String, _DayBucket> dayBuckets = {};
-
-    for (final dose in _allDoses) {
-      if (dose.isPrn) continue;
-
-      final local = dose.scheduledAt.toLocal();
-      final key = _dayKey(local);
-
-      final bucket = dayBuckets.putIfAbsent(key, () => _DayBucket(date: local));
-
-      switch (dose.status) {
-        case DoseStatus.taken:
-          bucket.taken++;
-          break;
-        case DoseStatus.skipped:
-          bucket.skipped++;
-          break;
-        case DoseStatus.missed:
-          bucket.missed++;
-          break;
-        case DoseStatus.pending:
-          if (dose.isOverdue) bucket.missed++;
-          break;
-        case DoseStatus.snoozed:
-          break;
-      }
-    }
-
-    final sortedBuckets = dayBuckets.values.toList()
-      ..sort((a, b) => a.date.compareTo(b.date));
-
-    final currentStreak = _computeCurrentStreak(sortedBuckets);
-    final longestStreak = _computeLongestStreak(sortedBuckets);
-    final monthAdherence = _computeMonthAdherence(dayBuckets);
-    final totalTaken = sortedBuckets.fold<int>(0, (acc, b) => acc + b.taken);
+    final now = DateTime.now();
+    final result = StreakCalculator.compute(_allDoses, now: now);
+    final currentStreak = result.current;
+    final longestStreak = result.longest;
+    final monthAdherence = StreakCalculator.monthAdherencePercent(
+      result,
+      now: now,
+    );
+    final totalTaken = result.totalTaken;
     // === GOAL ===
     // Goal = 30 days (reasonable default; could be user-configurable later).
     // goalProgress + daysUntilGoal are COMPUTED GETTERS on StreakStatsSummary
@@ -255,85 +230,6 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
       monthAdherencePercent: monthAdherence,
       achievements: achievements,
     );
-  }
-
-  int _computeCurrentStreak(List<_DayBucket> buckets) {
-    if (buckets.isEmpty) return 0;
-
-    final today = _dateOnly(DateTime.now());
-    final yesterday = today.subtract(const Duration(days: 1));
-
-    final lastBucket = buckets.last;
-    final lastDate = _dateOnly(lastBucket.date);
-
-    // Streak must include today or yesterday.
-    if (lastDate != today && lastDate != yesterday) return 0;
-
-    int streak = 0;
-    DateTime cursor = lastDate;
-
-    for (final bucket in buckets.reversed) {
-      final bucketDate = _dateOnly(bucket.date);
-      if (bucketDate != cursor) break;
-
-      // Good day: at least 1 taken AND 0 missed.
-      if (bucket.taken > 0 && bucket.missed == 0) {
-        streak++;
-        cursor = cursor.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
-
-    return streak;
-  }
-
-  int _computeLongestStreak(List<_DayBucket> buckets) {
-    if (buckets.isEmpty) return 0;
-
-    int longest = 0;
-    int current = 0;
-    DateTime? expectedNext;
-
-    for (final bucket in buckets) {
-      final bucketDate = _dateOnly(bucket.date);
-      final isGood = bucket.taken > 0 && bucket.missed == 0;
-
-      if (isGood) {
-        if (expectedNext == null || bucketDate == expectedNext) {
-          current++;
-          expectedNext = bucketDate.add(const Duration(days: 1));
-        } else {
-          current = 1;
-          expectedNext = bucketDate.add(const Duration(days: 1));
-        }
-        if (current > longest) longest = current;
-      } else {
-        current = 0;
-        expectedNext = null;
-      }
-    }
-
-    return longest;
-  }
-
-  int _computeMonthAdherence(Map<String, _DayBucket> buckets) {
-    final now = DateTime.now();
-    final monthPrefix = '${now.year}-${now.month.toString().padLeft(2, '0')}';
-
-    int taken = 0, missed = 0, skipped = 0;
-
-    buckets.forEach((key, bucket) {
-      if (key.startsWith(monthPrefix)) {
-        taken += bucket.taken;
-        missed += bucket.missed;
-        skipped += bucket.skipped;
-      }
-    });
-
-    final total = taken + missed + skipped;
-    if (total == 0) return 0;
-    return ((taken / total) * 100).round();
   }
 
   // ============================================================
@@ -482,8 +378,6 @@ class _StreaksStatsScreenState extends State<StreaksStatsScreen> {
 
   String _dayKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
-  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
   // ============================================================
   // SHARE

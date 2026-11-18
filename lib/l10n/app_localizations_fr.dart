@@ -2411,6 +2411,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get quietHoursRange => '10:00 PM – 7:00 AM';
 
   @override
+  String get quietHoursDoseNote =>
+      'Les heures calmes ne retardent que les alertes de renouvellement et de rendez-vous. Vos rappels de prise sonnent toujours à l\'heure.';
+
+  @override
   String get btnSavePreferences => 'Save Preferences';
 
   @override

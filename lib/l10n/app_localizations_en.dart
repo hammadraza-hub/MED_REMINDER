@@ -2384,6 +2384,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quietHoursRange => '10:00 PM – 7:00 AM';
 
   @override
+  String get quietHoursDoseNote =>
+      'Quiet hours only delay refill and appointment alerts. Your own dose reminders always ring on time.';
+
+  @override
   String get btnSavePreferences => 'Save Preferences';
 
   @override

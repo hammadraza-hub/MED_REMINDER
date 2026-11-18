@@ -1,5 +1,6 @@
 {
   "@@locale": "fr",
+  "quietHoursDoseNote": "Les heures calmes ne retardent que les alertes de renouvellement et de rendez-vous. Vos rappels de prise sonnent toujours à l'heure.",
   "comingSoon": "{title} — bientôt disponible",
   "cancel": "Annuler",
   "navHome": "Accueil",

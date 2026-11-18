@@ -4076,6 +4076,12 @@ abstract class AppLocalizations {
   /// **'10:00 PM – 7:00 AM'**
   String get quietHoursRange;
 
+  /// Hint under the quiet hours switch: dose reminders are never delayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet hours only delay refill and appointment alerts. Your own dose reminders always ring on time.'**
+  String get quietHoursDoseNote;
+
   /// No description provided for @btnSavePreferences.
   ///
   /// In en, this message translates to:

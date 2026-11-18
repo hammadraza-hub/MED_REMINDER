@@ -105,10 +105,6 @@ class HomeData {
   // UI par MaterialLocalizations.formatFullDate() use hota hai —
   // woh current locale ke hisab se localized date deta hai.
 
-  // ================= STREAK =================
-  /// Backend: dose history se calculate
-  static int streakDays() => 12;
-
   // ================= FAMILY MEMBERS =================
   /// Backend: user ki family collection se
   ///
