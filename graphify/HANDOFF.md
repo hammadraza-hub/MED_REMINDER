@@ -605,3 +605,6 @@ Also: it picked the profile from `users/{uid}.selectedMemberId`, which can diffe
 - **Cost now:** Home first open of the day about 90 days of doses once; every later streak change 0; Streaks screen opening: today only.
 - **Not done:** a disk cache across app starts; "Longest streak" beyond what is loaded (89 days, 209 when a streak fills the window); the Calendar screen is not told to invalidate when it edits doses through another path (only `logDose` / `undoDose` do).
 
+### Home "+" button (2026-11-18)
+The round + button on Home now opens `AddMedicationScreen(profileId:)` for the profile Home is showing (`ProfileController.memberId`); before it opened the Meds list, one more tap away. With no profile it still opens the Meds screen (which explains). After saving, Home's live dose list shows the new doses. Test: `home_screen_test` "the + button opens Add Medication for the shown profile". Flutter 1177 pass.
+

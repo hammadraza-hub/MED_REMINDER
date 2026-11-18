@@ -12,6 +12,8 @@ import 'package:med_remind_app/features/home/home_dose_filter.dart';
 import 'package:med_remind_app/features/home/home_dose_source.dart';
 import 'package:med_remind_app/features/home/home_summary.dart';
 import 'package:med_remind_app/features/home/home_screen.dart';
+import 'package:med_remind_app/features/meds/add_medication_screen.dart';
+import 'package:med_remind_app/features/meds/meds_screen.dart';
 import 'package:med_remind_app/l10n/app_localizations.dart';
 import 'package:med_remind_app/models/dose.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -627,6 +629,22 @@ void main() {
         1,
         reason: 'the past is read once; today comes from the screen',
       );
+    });
+  });
+
+  group('add button', () {
+    testWidgets('the + button opens Add Medication for the shown profile', (
+      t,
+    ) async {
+      await open(t, doses: []);
+      await t.tap(find.byType(FloatingActionButton));
+      await t.pump();
+      await t.pump(const Duration(seconds: 1));
+      final screen = t.widget<AddMedicationScreen>(
+        find.byType(AddMedicationScreen),
+      );
+      expect(screen.profileId, 'm1');
+      expect(find.byType(MedsScreen), findsNothing);
     });
   });
 }

@@ -28,6 +28,7 @@ import '../../widgets/app_avatar.dart';
 import '../../widgets/profile_photo_picker.dart';
 import '../assistant/assistant_gate.dart';
 import '../doctors/doctors_screen.dart';
+import '../meds/add_medication_screen.dart';
 import '../meds/meds_screen.dart';
 import '../../features/profile/profiles_screen.dart';
 import 'home_data.dart';
@@ -637,6 +638,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // NAVIGATION
   // ============================================================
 
+  /// The + button: add a medicine to the profile Home is showing (it used to
+  /// open the Meds list, one more tap away). Without a profile, the Meds screen
+  /// opens and explains.
+  void _addMedicine() {
+    final memberId = ProfileController.instance.memberId;
+    if (memberId == null || memberId.isEmpty) {
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const MedsScreen()));
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddMedicationScreen(profileId: memberId),
+      ),
+    );
+  }
+
   void _openStreaksStats() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -775,10 +793,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
         child: FloatingActionButton(
           heroTag: null,
-          onPressed: () {
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const MedsScreen()));
-          },
+          onPressed: _addMedicine,
           backgroundColor: AppColors.formAccent,
           foregroundColor: AppColors.surface,
           elevation: 5,
