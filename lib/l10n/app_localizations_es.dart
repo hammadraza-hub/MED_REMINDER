@@ -10,6 +10,102 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
+  String get homeStatusMissed => 'OMITIDA';
+
+  @override
+  String get inboxTitle => 'Notificaciones';
+
+  @override
+  String get inboxChipApp => 'App';
+
+  @override
+  String get inboxChipMedicine => 'Medicina';
+
+  @override
+  String get inboxEmptyApp => 'No hay notificaciones de la app. Todo al día.';
+
+  @override
+  String get inboxEmptyMedicine =>
+      'No hay alertas de medicinas. El stock y los efectos secundarios están bien.';
+
+  @override
+  String inboxMissedDose(String name) {
+    return 'Se omitió $name';
+  }
+
+  @override
+  String inboxMissedDoseBody(String time) {
+    return 'Tocaba a las $time.';
+  }
+
+  @override
+  String inboxCaregiverTaken(String name) {
+    return 'Otra persona marcó $name como tomada';
+  }
+
+  @override
+  String inboxCaregiverSkipped(String name) {
+    return 'Otra persona omitió $name';
+  }
+
+  @override
+  String inboxLoggedAt(String time) {
+    return 'Registrado a las $time';
+  }
+
+  @override
+  String inboxAppointmentTitle(String type) {
+    return 'Cita: $type';
+  }
+
+  @override
+  String inboxOutOfStock(String name) {
+    return '$name está agotado';
+  }
+
+  @override
+  String get inboxOutOfStockBody => 'Repónlo lo antes posible.';
+
+  @override
+  String inboxLowStock(String name) {
+    return 'A $name le queda poco';
+  }
+
+  @override
+  String inboxLowStockBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Quedan aproximadamente $count días',
+      one: 'Queda aproximadamente 1 día',
+      zero: 'Queda menos de un día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String inboxSideEffect(String symptom) {
+    return 'Efecto secundario: $symptom';
+  }
+
+  @override
+  String inboxSideEffectBody(int severity) {
+    return 'Gravedad $severity/5';
+  }
+
+  @override
+  String inboxSideEffectBodyWithMed(int severity, String medicine) {
+    return 'Gravedad $severity/5 · $medicine';
+  }
+
+  @override
+  String get inboxPartial =>
+      'No se pudieron cargar algunos elementos. Desliza hacia abajo para reintentar.';
+
+  @override
+  String get inboxBellLabel => 'Notificaciones';
+
+  @override
   String get homeSheetMarkTaken => 'Marcar como tomada';
 
   @override

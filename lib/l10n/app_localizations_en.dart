@@ -10,6 +10,102 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get homeStatusMissed => 'MISSED';
+
+  @override
+  String get inboxTitle => 'Notifications';
+
+  @override
+  String get inboxChipApp => 'App';
+
+  @override
+  String get inboxChipMedicine => 'Medicine';
+
+  @override
+  String get inboxEmptyApp => 'No app notifications. You are all caught up.';
+
+  @override
+  String get inboxEmptyMedicine =>
+      'No medicine alerts. Stock and side effects look fine.';
+
+  @override
+  String inboxMissedDose(String name) {
+    return '$name was missed';
+  }
+
+  @override
+  String inboxMissedDoseBody(String time) {
+    return 'It was due at $time.';
+  }
+
+  @override
+  String inboxCaregiverTaken(String name) {
+    return '$name was marked taken by someone else';
+  }
+
+  @override
+  String inboxCaregiverSkipped(String name) {
+    return '$name was skipped by someone else';
+  }
+
+  @override
+  String inboxLoggedAt(String time) {
+    return 'Logged at $time';
+  }
+
+  @override
+  String inboxAppointmentTitle(String type) {
+    return 'Appointment: $type';
+  }
+
+  @override
+  String inboxOutOfStock(String name) {
+    return '$name is out of stock';
+  }
+
+  @override
+  String get inboxOutOfStockBody => 'Refill it as soon as you can.';
+
+  @override
+  String inboxLowStock(String name) {
+    return '$name is running low';
+  }
+
+  @override
+  String inboxLowStockBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'About $count days left',
+      one: 'About 1 day left',
+      zero: 'Less than a day left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String inboxSideEffect(String symptom) {
+    return 'Side effect: $symptom';
+  }
+
+  @override
+  String inboxSideEffectBody(int severity) {
+    return 'Severity $severity/5';
+  }
+
+  @override
+  String inboxSideEffectBodyWithMed(int severity, String medicine) {
+    return 'Severity $severity/5 · $medicine';
+  }
+
+  @override
+  String get inboxPartial =>
+      'Some items could not be loaded. Pull down to try again.';
+
+  @override
+  String get inboxBellLabel => 'Notifications';
+
+  @override
   String get homeSheetMarkTaken => 'Mark Taken';
 
   @override

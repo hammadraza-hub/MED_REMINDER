@@ -10,6 +10,102 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
+  String get homeStatusMissed => 'MANQUÉE';
+
+  @override
+  String get inboxTitle => 'Notifications';
+
+  @override
+  String get inboxChipApp => 'App';
+
+  @override
+  String get inboxChipMedicine => 'Médicament';
+
+  @override
+  String get inboxEmptyApp => 'Aucune notification de l\'app. Tout est à jour.';
+
+  @override
+  String get inboxEmptyMedicine =>
+      'Aucune alerte médicament. Le stock et les effets secondaires sont bons.';
+
+  @override
+  String inboxMissedDose(String name) {
+    return '$name a été manquée';
+  }
+
+  @override
+  String inboxMissedDoseBody(String time) {
+    return 'Elle était prévue à $time.';
+  }
+
+  @override
+  String inboxCaregiverTaken(String name) {
+    return 'Quelqu\'un d\'autre a marqué $name comme prise';
+  }
+
+  @override
+  String inboxCaregiverSkipped(String name) {
+    return 'Quelqu\'un d\'autre a sauté $name';
+  }
+
+  @override
+  String inboxLoggedAt(String time) {
+    return 'Enregistré à $time';
+  }
+
+  @override
+  String inboxAppointmentTitle(String type) {
+    return 'Rendez-vous : $type';
+  }
+
+  @override
+  String inboxOutOfStock(String name) {
+    return '$name est en rupture de stock';
+  }
+
+  @override
+  String get inboxOutOfStockBody => 'Renouvelez-le dès que possible.';
+
+  @override
+  String inboxLowStock(String name) {
+    return 'Il reste peu de $name';
+  }
+
+  @override
+  String inboxLowStockBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Environ $count jours restants',
+      one: 'Environ 1 jour restant',
+      zero: 'Moins d\'un jour restant',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String inboxSideEffect(String symptom) {
+    return 'Effet secondaire : $symptom';
+  }
+
+  @override
+  String inboxSideEffectBody(int severity) {
+    return 'Gravité $severity/5';
+  }
+
+  @override
+  String inboxSideEffectBodyWithMed(int severity, String medicine) {
+    return 'Gravité $severity/5 · $medicine';
+  }
+
+  @override
+  String get inboxPartial =>
+      'Certains éléments n\'ont pas pu être chargés. Tirez vers le bas pour réessayer.';
+
+  @override
+  String get inboxBellLabel => 'Notifications';
+
+  @override
   String get homeSheetMarkTaken => 'Marquer comme prise';
 
   @override

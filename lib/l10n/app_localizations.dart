@@ -104,6 +104,132 @@ abstract class AppLocalizations {
     Locale('hi'),
   ];
 
+  /// No description provided for @homeStatusMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'MISSED'**
+  String get homeStatusMissed;
+
+  /// No description provided for @inboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get inboxTitle;
+
+  /// No description provided for @inboxChipApp.
+  ///
+  /// In en, this message translates to:
+  /// **'App'**
+  String get inboxChipApp;
+
+  /// No description provided for @inboxChipMedicine.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicine'**
+  String get inboxChipMedicine;
+
+  /// No description provided for @inboxEmptyApp.
+  ///
+  /// In en, this message translates to:
+  /// **'No app notifications. You are all caught up.'**
+  String get inboxEmptyApp;
+
+  /// No description provided for @inboxEmptyMedicine.
+  ///
+  /// In en, this message translates to:
+  /// **'No medicine alerts. Stock and side effects look fine.'**
+  String get inboxEmptyMedicine;
+
+  /// No description provided for @inboxMissedDose.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was missed'**
+  String inboxMissedDose(String name);
+
+  /// No description provided for @inboxMissedDoseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It was due at {time}.'**
+  String inboxMissedDoseBody(String time);
+
+  /// No description provided for @inboxCaregiverTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was marked taken by someone else'**
+  String inboxCaregiverTaken(String name);
+
+  /// No description provided for @inboxCaregiverSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was skipped by someone else'**
+  String inboxCaregiverSkipped(String name);
+
+  /// No description provided for @inboxLoggedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged at {time}'**
+  String inboxLoggedAt(String time);
+
+  /// No description provided for @inboxAppointmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment: {type}'**
+  String inboxAppointmentTitle(String type);
+
+  /// No description provided for @inboxOutOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is out of stock'**
+  String inboxOutOfStock(String name);
+
+  /// No description provided for @inboxOutOfStockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Refill it as soon as you can.'**
+  String get inboxOutOfStockBody;
+
+  /// No description provided for @inboxLowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is running low'**
+  String inboxLowStock(String name);
+
+  /// No description provided for @inboxLowStockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Less than a day left} =1{About 1 day left} other{About {count} days left}}'**
+  String inboxLowStockBody(int count);
+
+  /// No description provided for @inboxSideEffect.
+  ///
+  /// In en, this message translates to:
+  /// **'Side effect: {symptom}'**
+  String inboxSideEffect(String symptom);
+
+  /// No description provided for @inboxSideEffectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Severity {severity}/5'**
+  String inboxSideEffectBody(int severity);
+
+  /// No description provided for @inboxSideEffectBodyWithMed.
+  ///
+  /// In en, this message translates to:
+  /// **'Severity {severity}/5 · {medicine}'**
+  String inboxSideEffectBodyWithMed(int severity, String medicine);
+
+  /// No description provided for @inboxPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Some items could not be loaded. Pull down to try again.'**
+  String get inboxPartial;
+
+  /// No description provided for @inboxBellLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get inboxBellLabel;
+
   /// No description provided for @homeSheetMarkTaken.
   ///
   /// In en, this message translates to:

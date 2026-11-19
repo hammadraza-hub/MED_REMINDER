@@ -18,6 +18,8 @@ import '../../core/dose_time.dart';
 import 'home_dose_filter.dart';
 import 'home_summary.dart';
 import '../../core/streak_history.dart';
+import 'notification_sources.dart';
+import 'notifications_inbox_screen.dart';
 import '../../core/members/member_repository.dart';
 import '../../core/profile/profile_controller.dart';
 import '../../l10n/app_localizations.dart';
@@ -655,6 +657,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  /// The bell: the Notifications screen of the profile Home is showing.
+  void _openNotifications() {
+    final profileId = ProfileController.instance.memberId;
+    if (profileId == null || profileId.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NotificationsInboxScreen(
+          profileId: profileId,
+          sources: NotificationSources.firestore(doseSource: _dose),
+        ),
+      ),
+    );
+  }
+
   void _openStreaksStats() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -774,6 +790,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             onStreakTap: _openStreaksStats,
             onProfilePhotoTap: _openProfilePhotoPicker,
             onAddMemberTap: _openProfiles,
+            onNotificationsTap: _openNotifications,
+            hasAlert: _summary.missed > 0,
           ),
           Expanded(
             child: Center(
@@ -984,6 +1002,8 @@ class _HomeHeader extends StatelessWidget {
     required this.onStreakTap,
     required this.onProfilePhotoTap,
     required this.onAddMemberTap,
+    required this.onNotificationsTap,
+    required this.hasAlert,
   });
 
   final String greeting;
@@ -998,6 +1018,8 @@ class _HomeHeader extends StatelessWidget {
   final VoidCallback onStreakTap;
   final VoidCallback onProfilePhotoTap;
   final VoidCallback onAddMemberTap;
+  final VoidCallback onNotificationsTap;
+  final bool hasAlert;
 
   @override
   Widget build(BuildContext context) {
@@ -1049,27 +1071,45 @@ class _HomeHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(
-                        Icons.notifications_none_rounded,
-                        color: AppColors.surface,
-                        size: 24,
-                      ),
-                      Positioned(
-                        top: 1,
-                        right: 1,
-                        child: Container(
-                          width: 7,
-                          height: 7,
-                          decoration: const BoxDecoration(
-                            color: AppColors.notificationDot,
-                            shape: BoxShape.circle,
-                          ),
+                  Semantics(
+                    button: true,
+                    label: l10n.inboxBellLabel,
+                    excludeSemantics: true,
+                    onTap: onNotificationsTap,
+                    child: InkResponse(
+                      key: const Key('home-bell'),
+                      onTap: onNotificationsTap,
+                      radius: 26,
+                      child: SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            const Icon(
+                              Icons.notifications_none_rounded,
+                              color: AppColors.surface,
+                              size: 24,
+                            ),
+                            // A dot only while something needs attention.
+                            if (hasAlert)
+                              Positioned(
+                                top: 11,
+                                right: 12,
+                                child: Container(
+                                  key: const Key('home-bell-dot'),
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.notificationDot,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -1849,7 +1889,7 @@ class _StatusBadge extends StatelessWidget {
         return _badge(
           background: AppColors.hintBackground,
           foreground: AppColors.error,
-          text: l10n.homeStatusSkipped,
+          text: l10n.homeStatusMissed,
         );
       case dose_model.DoseStatus.skipped:
         return _badge(

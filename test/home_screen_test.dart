@@ -12,6 +12,7 @@ import 'package:med_remind_app/features/home/home_dose_filter.dart';
 import 'package:med_remind_app/features/home/home_dose_source.dart';
 import 'package:med_remind_app/features/home/home_summary.dart';
 import 'package:med_remind_app/features/home/home_screen.dart';
+import 'package:med_remind_app/features/home/notifications_inbox_screen.dart';
 import 'package:med_remind_app/features/meds/add_medication_screen.dart';
 import 'package:med_remind_app/features/meds/meds_screen.dart';
 import 'package:med_remind_app/l10n/app_localizations.dart';
@@ -646,5 +647,53 @@ void main() {
       expect(screen.profileId, 'm1');
       expect(find.byType(MedsScreen), findsNothing);
     });
+  });
+
+  group('bell', () {
+    testWidgets('the bell opens the Notifications screen of the profile', (
+      t,
+    ) async {
+      await open(t, doses: []);
+      await t.tap(find.byKey(const Key('home-bell')));
+      await t.pump();
+      await t.pump(const Duration(seconds: 1));
+      final screen = t.widget<NotificationsInboxScreen>(
+        find.byType(NotificationsInboxScreen),
+      );
+      expect(screen.profileId, 'm1');
+      expect(find.text('Notifications'), findsWidgets);
+      expect(find.byKey(const Key('inbox-chip-app')), findsOneWidget);
+      expect(find.byKey(const Key('inbox-chip-medicine')), findsOneWidget);
+    });
+
+    testWidgets('no dot while nothing needs attention', (t) async {
+      await open(t, doses: [dose('d1', 'Metformin', 8)]);
+      expect(find.byKey(const Key('home-bell-dot')), findsNothing);
+    });
+
+    testWidgets('a missed dose lights the dot', (t) async {
+      await open(
+        t,
+        doses: [dose('d1', 'Metformin', 8, status: DoseStatus.missed)],
+      );
+      expect(find.byKey(const Key('home-bell-dot')), findsOneWidget);
+    });
+
+    testWidgets('the bell is a real button for screen readers', (t) async {
+      final handle = t.ensureSemantics();
+      await open(t, doses: []);
+      final node = t.getSemantics(find.bySemanticsLabel('Notifications'));
+      expect(node.flagsCollection.isButton, isTrue);
+      handle.dispose();
+    });
+  });
+
+  testWidgets('a missed dose is badged MISSED, not SKIPPED', (t) async {
+    await open(
+      t,
+      doses: [dose('d1', 'Metformin', 8, status: DoseStatus.missed)],
+    );
+    expect(find.text('MISSED'), findsOneWidget);
+    expect(find.text('SKIPPED'), findsNothing);
   });
 }

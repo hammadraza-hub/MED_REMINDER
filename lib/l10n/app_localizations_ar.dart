@@ -10,6 +10,102 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get homeStatusMissed => 'فائتة';
+
+  @override
+  String get inboxTitle => 'الإشعارات';
+
+  @override
+  String get inboxChipApp => 'التطبيق';
+
+  @override
+  String get inboxChipMedicine => 'الدواء';
+
+  @override
+  String get inboxEmptyApp => 'لا توجد إشعارات للتطبيق. كل شيء على ما يرام.';
+
+  @override
+  String get inboxEmptyMedicine =>
+      'لا توجد تنبيهات للأدوية. المخزون والآثار الجانبية بحالة جيدة.';
+
+  @override
+  String inboxMissedDose(String name) {
+    return 'فاتتك جرعة $name';
+  }
+
+  @override
+  String inboxMissedDoseBody(String time) {
+    return 'كان موعدها الساعة $time.';
+  }
+
+  @override
+  String inboxCaregiverTaken(String name) {
+    return 'قام شخص آخر بتحديد $name كمأخوذة';
+  }
+
+  @override
+  String inboxCaregiverSkipped(String name) {
+    return 'قام شخص آخر بتخطي $name';
+  }
+
+  @override
+  String inboxLoggedAt(String time) {
+    return 'سُجّلت الساعة $time';
+  }
+
+  @override
+  String inboxAppointmentTitle(String type) {
+    return 'موعد: $type';
+  }
+
+  @override
+  String inboxOutOfStock(String name) {
+    return 'نفد مخزون $name';
+  }
+
+  @override
+  String get inboxOutOfStockBody => 'أعد تعبئته في أقرب وقت.';
+
+  @override
+  String inboxLowStock(String name) {
+    return 'مخزون $name قليل';
+  }
+
+  @override
+  String inboxLowStockBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'بقي حوالي $count أيام',
+      one: 'بقي حوالي يوم واحد',
+      zero: 'بقي أقل من يوم',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String inboxSideEffect(String symptom) {
+    return 'أثر جانبي: $symptom';
+  }
+
+  @override
+  String inboxSideEffectBody(int severity) {
+    return 'الشدة $severity/5';
+  }
+
+  @override
+  String inboxSideEffectBodyWithMed(int severity, String medicine) {
+    return 'الشدة $severity/5 · $medicine';
+  }
+
+  @override
+  String get inboxPartial =>
+      'تعذر تحميل بعض العناصر. اسحب للأسفل للمحاولة مرة أخرى.';
+
+  @override
+  String get inboxBellLabel => 'الإشعارات';
+
+  @override
   String get homeSheetMarkTaken => 'تحديد كمأخوذة';
 
   @override

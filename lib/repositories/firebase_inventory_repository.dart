@@ -110,7 +110,7 @@ class FirebaseInventoryRepository implements InventoryRepository {
   Stream<List<InventoryItem>> watchInventory(String memberId) {
     try {
       return _medicationsRef(memberId)
-          .where('active', isEqualTo: true)
+          .where('status', isEqualTo: 'active')
           .snapshots()
           .map(
             (snapshot) => snapshot.docs
@@ -156,7 +156,7 @@ class FirebaseInventoryRepository implements InventoryRepository {
   Future<List<InventoryItem>> getInventory(String memberId) async {
     try {
       final snapshot = await _medicationsRef(memberId)
-          .where('active', isEqualTo: true)
+          .where('status', isEqualTo: 'active')
           .get();
       return snapshot.docs
           .map((d) => _fromMedDoc(d, memberId: memberId))

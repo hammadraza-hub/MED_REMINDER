@@ -103,3 +103,5 @@
 - Home optimisation step 6 skipped (decision, see HANDOFF 22); step 7 final check: Flutter 1165, rules 443, probe 0 gaps, 4 emulator integration files pass; Home looked at on the emulator (real members, permission sheet, live doses, skip sheet dismiss does not skip).
 - Streaks screen: shares one StreakHistory per profile with Home (90 days read once a day, reopening reads only today), days cut in the profile zone, same profile as Home, past-dose changes invalidate the cache; +11 tests (Flutter 1176 pass); checked on the emulator (Home and Streaks agree).
 - Home + button opens Add Medication for the shown profile (was the Meds list); +1 test.
+- Full project audit PDF (`docs/PROJECT_AUDIT_2026-11-18.pdf`); corrected the size of `meds_screen_restored.dart` (2,009 lines) in the docs.
+- Home bell opens a Notifications screen with two chips (App / Medicine), computed from live data (`NotificationFeed`); fixed Inventory repository filter (`status`, not legacy `active`) and the MISSED badge; +31 tests (Flutter 1208 pass).

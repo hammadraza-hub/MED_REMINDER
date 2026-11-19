@@ -10,6 +10,102 @@ class AppLocalizationsHi extends AppLocalizations {
   AppLocalizationsHi([String locale = 'hi']) : super(locale);
 
   @override
+  String get homeStatusMissed => 'छूटी';
+
+  @override
+  String get inboxTitle => 'सूचनाएँ';
+
+  @override
+  String get inboxChipApp => 'ऐप';
+
+  @override
+  String get inboxChipMedicine => 'दवा';
+
+  @override
+  String get inboxEmptyApp => 'ऐप की कोई सूचना नहीं। सब ठीक है।';
+
+  @override
+  String get inboxEmptyMedicine =>
+      'दवा की कोई चेतावनी नहीं। स्टॉक और साइड इफ़ेक्ट ठीक दिख रहे हैं।';
+
+  @override
+  String inboxMissedDose(String name) {
+    return '$name छूट गई';
+  }
+
+  @override
+  String inboxMissedDoseBody(String time) {
+    return 'इसका समय $time था।';
+  }
+
+  @override
+  String inboxCaregiverTaken(String name) {
+    return 'किसी और ने $name को ली गई चिह्नित किया';
+  }
+
+  @override
+  String inboxCaregiverSkipped(String name) {
+    return 'किसी और ने $name छोड़ दी';
+  }
+
+  @override
+  String inboxLoggedAt(String time) {
+    return '$time पर दर्ज';
+  }
+
+  @override
+  String inboxAppointmentTitle(String type) {
+    return 'अपॉइंटमेंट: $type';
+  }
+
+  @override
+  String inboxOutOfStock(String name) {
+    return '$name का स्टॉक खत्म है';
+  }
+
+  @override
+  String get inboxOutOfStockBody => 'जल्द से जल्द रिफ़िल करें।';
+
+  @override
+  String inboxLowStock(String name) {
+    return '$name कम बची है';
+  }
+
+  @override
+  String inboxLowStockBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'लगभग $count दिन बचे हैं',
+      one: 'लगभग 1 दिन बचा है',
+      zero: 'एक दिन से कम बचा है',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String inboxSideEffect(String symptom) {
+    return 'साइड इफ़ेक्ट: $symptom';
+  }
+
+  @override
+  String inboxSideEffectBody(int severity) {
+    return 'गंभीरता $severity/5';
+  }
+
+  @override
+  String inboxSideEffectBodyWithMed(int severity, String medicine) {
+    return 'गंभीरता $severity/5 · $medicine';
+  }
+
+  @override
+  String get inboxPartial =>
+      'कुछ आइटम लोड नहीं हो सके। दोबारा कोशिश के लिए नीचे खींचें।';
+
+  @override
+  String get inboxBellLabel => 'सूचनाएँ';
+
+  @override
   String get homeSheetMarkTaken => 'ली गई चिह्नित करें';
 
   @override
